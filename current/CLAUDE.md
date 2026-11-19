@@ -1,4 +1,4 @@
-# 機會雷達：共用規則（Claude、Codex、AGY、Cursor 都照這份）
+# 逐流 Current（原機會雷達、通告板）：共用規則（Claude、Codex、AGY、Cursor 都照這份）
 
 > 2026-11-17 起四家都能改（Borry：「你讓 GPT AGY 都有權利去改我機會雷達…還有 cursor」）。工具與流程看同資料夾 `AGENTS.md`。
 
@@ -26,7 +26,7 @@
 ## 目前的手機行為（不要改壞）
 - 五個籃子分頁，手指左右滑切到隔壁籃子（`js/app.js` 的 touchstart / touchend）。
 - 待決區在手機直向是右下浮動按鈕 `#hpill`，籃子鋪到螢幕底；橫向和寬螢幕改用頂列 `#holdbtn`。
-- 加到 iPhone 主畫面要帶金鑰網址，所以 manifest 刻意不寫 `start_url`。
+- 加到 iPhone 主畫面要帶金鑰網址，所以 manifest 刻意不寫 `start_url`；`scope` 用相對路徑 `./`（總倉庫 CLAUDE.md 第 2 條）。v28 曾加 `start_url: /current/`，v29 拿掉。
 
 詳細架構看 `README.md`。
 
