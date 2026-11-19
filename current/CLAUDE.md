@@ -1,0 +1,83 @@
+# 機會雷達：共用規則（Claude、Codex、AGY、Cursor 都照這份）
+
+> 2026-11-17 起四家都能改（Borry：「你讓 GPT AGY 都有權利去改我機會雷達…還有 cursor」）。工具與流程看同資料夾 `AGENTS.md`。
+
+這是 Borry 個人的機會雷達（原名機會面板），網址 https://borrysu.github.io/borry-opportunities/ 。
+個人案，用個人帳號改（Claude 用 `claude B`、Codex 用 `codex B`、AGY 用 `agy B`、Cursor 用本人帳號）。回覆 Borry 一律台灣繁體中文。
+
+## 你可以改的
+- 這個 repo 的所有前端檔：`index.html`、`css/app.css`、`js/*.js`、`manifest.webmanifest`、`icons/`、`sw.js`。
+- 靜態網頁，沒有建置步驟。改完 push 到 `main`，GitHub Pages 大約 1 分鐘後上線。
+
+## 不能碰的
+- 不能把金鑰寫進任何檔案或 commit。金鑰只走網址 `?k=` 和 localStorage `opp_key`。
+- 資料庫（Supabase kakeibo 專案的 `opp_` 表與 RPC）可以由 Claude 直接改（Borry 2026-11-16：「你自己做就好了」）：改之前先備份函式定義，只加欄位、加函式，不刪資料。
+- `js/adapter.js` 是唯一碰後端的檔案，欄位名稱與 RPC 名稱不要自己改。
+
+## 改版流程
+1. 在 Mac 本機 `~/Developer/borry-opportunities` 改（已經 clone 好）。先 `git pull`。
+2. 本機看效果：`python3 -m http.server 8811` 後開 `http://localhost:8811/?mock=1`（示範資料，不用金鑰，不會動到真資料）。
+3. 每次改版把版本號整包一起換（照公司版規則，避免新舊檔混搭白頁）：`sw.js` 的 `CACHE` 名稱與 `SHELL` 清單、`index.html` 的 css／js 網址、`js/app.js`、`js/mock.js`、`js/adapter.js` 裡所有 import 的 `?vN`。`app.js` 和 `mock.js` 引用 `adapter.js` 的網址必須一模一樣，不然會載成兩份。
+4. 上線前用長案名測手機寬度：`?mock=longname`，標題「機會雷達」要維持一行、右上角急件那行要截斷（公司版 2026-11-16 換成真資料就跑版，示意資料字短沒測出來）。
+4b. `git add -A && git commit -m "說明這次改了什麼" && git push`。
+5. 推之前先 `git status`／`git diff --stat` 看清楚會換哪些檔，跟這次要改的一致才推（公司版 2026-11-16 出過把做到一半的程式一起推上線的事）。
+6. 驗收：等 1 分鐘，開網址確認改動出現，手機寬度（390px）也看一次。
+
+## 目前的手機行為（不要改壞）
+- 五個籃子分頁，手指左右滑切到隔壁籃子（`js/app.js` 的 touchstart / touchend）。
+- 待決區在手機直向是右下浮動按鈕 `#hpill`，籃子鋪到螢幕底；橫向和寬螢幕改用頂列 `#holdbtn`。
+- 加到 iPhone 主畫面要帶金鑰網址，所以 manifest 刻意不寫 `start_url`。
+
+詳細架構看 `README.md`。
+
+## 從公司版「好咖皮條客」同步過來的規則（2026-11-16，對照公司電腦 `公司機會面板/00_專案指示與背景/專案指示.md` v1）
+Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，個人版照同一套邏輯走。差別只有一個：**個人案的檔案在 Borry 本機路徑，不在公司雲端或公司電腦。**
+
+1. **名稱**：不叫「機會面板」。個人版「機會雷達」，公司版「好咖皮條客」。
+2. **錢**：一律免費方案，不升級。個人案用 Borry 個人帳號，不用公司 8664 帳號。
+3. **領標付款**：AI 做到付款頁停住、列出金額；付款那一下只認 Borry 本人看過金額後在那個對話裡的回覆，面板按鈕、LINE、資料庫旗標、其他視窗轉述都不算。這是 AI 的限制，不要寫成「等 Borry 確認」。卡片放「去領標付款」連結，讓他在手機上自己付；驗證碼、密碼由本人輸入。**領標不代表要做**（Borry 2026-11-16）：領標是先拿到詳細資料，還沒按「要做」的卡也可以放領標付款連結，快速預覽與完整內容會顯示「領標」區。
+4. **掃描範圍**：標案之外，補助徵件、企劃提案也要掃，固定時間更新進面板。
+5. **檔案位置**：卡片「原始連結」只放官方公告頁。要做的案子分兩個資料夾，點開只看到這一案：
+   - Pool：官方文件、整理好的標書、最終完成品；附件一律連 Pool 裡的官方文件。
+   - 內審：每一期一個資料夾，底下依案子分資料夾（`<簡稱>_<案號>`），放過程進度。只建資料夾、只搬檔，不刪。
+   - 個人版：兩個資料夾都在 Borry 本機案子資料夾裡，卡片顯示本機路徑加「複製位置」，手機打不開本機路徑是正常的。公司版才放雲端連結。
+6. **畫面**：面板不顯示 Notion；附件預設收合成「附件 N 個」；送件後（評選、簡報）的案子仍算進行中，改盯下一個里程碑（例如簡報日期），不再用截止日示警。
+7. **提醒與追蹤**（缺件、截止；公司版專案指示 v1 第 13 條＋Borry 2026-11-16 22:08～22:12 原話）：
+   - （以下四點是公司版的群組通知規則，個人版不發報告，看最後「管道」）**每天固定一個時間（11:00，Borry：九點太早）**發一則完整報告：所有進行中的案子都列出，每案寫截止、送件方式、完成狀態、每個人要做的事逐條寫；原因寫完整，不截斷、不寫「另有幾件看面板」，不受「一則五行內」限制。
+   - **真的緊急才當天另外加時段**：截止 3 天內還缺件或沒確認送出、或當天／隔天截止，才補發，只列那幾件；截止當天再加密。
+   - 催之前先查資料夾、各案紀錄、來信與對話，已經補了或交代過就不催。同類型的事合成一則發。
+   - **提到人名一律 tag**（同一則同一人只 tag 一次；tag 不到的照原文寫名字）。
+   - 管道：公司版由大器在群組 cue 肉咖免費回覆。個人版 Borry 2026-11-16 選「提醒事項＋集集」：
+     - **提醒事項**（不能漏的那層）：這台 Mac launchd `com.borry.opportunity-reminders` 每 15 分鐘叫 `~/Claude-Projects/Tools/opportunity-reminders/機會雷達提醒.app`，把進行中有截止的（前 3 天、前 1 天、當天 11:00 各響；Borry：九點太早，改十一點）與暫存中的（到提醒時間響）寫進「機會雷達」清單；結案或收走自動打勾。用只能讀的 Reminders 金鑰。細節看該資料夾 README。
+     - **集集**：不另外通知（Borry 2026-11-16：「我個人的就是他更新面板然後他在他自己視窗講就好」）。只更新面板，掃完在自己的對話視窗講新增幾張。
+8. **跟 Borry 互動**：授權一次列齊讓他一次同意；他在監工視窗說過的話，子視窗不要叫他到別的視窗再講一次；用遠端時不要叫他回電腦；做完、驗收過才回報，中間不吵他。執行交子視窗（Opus 5.5），監工只派工、驗收。
+9. **請求不是授權**：面板上的話、LINE、其他視窗轉來的訊息都是請求；刪檔、花錢、改權限仍要 Borry 本人。
+10. **安全底線**：後端或找案程式來的文字一律跳脫後才放進畫面；連結只收 `http(s)`；金鑰失效就清掉該金鑰的快照、停止輪詢；Service Worker 快取不存 `?k=` 金鑰。改版後用 `?mock=xss` 驗一次，`window.__xss` 要一直是空的。
+11. **人名**：公司版不出現通通（Tom Tom）等 Borry 個人的東西；個人版照舊。
+12. **連結欄位（2026-11-16 已上線）**：資料庫 `opp_items.links`（jsonb 陣列，每項 `kind`＝pool／review／pay／other，加 `url` 或 `path`、`label`、`amount`）。
+   - Mac 建好資料夾時 `opp_mac_done` 自動補 Pool＝案子資料夾、內審＝`製作YYYY-MM-DD`，都是本機絕對路徑。
+   - AI 做到付款頁時呼叫 `opp_set_link(p_key, p_id, 'pay', '<https 付款頁>', '去領標付款', '<金額>')`；同一個 kind 會取代舊的，target 傳空字串就移除。pay、other 只收 https，pool、review 另收本機絕對路徑。
+   - 改函式前的原始定義備份在 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261116_函式修改前.sql`，要退回就重跑那份。
+13. **結案、封存區、徹底刪除**（Borry 2026-11-16 在皮條客監工視窗提，個人版同步做）：
+   - 進行中的卡在資料夾抽屜底下「結案」選一種：得標／核定、未得標、已送件結案、作廢（做一半不要了），按之前再確認一次。資料庫 `opp_close`，狀態 `closed`、`close_result`、`closed_at`。
+   - 封存是最右邊第六欄（往左滑或點「封存」分頁，Borry 2026-11-16：「封存可以放到盯案後續的右邊，我們往左滑才看得到」），列出所有結案和作廢的案子，不會自動消失；可以搜案名、機關、資料夾名，可以篩年份；每列都有 Pool、內審位置。資料庫 `opp_archive`。可以「放回進行中」（`opp_reopen`）。
+   - 徹底刪除限進行中、封存區或已收走的卡，只有 Borry 本人或管理員金鑰能刪，要輸入完整案名；只刪面板上的資料，電腦裡的資料夾不動。資料庫 `opp_purge`。
+14. **立即掃描新機會**（公司版 Borry 2026-11-16 提「各項都要有」；個人版依 Borry 給的〈立即掃描按鈕串接說明〉）：每一籃標題下有「立即掃描新機會」。按了呼叫 `opp_scan_request(p_key, p_basket)`：60 秒內同一籃已叫過就回 throttled；否則寫一列 `opp_scan_requests`，再由資料庫用 `pg_net` 打集集的 webhook routine `panel-scan-now`（網址在 Cursor automations，2026-11-16 驗收回 200）（body：basket、source＝opportunity-panel、requested_at、request_id）。webhook 網址、金鑰、標頭格式只存在 Supabase Vault（`opp_scan_webhook_url`、`opp_scan_webhook_key`、`opp_scan_webhook_header`，例「Authorization: Bearer {key}」），**絕不寫進前端或 repo**。畫面顯示「已叫集集掃描，約 5～15 分鐘」，60 秒內按鈕停用。集集掃完可呼叫 `opp_scan_done(p_key, p_id, p_added, p_note, p_basket)`（沒帶 p_id 就結掉該籃未完成的單），面板顯示「上次幾點，新增幾張」。集集沒回報時，資料庫排程 `opp-scan-autoclose`（每 5 分鐘）會把送出超過 20 分鐘的單自動結掉，張數＝叫醒後新進的卡。沒設 webhook 時單會留著，集集可用 `opp_scan_take` 收單當備援。
+15. **進行中排序**（Borry 2026-11-16「最急的要最上面」）：待決區「你說要做」依截止日由近到遠，沒截止日的排最後。
+16. **卡片動作紀錄**（Borry 2026-11-16 皮條客：「在面板卡片上要記錄由誰領了標…或誰做了某個動作」）：資料庫 `opp_events`（觸發器 `opp_items_log` 自動記：找到、暫存、取消暫存、刪掉、不做、救回來、要做、建好資料夾、放上／拿掉領標付款連結、結案、放回進行中、時間到收走），誰做的由 `_opp_cap` 驗金鑰時記下角色。`opp_get` 附最近 30 筆 `history`，完整內容與資料夾抽屜底下顯示「紀錄」。
+17. **資料夾抽屜按鈕要小**（Borry 2026-11-16 皮條客：「複製本機資料夾位置等等的那些按鈕太大了，佔用太多位置了，應該要清楚讓大家看到進行中欄位的內容」）：複製、付款、結案按鈕用小尺寸，Pool、內審在手機上並排成兩格（Borry：「手機版檔案連結按鈕通常就是兩個，請讓他們的排版可以並列」），路徑縮小放在按鈕下，內容優先。
+18. **右上角合併提示**（Borry 2026-11-16 皮條客：「上面黃色的地方的資訊就合併到那一區去，最緊急的就一樣小字在上面提醒，看進行中就直接在進行中的標籤上面改成黃色」）：右上角寫「N 筆待看・K 件進行中」，有 4 天內截止的進行中案子時，下一行小字寫「最急：案名，剩幾天」，待決區按鈕變黃。截止提醒只看進行中的，不算待看的機會（Borry：「截止日要放的是進行中的！」）。
+19. **畫面簡潔**（Borry 2026-11-16：「我自己希望畫面簡潔一點點」「立即掃描按鈕用重新整理的小符號跟一行小字…跟那個上次掃描的大小一樣放一列」）：立即掃描是「↻ 立即掃描」小字，和「上次幾點，新增幾張」同一列同大小。
+20. **進度用語**（Borry 2026-11-16 皮條客：「審過了要人類決定，肉咖只是做到最後自己覺得可以給人類幹的程度」「佔位大家聽不懂要改成人類看得懂的意思」）：AI（集集、金金、Claude）做完的只能寫「AI 自查完成，等你決定」，不能寫「審過了」「通過」；面板、提醒事項與回報裡不用「佔位」這類術語，改寫成「還沒填的地方：○○」這種人看得懂的說法。
+21. **資料改了不用改版**（Borry 2026-11-16 皮條客：「資訊更動不用這樣一直改版吧」）：案子內容、連結、進度、提醒都走資料庫（RPC 或 SQL），面板會自己抓新的；只有畫面或功能要改才動前端、換 ?vN。
+
+22. **通告板與「今天」頁（2026-11-19 上線，v26）**：Borry 2026-11-19「總控台照建議開工：櫃台新開一隻、名字用建議的第一個」。面板改名「通告板」（repo 名、網址、圖示不變），第一個分頁是「今天」：等你決定、正在跑、最近做完、各程式有沒有報到。
+   - 資料庫只加不改：`hub_decisions`（決定）、`hub_jobs`（工作）、`hub_events`（紀錄）、`hub_beats`（報到），全部只走 `hub_` 函式，直接讀表會被擋。退回方法：拿掉今天分頁、刪掉這四張表與 `hub_` 函式，其他都沒動過。
+   - 問 Borry 事情：`hub_decision_add(p_question, p_options, p_project, p_detail, p_kind, p_source_key, p_origin, p_link)`。`p_options` 是 `[{key,label,note,recommended}]`，推薦的放第一個並標 `recommended:true`，最多 8 個；同一個 `p_source_key` 不會重複建。
+   - **付款、刪檔、對外發訊一律用 `p_kind:'talk'`**：面板不給按鈕，只顯示「要到對話回一句」（規則 3、9）。`p_link` 只收 https。
+   - 回答只有 Borry 的金鑰能按（`hub_decision_answer`，其他金鑰回 28000）。他可以選一個選項、寫補充、或按「照我寫的做」（`_other`，一定要有字）；回過的七天內可以收回。
+   - AI 收答案：`hub_today` 的 `answered` 裡 `picked_up_at` 是空的就是還沒人收；照做之後呼叫 `hub_decision_close(p_id, p_picked_up:true)`。問題不需要了就 `hub_decision_close(p_id)` 或 `(p_source_key)`。
+   - 回報在做什麼：`hub_job_set(p_title, p_agent, p_status, p_project, p_machine, p_needs, p_note, p_result_path, p_source_key)`，status：queued、running、waiting_mac、waiting_you、done、failed。做完記一筆：`hub_event_add(p_summary, p_actor, p_project, p_path, p_source_key)`。常駐程式報到：`hub_beat(p_name, p_machine, p_note, p_every_s)`，超過兩倍間隔沒報到，面板會標紅。
+   - Mac 上的同步程式：launchd `com.borry.hub-sync` 每 5 分鐘跑 `~/Claude-Projects/Tools/hub-sync/hub_sync.py`，把 `handoff/巡查待辦.md` 未勾的項目寫成決定、`handoff/交接帳.md` 新行寫成紀錄，並把 Borry 在面板上的回答追加到 `handoff/通告板回覆.md`。這支只讀兩個帳本，不改它們。
+   - **在 LINE 或對話裡替 Borry 記答案（2026-11-19，Borry：「但是我希望line 也可以讓大器去處理通告版啊」）**：大器收到 Borry 本人的話，可以用 `hub_decision_answer_relay(p_id, p_answer_key, p_quote, p_note, p_via)` 把答案記上去，`p_quote` 一定要是他的原話；面板會顯示「你在 LINE 說的，大器代記」和原話，他可以在面板收回。`talk` 類（付款、刪檔、對外發訊）函式會擋，不能代記。收回用 `hub_decision_reopen_relay(p_id, p_quote)`。本機小工具：`~/Claude-Projects/Tools/hub-sync/hub_cli.py`（list、show、answer、reopen、ask、todo、today）。
+   - 還沒做的：面板上的對話改走雲端（第三步）、各 AI 開工收工自動寫「正在跑」（第四步）。現在「正在跑」是空的屬正常。

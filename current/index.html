@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>通告板</title>
+<meta name="description" content="今天要你決定的事、手上的案子、機會，集中在這裡看">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#2b7a70">
+<meta name="color-scheme" content="light">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="通告板">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=20261116f">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=20261116f">
+<link rel="stylesheet" href="css/app.css?v27">
+<!-- 網路字型只當加分：不擋畫面，載入完用 swap 換上；沒網路時走 css 裡的系統字型。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&family=Noto+Serif+TC:wght@600;900&display=swap">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;800&family=Noto+Serif+TC:wght@600;900&display=swap"></noscript>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="top-l">
+      <h1>通告板</h1>
+      <p class="live" id="live" role="status"></p>
+    </div>
+    <div class="top-r">
+      <p class="sum" id="sum"></p>
+      <button class="daqibtn" id="daqibtn" data-act="chat-open" type="button" aria-haspopup="dialog">跟大器說</button>
+      <button class="holdbtn" id="holdbtn" type="button" aria-haspopup="dialog"></button>
+    </div>
+  </header>
+  <div class="notice" id="notice" hidden role="status"></div>
+  <nav class="tabs" id="tabs" role="tablist" aria-label="分類"></nav>
+  <main class="board" id="board"><div class="lanes" id="lanes"></div></main>
+</div>
+<button class="hpill" id="hpill" type="button" aria-haspopup="dialog"></button>
+<div class="scrim" id="scrim"></div>
+<aside class="panel sheet" id="sheet" role="dialog" aria-modal="true" aria-label="待決區"></aside>
+<aside class="panel drawer" id="drawer" role="dialog" aria-modal="true" aria-label="機會詳細資料"></aside>
+<div id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="js/app.js?v27"></script>
+</body>
+</html>
