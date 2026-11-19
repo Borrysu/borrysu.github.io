@@ -1,8 +1,10 @@
 {
-  "name": "通告板",
-  "short_name": "通告板",
+  "name": "逐流 Current",
+  "short_name": "逐流",
   "description": "今天要你決定的事、手上的案子、機會，集中在這裡看",
   "lang": "zh-Hant",
+  "start_url": "/current/",
+  "scope": "/current/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#f2f6f4",

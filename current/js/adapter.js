@@ -68,7 +68,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v27');
+  const { mockAdapter } = await import('./mock.js?v28');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
