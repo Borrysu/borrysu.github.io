@@ -3,8 +3,8 @@
 Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後也要知道用什麼工具並且怎麼改。還有 cursor」。
 所以這四家都可以改這個面板。規則與現況以同資料夾 `CLAUDE.md` 為正本（名字是 Claude 的，但內容是大家共用的規則），**動手前完整讀一遍**，本檔只補「用什麼工具、怎麼改」。
 
-- 面板：https://borrysu.github.io/borry-opportunities/ （Borry 個人的機會雷達，靜態網頁＋Supabase 專案 kakeibo）
-- 本機正本：`/Users/borry/Developer/borry-opportunities`（公開 repo `Borrysu/borry-opportunities`，**任何金鑰都不准寫進來**）
+- 面板：https://borrysu.github.io/current/ （舊網址 https://borrysu.github.io/borry-opportunities/ 已轉址到這裡；Borry 個人的機會雷達，靜態網頁＋Supabase 專案 kakeibo）
+- 本機正本：`/Users/borry/Developer/borrysu.github.io/current`（公開 repo `Borrysu/borrysu.github.io` 的 `current/` 子資料夾；2026-11-20 起正本，舊 repo `Borrysu/borry-opportunities` 只剩轉址頁，不要再改；**任何金鑰都不准寫進來**）
 - 公司版「好咖皮條客」在公司電腦，不歸這裡。
 
 ## 工具（都在 `tools/`，任何一家用 bash 就能跑）

@@ -2,7 +2,7 @@
 
 > 2026-11-17 起四家都能改（Borry：「你讓 GPT AGY 都有權利去改我機會雷達…還有 cursor」）。工具與流程看同資料夾 `AGENTS.md`。
 
-這是 Borry 個人的機會雷達（原名機會面板），網址 https://borrysu.github.io/borry-opportunities/ 。
+這是 Borry 個人的機會雷達（原名機會面板），網址 https://borrysu.github.io/current/ （舊網址 https://borrysu.github.io/borry-opportunities/ 已轉址到這裡）。
 個人案，用個人帳號改（Claude 用 `claude B`、Codex 用 `codex B`、AGY 用 `agy B`、Cursor 用本人帳號）。回覆 Borry 一律台灣繁體中文。
 
 ## 你可以改的
@@ -15,7 +15,7 @@
 - `js/adapter.js` 是唯一碰後端的檔案，欄位名稱與 RPC 名稱不要自己改。
 
 ## 改版流程
-1. 在 Mac 本機 `~/Developer/borry-opportunities` 改（已經 clone 好）。先 `git pull`。
+1. 在 Mac 本機 `~/Developer/borrysu.github.io/current` 改（總倉庫 `Borrysu/borrysu.github.io`，已經 clone 好；舊的 `~/Developer/borry-opportunities` 只剩轉址頁，不要再改）。先 `git pull`。
 2. 本機看效果：`python3 -m http.server 8811` 後開 `http://localhost:8811/?mock=1`（示範資料，不用金鑰，不會動到真資料）。
 3. 每次改版把版本號整包一起換（照公司版規則，避免新舊檔混搭白頁）：`sw.js` 的 `CACHE` 名稱與 `SHELL` 清單、`index.html` 的 css／js 網址、`js/app.js`、`js/mock.js`、`js/adapter.js` 裡所有 import 的 `?vN`。`app.js` 和 `mock.js` 引用 `adapter.js` 的網址必須一模一樣，不然會載成兩份。
 4. 上線前用長案名測手機寬度：`?mock=longname`，標題「機會雷達」要維持一行、右上角急件那行要截斷（公司版 2026-11-16 換成真資料就跑版，示意資料字短沒測出來）。
