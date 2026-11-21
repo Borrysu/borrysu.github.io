@@ -76,3 +76,4 @@ select.tbtn{appearance:none;-webkit-appearance:none;padding-right:14px;max-width
 #gate input{width:100%;min-height:48px;margin:12px 0;padding:0 12px;border-radius:12px;border:1px solid var(--edge);background:rgba(0,0,0,.15);color:var(--ink);font:inherit;font-size:16px}
 #gate .act{width:100%}
 @media (max-width:899px){#top h1{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}}
+[hidden]{display:none!important}
