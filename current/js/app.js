@@ -1,6 +1,6 @@
 // 機會雷達主程式：狀態、畫面、事件。只透過 adapter.js 取得與寫入資料。
-import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v32';
-import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v32';
+import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v33';
+import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v33';
 
 const $ = s => document.querySelector(s);
 // 個人版不收公司標案（Borry 2026-11-17：「公司標案我機會雷達似乎就不用了」），公司案只留在封存與舊資料的標籤
@@ -20,6 +20,19 @@ const ARCH = { k: 'archive', n: '封存', d: '結案與作廢的案子，不會�
 // 今天：打開第一眼先看要你決定的事（Borry 2026-11-19：「總控台照建議開工」，名字用通告板）
 const TODAY = { k: 'today', n: '今天', d: '現在要你決定的事，還有誰在做什麼' };
 const TABS = [TODAY].concat(BASKETS, [DOING, TODO, ARCH]);
+// v33（2026-11-22）：底部五個大分頁（今天、專案、機會、錢、生活），原本的分頁收進各自底下當小分頁
+const MONEY = { k: 'money', n: '訂閱', d: '每月固定要扣的訂閱，只能看，塔塔維護' };
+const LIFE = { k: 'life', n: '生活', d: '日常小事，慢慢長' };
+const ALLTABS = TABS.concat([MONEY, LIFE]);
+const GROUPS = [
+  { k: 'today', n: '今天', tabs: ['today'], ic: '<path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/>' },
+  { k: 'project', n: '專案', tabs: ['doing', 'todo', 'archive'], ic: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
+  { k: 'opp', n: '機會', tabs: ['personal', 'funding', 'achievement', 'other'], ic: '<circle cx="12" cy="12" r="9"/><path d="M12 12l4-6M12 12h.01"/>' },
+  { k: 'money', n: '錢', tabs: ['money'], ic: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>' },
+  { k: 'life', n: '生活', tabs: ['life'], ic: '<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>' },
+];
+const groupOf = t => GROUPS.find(g => g.tabs.includes(t)) || GROUPS[0];
+const grpTabs = () => groupOf(S.tab).tabs.map(k => ALLTABS.find(b => b.k === k));
 const HOLD_HOUR = 8;      // 暫存後，隔天幾點提醒（由集集傳訊息，不是瀏覽器）
 const IC = {
   trash: '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/></svg>',
@@ -35,7 +48,7 @@ const S = {
   net: 'loading',      // loading | ok | offline | auth | nokey
   hadData: false,      // 畫面上是不是已經有資料可看（快照或網路）
   slow: false, lastOk: null, rt: false, firstNet: false,
-  tab: 'today', sheet: false, drawer: null,   // drawer = {id, view:'preview'|'full'}
+  tab: 'today', last: {}, money: { loaded: false, err: '', data: null, at: 0 }, sheet: false, drawer: null,   // drawer = {id, view:'preview'|'full'}
   detail: new Map(),   // id → {st:'loading'|'fail'|'none', err, t0}
   textOpen: new Set(), fresh: new Set(),
   scan: {},             // 各籃立即掃描的單：{open, last}
@@ -180,6 +193,45 @@ function card(it) {
 }
 const skel = () => '<div class="card skel"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>';
 
+function renderNav(all, loadingEmpty, hide) {
+  const n = $('#bnav'); if (!n) return;
+  n.hidden = hide;
+  const cnt = { today: S.hub.loaded ? S.hub.open.length : 0, project: loadingEmpty ? 0 : workItems().length, opp: loadingEmpty ? 0 : all.length, money: 0, life: 0 };
+  const cur = groupOf(S.tab).k;
+  n.innerHTML = GROUPS.map(g => '<button class="bn" type="button" data-g="' + g.k + '" aria-current="' + (cur === g.k ? 'page' : 'false') + '">' +
+    '<svg viewBox="0 0 24 24" aria-hidden="true">' + g.ic + '</svg><span>' + g.n + '</span>' + (cnt[g.k] ? '<b>' + cnt[g.k] + '</b>' : '') + '</button>').join('');
+}
+const nt = v => Number(v || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
+const mdTxt = d => { const m = String(d || '').match(/^\d{4}-(\d{2})-(\d{2})/); return m ? (+m[1]) + '/' + (+m[2]) : ''; };
+function moneyLane() {
+  const m = S.money, d = m.data;
+  let body;
+  if (!m.loaded && !m.err) body = skel() + skel();
+  else if (m.err && !d) body = '<div class="zero"><b>訂閱讀不到</b><span>' + esc(m.err) + '</span></div>';
+  else {
+    const items = d.items, near = items.filter(i => i.days <= 7 && i.status !== 'cancel');
+    const sum = '<div class="msum"><div><small>每月自付訂閱</small><b>NT$ ' + nt(d.totalActive) + '</b></div>' + (d.totalCompany ? '<div><small>公司付的</small><b>NT$ ' + nt(d.totalCompany) + '</b></div>' : '') +
+      '<div><small>7 天內要扣</small><b>' + near.length + ' 筆</b></div></div>';
+    const rows = items.length ? items.map(i => '<article class="mrow' + (i.days <= 7 ? ' soon' : '') + '"><div class="mrt"><h3>' + esc(i.name) + '</h3><p>' + esc(mdTxt(i.next)) + '・' + (i.days === 0 ? '今天' : i.days === 1 ? '明天' : i.days + ' 天後') +
+      (i.account ? '・從 ' + esc(i.account) + ' 扣' : '') + (i.payer === 'company' ? '・公司付' : '') + '</p>' +
+      (i.cycle === 'yearly' || i.status !== 'active' ? '<p class="mch">' + (i.cycle === 'yearly' ? '年繳，每月約 NT$ ' + nt(i.monthly) : '') + (i.status === 'idle' ? ' 閒置' : i.status === 'cancel' ? ' 要取消' + (i.cancelBy ? '，' + esc(mdTxt(i.cancelBy)) + ' 前' : '') : '') + '</p>' : '') +
+      '</div><b class="mam">NT$ ' + nt(i.amount) + '</b></article>').join('') : '<div class="zero"><b>還沒有訂閱</b><span>塔塔記下訂閱後會出現在這裡。</span></div>';
+    body = sum + rows + '<p class="sheet-note">訂閱由塔塔維護，這裡只能看。要新增或改，在塔塔記帳那邊。</p>';
+  }
+  return '<section class="lane b-money' + (S.tab === 'money' ? ' cur' : '') + '" data-l="money"><div class="lh"><h2><i class="ld"></i>' + MONEY.n + '</h2><p>' + MONEY.d + '</p></div><div class="lbody">' + body + '</div></section>';
+}
+function lifeLane() {
+  return '<section class="lane b-life' + (S.tab === 'life' ? ' cur' : '') + '" data-l="life"><div class="lh"><h2><i class="ld"></i>' + LIFE.n + '</h2><p>' + LIFE.d + '</p></div><div class="lbody">' +
+    '<div class="zero">' + IC.inbox + '<b>生活頁先放著</b><span>要放什麼（吃藥、家事、待買、行程）由你說了算，說一聲就加。</span></div></div></section>';
+}
+async function loadMoney(force) {
+  if (!api.moneySubs) return;
+  if (!force && S.money.loaded && Date.now() - S.money.at < 60000) return;
+  try { S.money = { loaded: true, err: '', data: await api.moneySubs(), at: Date.now() }; }
+  catch (e) { S.money = Object.assign({}, S.money, { loaded: S.money.loaded, err: e instanceof AdapterError ? (e.kind === 'network' || e.kind === 'offline' ? '連不上伺服器' : '這把金鑰不能看錢的資料') : '發生錯誤', at: Date.now() }); }
+  if (S.tab === 'money') renderBoard();
+}
+function gotoTab(k) { S.tab = k; renderBoard(); if (k === 'archive' && !S.arch.loaded) loadArchive(); if (k === 'money') loadMoney(); }
 function renderBoard() {
   const lanes = $('#lanes'), board = $('#board');
   const keep = {}; lanes.querySelectorAll('.lane').forEach(l => { keep[l.dataset.l] = l.querySelector('.lbody').scrollTop; });
@@ -196,16 +248,19 @@ function renderBoard() {
   msg.hidden = !m; lanes.hidden = !!m;
   if (m) msg.innerHTML = m.ic + '<h2>' + m.t + '</h2><p>' + m.p + '</p>' + m.btn;
 
-  $('#tabs').innerHTML = TABS.map(b => '<button class="tab b-' + b.k + '" type="button" role="tab" data-tab="' + b.k + '" aria-selected="' + (S.tab === b.k) + '">' +
+  $('#tabs').innerHTML = grpTabs().map(b => '<button class="tab b-' + b.k + '" type="button" role="tab" data-tab="' + b.k + '" aria-selected="' + (S.tab === b.k) + '">' +
     (loadingEmpty ? '<b class="sk-n sk"></b>' : '<b>' + (b.k === 'today' ? (S.hub.loaded ? S.hub.open.length : '…') : b.k === 'archive' ? (S.arch.loaded ? S.arch.items.length : '…') : b.k === 'doing' ? workItems().length : b.k === 'todo' ? todoItems().filter(i => i.status === 'new' || i.runStatus === 'queued' || i.runStatus === 'running').length : all.filter(i => i.basket === b.k).length) + '</b>') + b.n + '</button>').join('');
-  $('#tabs').hidden = !!m;
+  S.last[groupOf(S.tab).k] = S.tab;
+  $('#tabs').hidden = !!m || grpTabs().length < 2;
+  renderNav(all, loadingEmpty, !!m);
   if (!m) lanes.innerHTML = todayLane() + BASKETS.map(b => {
     const list = sortList(all.filter(i => i.basket === b.k));
     const body = loadingEmpty ? skel() + skel() + skel()
       : list.length ? list.map(card).join('')
       : '<div class="zero">' + IC.inbox + '<b>這一籃目前是空的</b><span>集集和金金找到新的，會自動出現在這裡。</span></div>';
     return '<section class="lane b-' + b.k + (S.tab === b.k ? ' cur' : '') + '" data-l="' + b.k + '"><div class="lh"><h2><i class="ld"></i>' + b.n + '' + (loadingEmpty ? '' : '<em>' + list.length + '</em>') + '</h2><p>' + b.d + '</p>' + scanLine(b.k) + '</div><div class="lbody">' + body + '</div></section>';
-  }).join('') + doingLane() + todoLane() + archLane();
+  }).join('') + doingLane() + todoLane() + archLane() + moneyLane() + lifeLane();
+  { const gt = groupOf(S.tab).tabs; lanes.querySelectorAll('.lane').forEach(l => l.classList.toggle('ing', gt.includes(l.dataset.l))); lanes.classList.toggle('one', gt.length === 1); }
   lanes.querySelectorAll('.lane').forEach(l => { const b = l.querySelector('.lbody'); if (keep[l.dataset.l]) b.scrollTop = keep[l.dataset.l]; });
   if (fid) { const q = $('#' + fid); if (q) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {} } }
   if (hf) { const q = lanes.querySelector('[data-chat="' + CSS.escape(hf) + '"]'); if (q) { q.focus(); try { q.setSelectionRange(q.value.length, q.value.length); } catch (e) {} } }
@@ -988,16 +1043,17 @@ board.addEventListener('touchend', e => {
   if (swX === null) return;
   const t = e.changedTouches[0], dx = t.clientX - swX, dy = t.clientY - swY; swX = null;
   if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5 || Date.now() - swT > 800) return;
-  const i = TABS.findIndex(b => b.k === S.tab), j = i + (dx < 0 ? 1 : -1);
-  if (i < 0 || j < 0 || j >= TABS.length) return;
-  S.tab = TABS[j].k; renderBoard(); if (S.tab === 'archive' && !S.arch.loaded) loadArchive();
+  const gt = groupOf(S.tab).tabs, i = gt.indexOf(S.tab), j = i + (dx < 0 ? 1 : -1);
+  if (i < 0 || j < 0 || j >= gt.length) return;
+  gotoTab(gt[j]);
   const cur = document.querySelector('.lane.cur'); if (cur) { cur.classList.add(dx < 0 ? 'sw-l' : 'sw-r'); cur.addEventListener('animationend', () => cur.classList.remove('sw-l', 'sw-r'), { once: true }); }
 }, { passive: true });
 
 document.addEventListener('click', e => {
   const act = e.target.closest('[data-act]'), a = act && act.dataset.act, id = act && act.dataset.id;
   if (e.target.id === 'scrim') { S.drawer ? closeDrawer() : closeSheet(); return; }
-  const tab = e.target.closest('[data-tab]'); if (tab) { S.tab = tab.dataset.tab; renderBoard(); if (S.tab === 'archive') loadArchive(); return; }
+  const tab = e.target.closest('[data-tab]'); if (tab) { gotoTab(tab.dataset.tab); return; }
+  const gb = e.target.closest('[data-g]'); if (gb) { const g = GROUPS.find(x => x.k === gb.dataset.g); if (g) gotoTab(S.last[g.k] || g.tabs[0]); return; }
   if (e.target.closest('#hpill,#holdbtn')) { openSheet(); return; }
   if (a) {
     switch (a) {

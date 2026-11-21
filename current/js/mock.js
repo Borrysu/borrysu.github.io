@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normHub } from './adapter.js?v32';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normHub, normMoney } from './adapter.js?v33';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -188,6 +188,12 @@ export function mockAdapter(modeStr) {
       return { items: rows.filter(r => r.status !== 'closed').map(r => normalize(view(r))), serverTime: Date.now() };
     },
     async hubToday() { await wait(120); return normHub(JSON.parse(JSON.stringify(hub))); },
+    async moneySubs() { await wait(150); const d = new Date(), iso = n => { const x = new Date(d.getTime() + n * 864e5); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+      return normMoney({ total_active: 4280, total_company_monthly: 600, items: [
+        { id: '1', name: '示意訂閱 A', amount: 390, billing_cycle: 'monthly', monthly_equiv: 390, status: 'active', payer: 'self', account_name: '示意信用卡', next_charge_date: iso(2), days_until: 2 },
+        { id: '2', name: '示意訂閱 B（年繳）', amount: 2400, billing_cycle: 'yearly', monthly_equiv: 200, status: 'active', payer: 'self', account_name: '示意信用卡', next_charge_date: iso(5), days_until: 5 },
+        { id: '3', name: '示意訂閱 C（公司付）', amount: 600, billing_cycle: 'monthly', monthly_equiv: 600, status: 'active', payer: 'company', next_charge_date: iso(12), days_until: 12 },
+        { id: '4', name: '示意訂閱 D', amount: 150, billing_cycle: 'monthly', monthly_equiv: 150, status: 'cancel', payer: 'self', next_charge_date: iso(20), days_until: 20, cancel_by: iso(15) } ] }); },
     async hubAnswer(id, k, note) { await wait(300); sorry();
       const d = hub.open.concat(hub.answered).find(x => x.id === id); if (!d) throw new AdapterError('server', '找不到這筆');
       hub.open = hub.open.filter(x => x.id !== id); hub.answered = hub.answered.filter(x => x.id !== id);

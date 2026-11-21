@@ -32,7 +32,7 @@ export const CONFIG = {
          scanRequest: 'opp_scan_request', scanStatus: 'opp_scan_status',
          workUpdate: 'opp_work_update', setStatus: 'opp_set_status', workAdd: 'opp_work_add',
          msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', todoAdd: 'opp_todo_add', run: 'opp_run',
-         hubToday: 'hub_today', hubAnswer: 'hub_decision_answer' },   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
+         hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer' },   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
 
 export class AdapterError extends Error {
@@ -68,7 +68,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v32');
+  const { mockAdapter } = await import('./mock.js?v33');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -83,6 +83,13 @@ export const normMsgs = d => (Array.isArray(d) ? d : []).map(m => ({ id: +m.id |
 export const normHistory = h => (Array.isArray(h) ? h : []).map(e => ({ at: ts(e && e.at), actor: nick(str(e && e.actor)), action: str(e && e.action) })).filter(e => e.at && e.action);
 // 掃描請求單：後端籃名 → 前端籃名
 const BACK_BASKET = { company: 'company', personal: 'personal', other: 'other', funding: 'fund', achievement: 'honor' };
+// 錢頁：每月訂閱（只讀，hub_money_subs，只有管理員金鑰能讀）
+export function normMoney(d) {
+  d = d && typeof d === 'object' ? d : {};
+  return { totalActive: num(d.total_active) || 0, totalCompany: num(d.total_company_monthly) || 0,
+    items: (Array.isArray(d.items) ? d.items : []).map(r => ({ id: str(r.id), name: str(r.name), amount: num(r.amount) || 0, monthly: num(r.monthly_equiv) || 0, cycle: r.billing_cycle === 'yearly' ? 'yearly' : 'monthly',
+      status: ['active', 'idle', 'cancel'].includes(r.status) ? r.status : 'active', payer: r.payer === 'company' ? 'company' : 'self', account: str(r.account_name), next: str(r.next_charge_date), days: num(r.days_until) || 0, cancelBy: str(r.cancel_by) })) };
+}
 // 通告板「今天」頁（2026-11-19）：等你決定、正在跑、最近做完、各程式有沒有報到。欄位一律轉成字串或數字，畫面端再跳脫。
 export function normHub(d) {
   d = d && typeof d === 'object' ? d : {};
@@ -195,6 +202,7 @@ function liveAdapter() {
     async msgs(id) { return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80 })); },
     async say(id, body) { return rpc(R.msgAdd, { p_item_id: id || null, p_body: body }); },
     async hubToday() { return normHub(await rpc(R.hubToday, {})); },
+    async moneySubs() { return normMoney(await rpc(R.moneySubs, {})); },
     async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },
     async workAdd(title) { return card(await rpc(R.workAdd, { p_title: title }, 0, W)); },

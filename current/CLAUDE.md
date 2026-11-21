@@ -81,3 +81,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - Mac 上的同步程式：launchd `com.borry.hub-sync` 每 5 分鐘跑 `~/Claude-Projects/Tools/hub-sync/hub_sync.py`，把 `handoff/巡查待辦.md` 未勾的項目寫成決定、`handoff/交接帳.md` 新行寫成紀錄，並把 Borry 在面板上的回答追加到 `handoff/通告板回覆.md`。這支只讀兩個帳本，不改它們。
    - **在 LINE 或對話裡替 Borry 記答案（2026-11-19，Borry：「但是我希望line 也可以讓大器去處理通告版啊」）**：大器收到 Borry 本人的話，可以用 `hub_decision_answer_relay(p_id, p_answer_key, p_quote, p_note, p_via)` 把答案記上去，`p_quote` 一定要是他的原話；面板會顯示「你在 LINE 說的，大器代記」和原話，他可以在面板收回。`talk` 類（付款、刪檔、對外發訊）函式會擋，不能代記。收回用 `hub_decision_reopen_relay(p_id, p_quote)`。本機小工具：`~/Claude-Projects/Tools/hub-sync/hub_cli.py`（list、show、answer、reopen、ask、todo、today）。
    - 還沒做的：面板上的對話改走雲端（第三步）、各 AI 開工收工自動寫「正在跑」（第四步）。現在「正在跑」是空的屬正常。
+
+23. **底部五分頁外殼、錢頁（2026-11-22，v33）**：底部固定五個大分頁：今天、專案（專案、待辦、封存）、機會（四個籃子）、錢（訂閱）、生活（先放空）。原本上方的分頁變成各大分頁底下的小分頁，只有一個小分頁時不顯示。程式在 `js/app.js` 的 `GROUPS`；換大分頁會回到該組上次看的小分頁。桌機只顯示目前這組的欄位。
+   - 錢頁讀 `hub_money_subs(p_key)`（只讀每月訂閱，含下次扣款日、公司付或自付、年繳折月）。**只有管理員金鑰（can_admin）讀得到，AI協作金鑰會回 28000**，資料不經過 `kk_` 函式。退回：`drop function public.hub_money_subs(text)`，前端拿掉 `moneyLane`。
+   - 生活頁還是空的，內容等老大說要放什麼。sw.js 只清自己 `opp-shell-` 開頭的舊快取，不碰同網域其他面板。
