@@ -68,7 +68,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v29');
+  const { mockAdapter } = await import('./mock.js?v30');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -96,7 +96,7 @@ export function normHub(d) {
     jobs: arr(d.jobs).map(r => ({ id: str(r.id), agent: str(r.agent), machine: str(r.machine), project: str(r.project), title: str(r.title), note: str(r.note),
       status: ['queued', 'running', 'waiting_mac', 'waiting_you', 'done', 'failed'].includes(r.status) ? r.status : 'running', updatedAt: ts(r.updated_at) })),
     events: arr(d.events).map(r => ({ id: str(r.id), at: ts(r.at), actor: str(r.actor), project: str(r.project), summary: str(r.summary) })),
-    beats: arr(d.beats).map(r => ({ name: str(r.name), machine: str(r.machine), lastAt: ts(r.last_at), late: !!r.late })),
+    beats: arr(d.beats).map(r => ({ name: str(r.name), machine: str(r.machine), note: str(r.note), every: num(r.expect_every_s), lastAt: ts(r.last_at), late: !!r.late })),
   };
 }
 export function normScan(d) {

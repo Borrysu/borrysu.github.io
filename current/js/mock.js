@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normHub } from './adapter.js?v29';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normHub } from './adapter.js?v30';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -162,7 +162,7 @@ export function mockAdapter(modeStr) {
     answered: [{ id: 'h0', project: '系統', question: '示範：之前回過的一題', kind: 'choice', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - 2 * D).toISOString(), options: [{ key: 'ok', label: '照你建議的做' }], status: 'answered', answer_key: 'ok', answer_label: '照你建議的做', answer_note: flags.has('xss') ? badH : '', answer_via: flags.has('xss') ? badH : 'LINE', answer_quote: flags.has('xss') ? badH : '照建議', answered_at: new Date(Date.now() - 20 * H).toISOString(), picked_up_at: new Date(Date.now() - 19 * H).toISOString() }],
     jobs: [{ id: 'j1', agent: flags.has('xss') ? badH : '大器（Claude）', machine: 'Mac', title: flags.has('xss') ? badH : '木星 TAPIN 試看帶', status: 'waiting_mac', updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }],
     events: [{ id: 1, at: new Date(Date.now() - 2 * H).toISOString(), actor: flags.has('xss') ? badH : '大器（Claude）', summary: flags.has('xss') ? badH : '總控台亮相交付，等你定名字、櫃台、開工' }],
-    beats: [{ name: flags.has('xss') ? badH : 'Mac 同步', machine: 'MacBook', last_at: new Date(Date.now() - 2 * 60e3).toISOString(), late: false }, { name: '大器 LINE 收訊', machine: 'MacBook', last_at: new Date(Date.now() - 3 * H).toISOString(), late: true }] };
+    beats: [{ name: flags.has('xss') ? badH : 'Mac 同步', machine: 'MacBook', note: '巡查待辦與交接帳同步', expect_every_s: 300, last_at: new Date(Date.now() - 2 * 60e3).toISOString(), late: false }, { name: '大器 LINE 收訊', machine: 'MacBook', note: '8789 埠有在聽', expect_every_s: 300, last_at: new Date(Date.now() - 3 * H).toISOString(), late: true }] };
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }
   const scans = {};   // 示範：立即掃描叫過的紀錄（示範模式不會真的叫集集）
   const ping = () => listeners.forEach(f => f());

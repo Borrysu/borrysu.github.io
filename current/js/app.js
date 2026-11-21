@@ -1,6 +1,6 @@
 // 機會雷達主程式：狀態、畫面、事件。只透過 adapter.js 取得與寫入資料。
-import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v29';
-import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v29';
+import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v30';
+import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v30';
 
 const $ = s => document.querySelector(s);
 // 個人版不收公司標案（Borry 2026-11-17：「公司標案我機會雷達似乎就不用了」），公司案只留在封存與舊資料的標籤
@@ -347,9 +347,24 @@ function hcard(d) {
     (d.detail ? '<details class="hd"><summary>看細節</summary><p class="sbp">' + para(d.detail) + '</p></details>' : '') +
     '<p class="hmeta">' + esc(d.askedBy || '大器') + ' 問的，' + esc(agoTxt(d.createdAt)) + (d.origin && d.origin !== '大器' ? '，來自' + esc(d.origin) : '') + '</p>' + body + '</article>';
 }
+// 系統燈號頁（2026-11-21，面板工坊 Q5）：每支常駐程式最後一次報到、應報間隔、紅綠燈。資料來自 hub_today.beats（hub_beats 表）。
+const LIGHTS_TODO = ['公司 Mac（肉咖那台）', '公司 LINE 看門狗', '大器 LINE 看門狗', 'Grok Bot 每日灑掃', '集集機會掃描', '機會雷達提醒事項'];
+function everyTxt(s) { if (!s) return ''; const m = Math.round(s / 60); return m < 60 ? m + ' 分鐘' : Math.round(m / 60) + ' 小時'; }
+function lightsHTML() {
+  const h = S.hub, bs = h.beats.slice().sort((a, b) => (b.late - a.late) || a.name.localeCompare(b.name, 'zh-Hant'));
+  const bad = bs.filter(b => b.late).length;
+  const head = !h.loaded ? '<p class="lsum">讀取中</p>'
+    : !bs.length ? '<p class="lsum">還沒有程式來報到。</p>'
+    : bad ? '<p class="lsum bad"><i></i>' + bad + ' 支沒有按時報到</p>' : '<p class="lsum ok"><i></i>' + bs.length + ' 支都正常</p>';
+  const rows = bs.map(b => '<article class="lrow ' + (b.late ? 'l' : 'k') + '"><i aria-hidden="true"></i><div><h3>' + esc(b.name) + '<em>' + (b.late ? '沒報到' : '正常') + '</em></h3>' +
+    '<p>' + (b.machine ? esc(b.machine) + '・' : '') + '最後報到 ' + esc(agoTxt(b.lastAt) || '沒有紀錄') + (b.lastAt ? '（' + esc(fmtClock(b.lastAt)) + '）' : '') + '</p>' +
+    '<p class="lmeta">' + (b.every ? '應該每 ' + everyTxt(b.every) + '報一次，超過兩倍沒來就變紅' : '') + (b.note ? (b.every ? '・' : '') + esc(b.note) : '') + '</p></div></article>').join('');
+  return head + rows + '<h3 class="hh">還沒接上報到</h3><ul class="ltodo">' + LIGHTS_TODO.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
+    '<p class="sheet-note">這幾支接上之後會出現在上面。紅燈每天併進 11:00 那則 LINE，也還在接。</p>';
+}
 function todayLane() {
   const h = S.hub, loadingEmpty = !h.loaded && !h.err;
-  const beat = h.beats.length ? '<p class="hbeat">' + h.beats.map(b => '<span class="' + (b.late ? 'l' : 'k') + '">' + esc(b.name) + (b.late ? '：' + esc(agoTxt(b.lastAt)) + '之後沒再報到' : '：正常') + '</span>').join('') + '</p>' : '';
+  const beat = h.beats.length ? '<button class="hbeat" data-act="lights" type="button" aria-haspopup="dialog" aria-label="看系統燈號">' + h.beats.map(b => '<span class="' + (b.late ? 'l' : 'k') + '">' + esc(b.name) + (b.late ? '：' + esc(agoTxt(b.lastAt)) + '之後沒再報到' : '：正常') + '</span>').join('') + '<span class="go">燈號 ›</span></button>' : '';
   const dec = loadingEmpty ? skel() + skel()
     : h.err && !h.loaded ? '<div class="zero"><b>今天頁讀不到</b><span>' + esc(h.err) + '</span></div>'
     : h.open.length ? h.open.map(hcard).join('')
@@ -709,6 +724,13 @@ function folderHTML(it) {
   return '<div class="fold">' + top + progressHTML(it) + chatHTML(it.id) + workHTML(it) + payBox + filesHTML(it) + histHTML(it) + closeBox(it) + '</div>';
 }
 function renderDrawer() {
+  if (S.drawer && S.drawer.view === 'lights') {  // 系統燈號
+    const dr = $('#drawer');
+    dr.innerHTML = '<div class="dh"><span>系統燈號</span><button class="xb" data-act="close-drawer" type="button" aria-label="關閉">×</button></div><div class="db"><div class="dt">' + lightsHTML() + '</div></div>' +
+      '<div class="df"><button class="btn btn-primary" data-act="close-drawer" type="button">回到面板</button></div>';
+    dr.dataset.key = 'lights'; dr.classList.add('show');
+    return;
+  }
   if (S.drawer && S.drawer.view === 'chat') {    // 整個面板跟大器說
     const dr = $('#drawer');
     if (editing(dr) && dr.dataset.key === 'chat') return;
@@ -743,7 +765,7 @@ function renderDrawer() {
 
 function renderAll() {
   renderLive(); renderNotice(); renderSummary(); renderBoard(); renderSheet();
-  if (S.drawer) { if (S.drawer.view !== 'chat' && !get(S.drawer.id)) closeDrawer(true); else renderDrawer(); }
+  if (S.drawer) { if (S.drawer.view !== 'chat' && S.drawer.view !== 'lights' && !get(S.drawer.id)) closeDrawer(true); else renderDrawer(); }
   syncOverlay();
 }
 
@@ -986,6 +1008,7 @@ document.addEventListener('click', e => {
           e => { act.disabled = false; toast('沒有叫成：' + reason(e), { bad: true }); }); break; }
       case 'chat': openChat(id); break;
       case 'chat-open': openChat(''); break;
+      case 'lights': if (!S.drawer) lastFocus = document.activeElement; S.drawer = { id: '', view: 'lights' }; renderDrawer(); syncOverlay(); $('#drawer .xb')?.focus({ preventScroll: true }); break;
       case 'chat-send': sendMsg(id || ''); break;
       case 'run': actRun(id); break;
       case 'go-doing': closeSheet(); S.tab = 'doing'; renderBoard(); break;

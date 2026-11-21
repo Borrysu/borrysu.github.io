@@ -516,7 +516,8 @@ html,body{overscroll-behavior-x:none}
 .hnote{display:flex;gap:6px;margin-top:8px;align-items:stretch}
 .hnote textarea{flex:1;min-width:0;min-height:46px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-size:15px;font-family:inherit;line-height:1.5;resize:vertical}
 .hnote .btn{flex:none;min-height:46px;padding:0 12px;font-size:14px}
-.hbeat{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.hbeat{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;background:none;border:0;padding:0;font:inherit;cursor:pointer;text-align:left;max-width:100%}
+.hbeat .go{background:none;color:var(--mut);padding-left:2px}
 .hbeat span{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:99px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hbeat .k{background:rgba(255,255,255,.7);color:var(--mut)}.hbeat .l{background:#fde2df;color:#a3352a}
 .hl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
@@ -526,3 +527,16 @@ html,body{overscroll-behavior-x:none}
 .hl li.none{color:var(--mut)}
 .hans{margin:4px 0 2px;font-size:14px}.hans summary{min-height:40px;display:flex;align-items:center;font-weight:700;color:var(--mut);cursor:pointer}
 .ha{background:rgba(255,255,255,.7);border-radius:12px;padding:10px 12px;margin-bottom:6px}.ha .btn{min-height:40px;margin-top:6px;font-size:14px}
+
+/* 系統燈號（v30） */
+.lsum{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:800;margin:4px 0 14px}
+.lsum i,.lrow>i{width:12px;height:12px;border-radius:50%;flex:none;background:#9aa6a3}
+.lsum.ok i,.lrow.k>i{background:#2f9a5a}.lsum.bad i,.lrow.l>i{background:#d0453a}
+.lsum.bad{color:#a3352a}
+.lrow{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid rgba(0,0,0,.08)}
+.lrow>i{margin-top:6px}.lrow>div{min-width:0}
+.lrow h3{font-size:15px;margin:0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.lrow h3 em{font-style:normal;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:#e3f2e8;color:#2a7a48}
+.lrow.l h3 em{background:#fde2df;color:#a3352a}
+.lrow p{margin:2px 0 0;font-size:13.5px;color:var(--mut);overflow-wrap:anywhere}
+.ltodo{margin:6px 0 0;padding-left:1.2em;font-size:14px;color:var(--mut)}
