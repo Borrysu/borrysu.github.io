@@ -1,0 +1,1806 @@
+<!doctype html>
+<html lang="zh-Hant" data-skin="1" data-theme="light" data-variant="A">
+<head><meta name="robots" content="noindex,nofollow">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>塔塔記帳｜三種版樣原型（設計提案，假資料）</title>
+<style>
+/* 後備值：themes.css 沒載到時仍看得見。:where 權重為零，不會蓋過 themes.css。 */
+:where(html){--bg:#fff;--bg2:#f6f6f4;--surface:#fff;--surface2:#f2f2f0;--ink:#111;--ink2:#333;--muted:#666;--line:#e4e4e0;--accent:#FF6700;--accent2:#111;--good:#1a7f4e;--warn:#a85b00;--bad:#c62828;--radius:18px;--radius-sm:10px;--shadow:0 8px 30px rgba(0,0,0,.08);--font-display:system-ui,"Noto Sans TC",sans-serif;--font-body:system-ui,"Noto Sans TC",sans-serif;--font-num:system-ui,sans-serif;--tata-body:#FF6700;--tata-eye:#fff;--blur:0px;--motion-ease:cubic-bezier(.2,.7,.2,1);--motion-dur:240ms}
+:where(html){--on-accent:#111;--on-bad:#fff;--dur:min(var(--motion-dur),400ms)}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden;display:flex;flex-direction:column;-webkit-text-size-adjust:100%}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+h1,h2,h3,p{margin:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.amt{white-space:nowrap;font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.amt i{font-style:normal;font-size:calc(var(--x-cur-scale,.56)*1em);color:var(--muted);margin-right:.12em;font-weight:500}
+.amt b{font-weight:inherit}
+.masked .amt b{color:transparent;background:var(--line);border-radius:6px}
+.vh{position:absolute;left:-9999px;display:inline-block;min-width:44px;min-height:44px}
+
+/* 原型控制列（不是 App 的一部分） */
+.pbar{flex:none;display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;padding:4px 8px;background:var(--surface2);border-bottom:1px solid var(--line);font-size:13px;z-index:5}
+.pbar .grp{display:flex;align-items:center;gap:4px}
+.pbar .lab{color:var(--muted);margin-right:2px;font-size:12px}
+.pbar button,.pbar select{min-width:44px;height:44px;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:0 10px}
+.pbar button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pbar select{max-width:104px;padding:0 4px}
+.pbar #ptT{margin-left:6px}
+.pbar .sp{flex:1}
+.pbar.min .hideable{display:none}
+
+.stage{flex:1;min-height:0;display:flex;justify-content:center;align-items:stretch}
+.aside{display:none}
+.phone{position:relative;width:100%;max-width:520px;height:100%;overflow:hidden;background-color:var(--bg);background-image:var(--x-atmos,linear-gradient(180deg,var(--bg2),var(--bg) 220px));background-repeat:no-repeat;isolation:isolate}
+.app{height:100%;display:flex;flex-direction:column}
+
+/* 頁首 */
+.hd{flex:none;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px}
+.tata-btn{flex:none;width:52px;height:52px;border:0;background:none;padding:0;border-radius:50%;display:grid;place-items:center;transition:transform var(--dur) var(--motion-ease)}
+.tata-btn:active{transform:scale(.94)}
+.tface{display:block;line-height:0}
+.hd-t{flex:1;min-width:0}
+.hd-t h1{font-family:var(--font-display);font-size:20px;line-height:1.2;font-weight:var(--x-display-weight,700)}
+.hd-t p{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hd-t p b{color:var(--ink);font-weight:600}
+.ib{flex:none;width:44px;height:44px;border:0;background:none;border-radius:50%;display:grid;place-items:center;color:var(--ink2)}
+.ib svg,.tab svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ib[aria-pressed="true"]{background:var(--surface2)}
+
+.banner{flex:none;margin:0 12px 8px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--line);font-size:14px;display:flex;gap:10px;align-items:center}
+.banner .mk{flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--warn);color:var(--warn);display:grid;place-items:center;font-weight:700;font-size:13px}
+.banner p{flex:1}
+
+.scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.pg{padding:4px 16px 96px;display:flex;flex-direction:column;gap:12px;min-height:100%}
+.pg.in-r{animation:inR var(--dur) var(--motion-ease)}
+.pg.in-l{animation:inL var(--dur) var(--motion-ease)}
+.pg.in-f{animation:inF var(--dur) var(--motion-ease)}
+@keyframes inR{from{opacity:0;transform:translateX(10px)}}
+@keyframes inL{from{opacity:0;transform:translateX(-10px)}}
+@keyframes inF{from{opacity:0;transform:translateY(8px)}}
+@keyframes grow{from{transform:scaleX(0)}}
+
+/* 分頁列與動作鍵 */
+.tabbar{flex:none;position:relative;display:grid;grid-template-columns:1fr 1fr 76px 1fr 1fr;align-items:end;padding:4px 6px calc(4px + env(safe-area-inset-bottom));border-top:1px solid var(--line);background:linear-gradient(var(--surface),var(--surface)),var(--x-surface-solid,var(--bg))}
+.tab{border:0;background:none;min-height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--muted);border-radius:12px;position:relative}
+.tab[aria-current="page"]{color:var(--ink);font-weight:700}
+.tab[aria-current="page"]::after{content:"";position:absolute;top:2px;width:18px;height:3px;border-radius:2px;background:var(--accent)}
+.tab .bdg{position:absolute;top:4px;left:calc(50% + 8px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--ink);color:var(--bg);font-size:11px;line-height:18px;font-weight:700}
+.fab{justify-self:center;width:60px;height:60px;border-radius:50%;border:4px solid var(--bg);background:var(--accent);color:var(--x-on-accent,var(--on-accent));display:grid;place-items:center;transform:translateY(-14px);box-shadow:var(--shadow);transition:transform var(--dur) var(--motion-ease)}
+.fab:active{transform:translateY(-14px) scale(.93)}
+.fab svg{width:26px;height:26px;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;fill:none}
+
+/* 共用元件 */
+.card{background:var(--surface);border:var(--x-border-w,1px) solid var(--line);border-radius:var(--radius);padding:14px;box-shadow:var(--shadow)}
+.has-blur .card,.has-blur .cf,.has-blur .msg-b,.has-blur .dcard{-webkit-backdrop-filter:blur(var(--blur));backdrop-filter:blur(var(--blur))}
+.lab{font-size:13px;color:var(--muted)}
+.sub{font-size:13px;color:var(--muted)}
+.chev{color:var(--muted);font-size:18px;flex:none}
+.btn{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-weight:600;font-size:15px;white-space:nowrap;transition:transform 120ms var(--motion-ease),opacity 120ms}
+.btn:active{transform:var(--x-press,scale(.96))}
+.btn.pri{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.warn{border-color:var(--bad);color:var(--bad)}
+.btn.wide{width:100%}
+.btn[disabled],.btn[aria-disabled="true"]{opacity:.45}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.g{flex:none;width:36px;height:36px;border-radius:var(--radius-sm);background:var(--surface2);border:1px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:15px;font-family:var(--font-display)}
+.row{display:flex;align-items:center;gap:10px;width:100%;min-height:56px;padding:8px 0;border:0;background:none;text-align:left}
+.row-m{flex:1;min-width:0;display:flex;flex-direction:column}
+.row-m b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-m small{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .amt{font-weight:600}
+.row + .row,.list > * + *{border-top:1px solid var(--line)}
+.tag{display:inline-block;font-size:12px;padding:1px 7px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);margin-left:6px;vertical-align:1px}
+.tag.act{border-color:var(--accent);color:var(--ink)}
+.tag.act::before{content:"● ";color:var(--accent)}
+.pos{color:var(--good)}
+.neg{color:var(--bad)}
+.eyes{display:inline-block;flex:none;width:18px;height:14px;position:relative;margin-right:6px;vertical-align:-1px}
+.eyes::before,.eyes::after{content:"";position:absolute;top:0;width:5px;height:14px;border-radius:3px;background:var(--tata-body);transform:rotate(-8deg)}
+.eyes::before{left:3px}.eyes::after{left:11px}
+.bul{position:relative;height:8px;border-radius:var(--x-bar-r,4px);background:var(--surface2);border:1px solid var(--line);margin-top:8px}
+.bul.big{height:14px;border-radius:var(--x-bar-r,7px)}
+.bul-f{position:absolute;inset:0;border-radius:inherit;background:var(--ink);transform-origin:left center;transform:scaleX(var(--p))}
+.fresh .bul-f{animation:grow var(--dur) var(--motion-ease)}
+.bul-t{position:absolute;top:-4px;bottom:-4px;left:calc(var(--t)*100%);width:2px;background:var(--accent);border-radius:1px}
+.bul.big .bul-t::after{content:"今天";position:absolute;top:100%;left:50%;transform:translateX(-50%);font-size:11px;color:var(--muted);white-space:nowrap;margin-top:1px}
+.bul.over .bul-f{background:repeating-linear-gradient(135deg,var(--bad) 0 6px,transparent 6px 9px),var(--surface2);border:1px solid var(--bad)}
+.bul em{position:absolute;right:0;top:-20px;font-style:normal;font-size:12px;font-weight:700;color:var(--bad)}
+.h3{font-family:var(--font-display);font-size:15px;font-weight:700;margin-top:6px;display:flex;justify-content:space-between;align-items:baseline}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:14px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.empty{text-align:center;padding:36px 12px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.empty h2{font-family:var(--font-display);font-size:18px}
+.empty p{color:var(--muted);font-size:14px;max-width:26em}
+.skel{border-radius:var(--radius);background:var(--surface2);height:88px;opacity:.7}
+.skel.s{height:44px}
+.gray-line{color:var(--muted);font-size:14px;padding:6px 0}
+
+/* A 塔塔說 */
+.strip{position:sticky;top:0;z-index:2;display:grid;grid-template-columns:1fr auto;gap:0 8px;align-items:end;text-align:left;width:100%;padding:12px 14px 16px;border-radius:var(--radius);border:var(--x-border-w,1px) solid var(--line);background:linear-gradient(var(--surface),var(--surface)),var(--x-surface-solid,var(--bg));box-shadow:var(--shadow)}
+.strip .lab{grid-column:1/-1}
+.strip .big{font-size:34px;font-weight:var(--x-num-weight,700);line-height:1.15}
+.strip .sub{text-align:right;padding-bottom:5px}
+.strip .bul{grid-column:1/-1}
+.day{font-size:12px;color:var(--muted);text-align:center;letter-spacing:.06em;margin-top:6px}
+.msg{display:flex;align-items:flex-start;gap:2px}
+.msg .eyes{margin-top:14px}
+.msg-b{background:var(--surface);border:var(--x-border-w,1px) solid var(--line);border-radius:4px var(--radius) var(--radius) var(--radius);padding:10px 14px;max-width:calc(100% - 26px)}
+.msg-b p b{font-family:var(--font-num);font-variant-numeric:tabular-nums}
+.msg.me{justify-content:flex-end}
+.msg.me .msg-b{background:var(--ink);color:var(--bg);border-color:var(--ink);border-radius:var(--radius) 4px var(--radius) var(--radius)}
+.msg.quiet .msg-b{background:none;border-style:dashed;color:var(--muted)}
+.cf{background:var(--surface);border:var(--x-border-w,1px) solid var(--line);box-shadow:var(--shadow);border-radius:var(--radius);padding:4px 14px 14px}
+[data-variant="A"] .pg > .cf{margin-left:26px}
+.cf-why{font-size:14px;color:var(--ink2)}
+.composer{flex:none;display:none;gap:8px;padding:8px 12px;border-top:1px solid var(--line);background:linear-gradient(var(--surface),var(--surface)),var(--x-surface-solid,var(--bg))}
+.composer.on{display:flex}
+.composer input,.bub input,.field input{flex:1;min-width:0;height:44px;border-radius:999px;border:1px solid var(--line);background:var(--bg);padding:0 14px;font-size:16px}
+
+/* B 儀表板 */
+.hero{display:flex;gap:12px;align-items:center;border-color:var(--ink);border-width:1.5px}
+.hero .tx{flex:1;min-width:0}
+.hero .tx b{display:block;font-family:var(--font-display);font-size:19px;line-height:1.3}
+.tile{display:block;width:100%;text-align:left}
+.tile .big{display:block;font-size:32px;font-weight:var(--x-num-weight,700);line-height:1.2}
+.tile .mid{display:block;font-size:24px;font-weight:var(--x-num-weight,700);line-height:1.25}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.catc .mid{font-size:22px}
+.hbar{display:grid;grid-template-columns:44px 1fr auto;gap:8px;align-items:center;min-height:36px;font-size:14px}
+.hbar .t{height:10px;border-radius:5px;background:var(--surface2)}
+.hbar .t span{display:block;height:100%;border-radius:5px;background:var(--ink);transform-origin:left center;transform:scaleX(var(--p))}
+.fresh .hbar .t span{animation:grow var(--dur) var(--motion-ease)}
+.hs{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px;scroll-snap-type:x proximity;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.hs > *{flex:none;width:168px;scroll-snap-align:start}
+.upc{display:flex;flex-direction:column;gap:2px;text-align:left}
+.upc .when{font-size:13px;font-weight:600}
+.upc .when::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.upc.soon .when::before{background:var(--accent)}
+.upc b{font-size:15px}
+
+/* C 一次一張 */
+[data-variant="C"] .pg{padding-bottom:16px}
+.deck{flex:1;display:flex;flex-direction:column;gap:12px;min-height:0}
+.segs{display:flex;gap:4px}
+.segs i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.segs i.done{background:var(--muted)}
+.segs i.on{background:var(--ink)}
+.deck-stage{flex:1;display:grid;min-height:340px}
+.dcard{grid-area:1/1;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:24px 22px;border-radius:calc(var(--radius) + 8px);background:var(--surface);border:var(--x-border-w,1px) solid var(--line);box-shadow:var(--shadow);touch-action:pan-y;user-select:none;-webkit-user-select:none}
+.dcard.snap{transition:transform var(--dur) var(--motion-ease),opacity var(--dur)}
+.dcard.in{animation:cardIn var(--dur) var(--motion-ease)}
+@keyframes cardIn{from{opacity:0;transform:scale(.96)}}
+.dcard .kick{font-size:13px;color:var(--muted)}
+.dcard .ttl{font-family:var(--font-display);font-size:26px;font-weight:700;line-height:1.25}
+.dcard .huge{font-size:52px;font-weight:var(--x-num-weight,700);line-height:1.1;letter-spacing:-.01em}
+.dcard .g{width:52px;height:52px;font-size:22px}
+.dcard .acts{margin-top:14px}
+.dcard .acts .btn{flex:1;min-height:52px}
+.dcard.center{align-items:center;text-align:center}
+.deck-nav{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--muted);font-size:13px}
+
+/* 泡泡、抽屜、提示 */
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.42);opacity:0;pointer-events:none;transition:opacity var(--dur);z-index:10}
+.scrim.on{opacity:1;pointer-events:auto}
+.bub{position:absolute;left:12px;right:12px;top:calc(64px + env(safe-area-inset-top));z-index:12;background:linear-gradient(var(--surface),var(--surface)),var(--x-surface-solid,var(--bg));border:1px solid var(--line);border-radius:6px var(--radius) var(--radius) var(--radius);box-shadow:var(--shadow);padding:14px;display:flex;flex-direction:column;gap:10px;transform-origin:26px -20px;transform:scale(.9);opacity:0;visibility:hidden;transition:transform var(--dur) var(--motion-ease),opacity var(--dur),visibility 0s var(--dur);max-height:70%;overflow-y:auto}
+.bub.on{transform:none;opacity:1;visibility:visible;transition-delay:0s}
+.bub .say{font-size:17px;font-weight:600}
+.bub .log{display:flex;flex-direction:column;gap:8px}
+.bub form,.composer{align-items:center}
+.bub form{display:flex;gap:8px}
+.bub .ctx{font-size:13px;color:var(--muted);border:1px dashed var(--line);border-radius:var(--radius-sm);padding:6px 10px}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:11;max-height:88%;display:flex;flex-direction:column;background:linear-gradient(var(--surface),var(--surface)),var(--x-surface-solid,var(--bg));border-radius:calc(var(--radius) + 6px) calc(var(--radius) + 6px) 0 0;border-top:1px solid var(--line);box-shadow:var(--shadow);transform:translateY(102%);visibility:hidden;transition:transform var(--dur) var(--motion-ease),visibility 0s var(--dur)}
+.sheet.on{transform:none;visibility:visible;transition-delay:0s}
+.sheet::after{content:"";position:absolute;left:0;right:0;top:100%;height:80px;background:inherit}
+.sheet.tall{height:92%;max-height:92%}
+.sh-h{flex:none;display:flex;align-items:center;gap:4px;padding:8px 8px 4px 16px}
+.sh-h h2{flex:1;font-family:var(--font-display);font-size:18px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sh-back{min-height:44px;border:0;background:none;padding:0 8px 0 0;color:var(--ink2);font-size:15px;white-space:nowrap}
+.sh-b{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:4px 16px calc(20px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+.sh-b > *{flex-shrink:0}
+.sh-b.sw{animation:inF var(--dur) var(--motion-ease)}
+.lead{font-size:17px;font-weight:600}
+.facts{margin:0;display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:15px}
+.facts dt{color:var(--muted)}
+.facts dd{margin:0;text-align:right;min-width:0}
+.bars{display:flex;align-items:flex-end;gap:8px;height:110px;position:relative;padding-top:6px}
+.bars .b{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%;font-size:12px;color:var(--muted)}
+.bars .b i{width:100%;border-radius:6px 6px 2px 2px;background:var(--line);height:calc(var(--h)*82px);min-height:2px}
+.bars .b.now i{background:var(--ink)}
+.bars .b.part i{background:none;border:1.5px dashed var(--ink)}
+.bars .avg{position:absolute;left:0;right:0;bottom:calc(18px + var(--h)*82px);border-top:1.5px dashed var(--muted);font-size:11px;color:var(--muted);text-align:right;line-height:1}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label,.flab{font-size:13px;color:var(--muted)}
+.field input{border-radius:var(--radius-sm)}
+.cgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.cbtn{min-height:60px;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:12px;padding:4px 0}
+.cbtn b{font-family:var(--font-display);font-size:17px}
+.cbtn[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.acc{min-height:64px;border:1px solid var(--line);background:var(--surface2);border-radius:var(--radius-sm);padding:8px 12px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;font-size:14px}
+.acc small{color:var(--muted);font-size:12px}
+.acc[aria-pressed="true"]{border:2px solid var(--ink);background:var(--surface)}
+.check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px}
+.check input{width:22px;height:22px;accent-color:var(--ink);flex:none}
+.amtbox{text-align:center;font-size:48px;font-weight:var(--x-num-weight,700);line-height:1.1;padding:2px 0}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:auto}
+.key{min-height:52px;border:0;border-radius:var(--radius-sm);background:var(--surface2);font-size:22px;font-family:var(--font-num)}
+.key:active{background:var(--line)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border-radius:999px;background:var(--surface2)}
+.seg button{min-height:44px;border:0;background:none;border-radius:999px;font-weight:600;font-size:15px;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.hint{font-size:13px;color:var(--muted);text-align:center;min-height:20px}
+details summary{min-height:44px;display:flex;align-items:center;font-weight:600;font-size:15px;cursor:pointer}
+details p{font-size:15px;color:var(--ink2)}
+.toast{position:absolute;left:12px;right:12px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:14;display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:15px;box-shadow:var(--shadow);transform:translateY(16px);opacity:0;visibility:hidden;transition:transform var(--dur) var(--motion-ease),opacity var(--dur),visibility 0s var(--dur)}
+.toast.on{transform:none;opacity:1;visibility:visible;transition-delay:0s}
+.cmp .toast{bottom:calc(152px + env(safe-area-inset-bottom))}
+.toast p{flex:1;min-width:0;padding:8px 0}
+.toast button{min-height:44px;padding:0 16px;border-radius:999px;border:1px solid var(--bg);background:none;color:var(--bg);font-weight:700}
+
+/* 桌機：手機框置中，兩側放說明與快捷 */
+@media (min-width:900px){
+  .stage{align-items:center;gap:36px;padding:20px}
+  .phone{width:390px;flex:none;height:min(844px,100%);border-radius:44px;border:1px solid var(--line);box-shadow:var(--shadow)}
+  .aside{display:flex;flex-direction:column;gap:10px;width:300px;max-height:100%;overflow-y:auto;font-size:14px;color:var(--ink2)}
+  .aside h2{font-family:var(--font-display);font-size:22px;color:var(--ink)}
+  .aside h3{font-size:13px;color:var(--muted);font-weight:600;margin-top:8px}
+  .aside ul{margin:0;padding-left:1.2em}
+  .aside .jump{display:flex;flex-wrap:wrap;gap:6px}
+  .aside .jump button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px}
+  .aside .jump button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .pbar.min .hideable{display:flex}
+  #pbMin{display:none}
+}
+@media (max-height:500px){.hd{padding-top:4px;padding-bottom:4px}.pbar{padding:2px 10px}}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important}
+  .pg.in-r,.pg.in-l,.pg.in-f,.dcard.in,.sh-b.sw{animation:none}
+}
+</style>
+<style>@charset "UTF-8";
+/* 塔塔記帳設計提案｜themes.css｜單 B｜20261122
+   由 _wB/build_themes.mjs 產生，要改色改 build 檔再重產，不要手改這一份。
+   五套外觀：[data-skin="1"] 暖紙帳簿、"2" 深夜片場、"3" 玻璃霧光、"4" 高對比大字、"5" 插畫吉祥物。
+   深色：同一元素或任一祖先加 [data-theme="dark"]。沒寫 data-skin 時等同外觀 1。
+   契約變數 24 個（名稱照共用契約）：--bg --bg2 --surface --surface2 --ink --ink2 --muted --line --accent --accent2 --good --warn --bad --radius --radius-sm --shadow --font-display --font-body --font-num --tata-body --tata-eye --blur --motion-ease --motion-dur
+   加值變數（--x- 前綴，非契約，可不用）：
+     --x-on-accent 放在 --accent 色塊上的文字色（對比 AA）；--x-atmos 頁面氛圍光（background-image）；
+     --x-grain 顆粒透明度；--x-border-w 卡片外框粗細；--x-surface-solid／--x-surface2-solid 玻璃皮的實色後備；
+     --x-num-weight、--x-num-track、--x-cur-scale 數字字重、字距、貨幣符號縮小比；
+     --x-ring-w、--x-ring-cap、--x-ring-sweep、--x-ring-rot、--x-ring-outline 預算環；--x-bar-r 進度條圓角；
+     --x-press 按下的 transform；--x-label-track 小標字距；--x-display-weight 標題字重。
+   用色規則：--accent 在淺色是深焦橘（當文字與線條都過 4.5:1），鮮橘 #FF6700 只留給塔塔本體 --tata-body。
+   數字一律加 font-variant-numeric: tabular-nums（.tk-num 已含）。 */
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;900&family=Chiron+GoRound+TC:wght@500;700;900&family=Source+Serif+4:wght@500;600;700&family=Rubik:wght@500;700&family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@500;700&family=Sora:wght@300;500;700&family=Inter:wght@500;700;900&family=Fredoka:wght@500;700&display=swap");
+
+/* ===== 外觀 1｜暖紙帳簿｜淺 ===== */
+:root:not([data-skin]),
+[data-skin="1"] {
+  color-scheme: light;
+  --bg: #F1ECE4;
+  --bg2: #E4DBCD;
+  --surface: #FCF9F3;
+  --surface2: #F0E9DD;
+  --ink: #23201B;
+  --ink2: #4A443B;
+  --muted: #5C5449;
+  --line: #D8CEBF;
+  --accent: #923606;
+  --accent2: #27544A;
+  --good: #235C32;
+  --warn: #724A00;
+  --bad: #982B1A;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 0 rgba(255,255,255,.75) inset, 0 10px 26px -14px rgba(74,58,36,.32);
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Source Serif 4", "Noto Serif TC", Georgia, serif;
+  --tata-body: #F56200;
+  --tata-eye: #FFFFFF;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.2,.7,.2,1);
+  --motion-dur: 260ms;
+  --x-border-w: 1px;
+  --x-num-weight: 600;
+  --x-num-track: -0.01em;
+  --x-cur-scale: .46;
+  --x-ring-w: 7;
+  --x-ring-cap: round;
+  --x-ring-sweep: 1;
+  --x-ring-rot: -90deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 4px;
+  --x-press: translateY(1px);
+  --x-label-track: .08em;
+  --x-display-weight: 900;
+  --x-on-accent: #FFFFFF;
+  --x-atmos: linear-gradient(180deg, rgba(140,118,92,.16) 0%, rgba(140,118,92,0) 34%);
+  --x-grain: .07;
+  --x-surface-solid: #FCF9F3;
+  --x-surface2-solid: #F0E9DD;
+}
+/* ===== 外觀 1｜暖紙帳簿｜深 ===== */
+:root:not([data-skin])[data-theme="dark"],
+[data-skin="1"][data-theme="dark"],
+[data-theme="dark"] [data-skin="1"]:not([data-theme="light"]),
+[data-skin="1"] [data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171411;
+  --bg2: #2A1F18;
+  --surface: #221E1A;
+  --surface2: #2E2823;
+  --ink: #F3EDE2;
+  --ink2: #D2C9BB;
+  --muted: #A99F90;
+  --line: #3D352D;
+  --accent: #FF8A3D;
+  --accent2: #8FC7B2;
+  --good: #7FCB93;
+  --warn: #E8B65A;
+  --bad: #F2907C;
+  --radius: 20px;
+  --radius-sm: 12px;
+  --shadow: 0 1px 0 rgba(255,255,255,.05) inset, 0 14px 30px -16px rgba(0,0,0,.7);
+  --font-display: "Noto Serif TC", "Songti TC", serif;
+  --font-body: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Source Serif 4", "Noto Serif TC", Georgia, serif;
+  --tata-body: #FF6700;
+  --tata-eye: #1B1410;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.2,.7,.2,1);
+  --motion-dur: 260ms;
+  --x-border-w: 1px;
+  --x-num-weight: 600;
+  --x-num-track: -0.01em;
+  --x-cur-scale: .46;
+  --x-ring-w: 7;
+  --x-ring-cap: round;
+  --x-ring-sweep: 1;
+  --x-ring-rot: -90deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 4px;
+  --x-press: translateY(1px);
+  --x-label-track: .08em;
+  --x-display-weight: 900;
+  --x-on-accent: #1B1008;
+  --x-atmos: linear-gradient(180deg, rgba(120,62,34,.42) 0%, rgba(120,62,34,0) 36%);
+  --x-grain: .06;
+  --x-surface-solid: #221E1A;
+  --x-surface2-solid: #2E2823;
+}
+
+/* ===== 外觀 2｜深夜片場｜淺 ===== */
+[data-skin="2"] {
+  color-scheme: light;
+  --bg: #EDF1F6;
+  --bg2: #DEE6F0;
+  --surface: #FFFFFF;
+  --surface2: #F1F5FA;
+  --ink: #0F1B2D;
+  --ink2: #33435A;
+  --muted: #495971;
+  --line: #D0DAE7;
+  --accent: #A83C07;
+  --accent2: #085E5A;
+  --good: #11602F;
+  --warn: #734B00;
+  --bad: #A51F18;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 0 0 1px rgba(15,27,45,.04), 0 10px 24px -14px rgba(15,27,45,.28);
+  --font-display: "Space Grotesk", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --tata-body: #FA6400;
+  --tata-eye: #FFFFFF;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.42,0,.58,1);
+  --motion-dur: 200ms;
+  --x-border-w: 1px;
+  --x-num-weight: 700;
+  --x-num-track: -0.03em;
+  --x-cur-scale: .42;
+  --x-ring-w: 9;
+  --x-ring-cap: butt;
+  --x-ring-sweep: .75;
+  --x-ring-rot: 135deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 3px;
+  --x-press: scale(.98);
+  --x-label-track: .14em;
+  --x-display-weight: 700;
+  --x-on-accent: #FFFFFF;
+  --x-atmos: linear-gradient(180deg, rgba(15,27,45,.05) 0%, rgba(15,27,45,0) 30%);
+  --x-grain: 0;
+  --x-surface-solid: #FFFFFF;
+  --x-surface2-solid: #F1F5FA;
+}
+/* ===== 外觀 2｜深夜片場｜深 ===== */
+[data-skin="2"][data-theme="dark"],
+[data-theme="dark"] [data-skin="2"]:not([data-theme="light"]),
+[data-skin="2"] [data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0A1220;
+  --bg2: #101B2E;
+  --surface: #131F35;
+  --surface2: #1B2A45;
+  --ink: #EEF3FA;
+  --ink2: #BCC8DA;
+  --muted: #93A2B9;
+  --line: #27374F;
+  --accent: #FF7A1F;
+  --accent2: #4FD1C5;
+  --good: #5EDC8A;
+  --warn: #F2C14E;
+  --bad: #FF8078;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: 0 0 0 1px rgba(255,255,255,.05), 0 14px 34px -18px rgba(0,0,0,.85);
+  --font-display: "Space Grotesk", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --tata-body: #FF6700;
+  --tata-eye: #0A1220;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.42,0,.58,1);
+  --motion-dur: 200ms;
+  --x-border-w: 1px;
+  --x-num-weight: 700;
+  --x-num-track: -0.03em;
+  --x-cur-scale: .42;
+  --x-ring-w: 9;
+  --x-ring-cap: butt;
+  --x-ring-sweep: .75;
+  --x-ring-rot: 135deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 3px;
+  --x-press: scale(.98);
+  --x-label-track: .14em;
+  --x-display-weight: 700;
+  --x-on-accent: #160B03;
+  --x-atmos: radial-gradient(120% 60% at 85% -10%, rgba(255,122,31,.16) 0%, rgba(255,122,31,0) 60%);
+  --x-grain: 0;
+  --x-surface-solid: #131F35;
+  --x-surface2-solid: #1B2A45;
+}
+
+/* ===== 外觀 3｜玻璃霧光｜淺 ===== */
+[data-skin="3"] {
+  color-scheme: light;
+  --bg: #E7ECF7;
+  --bg2: #F5E7E1;
+  --surface: rgba(255,255,255,.62);
+  --surface2: rgba(255,255,255,.84);
+  --ink: #141A2E;
+  --ink2: #38415E;
+  --muted: #4D5775;
+  --line: rgba(20,26,46,.14);
+  --accent: #983607;
+  --accent2: #274F99;
+  --good: #17643E;
+  --warn: #784E00;
+  --bad: #A62626;
+  --radius: 26px;
+  --radius-sm: 16px;
+  --shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 18px 40px -22px rgba(40,56,110,.45);
+  --font-display: "Sora", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Sora", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --tata-body: #FA6400;
+  --tata-eye: #FFFFFF;
+  --blur: 22px;
+  --motion-ease: cubic-bezier(.22,1,.36,1);
+  --motion-dur: 380ms;
+  --x-border-w: 1px;
+  --x-num-weight: 300;
+  --x-num-track: -0.035em;
+  --x-cur-scale: .4;
+  --x-ring-w: 11;
+  --x-ring-cap: round;
+  --x-ring-sweep: 1;
+  --x-ring-rot: -90deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 999px;
+  --x-press: scale(.97);
+  --x-label-track: .04em;
+  --x-display-weight: 500;
+  --x-on-accent: #FFFFFF;
+  --x-atmos: radial-gradient(90% 55% at 88% 0%, rgba(255,150,90,.38) 0%, rgba(255,150,90,0) 62%), radial-gradient(100% 60% at 0% 100%, rgba(120,150,255,.34) 0%, rgba(120,150,255,0) 60%);
+  --x-grain: .05;
+  --x-surface-solid: #F6F8FC;
+  --x-surface2-solid: #FBFCFE;
+}
+/* ===== 外觀 3｜玻璃霧光｜深 ===== */
+[data-skin="3"][data-theme="dark"],
+[data-theme="dark"] [data-skin="3"]:not([data-theme="light"]),
+[data-skin="3"] [data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #05070F;
+  --bg2: #0B1633;
+  --surface: rgba(150,172,225,.15);
+  --surface2: rgba(170,190,238,.24);
+  --ink: #F4F6FF;
+  --ink2: #CCD4EC;
+  --muted: #BAC4DF;
+  --line: rgba(255,255,255,.16);
+  --accent: #FFAE74;
+  --accent2: #B9CCFF;
+  --good: #8DE8B5;
+  --warn: #F5CF6B;
+  --bad: #FFB4B4;
+  --radius: 26px;
+  --radius-sm: 16px;
+  --shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 22px 50px -22px rgba(0,0,0,.75);
+  --font-display: "Sora", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Sora", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --tata-body: #FF6F0F;
+  --tata-eye: #080B18;
+  --blur: 22px;
+  --motion-ease: cubic-bezier(.22,1,.36,1);
+  --motion-dur: 380ms;
+  --x-border-w: 1px;
+  --x-num-weight: 300;
+  --x-num-track: -0.035em;
+  --x-cur-scale: .4;
+  --x-ring-w: 11;
+  --x-ring-cap: round;
+  --x-ring-sweep: 1;
+  --x-ring-rot: -90deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 999px;
+  --x-press: scale(.97);
+  --x-label-track: .04em;
+  --x-display-weight: 500;
+  --x-on-accent: #1A0C03;
+  --x-atmos: radial-gradient(90% 50% at 85% 0%, rgba(255,122,31,.14) 0%, rgba(255,122,31,0) 62%), radial-gradient(120% 70% at 20% 100%, rgba(60,100,235,.24) 0%, rgba(60,100,235,0) 65%);
+  --x-grain: .08;
+  --x-surface-solid: #1B202F;
+  --x-surface2-solid: #2D3345;
+}
+
+/* ===== 外觀 4｜高對比大字｜淺 ===== */
+[data-skin="4"] {
+  color-scheme: light;
+  --bg: #FFFFFF;
+  --bg2: #F4F4F5;
+  --surface: #F5F5F6;
+  --surface2: #E9E9EC;
+  --ink: #0A0A0A;
+  --ink2: #2B2B2B;
+  --muted: #575757;
+  --line: #767676;
+  --accent: #0A0A0A;
+  --accent2: #8F3200;
+  --good: #0A5F28;
+  --warn: #6E4600;
+  --bad: #A1001C;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: none;
+  --font-display: "Inter", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Inter", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Inter", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --tata-body: #FA6400;
+  --tata-eye: #0A0A0A;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.2,0,0,1);
+  --motion-dur: 140ms;
+  --x-border-w: 0px;
+  --x-num-weight: 900;
+  --x-num-track: -0.045em;
+  --x-cur-scale: .5;
+  --x-ring-w: 20;
+  --x-ring-cap: butt;
+  --x-ring-sweep: .5;
+  --x-ring-rot: 180deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 6px;
+  --x-press: scale(.985);
+  --x-label-track: .02em;
+  --x-display-weight: 900;
+  --x-on-accent: #FFFFFF;
+  --x-atmos: none;
+  --x-grain: 0;
+  --x-surface-solid: #F5F5F6;
+  --x-surface2-solid: #E9E9EC;
+}
+/* ===== 外觀 4｜高對比大字｜深 ===== */
+[data-skin="4"][data-theme="dark"],
+[data-theme="dark"] [data-skin="4"]:not([data-theme="light"]),
+[data-skin="4"] [data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --bg2: #0D0D0D;
+  --surface: #161616;
+  --surface2: #232323;
+  --ink: #FFFFFF;
+  --ink2: #DEDEDE;
+  --muted: #ABABAB;
+  --line: #8C8C8C;
+  --accent: #FFFFFF;
+  --accent2: #FF9147;
+  --good: #5BE38C;
+  --warn: #FFD166;
+  --bad: #FF8590;
+  --radius: 14px;
+  --radius-sm: 8px;
+  --shadow: none;
+  --font-display: "Inter", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Inter", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Inter", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --tata-body: #FF6700;
+  --tata-eye: #000000;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.2,0,0,1);
+  --motion-dur: 140ms;
+  --x-border-w: 0px;
+  --x-num-weight: 900;
+  --x-num-track: -0.045em;
+  --x-cur-scale: .5;
+  --x-ring-w: 20;
+  --x-ring-cap: butt;
+  --x-ring-sweep: .5;
+  --x-ring-rot: 180deg;
+  --x-ring-outline: 0;
+  --x-bar-r: 6px;
+  --x-press: scale(.985);
+  --x-label-track: .02em;
+  --x-display-weight: 900;
+  --x-on-accent: #000000;
+  --x-atmos: none;
+  --x-grain: 0;
+  --x-surface-solid: #161616;
+  --x-surface2-solid: #232323;
+}
+
+/* ===== 外觀 5｜插畫吉祥物｜淺 ===== */
+[data-skin="5"] {
+  color-scheme: light;
+  --bg: #DCE8F0;
+  --bg2: #EDF4F8;
+  --surface: #FFFFFF;
+  --surface2: #FFF1DC;
+  --ink: #1F2433;
+  --ink2: #3D465C;
+  --muted: #4E5870;
+  --line: #1F2433;
+  --accent: #B03707;
+  --accent2: #1B5BA3;
+  --good: #176A40;
+  --warn: #7C5100;
+  --bad: #AD231B;
+  --radius: 24px;
+  --radius-sm: 14px;
+  --shadow: 0 4px 0 0 #1F2433;
+  --font-display: "Fredoka", "Chiron GoRound TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Chiron GoRound TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Rubik", "Chiron GoRound TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --tata-body: #FA6400;
+  --tata-eye: #FFFFFF;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.4,.22,.28,1.34);
+  --motion-dur: 300ms;
+  --x-border-w: 2px;
+  --x-num-weight: 700;
+  --x-num-track: -0.01em;
+  --x-cur-scale: .5;
+  --x-ring-w: 14;
+  --x-ring-cap: round;
+  --x-ring-sweep: 1;
+  --x-ring-rot: -90deg;
+  --x-ring-outline: 19;
+  --x-bar-r: 999px;
+  --x-press: translateY(3px);
+  --x-label-track: .03em;
+  --x-display-weight: 700;
+  --x-on-accent: #FFFFFF;
+  --x-atmos: radial-gradient(70% 40% at 50% 0%, rgba(255,255,255,.70) 0%, rgba(255,255,255,0) 70%);
+  --x-grain: 0;
+  --x-surface-solid: #FFFFFF;
+  --x-surface2-solid: #FFF1DC;
+}
+/* ===== 外觀 5｜插畫吉祥物｜深 ===== */
+[data-skin="5"][data-theme="dark"],
+[data-theme="dark"] [data-skin="5"]:not([data-theme="light"]),
+[data-skin="5"] [data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #171B2E;
+  --bg2: #20264A;
+  --surface: #262D4F;
+  --surface2: #343C66;
+  --ink: #FFF6E6;
+  --ink2: #D9D6E4;
+  --muted: #B4B8D0;
+  --line: #0A0C18;
+  --accent: #FF9652;
+  --accent2: #8ACBFF;
+  --good: #7BE3A6;
+  --warn: #FFD166;
+  --bad: #FF9494;
+  --radius: 24px;
+  --radius-sm: 14px;
+  --shadow: 0 4px 0 0 #0A0C18;
+  --font-display: "Fredoka", "Chiron GoRound TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-body: "Chiron GoRound TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --font-num: "Rubik", "Chiron GoRound TC", "Noto Sans TC", "Microsoft JhengHei", system-ui, sans-serif;
+  --tata-body: #FF6700;
+  --tata-eye: #171B2E;
+  --blur: 0px;
+  --motion-ease: cubic-bezier(.4,.22,.28,1.34);
+  --motion-dur: 300ms;
+  --x-border-w: 2px;
+  --x-num-weight: 700;
+  --x-num-track: -0.01em;
+  --x-cur-scale: .5;
+  --x-ring-w: 14;
+  --x-ring-cap: round;
+  --x-ring-sweep: 1;
+  --x-ring-rot: -90deg;
+  --x-ring-outline: 19;
+  --x-bar-r: 999px;
+  --x-press: translateY(3px);
+  --x-label-track: .03em;
+  --x-display-weight: 700;
+  --x-on-accent: #1A0D04;
+  --x-atmos: radial-gradient(70% 40% at 50% 0%, rgba(124,150,255,.14) 0%, rgba(124,150,255,0) 70%);
+  --x-grain: 0;
+  --x-surface-solid: #262D4F;
+  --x-surface2-solid: #343C66;
+}
+
+/* ===== 共用小工具（可不用） ===== */
+.tk-num { font-family: var(--font-num); font-variant-numeric: tabular-nums lining-nums; font-weight: var(--x-num-weight, 700); letter-spacing: var(--x-num-track, 0); white-space: nowrap; }
+.tk-atmos { background-color: var(--bg); background-image: var(--x-atmos, none); background-repeat: no-repeat; }
+.tk-card { background: var(--surface); border: var(--x-border-w, 1px) solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tk-card { -webkit-backdrop-filter: blur(var(--blur)) saturate(1.2); backdrop-filter: blur(var(--blur)) saturate(1.2); }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .tk-card { background: var(--x-surface-solid, var(--surface)); }
+}
+.tk-move { transition: transform var(--motion-dur) var(--motion-ease), opacity var(--motion-dur) var(--motion-ease); }
+@media (prefers-reduced-motion: reduce) {
+  .tk-move { transition: opacity 120ms linear; }
+}
+</style>
+</head>
+<body>
+<a class="vh" href="#main">跳到內容</a>
+<div class="pbar" id="pbar" role="region" aria-label="原型控制列">
+  <div class="grp" role="group" aria-label="版樣"><span class="lab">版樣</span>
+    <button data-pv="A" aria-pressed="true" title="A 塔塔說">A</button><button data-pv="B" aria-pressed="false" title="B 儀表板">B</button><button data-pv="C" aria-pressed="false" title="C 一次一張">C</button></div>
+  <div class="grp"><label class="lab" for="scn">狀態</label>
+    <select id="scn"><option value="normal">平常</option><option value="done">都確認完</option><option value="empty">新的一期</option><option value="over">超支</option><option value="offline">離線</option><option value="error">讀取失敗</option><option value="update">有新版本</option></select></div>
+  <button id="pbMin" aria-expanded="true" aria-label="收起或展開外觀選項">收起</button>
+  <span class="sp"></span>
+  <div class="grp hideable" role="group" aria-label="外觀"><span class="lab">外觀</span>
+    <button data-ps="1" aria-pressed="true">1</button><button data-ps="2" aria-pressed="false">2</button><button data-ps="3" aria-pressed="false">3</button><button data-ps="4" aria-pressed="false">4</button><button data-ps="5" aria-pressed="false">5</button>
+    <button id="ptT" aria-pressed="false" aria-label="深色">深色</button></div>
+</div>
+<div class="stage">
+  <aside class="aside" id="asideL" aria-label="這個版樣的說明"></aside>
+  <div class="phone" id="phone">
+    <div class="app">
+      <header class="hd">
+        <button class="tata-btn" id="tataBtn" data-act="tata" aria-label="找塔塔" aria-expanded="false" aria-controls="bub"><span class="tface" id="hdFace"></span></button>
+        <div class="hd-t"><h1 id="pgTitle">今天</h1><p id="tataLine" aria-live="polite"></p></div>
+        <button class="ib" id="maskBtn" data-act="mask" aria-pressed="false" aria-label="隱藏金額"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button>
+      </header>
+      <div id="banner"></div>
+      <main class="scroll" id="main" tabindex="-1"></main>
+      <form class="composer" id="composer" autocomplete="off" aria-label="跟塔塔說"><input id="cmpIn" aria-label="跟塔塔說" placeholder="跟塔塔說，例如：還能花多少" maxlength="500" enterkeyhint="send"><button class="btn pri" type="submit">傳給塔塔</button></form>
+      <nav class="tabbar" aria-label="主要分頁">
+        <button class="tab" data-act="tab" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/></svg><span>今天</span><span class="bdg" id="bdgHome" hidden></span></button>
+        <button class="tab" data-act="tab" data-tab="ledger"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg><span>帳本</span></button>
+        <button class="fab" data-act="add" aria-label="記一筆"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button class="tab" data-act="tab" data-tab="budget"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M4 12h16M4 17h7"/></svg><span>預算</span></button>
+        <button class="tab" data-act="tab" data-tab="fixed"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l3 3-3 3M20 6H8a4 4 0 0 0-4 4v1M7 21l-3-3 3-3M4 18h12a4 4 0 0 0 4-4v-1"/></svg><span>定期</span></button>
+      </nav>
+    </div>
+    <div class="scrim" id="scrim" data-act="closeAll"></div>
+    <div class="bub" id="bub" role="dialog" aria-label="塔塔"></div>
+    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shT">
+      <header class="sh-h"><button class="sh-back" id="shBack" data-act="back" hidden></button><h2 id="shT"></h2><button class="ib" data-act="close" aria-label="關閉"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></header>
+      <div class="sh-b" id="shB"></div>
+    </section>
+    <div class="toast" id="toast" role="status" aria-live="polite"><p id="toastT"></p><button id="toastU" hidden>復原</button></div>
+  </div>
+  <aside class="aside" id="asideR" aria-label="原型快捷"></aside>
+</div>
+<script>/*!
+ * tata_face.js  塔塔的臉（設計提案版 1122-A）
+ * 單檔、零依賴。照 Grok Bot 內建頭像規格：blob（球體）、orange #FF6700、
+ * 兩隻挖空直立膠囊眼、沒有嘴、沒有腮紅、沒有配件。
+ *
+ * 用法：
+ *   var face = TataFace.mount(el, { mood: 'idle', size: 64, reduceMotion: undefined });
+ *   face.setMood('over');            // idle logged over poke sleepy thinking alert
+ *   face.setMood('logged', { label: '+1' });  // 入帳數字（64px 以上才顯示）
+ *   face.poke();                     // spin、bounce、nod 隨機一種
+ *   face.destroy();
+ *
+ * 顏色：CSS 變數 --tata-body（預設 #FF6700）、--tata-eye（預設不填，眼睛挖空透出底色）。
+ * 其他選項（都可不給）：shadow（地面影子）、followPointer（視線跟游標）、label（aria 名稱）。
+ * logged 與 poke 是一次性動作，播完回到上一個常駐 mood。
+ */
+(function (root) {
+  'use strict';
+
+  var R = 44;                 // 球半徑（viewBox 單位，viewBox 是 -50 -50 100 100）
+  var SEP = 17;               // 兩眼各離臉中心的角度
+  var NS = 'http://www.w3.org/2000/svg';
+  var PI = Math.PI, D2R = PI / 180;
+  var MOOD_LIST = ['idle', 'logged', 'over', 'poke', 'sleepy', 'thinking', 'alert'];
+  var MOOD_NAME = {
+    idle: '待機', logged: '記帳成功', over: '超支', poke: '被點',
+    sleepy: '想睡', thinking: '端詳', alert: '帳單將到期'
+  };
+
+  /* ---------- 小工具 ---------- */
+  function clamp(x, a, b) { return x < a ? a : x > b ? b : x; }
+  function ss(a, b, x) { var k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); }
+  function ease(k) { return k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; }
+  function easeOut(k) { return 1 - Math.pow(1 - k, 3); }
+  // 梯形包絡：a 到 b 升起，c 到 d 落下
+  function bump(a, b, c, d, x) { return ss(a, b, x) * (1 - ss(c, d, x)); }
+  // 眨眼：0.10 秒閉、0.16 秒開，合計 0.26 秒（k 可放慢）
+  function blink(t, t0, k) {
+    k = k || 1;
+    var x = (t - t0) / k;
+    if (x <= 0 || x >= 0.26) return 0;
+    return x < 0.10 ? ease(x / 0.10) : 1 - ease((x - 0.10) / 0.16);
+  }
+  function blinks(t, list, k) {
+    var m = 0;
+    for (var i = 0; i < list.length; i++) { var v = blink(t, list[i], k); if (v > m) m = v; }
+    return m;
+  }
+  function wrap180(a) { a = ((a + 180) % 360 + 360) % 360 - 180; return a; }
+
+  /* ---------- 眼形：[寬, 高, 上下彎, 左右彎, 傾斜度, 下移]，單位是球半徑 ---------- */
+  var EYE = {
+    neutral: [0.21, 0.46, 0, 0, 0, 0],          // 直立膠囊
+    happy:   [0.36, 0.15, 0.13, 0, 0, -0.02],   // 上彎弧
+    sad:     [0.20, 0.36, 0, 0, 16, 0.05],      // 略斜下
+    sleepy:  [0.36, 0.09, -0.10, 0, 0, 0.06],   // 下彎細弧
+    wide:    [0.34, 0.46, 0, 0, 0, 0],          // 睜大變圓
+    big:     [0.27, 0.54, 0, 0, 0, 0],          // 端詳：大的那隻
+    small:   [0.17, 0.30, 0, 0, 0, 0.02],       // 端詳：小的那隻
+    calm:    [0.20, 0.26, 0, 0, 0, 0.02]        // 半開
+  };
+  function mixEye(a, b, k) {
+    if (k <= 0) return a; if (k >= 1) return b;
+    var o = [];
+    for (var i = 0; i < 6; i++) o[i] = a[i] + (b[i] - a[i]) * k;
+    return o;
+  }
+
+  // 眼形輪廓：圓角矩形（膠囊）沿周長等距取 48 點，再做彎曲與傾斜。
+  // 任何兩種眼形都是同一組參數插值，所以切換是連續變形，不硬換。
+  var NPTS = 48;
+  function eyePath(e, side, scale) {
+    var w = Math.max(e[0], 0.02) * scale, h = Math.max(e[1], 0.02) * scale;
+    var hw = w / 2, hh = h / 2, r = Math.min(hw, hh), sx = hw - r, sy = hh - r;
+    var q = PI * r / 2, per = 4 * sx + 4 * sy + 4 * q;
+    var by = e[2] * scale, bx = e[3] * scale * side;
+    var rot = -side * e[4] * D2R, cr = Math.cos(rot), sr = Math.sin(rot);
+    var dy = e[5] * scale, d = '';
+    for (var i = 0; i < NPTS; i++) {
+      var s = per * i / NPTS, x, y, a;
+      if (s < sx) { x = s; y = -hh; }
+      else if ((s -= sx) < q) { a = -PI / 2 + s / r; x = sx + r * Math.cos(a); y = -sy + r * Math.sin(a); }
+      else if ((s -= q) < 2 * sy) { x = hw; y = -sy + s; }
+      else if ((s -= 2 * sy) < q) { a = s / r; x = sx + r * Math.cos(a); y = sy + r * Math.sin(a); }
+      else if ((s -= q) < 2 * sx) { x = sx - s; y = hh; }
+      else if ((s -= 2 * sx) < q) { a = PI / 2 + s / r; x = -sx + r * Math.cos(a); y = sy + r * Math.sin(a); }
+      else if ((s -= q) < 2 * sy) { x = -hw; y = sy - s; }
+      else if ((s -= 2 * sy) < q) { a = PI + s / r; x = -sx + r * Math.cos(a); y = -sy + r * Math.sin(a); }
+      else { s -= q; x = -sx + s; y = -hh; }
+      var nx = x / hw, ny = y / hh;
+      y += by * (nx * nx - 0.3333);
+      x += bx * (ny * ny - 0.3333);
+      var X = x * cr - y * sr, Y = x * sr + y * cr + dy;
+      d += (i ? 'L' : 'M') + X.toFixed(4) + ' ' + Y.toFixed(4);
+    }
+    return d + 'Z';
+  }
+
+  /* ---------- 姿勢 ---------- */
+  // yaw 左右轉、pitch 上下、roll 歪頭（度）；gx gy 視線；sq 垂直擠壓；ty 位移（半徑倍數，負的往上）；
+  // sc 整體縮放；lid 眼皮（1 全閉）；glow 光暈；tok 入帳小點進度；lab 入帳數字進度；L R 兩眼眼形。
+  var BASE = { yaw: 22, pitch: 21, roll: 24 };
+  function pose(o) {
+    var p = { yaw: BASE.yaw, pitch: BASE.pitch, roll: BASE.roll, gx: 0, gy: 0, sq: 1, ty: 0, sc: 1,
+      lid: 0, glow: 0, tok: 0, lab: 0, L: EYE.neutral, R: EYE.neutral };
+    for (var k in o) p[k] = o[k];
+    return p;
+  }
+  var NUM = ['yaw', 'pitch', 'roll', 'gx', 'gy', 'sq', 'ty', 'sc', 'lid', 'glow'];
+  function lerpPose(a, b, k) {
+    var p = { tok: b.tok, lab: b.lab };
+    for (var i = 0; i < NUM.length; i++) {
+      var n = NUM[i], av = a[n];
+      if (n === 'yaw') av = b.yaw + wrap180(av - b.yaw);   // 走最短的那一邊，轉圈後不會倒轉回來
+      p[n] = av + (b[n] - av) * k;
+    }
+    p.L = mixEye(a.L, b.L, k); p.R = mixEye(a.R, b.R, k);
+    return p;
+  }
+
+  /* ---------- 七個 mood ---------- */
+  var W16 = 2 * PI / 16;
+  var MOODS = {
+    // 待機：16 秒大循環＝6 秒＋4 秒＋6 秒三小段（對應 Grok Bot Idle_A、Idle_B、Idle_D），
+    // 所有週期都整除 16 秒，頭尾接得起來。呼吸 4 秒一輪。
+    idle: {
+      loop: 16, still: 0.3,
+      fn: function (t) {
+        var yaw = 14 + 19 * Math.sin(W16 * t) + 7 * Math.sin(3 * W16 * t + 1.3);
+        var g = bump(9.0, 9.35, 10.1, 10.5, t);          // 第 9 秒往左下瞄一眼
+        var b = Math.sin(2 * PI * t / 4);
+        return pose({
+          yaw: yaw,
+          pitch: 20 + 8 * Math.sin(2 * W16 * t + 0.6) + 3 * Math.sin(5 * W16 * t),
+          roll: 8 + 0.65 * yaw,
+          gx: 0.25 * Math.sin(2 * W16 * t + 2.1) - 1.3 * g,
+          gy: 0.2 * Math.sin(3 * W16 * t) - 0.9 * g,
+          sq: 1 + 0.016 * b, ty: -0.006 * b,
+          // 不等距眨眼；12.07 與 12.37 是連眨
+          lid: blinks(t, [1.16, 4.0, 8.2, 10.59, 12.07, 12.37, 14.25])
+        });
+      }
+    },
+
+    // 記帳成功：一顆小點落進身體，吞一下，小跳，眼睛上彎。2.3 秒，播完回常駐 mood。
+    logged: {
+      dur: 2.3, still: 1.5,
+      fn: function (t) {
+        var up = ss(0, 0.2, t) - ss(0.36, 0.6, t);
+        var hap = ss(0.36, 0.64, t) * (1 - ss(1.95, 2.25, t));
+        var hop = (t > 0.62 && t < 1.12) ? Math.sin(PI * (t - 0.62) / 0.5) : 0;
+        var e = mixEye(mixEye(EYE.neutral, EYE.wide, ss(0, 0.15, t) * (1 - ss(0.36, 0.6, t))), EYE.happy, hap);
+        return pose({
+          yaw: 22 - 14 * hap, pitch: 21 + 16 * up - 3 * hap, roll: 24 - 18 * hap,
+          sq: 1 - 0.09 * bump(0.36, 0.46, 0.5, 0.62, t) + 0.03 * hop
+            - 0.08 * bump(1.10, 1.17, 1.2, 1.4, t) + 0.02 * bump(1.4, 1.5, 1.55, 1.75, t),
+          ty: -0.24 * hop,
+          tok: clamp(t / 0.38, 0, 1),
+          lab: clamp((t - 0.5) / 1.3, 0, 1),
+          L: e, R: e
+        });
+      }
+    },
+
+    // 超支：眼睛斜下、身體縮一點、整體慢一拍（呼吸 7 秒、眨眼放慢），每輪嘆一口氣再抬頭看你一眼。
+    over: {
+      loop: 7, still: 0.5,
+      fn: function (t) {
+        var s = bump(4.2, 4.8, 5.4, 5.9, t);
+        var look = bump(5.9, 6.2, 6.5, 6.9, t);
+        return pose({
+          yaw: 6 + 6 * Math.sin(2 * PI * t / 7), pitch: -8 + 2 * Math.sin(4 * PI * t / 7) + 16 * look,
+          roll: 4, gy: -0.3 + 0.5 * look,
+          sc: 0.94, sq: 0.975 + 0.012 * Math.sin(2 * PI * t / 7) - 0.035 * s, ty: 0.04 + 0.02 * s,
+          lid: blinks(t, [2.8, 6.55], 1.4),
+          L: EYE.sad, R: EYE.sad
+        });
+      }
+    },
+
+    // 想睡（深夜）：眼睛下彎細弧、呼吸 8 秒一輪、頭慢慢垂下去，點一下頭驚醒，一隻眼半開又闔上。
+    sleepy: {
+      loop: 8, still: 1,
+      fn: function (t) {
+        var drop = ss(5.6, 6.5, t) * (1 - ss(6.5, 6.62, t));
+        var peek = ss(6.6, 6.75, t) * (1 - ss(7.3, 7.8, t));
+        return pose({
+          yaw: 10, pitch: -10 - 4 * Math.sin(2 * PI * t / 8) - 12 * drop, roll: 14 + 6 * drop,
+          sq: 1 + 0.03 * Math.sin(2 * PI * t / 8) + 0.02 * peek, ty: 0.03 + 0.03 * drop,
+          L: EYE.sleepy, R: mixEye(EYE.sleepy, EYE.calm, peek)
+        });
+      }
+    },
+
+    // 端詳：一大一小，歪頭看一邊，再透過一次眨眼（0.35 秒）換邊。4.8 秒一輪。
+    thinking: {
+      loop: 4.8, still: 1,
+      fn: function (t) {
+        var s = ss(2.0, 2.4, t) - ss(4.4, 4.8, t);
+        return pose({
+          yaw: 18 - 30 * s, pitch: 25 + 2 * Math.sin(2 * PI * t / 2.4), roll: 14 - 24 * s,
+          gy: 0.5, sq: 1.01,
+          lid: 0.85 * blinks(t, [2.03, 4.43], 1.35),
+          L: mixEye(EYE.big, EYE.small, s), R: mixEye(EYE.small, EYE.big, s)
+        });
+      }
+    },
+
+    // 帳單將到期：眼睛睜大瞄向右上，身體拉高，每 3.2 秒連跳兩下帶光暈，接一次連眨。
+    alert: {
+      loop: 3.2, still: 0.9,
+      fn: function (t) {
+        var pu = bump(0, 0.12, 0.14, 0.34, t) + bump(0.38, 0.5, 0.52, 0.72, t);
+        return pose({
+          yaw: 23, pitch: 27, roll: 22, gx: 0.4, gy: 0.5,
+          sq: 1.03 + 0.03 * pu, sc: 1 + 0.05 * pu, ty: -0.05 * pu,
+          glow: ss(0, 0.12, t) * (0.25 + 0.75 * Math.exp(-2.4 * t)),
+          lid: blinks(t, [1.9, 2.2]),
+          L: EYE.wide, R: EYE.wide
+        });
+      }
+    },
+
+    // 被點的三種反應
+    poke_spin: {
+      dur: 1.0, still: 0.5,
+      fn: function (t) {
+        var e = mixEye(EYE.neutral, EYE.happy, bump(0.05, 0.2, 0.8, 1.0, t));
+        return pose({
+          yaw: BASE.yaw + 360 * ease(clamp(t / 0.85, 0, 1)),
+          sq: 1 - 0.05 * bump(0, 0.08, 0.12, 0.3, t), ty: -0.06 * Math.sin(PI * clamp(t / 0.85, 0, 1)),
+          L: e, R: e
+        });
+      }
+    },
+    poke_bounce: {
+      dur: 1.15, still: 0.3,
+      fn: function (t) {
+        var h1 = t < 0.45 ? Math.sin(PI * t / 0.45) : 0;
+        var h2 = (t > 0.5 && t < 0.82) ? Math.sin(PI * (t - 0.5) / 0.32) : 0;
+        var e = mixEye(mixEye(EYE.neutral, EYE.wide, bump(0, 0.1, 0.4, 0.55, t)), EYE.happy, bump(0.45, 0.6, 0.95, 1.15, t));
+        return pose({
+          yaw: 14, roll: 14,
+          ty: -0.34 * h1 - 0.14 * h2,
+          sq: 1 + 0.04 * h1 + 0.02 * h2 - 0.10 * bump(0.43, 0.47, 0.5, 0.58, t) - 0.05 * bump(0.80, 0.84, 0.87, 0.98, t),
+          L: e, R: e
+        });
+      }
+    },
+    poke_nod: {
+      dur: 1.0, still: 0.2,
+      fn: function (t) {
+        var n = t < 0.84 ? Math.pow(Math.sin(PI * t / 0.42), 2) : 0;
+        var e = mixEye(EYE.neutral, EYE.happy, bump(0, 0.15, 0.8, 1.0, t));
+        return pose({ yaw: 10, pitch: 21 - 30 * n, roll: 10, sq: 1 - 0.03 * n, ty: 0.02 * n, L: e, R: e });
+      }
+    }
+  };
+  var POKES = ['poke_spin', 'poke_bounce', 'poke_nod'];
+
+  /* ---------- 共用的畫格迴圈（所有實例共用一個 requestAnimationFrame） ---------- */
+  var live = [], rafId = 0;
+  function tick(now) {
+    rafId = 0;
+    for (var i = 0; i < live.length; i++) live[i]._frame(now);
+    if (live.length) rafId = root.requestAnimationFrame(tick);
+  }
+  function addLive(inst) {
+    if (live.indexOf(inst) < 0) live.push(inst);
+    if (!rafId && live.length) rafId = root.requestAnimationFrame(tick);
+  }
+  function removeLive(inst) {
+    var i = live.indexOf(inst);
+    if (i >= 0) live.splice(i, 1);
+    if (!live.length && rafId) { root.cancelAnimationFrame(rafId); rafId = 0; }
+  }
+
+  /* ---------- 樣式與 DOM ---------- */
+  var styled = false, uid = 0;
+  function injectStyle(doc) {
+    if (styled) return; styled = true;
+    var s = doc.createElement('style');
+    s.setAttribute('data-tata-face', '');
+    s.textContent =
+      '.tata-face{display:inline-block;position:relative;line-height:0;vertical-align:middle;' +
+      '-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}' +
+      '.tata-face>svg{display:block;width:100%;height:100%;overflow:visible}' +
+      '.tata-face text{font:700 11px/1 var(--font-num,ui-rounded,system-ui,sans-serif);' +
+      'font-variant-numeric:tabular-nums;fill:currentColor}';
+    doc.head.appendChild(s);
+  }
+  function el(doc, name, attrs, parent) {
+    var n = doc.createElementNS(NS, name);
+    for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function stop(doc, parent, off, color, op) {
+    var s = el(doc, 'stop', { offset: off }, parent);
+    s.setAttribute('style', 'stop-color:' + color + ';stop-opacity:' + op);
+  }
+
+  function build(inst, doc) {
+    var id = 'tata' + (++uid);
+    var body = 'var(--tata-body,#FF6700)';
+    var svg = el(doc, 'svg', { viewBox: '-50 -50 100 100', 'aria-hidden': 'true', focusable: 'false' });
+    var defs = el(doc, 'defs', {}, svg);
+
+    var gl = el(doc, 'radialGradient', { id: id + 'l', cx: '0.34', cy: '0.26', r: '0.62' }, defs);
+    stop(doc, gl, '0', '#fff', 0.42); stop(doc, gl, '1', '#fff', 0);
+    var gs = el(doc, 'radialGradient', { id: id + 's', cx: '0.42', cy: '0.36', r: '0.72' }, defs);
+    stop(doc, gs, '0.55', '#000', 0); stop(doc, gs, '1', '#000', 0.26);
+    var gp = el(doc, 'radialGradient', { id: id + 'p' }, defs);
+    stop(doc, gp, '0', '#fff', 0.6); stop(doc, gp, '1', '#fff', 0);
+    var gh = el(doc, 'radialGradient', { id: id + 'h' }, defs);
+    stop(doc, gh, '0.45', body, 0.5); stop(doc, gh, '1', body, 0);
+
+    // 眼睛是挖空：用遮罩在身體上挖兩個洞
+    var mask = el(doc, 'mask', { id: id + 'm', maskUnits: 'userSpaceOnUse', x: -70, y: -70, width: 140, height: 140 }, defs);
+    el(doc, 'rect', { x: -70, y: -70, width: 140, height: 140, fill: '#fff' }, mask);
+    inst.mL = el(doc, 'path', { fill: '#000' }, mask);
+    inst.mR = el(doc, 'path', { fill: '#000' }, mask);
+
+    if (inst.opts.shadow) {
+      inst.shadow = el(doc, 'ellipse', { cx: 0, cy: R + 3.5, rx: R * 0.62, ry: 2.6, fill: '#000', opacity: 0.16 }, svg);
+    }
+    inst.halo = el(doc, 'circle', { r: R * 1.5, fill: 'url(#' + id + 'h)', opacity: 0 }, svg);
+
+    inst.body = el(doc, 'g', {}, svg);
+    // --tata-eye 有設就填色（從洞裡透出來），沒設就是挖空
+    var fillG = el(doc, 'g', {}, inst.body);
+    fillG.setAttribute('style', 'fill:var(--tata-eye,transparent)');
+    inst.fL = el(doc, 'path', {}, fillG);
+    inst.fR = el(doc, 'path', {}, fillG);
+    var ball = el(doc, 'g', { mask: 'url(#' + id + 'm)' }, inst.body);
+    var base = el(doc, 'circle', { r: R }, ball);
+    base.setAttribute('style', 'fill:' + body);
+    el(doc, 'circle', { r: R, fill: 'url(#' + id + 's)' }, ball);
+    el(doc, 'circle', { r: R, fill: 'url(#' + id + 'l)' }, ball);
+    el(doc, 'ellipse', { cx: -R * 0.40, cy: -R * 0.52, rx: R * 0.17, ry: R * 0.10,
+      transform: 'rotate(-38 ' + (-R * 0.40) + ' ' + (-R * 0.52) + ')', fill: 'url(#' + id + 'p)' }, ball);
+
+    inst.tok = el(doc, 'circle', { r: R * 0.13, opacity: 0 }, svg);
+    inst.tok.setAttribute('style', 'fill:' + body);
+    inst.lab = el(doc, 'text', { 'text-anchor': 'middle', opacity: 0 }, svg);
+    return svg;
+  }
+
+  /* ---------- 實例 ---------- */
+  function Face(host, opts) {
+    var doc = host.ownerDocument;
+    this.host = host; this.opts = opts || {}; this.doc = doc;
+    this.base = 'idle'; this.mood = 'idle'; this.key = 'idle';
+    this.t0 = 0; this.from = null; this.cur = null; this.lastPoke = '';
+    this.dL = null; this.dR = null; this.gaze = { x: 0, y: 0, tx: 0, ty: 0 };
+    this.timer = 0; this.dead = false; this.visible = true; this.labelText = '';
+    injectStyle(doc);
+    this.wrap = doc.createElement('span');
+    this.wrap.className = 'tata-face';
+    this.wrap.setAttribute('role', 'img');
+    this.svg = build(this, doc);
+    this.wrap.appendChild(this.svg);
+    host.appendChild(this.wrap);
+    this.setSize(this.opts.size);
+
+    var self = this;
+    // 減少動態：參數優先，沒給就跟系統設定
+    this.mq = (this.opts.reduceMotion === undefined && root.matchMedia)
+      ? root.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    this.reduced = this.opts.reduceMotion === undefined ? !!(this.mq && this.mq.matches) : !!this.opts.reduceMotion;
+    if (this.mq) {
+      this.onMq = function (e) { self.reduced = e.matches; self._sync(); };
+      if (this.mq.addEventListener) this.mq.addEventListener('change', this.onMq);
+      else if (this.mq.addListener) this.mq.addListener(this.onMq);
+    }
+    // 捲出畫面就停，省電
+    if (root.IntersectionObserver) {
+      this.io = new root.IntersectionObserver(function (es) {
+        self.visible = es[es.length - 1].isIntersecting; self._sync();
+      });
+      this.io.observe(this.wrap);
+    }
+    if (this.opts.followPointer) {
+      this.onMove = function (e) {
+        var r = self.wrap.getBoundingClientRect();
+        var dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+        var d = Math.sqrt(dx * dx + dy * dy) || 1, k = Math.min(1, d / 260);
+        self.gaze.tx = dx / d * k; self.gaze.ty = -dy / d * k;
+      };
+      root.addEventListener('pointermove', this.onMove, { passive: true });
+    }
+    this._enter(MOOD_LIST.indexOf(this.opts.mood) >= 0 ? this.opts.mood : 'idle', null, true);
+  }
+
+  Face.prototype.setSize = function (size) {
+    this.size = +size || 0;
+    if (this.size) { this.wrap.style.width = this.size + 'px'; this.wrap.style.height = this.size + 'px'; }
+    else { this.wrap.style.width = '100%'; this.wrap.style.height = '100%'; }
+    // 小尺寸把眼睛放大一點，32px 也看得清楚
+    var px = this.size || this.wrap.getBoundingClientRect().width || 64;
+    this.eyeScale = px < 40 ? 1.3 : px < 56 ? 1.15 : 1;
+    this.small = px < 64;
+    this.dL = this.dR = null;
+    if (this.cur) this._draw(this.cur);
+  };
+
+  Face.prototype._now = function () { return root.performance ? root.performance.now() : Date.now(); };
+
+  // 進入某個 mood。instant 為真時不做過渡。
+  Face.prototype._enter = function (mood, o, instant) {
+    if (this.dead) return;
+    var key = mood;
+    if (mood === 'poke') {
+      var pool = POKES.filter(function (k) { return k !== this.lastPoke; }, this);
+      key = pool[Math.floor(Math.random() * pool.length)];
+      this.lastPoke = key;
+    }
+    var def = MOODS[key];
+    if (!def.dur) this.base = mood;            // 常駐 mood 才記成回去的地方
+    this.mood = mood; this.key = key;
+    this.labelText = (o && o.label != null) ? String(o.label) : '';
+    this.lab.textContent = this.labelText;
+    this.wrap.setAttribute('aria-label', (this.opts.label || '塔塔') + '：' + MOOD_NAME[mood]);
+    this.wrap.setAttribute('data-mood', mood);
+    this.wrap.setAttribute('data-variant', key);
+    var now = this._now();
+    this.from = (!instant && this.cur && !this.reduced) ? this.cur : null;
+    this.b0 = now; this.bd = def.dur ? 160 : 300;   // 眼形與姿勢過渡：一次性動作 0.16 秒起手，其餘 0.30 秒
+    this.t0 = now;
+    if (this.timer) { root.clearTimeout(this.timer); this.timer = 0; }
+    this._sync();
+  };
+
+  // 依「減少動態、是否在畫面內」決定跑迴圈或畫一張靜止圖
+  Face.prototype._sync = function () {
+    if (this.dead) return;
+    var def = MOODS[this.key];
+    if (this.reduced) {
+      removeLive(this);
+      this.from = null;
+      var p = def.fn(def.still);
+      p.lid = 0; p.tok = 0; p.ty = 0; p.sq = 1; p.sc = p.sc < 1 ? p.sc : 1; p.glow = p.glow ? 0.5 : 0;
+      p.lab = (this.labelText && def.dur) ? 0.3 : 0;
+      this.cur = p; this._draw(p);
+      // 一次性動作在減少動態時只換眼形，停一下就換回去
+      if (def.dur && !this.timer) {
+        var self = this;
+        this.timer = root.setTimeout(function () { self.timer = 0; self._enter(self.base, null, true); }, def.dur * 1000);
+      }
+      return;
+    }
+    if (this.timer) { root.clearTimeout(this.timer); this.timer = 0; }
+    if (this.visible) addLive(this); else removeLive(this);
+    if (!this.cur) { this.cur = def.fn(0); this._draw(this.cur); }
+  };
+
+  Face.prototype._frame = function (now) {
+    var def = MOODS[this.key], t = (now - this.t0) / 1000;
+    if (def.dur && t >= def.dur) { this._enter(this.base); def = MOODS[this.key]; t = 0; }
+    var p = def.fn(def.loop ? t % def.loop : t);
+    var g = this.gaze;
+    if (this.opts.followPointer) {
+      g.x += (g.tx - g.x) * 0.12; g.y += (g.ty - g.y) * 0.12;
+      p.gx += g.x * 1.6; p.gy += g.y * 1.4;
+    }
+    if (this.from) {
+      var k = (now - this.b0) / this.bd;
+      if (k >= 1) this.from = null; else p = lerpPose(this.from, p, ease(k));
+    }
+    this.cur = p; this._draw(p);
+  };
+
+  Face.prototype._draw = function (p) {
+    var f = function (n) { return n.toFixed(3); };
+    // 身體：以球底為支點擠壓，垂直壓扁時水平變寬
+    var sY = p.sc * p.sq, sX = p.sc * (2 - p.sq);
+    this.body.setAttribute('transform',
+      'translate(0 ' + f(p.ty * R + R) + ') scale(' + f(sX) + ' ' + f(sY) + ') translate(0 ' + (-R) + ')');
+
+    // 眼睛貼在球面上：歪頭、上下、左右三個旋轉後做正投影，靠邊時自然變窄、轉到背面就看不到
+    var yaw = (p.yaw + p.gx * 12) * D2R, pit = (p.pitch + p.gy * 10) * D2R, rol = p.roll * D2R;
+    var cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pit), sp = Math.sin(pit), cr = Math.cos(rol), sr = Math.sin(rol);
+    var lid = 1 - 0.93 * clamp(p.lid, 0, 1);
+    for (var s = -1; s <= 1; s += 2) {
+      var lam = s * SEP * D2R, cl = Math.cos(lam), sl = Math.sin(lam);
+      // 位置 P、往東 E、往北 N 三個向量，依序做歪頭、上下、左右
+      var v = [[sl, 0, cl], [cl, 0, -sl], [0, 1, 0]], o = [];
+      for (var i = 0; i < 3; i++) {
+        var x = v[i][0], y = v[i][1], z = v[i][2];
+        var x1 = x * cr - y * sr, y1 = x * sr + y * cr;
+        var y2 = y1 * cp + z * sp, z2 = -y1 * sp + z * cp;
+        o[i] = [x1 * cy + z2 * sy, y2, -x1 * sy + z2 * cy];
+      }
+      var P = o[0], E = o[1], N = o[2];
+      var vis = ss(0.08, 0.32, P[2]);
+      var m = 'matrix(' + f(R * E[0]) + ' ' + f(-R * E[1]) + ' ' + f(-R * N[0] * lid) + ' ' + f(R * N[1] * lid) +
+        ' ' + f(R * P[0]) + ' ' + f(-R * P[1]) + ')';
+      var eye = s < 0 ? p.L : p.R;
+      var mp = s < 0 ? this.mL : this.mR, fp = s < 0 ? this.fL : this.fR;
+      // 眼形沒在變形時是同一個常數陣列，直接跳過路徑重算
+      if (eye !== (s < 0 ? this.dL : this.dR)) {
+        var d = eyePath(eye, s, this.eyeScale);
+        mp.setAttribute('d', d); fp.setAttribute('d', d);
+        if (s < 0) this.dL = eye; else this.dR = eye;
+      }
+      mp.setAttribute('transform', m); fp.setAttribute('transform', m);
+      mp.setAttribute('opacity', f(vis)); fp.setAttribute('opacity', f(vis));
+    }
+
+    this.halo.setAttribute('opacity', f(p.glow * 0.9));
+    if (p.glow) this.halo.setAttribute('transform', 'scale(' + f(0.86 + 0.2 * p.glow) + ')');
+    if (this.shadow) {
+      var lift = clamp(-p.ty, 0, 0.5);
+      this.shadow.setAttribute('rx', f(R * (0.62 - 0.5 * lift) * (2 - p.sq)));
+      this.shadow.setAttribute('opacity', f(0.16 - 0.2 * lift));
+    }
+    // 入帳小點：從上方落進身體
+    var tk = p.tok;
+    if (tk > 0 && tk < 1) {
+      var e2 = tk * tk;
+      this.tok.setAttribute('transform', 'translate(' + f(R * 0.12) + ' ' + f(R * (-1.95 + 1.0 * e2)) + ') scale(' + f(1 - 0.5 * e2) + ')');
+      this.tok.setAttribute('opacity', f(Math.min(1, tk * 6)));
+    } else this.tok.setAttribute('opacity', 0);
+    // 入帳數字：往上飄再淡出（小尺寸不顯示）
+    var lb = p.lab;
+    if (this.labelText && !this.small && lb > 0 && lb < 1) {
+      this.lab.setAttribute('y', f(-R * (1.16 + 0.3 * easeOut(lb))));
+      this.lab.setAttribute('opacity', f(Math.min(1, lb * 5) * (1 - ss(0.7, 1, lb))));
+    } else this.lab.setAttribute('opacity', 0);
+  };
+
+  Face.prototype.destroy = function () {
+    if (this.dead) return;
+    this.dead = true;
+    removeLive(this);
+    if (this.timer) { root.clearTimeout(this.timer); this.timer = 0; }
+    if (this.io) this.io.disconnect();
+    if (this.mq) {
+      if (this.mq.removeEventListener) this.mq.removeEventListener('change', this.onMq);
+      else if (this.mq.removeListener) this.mq.removeListener(this.onMq);
+    }
+    if (this.onMove) root.removeEventListener('pointermove', this.onMove);
+    if (this.wrap.parentNode) this.wrap.parentNode.removeChild(this.wrap);
+  };
+
+  /* ---------- 對外介面 ---------- */
+  var TataFace = {
+    version: '1122-A2',
+    MOODS: MOOD_LIST.slice(),
+    mount: function (host, opts) {
+      if (!host || !host.appendChild) throw new Error('TataFace.mount 需要一個元素');
+      var inst = new Face(host, opts || {});
+      return {
+        setMood: function (m, o) {
+          if (MOOD_LIST.indexOf(m) < 0) { if (root.console) root.console.warn('TataFace：沒有這個 mood', m); return; }
+          inst._enter(m, o);
+        },
+        poke: function () { inst._enter('poke'); },
+        setSize: function (n) { inst.setSize(n); },
+        setReduceMotion: function (v) { inst.reduced = !!v; inst._sync(); },
+        getMood: function () { return inst.mood; },
+        destroy: function () { inst.destroy(); }
+      };
+    },
+    // 測試用：目前還在跑迴圈的實例數
+    _liveCount: function () { return live.length; }
+  };
+
+  root.TataFace = TataFace;
+  if (typeof module !== 'undefined' && module.exports) module.exports = TataFace;
+})(typeof window !== 'undefined' ? window : this);
+</script>
+<script>
+(function(){
+'use strict';
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const root=document.documentElement, phone=$('#phone'), main=$('#main'), sheet=$('#sheet'), bub=$('#bub'), scrim=$('#scrim');
+let qs; try{qs=new URLSearchParams(location.search)}catch(e){qs=new URLSearchParams('')}
+const RMQ=matchMedia('(prefers-reduced-motion: reduce)'); let rm=RMQ.matches;
+const S={v:qs.get('v')||'A',skin:qs.get('skin')||'1',theme:qs.get('theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'),scn:qs.get('scn')||'normal',tab:qs.get('tab')||'home',
+  mask:false,fix:{},ok:new Set(),voided:new Set(),paid:new Set(),cancel:new Set(['s5']),added:[],chat:[],bchat:[],ctx:null,
+  cIdx:0,bIdx:0,fIdx:0,lf:'all',ff:'all',showPaid:false,hide:{subs:true,acct:true},scroll:{},stack:[],ed:null,add:null,loading:false,seq:0};
+
+/* ---------- 假資料：比例取自素材包 01 第五節，金額與名稱都是抽象值 ---------- */
+const P={label:'11/10～12/9',day:13,days:30,left:18,today:'11/22'};
+const BUDGET=52000,TARGET=90000;
+const CATS=[['住','住',17000,16400,4],['吃','吃',10000,6180,26],['交通','行',2000,620,3],['訂閱','訂',3000,2460,10],['工作','工',4000,760,2],['保險','保',3000,0,0],['健康','健',2000,100,1],['娛樂與社交','樂',4000,150,1],['購物','購',3000,0,0],['其他','他',4000,2940,17]].map(([k,g,b,s,n])=>({k,g,b,s,n}));
+const G=k=>k==='收入'?'入':k==='未分類'?'？':k==='轉帳'?'轉':(CATS.find(c=>c.k===k)||{g:'他'}).g;
+const TX=[
+ {id:'t1',d:'11/22',t:'12:41',m:'巷口麵店',a:-135,c:'吃',ac:'主力卡',by:'塔塔',st:'guess',ev:'銀行 LINE 通知',why:'店名像小吃'},
+ {id:'t2',d:'11/22',t:'09:12',m:'便利商店',a:-68,c:'吃',ac:'電子錢包',by:'塔塔',st:'guess',ev:'銀行 LINE 通知',why:'早上、金額小'},
+ {id:'t7',d:'11/22',t:'08:30',m:'早餐店',a:-75,c:'吃',ac:'現金',by:'老大',ev:'口述'},
+ {id:'t3',d:'11/21',t:'21:30',m:'線上付款',a:-1290,c:'未分類',ac:'主力卡',by:'塔塔',st:'guess',ev:'銀行 LINE 通知',why:'通知沒寫店名'},
+ {id:'t4',d:'11/21',t:'18:05',m:'AI 助理 Pro',a:-652,c:'訂閱',ac:'主力卡',by:'塔塔',st:'guess',ev:'銀行 LINE 通知',fx:'US$20.00',why:'跟訂閱清單的金額對得上'},
+ {id:'t5',d:'11/21',t:'13:20',m:'轉帳入帳',a:4000,c:'收入',stream:'教學授權',ac:'主力帳戶',by:'塔塔',st:'guess',ev:'網銀',why:'金額跟上次教學授權一樣'},
+ {id:'t8',d:'11/21',t:'12:15',m:'便當',a:-110,c:'吃',ac:'主力卡',by:'塔塔',ev:'銀行 LINE 通知',edits:1},
+ {id:'t9',d:'11/21',t:'10:02',m:'咖啡',a:-140,c:'吃',ac:'電子錢包',by:'朋朋',ev:'截圖'},
+ {id:'t6',d:'11/20',t:'23:48',m:'計程車',a:-310,c:'交通',ac:'主力卡',by:'塔塔',st:'guess',ev:'銀行 LINE 通知',why:'深夜、像車資的金額'},
+ {id:'t10',d:'11/20',t:'19:40',m:'超市',a:-486,c:'其他',ac:'主力卡',by:'塔塔',ev:'銀行 LINE 通知',edits:2},
+ {id:'t11',d:'11/20',t:'14:00',m:'AI 影片案 尾款',a:18000,c:'收入',stream:'AI 影片案',ac:'主力帳戶',by:'老大',ev:'網銀'},
+ {id:'t15',d:'11/20',t:'11:05',m:'刷卡消費',a:-420,c:'未分類',ac:'主力卡',by:'塔塔',ev:'銀行 LINE 通知'},
+ {id:'t12',d:'11/19',t:'20:10',m:'藥局',a:-100,c:'健康',ac:'現金',by:'老大',ev:'口述'},
+ {id:'t16',d:'11/19',t:'13:30',m:'刷卡消費',a:-260,c:'未分類',ac:'主力卡',by:'塔塔',ev:'銀行 LINE 通知'},
+ {id:'t13',d:'11/18',t:'09:00',m:'雲端空間 2TB',a:-330,c:'訂閱',ac:'主力卡',by:'塔塔',ev:'銀行 LINE 通知'},
+ {id:'t17',d:'11/17',t:'15:20',m:'轉到數位帳戶',a:-5000,c:'轉帳',ac:'主力帳戶',by:'老大',ev:'網銀',transfer:1},
+ {id:'t14',d:'11/15',t:'10:00',m:'房租',a:-12000,c:'住',ac:'主力帳戶',by:'老大',ev:'網銀'}
+];
+const BILLS=[{id:'b1',name:'房租',c:'住',amt:12000,due:'11/15',rel:-7,paid:true,ac:'主力帳戶'},{id:'b2',name:'管理費',c:'住',amt:2400,due:'11/25',rel:3,ac:'主力帳戶'},{id:'b3',name:'網路月費',c:'住',amt:1099,due:'11/11',rel:-11,paid:true,ac:'主力卡'},{id:'b4',name:'健身房',c:'健康',amt:1200,due:'12/05',rel:13,ac:'主力卡'}];
+const SUBS=[{id:'s1',name:'AI 助理 Pro',amt:652,fx:'US$20.00',cyc:'月',due:'11/28',rel:6,ac:'主力卡'},{id:'s2',name:'影音串流',amt:390,cyc:'月',due:'12/02',rel:10,ac:'主力卡'},{id:'s3',name:'雲端空間 2TB',amt:330,cyc:'月',due:'12/05',rel:13,ac:'主力卡'},{id:'s4',name:'剪輯軟體',amt:1680,cyc:'月',due:'12/10',rel:18,ac:'公司卡',co:true},{id:'s5',name:'音樂串流',amt:149,cyc:'月',due:'12/13',rel:21,ac:'主力卡'},{id:'s6',name:'AI 影片生成',amt:978,fx:'US$30.00',cyc:'月',due:'12/15',rel:23,ac:'主力卡'},{id:'s7',name:'設計素材庫',amt:3588,cyc:'年',due:'03/14',rel:112,ac:'主力卡'}];
+const ACCTS=[['主力帳戶','銀行',52300],['數位帳戶','銀行',28100],['現金','現金',3200],['電子錢包','電子錢包',2800]];
+const PAYS=['主力卡','主力帳戶','數位帳戶','現金','電子錢包'];
+const W7=[['日',540],['一',1380],['二',260],['三',910],['四',796],['五',2192],['六',278]];
+
+const fmt=n=>Math.abs(Math.round(n)).toLocaleString('en-US');
+const pc=x=>Math.round(x*100)+'%';
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function amt(n,o){o=o||{};const sign=(n<0&&!o.abs)?'−':(o.plus&&n>0?'+':'');return '<span class="amt'+(o.c?' '+o.c:'')+'">'+sign+'<i>NT$</i><b'+(o.roll?' data-roll="'+o.roll+'" data-val="'+Math.abs(Math.round(n))+'"':'')+'>'+fmt(n)+'</b></span>'}
+const rel=r=>r===0?'今天':r>0?r+' 天後':'逾期 '+(-r)+' 天';
+
+function D(){
+  const scn=S.scn,empty=scn==='empty';
+  const cats=CATS.map(c=>Object.assign({},c));let un={s:1870,n:14};let income=43200;
+  const put=(k,a,n)=>{if(k==='未分類'){un.s+=a;un.n+=n}else if(k==='收入'){income+=a}else{const c=cats.find(c=>c.k===k);if(c){c.s+=a;c.n+=n}}};
+  if(scn==='over'){put('吃',6220,9);put('娛樂與社交',9650,6);put('購物',7950,4)}
+  if(empty){cats.forEach(c=>{c.s=0;c.n=0});un={s:0,n:0};income=0}
+  else TX.forEach(t=>{if(t.transfer)return;const f=S.fix[t.id],cur=(f&&f.c)||t.c;
+    if(S.voided.has(t.id)){put(t.c,t.a<0?t.a:-t.a,-1);return}
+    if(cur!==t.c&&t.a<0){put(t.c,t.a,-1);put(cur,-t.a,1)}});
+  S.added.forEach(t=>{if(S.voided.has(t.id))return;if(t.a<0)put(t.c,-t.a,1);else income+=t.a});
+  const all=(empty?[]:TX).map(t=>{const f=S.fix[t.id]||{};return Object.assign({},t,f,{pend:t.st==='guess'&&!S.ok.has(t.id)&&scn!=='done'})});
+  const txs=S.added.concat(all).filter(t=>!S.voided.has(t.id));
+  const inbox=txs.filter(t=>t.pend);
+  const E0={b1:5,b2:15,b3:1,b4:25};const bills=BILLS.map(b=>Object.assign({type:'bill'},b,empty?{paid:S.paid.has(b.id),rel:E0[b.id]}:{paid:b.paid||S.paid.has(b.id)}));
+  const subs=SUBS.map(s=>Object.assign({type:'sub',c:'訂閱'},s,{cancel:S.cancel.has(s.id)}));
+  const nb=bills.filter(b=>!b.paid&&b.rel>=-30).sort((a,b)=>a.rel-b.rel)[0]||null;
+  const spent=cats.reduce((a,c)=>a+c.s,0)+un.s,left=BUDGET-spent;
+  const day=empty?1:P.day,dl=empty?30:P.left;
+  return {scn,empty,err:scn==='error',cats,un,income,txs,inbox,bills,subs,nb,spent,left,day,dl,perDay:left>0?Math.floor(left/dl/10)*10:0,pS:spent/BUDGET,pT:day/P.days,
+    subAvg:subs.filter(s=>!s.co).reduce((a,s)=>a+(s.cyc==='年'?s.amt/12:s.amt),0),cash:ACCTS.reduce((a,x)=>a+x[2],0)};
+}
+function tata(d){
+  if(d.err)return{line:'讀不到資料。',mood:'idle'};
+  if(d.scn==='offline')return{line:'離線中。先給你看 <b>09:12</b> 的。',mood:'sleepy'};
+  if(d.left<0)return{line:'<b>超支 '+fmt(-d.left)+'</b>。',mood:'over'};
+  if(d.inbox.length)return{line:'<b>'+d.inbox.length+' 筆</b>等你看。',mood:'thinking'};
+  if(d.nb&&d.nb.rel<=3)return{line:d.nb.name+' <b>'+fmt(d.nb.amt)+'</b>，'+rel(d.nb.rel)+'繳。',mood:'alert'};
+  if(d.empty)return{line:'新的一期。預算 <b>'+fmt(BUDGET)+'</b>。',mood:'idle'};
+  return{line:'更新於 2 分鐘前',mood:'idle'};
+}
+
+/* ---------- 塔塔的臉：只用共用契約的介面 ---------- */
+let hdFace=null,bigFace=null,moodT=0;
+function mountFace(el,size,mood){
+  if(window.TataFace&&typeof TataFace.mount==='function'){try{return TataFace.mount(el,{mood:mood||'idle',size:size,reduceMotion:rm})}catch(e){console.warn('TataFace.mount 失敗，改用靜態後備',e)}}
+  el.innerHTML='<svg viewBox="0 0 100 100" width="'+size+'" height="'+size+'" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="var(--tata-body)"/><g fill="var(--tata-eye)"><rect x="50" y="26" width="9" height="22" rx="4.5"/><rect x="68" y="28" width="9" height="22" rx="4.5"/></g></svg>';
+  return{setMood(){},poke(){},destroy(){el.innerHTML=''}};
+}
+function setMood(m,brief){clearTimeout(moodT);try{hdFace&&hdFace.setMood(m);bigFace&&bigFace.setMood(m)}catch(e){}
+  if(brief)moodT=setTimeout(()=>{moodT=0;setMood(tata(D()).mood)},3000);else moodT=0}
+function remountHd(){try{hdFace&&hdFace.destroy()}catch(e){}hdFace=mountFace($('#hdFace'),S.v==='A'?48:40,tata(D()).mood)}
+
+/* ---------- 小工具 ---------- */
+function cssMs(){const v=getComputedStyle(root).getPropertyValue('--motion-dur').trim();let ms=/ms$/.test(v)?parseFloat(v):/s$/.test(v)?parseFloat(v)*1000:240;return Math.min(isFinite(ms)?ms:240,400)}
+function cssEase(){return getComputedStyle(root).getPropertyValue('--motion-ease').trim()||'ease-out'}
+function anim(el,kf,o){if(rm||!el||!el.animate)return null;try{return el.animate(kf,Object.assign({duration:cssMs(),easing:cssEase()},o||{}))}catch(e){try{return el.animate(kf,{duration:cssMs(),easing:'ease-out'})}catch(e2){return null}}}
+function onColor(v){try{const p=document.createElement('i');p.style.color='var('+v+')';phone.appendChild(p);const col=getComputedStyle(p).color;p.remove();const c=document.createElement('canvas');c.width=c.height=1;const x=c.getContext('2d');x.fillStyle=col;x.fillRect(0,0,1,1);const d=x.getImageData(0,0,1,1).data;const f=u=>{u/=255;return u<=.03928?u/12.92:Math.pow((u+.055)/1.055,2.4)};const L=.2126*f(d[0])+.7152*f(d[1])+.0722*f(d[2]);return L>.3?'#111':'#fff'}catch(e){return '#111'}}
+function syncSkin(){[root,document.body].forEach(e=>{e.setAttribute('data-skin',S.skin);e.setAttribute('data-theme',S.theme);e.setAttribute('data-variant',S.v)});
+  root.style.setProperty('--on-accent',onColor('--accent'));root.classList.toggle('has-blur',parseFloat(getComputedStyle(document.body).getPropertyValue('--blur'))>0);root.style.setProperty('--on-bad',onColor('--bad'));
+  $$('[data-pv]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.pv===S.v)));$$('[data-ps]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.ps===S.skin)));$('#ptT').setAttribute('aria-pressed',String(S.theme==='dark'));$('#scn').value=S.scn}
+let prevNum={},rollOn=false;
+function rollNums(){$$('[data-roll]',phone).forEach(el=>{const k=el.dataset.roll,to=+el.dataset.val,from=prevNum[k];prevNum[k]=to;
+  if(!rollOn||rm||from==null||from===to)return;const t0=performance.now();(function step(t){const p=Math.min((t-t0)/380,1),e=1-Math.pow(1-p,3);el.textContent=fmt(from+(to-from)*e);if(p<1&&el.isConnected)requestAnimationFrame(step)})(t0)})}
+let toastT=0,undoFn=null;
+function toast(msg,undo){const t=$('#toast');$('#toastT').textContent=msg;undoFn=undo||null;$('#toastU').hidden=!undo;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),undo?8000:3200)}
+$('#toastU').addEventListener('click',()=>{if(undoFn){const f=undoFn;undoFn=null;f();$('#toast').classList.remove('on');rollOn=true;render();toast('已復原')}});
+
+/* ---------- 共用元件 ---------- */
+function bul(p,t,o){o=o||{};const over=p>1;return '<div class="bul'+(over?' over':'')+(o.big?' big':'')+'" role="img" aria-label="'+(over?'超過預算，':'')+'花了 '+pc(p)+(t!=null?'，時間過了 '+pc(t):'')+'"><span class="bul-f" style="--p:'+Math.min(p,1).toFixed(3)+'"></span>'+(t!=null?'<span class="bul-t" style="--t:'+t.toFixed(3)+'"></span>':'')+(over?'<em>超</em>':'')+'</div>'}
+function msg(key,html,acts,cls){return '<div class="msg'+(cls?' '+cls:'')+'" data-flip="m-'+key+'"><span class="eyes" aria-hidden="true"></span><div class="msg-b"><p>'+html+'</p>'+(acts&&acts.length?'<div class="acts">'+acts.join('')+'</div>':'')+'</div></div>'}
+const B=(act,label,o)=>{o=o||{};return '<button class="btn'+(o.cls?' '+o.cls:'')+'" data-act="'+act+'"'+(o.id?' data-id="'+o.id+'"':'')+(o.k?' data-k="'+o.k+'"':'')+(o.c?' data-c="'+o.c+'"':'')+(o.tab?' data-tab="'+o.tab+'"':'')+(o.msg?' data-msg="'+esc(o.msg)+'"':'')+(o.dis?' disabled':'')+'>'+label+'</button>'};
+const catName=t=>t.c==='收入'?(t.stream||'收入'):t.c;
+function cfActs(t,big){const un=t.c==='未分類';
+  return un?['購物','工作','其他'].map(k=>B('ok','記成'+k,{cls:'pri',id:t.id,c:k})).join('')+B('fix','其他分類',{id:t.id})
+           :B('fix','改分類',{id:t.id})+B('ok','對，記成'+catName(t),{cls:'pri',id:t.id})}
+function cfWhy(t){return '<p class="cf-why"><span class="eyes" aria-hidden="true"></span>'+(t.c==='未分類'?'我分不出來。':'我推定是'+catName(t)+'。')+t.why+'。</p>'}
+function cfCard(t){return '<article class="cf" data-flip="cf-'+t.id+'" data-cf="'+t.id+'"><button class="row" data-act="sheet" data-k="tx" data-id="'+t.id+'"><span class="g" aria-hidden="true">'+G(t.c)+'</span><span class="row-m"><b>'+esc(t.m)+'</b><small>'+t.d+' '+t.t+' · '+t.ac+'</small></span>'+amt(t.a,{plus:1})+'<span class="chev" aria-hidden="true">›</span></button>'+cfWhy(t)+'<div class="acts">'+cfActs(t)+'</div></article>'}
+function txRow(t){const tg=t.pend?'<span class="tag act">待確認</span>':t.queued?'<span class="tag">等待上傳</span>':'';
+  return '<button class="row" data-act="sheet" data-k="tx" data-id="'+t.id+'"><span class="g" aria-hidden="true">'+G(t.c)+'</span><span class="row-m"><b>'+esc(t.m)+tg+'</b><small>'+t.t+' · '+t.ac+' · '+t.by+'記</small></span>'+amt(t.a,{plus:1,c:t.a>0?'pos':''})+'<span class="chev" aria-hidden="true">›</span></button>'}
+function fxRow(x){const st=x.paid?'<span class="tag">已繳</span>':x.cancel?'<span class="tag act">要取消</span>':x.co?'<span class="tag">公司付</span>':'';
+  return '<button class="row" data-act="sheet" data-k="fx" data-id="'+x.id+'"><span class="g" aria-hidden="true">'+(x.type==='bill'?G(x.c):'訂')+'</span><span class="row-m"><b>'+esc(x.name)+st+'</b><small>'+(x.paid?x.due+' 已繳':rel(x.rel)+' · '+x.due)+' · '+(x.type==='bill'?'帳單':'訂閱（'+x.cyc+'繳）')+'</small></span>'+amt(x.amt)+'<span class="chev" aria-hidden="true">›</span></button>'}
+function errBlock(){return '<div class="empty" role="alert"><h2>讀不到資料</h2><p>連不上資料庫，可能是網路不穩。你的帳都還在，沒有少。</p>'+B('retry','再試一次',{cls:'pri'})+'</div>'}
+function skeleton(){return '<div class="skel" aria-hidden="true"></div><div class="skel s" aria-hidden="true"></div><div class="skel" aria-hidden="true"></div><div class="skel s" aria-hidden="true"></div><p class="vh" role="status">讀取中</p>'}
+function leftBlock(d,cls){const over=d.left<0;return '<span class="lab">'+(over?'這期超支':'這期還能花')+'</span><span class="'+cls+'" data-main>'+amt(d.left,{abs:1,roll:'left',c:over?'neg':''})+'</span>'}
+function leftSub(d){return d.empty?'每天 '+fmt(d.perDay)+' · 還有 '+d.dl+' 天':d.left<0?'預算 '+fmt(BUDGET)+' · 還有 '+d.dl+' 天':'每天 '+fmt(d.perDay)+' · 還有 '+d.dl+' 天'}
+function leftBar(d,big){return d.empty?'<p class="gray-line">還沒花。預算 '+fmt(BUDGET)+'。</p>':bul(d.pS,d.pT,{big:big})}
+
+/* ---------- 今天：三種版樣 ---------- */
+function homeA(d){
+  if(d.err)return errBlock();
+  let h='<button class="strip" data-act="sheet" data-k="left">'+leftBlock(d,'big')+'<span class="sub">'+leftSub(d)+' ›</span>'+leftBar(d)+'</button>';
+  h+=S.chat.map((c,i)=>c.me?'<div class="msg me" data-flip="c'+c.n+'"><div class="msg-b"><p>'+esc(c.t)+'</p></div></div>':msg('c'+c.n,c.t)).join('');
+  if(d.empty)return h+'<div class="empty"><h2>新的一期開始了</h2><p>11/10 起算，還沒有任何支出。銀行通知進來我會自己記。</p>'+B('add','記第一筆',{cls:'pri'})+'</div>';
+  const by=dd=>d.inbox.filter(t=>t.d===dd),t0=by('11/22'),t1=by('11/21'),t2=by('11/20');
+  h+='<p class="day">今天 11/22</p>';
+  h+=msg('sum',d.left<0?'超支 <b>'+fmt(-d.left)+'</b>。吃、娛樂、購物超過預算。':'花了 <b>'+pc(d.pS)+'</b>，時間過了 <b>'+pc(d.pT)+'</b>。大筆的房租已經繳了。',[B('sheet','看算法',{k:'left'})]);
+  if(d.inbox.length)h+=msg('inbox','我記了 <b>'+d.inbox.length+' 筆</b>要你看。'+(t0.length?'今天 '+t0.length+' 筆。':''))+t0.map(cfCard).join('');
+  else h+=msg('inbox','帳都對過了。沒事。',null,'quiet');
+  if(d.nb&&d.nb.rel<=3)h+=msg('bill',d.nb.name+' <b>'+fmt(d.nb.amt)+'</b>，'+rel(d.nb.rel)+'要繳。',[B('paid','標成已繳',{id:d.nb.id}),B('sheet','看帳單',{k:'fx',id:d.nb.id})]);
+  if(t1.length)h+='<p class="day">昨天 11/21</p>'+msg('y','昨晚 22:00 對帳，補了 <b>'+t1.length+' 筆</b>。')+t1.map(cfCard).join('');
+  h+='<p class="day">11/20</p>'+t2.map(cfCard).join('')+msg('inc','AI 影片案尾款 <b>18,000</b> 進來了。收入到目標的 <b>'+pc(d.income/TARGET)+'</b>。',[B('sheet','看收入目標',{k:'income'})]);
+  return h+B('tab','看更早的每一筆',{cls:'wide',tab:'ledger'});
+}
+function incomeTile(d){return '<button class="card tile" data-act="sheet" data-k="income"><span class="lab">這期收入 ›</span><span class="mid" data-main>'+amt(d.income,{roll:'inc'})+'</span><span class="sub">目標 '+fmt(TARGET)+' 的 '+pc(d.income/TARGET)+'</span>'+bul(Math.min(d.income/TARGET,1))+'</button>'}
+function billTile(d){return d.nb?'<button class="card tile" data-act="sheet" data-k="fx" data-id="'+d.nb.id+'"><span class="lab">下一筆要繳 ›</span><span class="mid" data-main>'+amt(d.nb.amt)+'</span><span class="sub">'+esc(d.nb.name)+' · '+rel(d.nb.rel)+'</span></button>':'<button class="card tile" data-act="tab" data-tab="fixed"><span class="lab">帳單 ›</span><span class="sub">這期的都繳了。</span></button>'}
+function homeB(d){
+  if(d.err)return errBlock();
+  let one;
+  if(d.left<0)one=['超支 '+fmt(-d.left),'吃、娛樂、購物超過預算。',B('tab','看哪裡超了',{cls:'pri',tab:'budget'})];
+  else if(d.inbox.length)one=[d.inbox.length+' 筆等你確認','我推定了分類，你看對不對。',B('sheet','開始確認',{cls:'pri',k:'review'})];
+  else if(d.nb&&d.nb.rel<=3)one=[d.nb.name+' '+rel(d.nb.rel)+'要繳','金額 '+fmt(d.nb.amt)+'。',B('paid','標成已繳',{cls:'pri',id:d.nb.id})];
+  else if(d.empty)one=['新的一期開始了','還沒有支出。',B('add','記第一筆',{cls:'pri'})];
+  else one=['今天沒事','帳都對過了。',''];
+  let h='<section class="card hero" data-flip="hero" aria-label="今天一件事"><div class="tx"><span class="lab">今天一件事</span><b>'+one[0]+'</b><span class="sub">'+one[1]+'</span></div>'+one[2]+'</section>';
+  h+='<button class="card tile" data-flip="left" data-act="sheet" data-k="left">'+leftBlock(d,'big')+'<span class="sub">'+leftSub(d)+' ›</span>'+leftBar(d,true)+'</button>';
+  h+='<div class="two" data-flip="two">'+incomeTile(d)+billTile(d)+'</div>';
+  if(!S.hide.where&&!d.empty){const top=d.cats.slice().sort((a,b)=>b.s-a.s).slice(0,4),mx=top[0].s||1;
+    h+='<section class="card" data-flip="where"><h2 class="h3">花在哪 '+B('tab','看全部分類 ›',{tab:'budget'})+'</h2>'+top.map(c=>'<div class="hbar"><span>'+c.k.slice(0,2)+'</span><span class="t"><span style="--p:'+(c.s/mx).toFixed(3)+'"></span></span>'+amt(c.s)+'</div>').join('')+'</section>'}
+  if(!S.hide.recent&&d.txs.length)h+='<section class="card" data-flip="recent"><h2 class="h3">最近 3 筆 '+B('tab','看帳本 ›',{tab:'ledger'})+'</h2><div class="list">'+d.txs.slice(0,3).map(txRow).join('')+'</div></section>';
+  if(!S.hide.subs)h+='<button class="card tile" data-flip="subs" data-act="tab" data-tab="fixed"><span class="lab">訂閱每月平均 ›</span><span class="mid">'+amt(d.subAvg)+'</span><span class="sub">'+d.subs.filter(s=>!s.co).length+' 個自己付 · 1 個標了要取消</span></button>';
+  if(!S.hide.acct)h+='<button class="card tile" data-flip="acct" data-act="sheet" data-k="accounts"><span class="lab">可動用現金 ›</span><span class="mid">'+amt(d.cash)+'</span><span class="sub">照這期預算可以撐 '+(d.cash/BUDGET).toFixed(1)+' 個月</span></button>';
+  return h+B('sheet','調整卡片',{cls:'wide',k:'cards'});
+}
+function deckCards(d){const cs=[{k:'left'}];if(!d.err&&!d.empty){d.inbox.forEach(t=>cs.push({k:'cf',t}));if(d.nb&&d.nb.rel<=3)cs.push({k:'bill',b:d.nb})}cs.push({k:'done'});return cs}
+function homeC(d){
+  if(d.err)return errBlock();
+  const cs=deckCards(d);S.cIdx=Math.max(0,Math.min(S.cIdx,cs.length-1));const i=S.cIdx,c=cs[i];let b;
+  if(c.k==='left')b='<article class="dcard swipe in" data-flip="d-left"><span class="kick">'+P.label+' · 第 '+d.day+' 天</span>'+leftBlock(d,'huge')+'<span class="sub">'+leftSub(d)+'</span>'+leftBar(d,true)+'<div class="acts" style="margin-top:28px">'+B('sheet','看算法',{k:'left'})+(d.empty?B('add','記第一筆',{cls:'pri'}):B('cnext',cs.length>2?'看 '+(cs.length-2)+' 件事':'下一張',{cls:'pri'}))+'</div></article>';
+  else if(c.k==='cf'){const t=c.t;b='<article class="dcard swipe in" data-flip="d-'+t.id+'" data-cf="'+t.id+'"><span class="kick">塔塔記的 · '+t.d+' '+t.t+' · '+t.ac+'</span><span class="g" aria-hidden="true">'+G(t.c)+'</span><h2 class="ttl">'+esc(t.m)+'</h2><span class="huge">'+amt(t.a,{plus:1})+'</span>'+cfWhy(t)+'<div class="acts">'+cfActs(t)+'</div>'+B('sheet','看這筆的來源',{k:'tx',id:t.id})+'</article>'}
+  else if(c.k==='bill'){const x=c.b;b='<article class="dcard swipe in" data-flip="d-bill"><span class="kick">帳單 · '+x.due+'</span><h2 class="ttl">'+esc(x.name)+' '+rel(x.rel)+'要繳</h2><span class="huge" data-main>'+amt(x.amt)+'</span><span class="sub">從'+x.ac+'付</span><div class="acts">'+B('cnext','晚點再說')+B('paid','標成已繳',{cls:'pri',id:x.id})+'</div>'+B('sheet','看帳單',{k:'fx',id:x.id})+'</article>'}
+  else b='<article class="dcard swipe in center" data-flip="d-done"><span class="tface" id="bigFace"></span><h2 class="ttl">'+(d.empty?'新的一期，還沒有事':d.inbox.length?'看過一輪了':'看完了，今天沒事')+'</h2><span class="sub">'+(d.inbox.length?'還有 '+d.inbox.length+' 筆沒確認。':'')+(d.left<0?'超支 '+fmt(-d.left)+'。':'還能花 '+fmt(d.left)+'，每天 '+fmt(d.perDay)+'。')+(d.nb&&d.nb.rel<=3?d.nb.name+' '+rel(d.nb.rel)+'要繳。':'')+'</span><div class="acts">'+B('cgo','回第一張',{k:'0'})+B('tab','看帳本',{cls:'pri',tab:'ledger'})+'</div></article>';
+  return '<div class="deck"><div class="segs" role="progressbar" aria-label="今天的事" aria-valuemin="1" aria-valuemax="'+cs.length+'" aria-valuenow="'+(i+1)+'" aria-valuetext="第 '+(i+1)+' 張，共 '+cs.length+' 張">'+cs.map((_,j)=>'<i class="'+(j<i?'done':j===i?'on':'')+'"></i>').join('')+'</div><div class="deck-stage">'+b+'</div><div class="deck-nav">'+B('cprev','‹ 上一張',{dis:i===0})+'<span class="num">'+(i+1)+' / '+cs.length+'</span>'+B('cnext','下一張 ›',{dis:i===cs.length-1})+'</div></div>';
+}
+
+/* ---------- 帳本（三版共用） ---------- */
+function ledger(d){
+  if(d.err)return errBlock();
+  const F=[['all','全部'],['pend','待確認'+(d.inbox.length?' '+d.inbox.length:'')],['un','未分類'],['inc','收入']];
+  let h='<p class="sub">'+P.label+'　這期 78 筆，塔塔記了 69%</p><div class="chips" role="group" aria-label="篩選">'+F.map(f=>'<button class="chip" data-act="lf" data-k="'+f[0]+'" aria-pressed="'+(S.lf===f[0])+'">'+f[1]+'</button>').join('')+'</div>';
+  const list=d.txs.filter(t=>S.lf==='all'||(S.lf==='pend'&&t.pend)||(S.lf==='un'&&t.c==='未分類')||(S.lf==='inc'&&t.a>0));
+  if(!list.length)return h+'<div class="empty"><h2>'+(d.empty?'這期還沒有交易':'「'+F.find(f=>f[0]===S.lf)[1].replace(/ \d+$/,'')+'」沒有符合的交易')+'</h2><p>'+(d.empty?'銀行通知進來塔塔會自己記，也可以自己記一筆。':'換一個篩選，或看全部。')+'</p>'+(d.empty?B('add','記第一筆',{cls:'pri'}):B('lf','看全部',{cls:'pri',k:'all'}))+'</div>';
+  const days=[];list.forEach(t=>{let g=days.find(x=>x.d===t.d);if(!g)days.push(g={d:t.d,ts:[]});g.ts.push(t)});
+  h+=days.map(g=>{const sum=g.ts.reduce((a,t)=>a+(t.a<0&&!t.transfer?t.a:0),0);return '<section class="card" data-flip="day-'+g.d+'"><h2 class="h3"><span>'+(g.d===P.today?'今天 ':'')+g.d+'</span><span class="sub">支出 '+amt(sum,{abs:1})+'</span></h2><div class="list">'+g.ts.map(txRow).join('')+'</div></section>'}).join('');
+  if(S.lf==='all'&&!d.empty)h+=B('toast','再載入 20 筆',{cls:'wide',msg:'原型只放了 '+TX.length+' 筆樣本，其餘 '+(78-TX.length)+' 筆正式版用「再載入」取得。'});
+  return h;
+}
+
+/* ---------- 預算：三種版樣 ---------- */
+const catSort=d=>d.cats.slice().sort((a,b)=>b.s/b.b-a.s/a.b);
+function unRow(d){return d.un.n?'<div class="row" style="min-height:60px"><span class="g" aria-hidden="true">？</span><span class="row-m"><b>未分類</b><small>'+d.un.n+' 筆 · '+fmt(d.un.s)+'</small></span>'+B('goUn','補分類',{cls:'pri'})+'</div>':''}
+function catRow(c,d){return '<button class="row" data-act="sheet" data-k="cat" data-id="'+c.k+'" style="flex-wrap:wrap"><span class="g" aria-hidden="true">'+c.g+'</span><span class="row-m"><b>'+c.k+'</b><small>'+(c.s?c.n+' 筆 · 預算 '+fmt(c.b):'還沒花 · 預算 '+fmt(c.b))+'</small></span>'+amt(c.s)+'<span class="chev" aria-hidden="true">›</span><span style="flex-basis:100%;padding-left:46px">'+(c.s?bul(c.s/c.b,d.pT):'')+'</span></button>'}
+function budgetExtras(d){return '<div class="list card">'+'<button class="row" data-act="sheet" data-k="income"><span class="g" aria-hidden="true">入</span><span class="row-m"><b>收入目標</b><small>'+fmt(d.income)+' / '+fmt(TARGET)+'</small></span><span class="num">'+pc(d.income/TARGET)+'</span><span class="chev" aria-hidden="true">›</span></button><button class="row" data-act="sheet" data-k="recap"><span class="g" aria-hidden="true">回</span><span class="row-m"><b>上期回顧</b><small>10/10～11/9</small></span><span class="chev" aria-hidden="true">›</span></button><button class="row" data-act="sheet" data-k="accounts"><span class="g" aria-hidden="true">帳</span><span class="row-m"><b>帳戶</b><small>可動用現金、負債</small></span><span class="chev" aria-hidden="true">›</span></button></div>'}
+function budgetA(d){
+  if(d.err)return errBlock();const cs=catSort(d),hot=cs[0];
+  return msg('bsum',d.empty?'新的一期。預算 <b>'+fmt(BUDGET)+'</b>，還沒花。':'花了 <b>'+fmt(d.spent)+'</b>，預算 <b>'+fmt(BUDGET)+'</b>。'+hot.k+(hot.s>hot.b?'超過上限。':'最接近上限。'),[B('sheet','看算法',{k:'left'})])
+    +'<section class="card"><div class="list">'+unRow(d)+cs.map(c=>catRow(c,d)).join('')+'</div></section>'+budgetExtras(d);
+}
+function budgetB(d){
+  if(d.err)return errBlock();
+  return '<button class="card tile" data-act="sheet" data-k="left"><span class="lab">'+P.label+' 已花 ›</span><span class="big">'+amt(d.spent,{roll:'spent'})+'</span><span class="sub">預算 '+fmt(BUDGET)+' · '+(d.left<0?'超支 '+fmt(-d.left):'還能花 '+fmt(d.left))+'</span>'+leftBar(d,true)+'</button>'
+    +(d.un.n?'<section class="card">'+unRow(d)+'</section>':'')
+    +'<div class="two">'+catSort(d).map(c=>{const l=c.b-c.s;return '<button class="card tile catc" data-act="sheet" data-k="cat" data-id="'+c.k+'"><span class="lab"><b style="color:var(--ink)">'+c.k+'</b> ›</span><span class="mid">'+amt(l,{abs:1,c:l<0?'neg':''})+'</span><span class="sub">'+(l<0?'超過 · ':'還剩 · ')+(c.s?c.n+' 筆':'還沒花')+'</span>'+(c.s?bul(c.s/c.b,d.pT):'')+'</button>'}).join('')+'</div>'+budgetExtras(d);
+}
+function budgetC(d){
+  if(d.err)return errBlock();const cs=catSort(d),n=cs.length+1;S.bIdx=Math.max(0,Math.min(S.bIdx,n-1));const i=S.bIdx;let b;
+  if(i===0)b='<article class="dcard swipe in" data-pager="b"><span class="kick">'+P.label+' · 全部</span><span class="lab">'+(d.left<0?'超支':'還能花')+'</span><span class="huge">'+amt(d.left,{abs:1,c:d.left<0?'neg':''})+'</span><span class="sub">花了 '+fmt(d.spent)+' / 預算 '+fmt(BUDGET)+'</span>'+leftBar(d,true)+'<div class="acts" style="margin-top:28px">'+B('sheet','看總表',{k:'allcats'})+B('pnext','一類一類看',{cls:'pri',k:'b'})+'</div></article>';
+  else{const c=cs[i-1],l=c.b-c.s;b='<article class="dcard swipe in" data-pager="b"><span class="kick">第 '+i+' 接近上限 · 共 '+cs.length+' 類</span><span class="g" aria-hidden="true">'+c.g+'</span><h2 class="ttl">'+c.k+'</h2><span class="lab">'+(l<0?'超過':'還剩')+'</span><span class="huge">'+amt(l,{abs:1,c:l<0?'neg':''})+'</span><span class="sub">'+(c.s?'花了 '+fmt(c.s)+' / 預算 '+fmt(c.b)+' · '+c.n+' 筆':'還沒花 · 預算 '+fmt(c.b))+'</span>'+(c.s?bul(c.s/c.b,d.pT,{big:true}):'')+'<div class="acts" style="margin-top:28px">'+B('sheet','看這類的每一筆',{cls:'pri',k:'cat',id:c.k})+'</div></article>'}
+  return '<div class="deck"><div class="segs" role="progressbar" aria-label="預算分類" aria-valuemin="1" aria-valuemax="'+n+'" aria-valuenow="'+(i+1)+'" aria-valuetext="第 '+(i+1)+' 頁，共 '+n+' 頁">'+Array.from({length:n},(_,j)=>'<i class="'+(j===i?'on':'')+'"></i>').join('')+'</div><div class="deck-stage">'+b+'</div><div class="deck-nav">'+B('pprev','‹ 上一類',{k:'b',dis:i===0})+B('sheet','總表',{k:'allcats'})+B('pnext','下一類 ›',{k:'b',dis:i===n-1})+'</div></div>';
+}
+
+/* ---------- 定期（帳單與訂閱）：三種版樣 ---------- */
+function fixedItems(d){return d.bills.concat(d.subs).sort((a,b)=>a.rel-b.rel)}
+function fixedA(d){
+  if(d.err)return errBlock();const all=fixedItems(d).filter(x=>S.ff==='all'||x.type===S.ff),open=all.filter(x=>!x.paid),paid=all.filter(x=>x.paid);
+  const wk=fixedItems(d).filter(x=>!x.paid&&!x.co&&x.rel<=7&&x.rel>=0),grp=[['這 7 天',x=>x.rel<=7],['這期內（到 12/9）',x=>x.rel>7&&x.rel<=17],['之後',x=>x.rel>17]];
+  let h=msg('fsum',wk.length?'接下來 7 天要扣 <b>'+wk.length+' 筆</b>，共 <b>'+fmt(wk.reduce((a,x)=>a+x.amt,0))+'</b>。':'接下來 7 天沒有要扣的。',null,wk.length?'':'quiet');
+  h+='<div class="chips" role="group" aria-label="篩選">'+[['all','全部'],['bill','帳單'],['sub','訂閱']].map(f=>'<button class="chip" data-act="ff" data-k="'+f[0]+'" aria-pressed="'+(S.ff===f[0])+'">'+f[1]+'</button>').join('')+'</div>';
+  h+=grp.map(g=>{const xs=open.filter(g[1]);return xs.length?'<p class="day" style="text-align:left">'+g[0]+'</p><section class="card"><div class="list">'+xs.map(fxRow).join('')+'</div></section>':''}).join('');
+  if(paid.length)h+=S.showPaid?'<p class="day" style="text-align:left">已繳</p><section class="card"><div class="list">'+paid.map(fxRow).join('')+'</div></section>':B('showPaid','已繳 '+paid.length+' 筆，點開看',{cls:'wide'});
+  return h;
+}
+function fixedB(d){
+  if(d.err)return errBlock();const open=fixedItems(d).filter(x=>!x.paid),inP=open.filter(x=>x.rel<=17&&!x.co);
+  let h='<div class="two"><div class="card tile"><span class="lab">訂閱每月平均</span><span class="mid">'+amt(d.subAvg)+'</span><span class="sub">'+d.subs.filter(s=>!s.co).length+' 個自己付</span></div><div class="card tile"><span class="lab">這期還要扣</span><span class="mid">'+amt(inP.reduce((a,x)=>a+x.amt,0))+'</span><span class="sub">'+inP.length+' 筆</span></div></div>';
+  h+='<h2 class="h3">接下來 <span class="sub">往右滑還有</span></h2><div class="hs" tabindex="0" role="group" aria-label="接下來要扣的，可以橫向捲動">'+open.slice(0,5).map(x=>'<button class="card upc'+(x.rel<=7?' soon':'')+'" data-act="sheet" data-k="fx" data-id="'+x.id+'"><span class="when">'+rel(x.rel)+'</span><b>'+esc(x.name)+'</b>'+amt(x.amt)+'<span class="sub">'+(x.type==='bill'?'帳單':'訂閱')+' · '+x.due+'</span></button>').join('')+'</div>';
+  const ub=d.bills.filter(b=>!b.paid);
+  h+='<h2 class="h3">這期帳單</h2>'+(ub.length?'<section class="card"><div class="list">'+d.bills.map(fxRow).join('')+'</div></section>':'<p class="gray-line">這期的帳單都繳了。</p>');
+  h+='<h2 class="h3">訂閱 <span class="sub">'+d.subs.length+' 個</span></h2><section class="card"><div class="list">'+d.subs.map(fxRow).join('')+'</div></section>';
+  return h;
+}
+function fixedC(d){
+  if(d.err)return errBlock();const xs=fixedItems(d).filter(x=>!x.paid),n=xs.length;
+  if(!n)return '<div class="empty"><h2>沒有要扣的</h2><p>這期的帳單都繳了，也沒有訂閱。</p></div>';
+  S.fIdx=Math.max(0,Math.min(S.fIdx,n-1));const i=S.fIdx,x=xs[i],bill=x.type==='bill';
+  const acts=bill?B('pnext','晚點再說',{k:'f'})+B('paid','標成已繳',{cls:'pri',id:x.id}):x.cancel?B('uncancel','不取消了',{id:x.id})+B('pnext','下一筆',{cls:'pri',k:'f'}):B('cancel','標成要取消',{id:x.id})+B('pnext','留著，下一筆',{cls:'pri',k:'f'});
+  return '<div class="deck"><div class="segs" role="progressbar" aria-label="接下來要扣的" aria-valuemin="1" aria-valuemax="'+n+'" aria-valuenow="'+(i+1)+'" aria-valuetext="第 '+(i+1)+' 筆，共 '+n+' 筆">'+xs.map((_,j)=>'<i class="'+(j===i?'on':'')+'"></i>').join('')+'</div><div class="deck-stage"><article class="dcard swipe in" data-pager="f"><span class="kick">'+(bill?'帳單':'訂閱 · '+x.cyc+'繳')+(x.cancel?' · 標了要取消':'')+(x.co?' · 公司付':'')+'</span><h2 class="ttl">'+esc(x.name)+'</h2><span class="huge">'+amt(x.amt)+'</span><span class="sub">'+rel(x.rel)+'扣 · '+x.due+' · '+x.ac+(x.fx?' · 原幣 '+x.fx:'')+'</span><div class="acts" style="margin-top:28px">'+acts+'</div>'+B('sheet','看細節',{k:'fx',id:x.id})+'</article></div><div class="deck-nav">'+B('pprev','‹ 上一筆',{k:'f',dis:i===0})+B('sheet','全部清單',{k:'allfixed'})+B('pnext','下一筆 ›',{k:'f',dis:i===n-1})+'</div></div>';
+}
+
+/* ---------- 抽屜內容 ---------- */
+const facts=rows=>'<dl class="facts">'+rows.filter(Boolean).map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl>';
+const SH={
+ left(d){const mx=Math.max.apply(null,W7.map(x=>x[1])),avg=W7.reduce((a,x)=>a+x[1],0)/7;
+  return{t:d.left<0?'超支怎麼算的':'還能花怎麼算的',h:'<p class="lead"><span class="eyes" aria-hidden="true"></span>預算 '+fmt(BUDGET)+'，花了 '+fmt(d.spent)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還能花 '+fmt(d.left))+'。</p>'+facts([['這期預算',amt(BUDGET)],['已經花了',amt(d.spent)],[d.left<0?'超支':'還能花',amt(d.left,{abs:1})],['每天可以花',amt(d.perDay)+'（還有 '+d.dl+' 天）'],d.empty?null:['上期同一天',amt(28900)+'，這期多 '+fmt(Math.max(d.spent-28900,0))]])+leftBar(d,true)+(d.empty?'':'<h3 class="h3" style="margin-top:20px">近 7 天支出</h3><div class="bars" role="img" aria-label="近 7 天每天支出長條，平均 '+fmt(avg)+'"><span class="avg" style="--h:'+(avg/mx).toFixed(3)+'">平均 '+fmt(avg)+'</span>'+W7.map((x,i)=>'<span class="b'+(i===6?' now':'')+'"><i style="--h:'+(x[1]/mx).toFixed(3)+'"></i>'+x[0]+'</span>').join('')+'</div>')+B('toast','調整預算',{cls:'wide',msg:'原型不改資料。正式版在這裡改每類上限，塔塔會先給建議值。'})}},
+ income(d){const gap=TARGET-d.income;return{t:'收入目標',h:'<p class="lead"><span class="eyes" aria-hidden="true"></span>收入 '+fmt(d.income)+'，目標 '+fmt(TARGET)+'，還差 '+fmt(gap)+'。</p>'+bul(d.income/TARGET,d.pT,{big:true})+'<h3 class="h3" style="margin-top:20px">還沒進來的</h3><div class="list"><div class="row"><span class="g" aria-hidden="true">入</span><span class="row-m"><b>AI 影片案 頭款</b><small>預計 12/01</small></span>'+amt(30000)+'</div><div class="row"><span class="g" aria-hidden="true">入</span><span class="row-m"><b>教學授權</b><small>預計 12/05</small></span>'+amt(8000)+'</div></div><p class="sub">都進來的話，還差 '+fmt(Math.max(gap-38000,0))+'。</p>'+facts([['可動用現金',amt(d.cash)],['照這期預算可以撐',(d.cash/BUDGET).toFixed(1)+' 個月']])+B('sheet','看帳戶',{cls:'wide',k:'accounts'})}},
+ tx(d,id){const t=d.txs.find(x=>x.id===id);if(!t)return{t:'這筆',h:'<p>這筆已經作廢。</p>'};
+  return{t:t.m,h:'<div style="text-align:center"><span class="amtbox">'+amt(t.a,{plus:1})+'</span>'+(t.pend?'<p><span class="tag act">待確認</span></p>':'')+(t.queued?'<p><span class="tag">等待上傳</span></p>':'')+'</div>'+facts([['分類','<span class="g" style="display:inline-grid;width:26px;height:26px;font-size:13px;vertical-align:-7px" aria-hidden="true">'+G(t.c)+'</span> '+catName(t)],['帳戶',t.ac],['時間',t.d+' '+t.t],['誰記的',t.by],['來源',t.ev],t.fx?['原幣',t.fx]:null])+(t.why?'<p class="cf-why"><span class="eyes" aria-hidden="true"></span>'+(t.c==='未分類'?'我分不出來。':'我推定是'+catName(t)+'。')+t.why+'。</p>':'')+(t.edits?'<details><summary>改過 '+t.edits+' 次</summary><p>11/21 22:03　塔塔把分類從「未分類」改成「'+t.c+'」。'+(t.edits>1?'<br>11/21 22:10　老大把帳戶改成「'+t.ac+'」。':'')+'</p></details>':'')+'<div class="acts">'+(t.pend?B('ok','對，記成'+catName(t),{cls:'pri',id:t.id}):'')+B('fix','改這筆',{id:t.id})+B('askTx','問塔塔這筆',{id:t.id})+B('void','作廢這筆',{cls:'warn',id:t.id})+'</div>'}},
+ edit(d,id){const t=d.txs.find(x=>x.id===id);if(!S.ed||S.ed.id!==id)S.ed={id:id,c:t.c,ac:t.ac,learn:true};const e=S.ed,inc=t.a>0;
+  return{t:'改這筆：'+t.m,h:'<p class="sub">'+t.d+' '+t.t+' · '+amt(t.a,{plus:1})+'</p>'+(inc?'':'<span class="flab" id="lcat">分類</span><div class="cgrid" role="group" aria-labelledby="lcat">'+CATS.map(c=>'<button class="cbtn" data-act="edC" data-c="'+c.k+'" aria-pressed="'+(e.c===c.k)+'"><b aria-hidden="true">'+c.g+'</b>'+c.k.slice(0,2)+'</button>').join('')+'</div>')+'<span class="flab" id="lacc">帳戶</span><div class="hs" role="group" aria-labelledby="lacc" tabindex="0">'+PAYS.map(p=>'<button class="acc" style="width:120px" data-act="edA" data-c="'+p+'" aria-pressed="'+(e.ac===p)+'"><b>'+p+'</b><small>'+(p.includes('卡')?'信用卡':p==='現金'?'現金':p==='電子錢包'?'電子錢包':'銀行')+'</small></button>').join('')+'</div>'+(inc?'':'<label class="check"><input type="checkbox" id="edLearn"'+(e.learn?' checked':'')+'>以後「'+esc(t.m)+'」都記成這一類</label>')+B('edSave',inc?'存好這筆':'存成「'+e.c+'」',{cls:'pri wide',id:id,dis:e.c==='未分類'})+(e.c==='未分類'&&!inc?'<p class="hint">先選一個分類</p>':'')}},
+ cat(d,k){const c=d.cats.find(x=>x.k===k),ts=d.txs.filter(t=>t.c===k),H=[.82,.64,.91,.7,.77],cur=c.s/c.b,mx=Math.max(1,cur);
+  return{t:k,h:'<p class="lead"><span class="eyes" aria-hidden="true"></span>'+(c.s?'花了 '+fmt(c.s)+'，預算 '+fmt(c.b)+'，'+(c.s>c.b?'超過 '+fmt(c.s-c.b):'還剩 '+fmt(c.b-c.s))+'。':'這期還沒花。預算 '+fmt(c.b)+'。')+'</p>'+(c.s?bul(cur,d.pT,{big:true}):'')+'<h3 class="h3" style="margin-top:20px">近 6 期 <span class="sub">虛線框是這期，還沒結束</span></h3><div class="bars" role="img" aria-label="近 6 期這一類的支出，虛線是預算"><span class="avg" style="--h:'+(1/mx).toFixed(3)+'">預算 '+fmt(c.b)+'</span>'+H.map((h,i)=>'<span class="b"><i style="--h:'+(h/mx).toFixed(3)+'"></i>'+(['6月','7月','8月','9月','10月'][i])+'</span>').join('')+'<span class="b part"><i style="--h:'+(cur/mx).toFixed(3)+'"></i>這期</span></div><h3 class="h3">這期的 '+c.n+' 筆 <span class="sub">原型列出 '+ts.length+' 筆</span></h3>'+(ts.length?'<div class="list">'+ts.map(txRow).join('')+'</div>':'<p class="gray-line">'+(c.n?'樣本裡沒有放這一類的交易。':'沒有交易。')+'</p>')+B('toast','調整這類預算',{cls:'wide',msg:'原型不改資料。正式版在這裡改「'+k+'」的上限。'})}},
+ fx(d,id){const x=d.bills.concat(d.subs).find(y=>y.id===id),bill=x.type==='bill';
+  return{t:x.name,h:'<div style="text-align:center"><span class="amtbox">'+amt(x.amt)+'</span><p class="sub">'+(x.paid?x.due+' 已繳':rel(x.rel)+'扣 · '+x.due)+'</p></div>'+facts([['類型',bill?'固定帳單':'訂閱（'+x.cyc+'繳）'],['分類',x.c],['扣款',x.ac],x.fx?['原幣',x.fx]:null,bill?null:['一年下來',amt(x.cyc==='年'?x.amt:x.amt*12)],x.co?['誰付','公司付，不算進你的預算']:null,x.cancel?['狀態','標了要取消，期限 '+x.due]:null])+(bill?'':'<p class="cf-why"><span class="eyes" aria-hidden="true"></span>取消要你自己或朋朋去做。我只提醒，不代你取消。</p>')+'<div class="acts">'+(bill?(x.paid?(S.paid.has(x.id)?B('unpaid','改回還沒繳',{id:x.id}):''):B('paid','標成已繳',{cls:'pri',id:x.id})):(x.cancel?B('uncancel','不取消了',{id:x.id}):B('cancel','標成要取消',{cls:'pri',id:x.id})))+B('askFx','問塔塔這筆',{id:x.id})+'</div>'}},
+ report(d){return{t:'塔塔的回報',h:'<p class="sub">今天 09:12 · 對帳後</p><p class="lead"><span class="eyes" aria-hidden="true"></span>本期支出 '+fmt(d.spent)+'，預算還剩 '+fmt(Math.max(d.left,0))+'。收入 '+fmt(d.income)+'。</p>'+facts([['補記',d.inbox.length+' 筆，等你確認'],['未分類',d.un.n+' 筆'],['下一筆要繳',d.nb?d.nb.name+' '+fmt(d.nb.amt)+'，'+rel(d.nb.rel):'沒有']])+'<details><summary>看全文</summary><p>本期（'+P.label+'）支出 '+fmt(d.spent)+'，預算 '+fmt(BUDGET)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還剩 '+fmt(d.left))+'；收入 '+fmt(d.income)+'，離目標 '+fmt(TARGET)+' 還差 '+fmt(TARGET-d.income)+'。<br>補記（主力卡，銀行 LINE 通知）：'+d.inbox.map(t=>'<br>・'+t.d+' '+t.t+' '+esc(t.m)+' '+fmt(t.a)+'，'+catName(t)+'（塔塔判斷，推定）').join('')+'<br>以上推定的分類請確認。未分類 '+d.un.n+' 筆我分不出來，要你給。</p></details>'+B('sheet','去確認這 '+d.inbox.length+' 筆',{cls:'pri wide',k:'review',dis:!d.inbox.length})}},
+ accounts(d){return{t:'帳戶',h:'<p class="lead"><span class="eyes" aria-hidden="true"></span>可動用現金 '+fmt(d.cash)+'。照這期預算可以撐 '+(d.cash/BUDGET).toFixed(1)+' 個月。</p><h3 class="h3">可動用</h3><div class="list">'+ACCTS.map(a=>'<div class="row"><span class="g" aria-hidden="true">'+a[0][0]+'</span><span class="row-m"><b>'+a[0]+'</b><small>'+a[1]+'</small></span>'+amt(a[2])+'</div>').join('')+'</div><h3 class="h3">欠的</h3><div class="list"><div class="row"><span class="g" aria-hidden="true">卡</span><span class="row-m"><b>主力卡 未出帳</b><small>結帳日 5 號</small></span>'+amt(-14260)+'</div><div class="row"><span class="g" aria-hidden="true">期</span><span class="row-m"><b>分期</b><small>還有 6 期，每期 6,000</small></span>'+amt(-36000)+'</div></div><h3 class="h3">不算可動用</h3><div class="list"><div class="row"><span class="g" aria-hidden="true">股</span><span class="row-m"><b>股票</b><small>昨天收盤市值</small></span>'+amt(120000)+'</div></div>'+facts([['淨資產',amt(d.cash+120000-14260-36000)]])+'<p class="sub">在公共場合可以按右上角的眼睛把金額蓋住。</p>'}},
+ review(d){return{t:'確認塔塔記的帳',h:d.inbox.length?B('okAll',d.inbox.length+' 筆都對，全部確認',{cls:'pri wide'})+d.inbox.map(cfCard).join(''):'<div class="empty"><h2>都確認完了</h2><p>沒有等你看的帳。</p>'+B('close','回到今天',{cls:'pri'})+'</div>'}},
+ cards(){const L=[['where','花在哪（前四類）'],['recent','最近 3 筆'],['subs','訂閱每月平均'],['acct','可動用現金與撐幾個月']];return{t:'調整卡片',h:'<p class="sub">今天一件事、還能花、收入、下一筆要繳固定顯示。下面的可以自己開關，之後有新卡片會出現在這裡，預設關閉。</p>'+L.map(x=>'<label class="check"><input type="checkbox" data-card="'+x[0]+'"'+(S.hide[x[0]]?'':' checked')+'>'+x[1]+'</label>').join('')+B('close','照這樣顯示',{cls:'pri wide'})}},
+ recap(){return{t:'上期回顧 10/10～11/9',h:'<p class="lead"><span class="eyes" aria-hidden="true"></span>上期花了 49,300，在預算內。收入 96,000，達標。</p>'+facts([['花了',amt(49300)+'（預算內 2,700）'],['收入',amt(96000)+'（目標的 107%）'],['留下來',amt(46700)]])+'<h3 class="h3">跟前一期比</h3><div class="hbar"><span>吃</span><span class="t"><span style="--p:.86"></span></span><span class="num">多 1,900</span></div><div class="hbar"><span>訂閱</span><span class="t"><span style="--p:.4"></span></span><span class="num">多 330</span></div><div class="hbar"><span>交通</span><span class="t"><span style="--p:.22"></span></span><span class="num">少 480</span></div><p class="sub">每期結束我會整理一份，跟給金金的摘要是同一份資料。</p>'}},
+ allcats(d){return{t:'預算總表',h:'<div class="list">'+unRow(d)+catSort(d).map(c=>catRow(c,d)).join('')+'</div>'}},
+ allfixed(d){const xs=fixedItems(d);return{t:'全部帳單與訂閱',h:'<div class="list">'+xs.map(fxRow).join('')+'</div>'}},
+ add(){if(!S.add)S.add={type:'expense',v:'',c:'吃',ac:'主力卡',date:'今天',again:false};const a=S.add,T=[['expense','支出'],['income','收入'],['transfer','轉帳']];
+  return{t:'記一筆',tall:true,h:'<div class="seg" role="group" aria-label="類型">'+T.map(x=>'<button data-act="adT" data-c="'+x[0]+'" aria-pressed="'+(a.type===x[0])+'">'+x[1]+'</button>').join('')+'</div><div class="amtbox" id="adAmt" aria-live="polite">'+amt(+a.v||0)+'</div>'
+   +(a.type==='expense'?'<span class="flab" id="adl1">分類</span><div class="cgrid" role="group" aria-labelledby="adl1">'+CATS.map(c=>'<button class="cbtn" data-act="adC" data-c="'+c.k+'" aria-pressed="'+(a.c===c.k)+'"><b aria-hidden="true">'+c.g+'</b>'+c.k.slice(0,2)+'</button>').join('')+'</div>':a.type==='income'?'<span class="flab" id="adl1">收入來源</span><div class="chips" role="group" aria-labelledby="adl1">'+['AI 影片案','教學授權','其他'].map(k=>'<button class="chip" data-act="adC" data-c="'+k+'" aria-pressed="'+(a.c===k)+'">'+k+'</button>').join('')+'</div>':'<p class="sub">從上面選的帳戶轉到另一個自己的帳戶，不算支出。</p>')
+   +'<span class="flab" id="adl2">'+(a.type==='income'?'進到哪個帳戶':'用什麼付')+' · 往右滑還有</span><div class="hs" role="group" aria-labelledby="adl2" tabindex="0">'+PAYS.map(p=>'<button class="acc" style="width:112px" data-act="adA" data-c="'+p+'" aria-pressed="'+(a.ac===p)+'"><b>'+p+'</b></button>').join('')+'</div>'
+   +'<div class="chips" role="group" aria-label="日期">'+['今天','昨天'].map(k=>'<button class="chip" data-act="adD" data-c="'+k+'" aria-pressed="'+(a.date===k)+'">'+k+'</button>').join('')+'<label class="check" style="margin-left:auto"><input type="checkbox" id="adAgain"'+(a.again?' checked':'')+'>記完再記一筆</label></div>'
+   +'<div class="keys" role="group" aria-label="數字鍵盤">'+['1','2','3','4','5','6','7','8','9','00','0','⌫'].map(k=>'<button class="key" data-act="key" data-c="'+k+'"'+(k==='⌫'?' aria-label="刪掉一位"':'')+'>'+k+'</button>').join('')+'</div><button class="btn pri wide" id="adSave" data-act="adSave" style="min-height:52px"'+(+a.v?'':' disabled')+'>'+(+a.v?'記下 NT$'+fmt(+a.v):'記下這筆')+'</button><p class="hint" id="adHint">'+(+a.v?'':'先輸入金額')+'</p>'}}
+};
+
+/* ---------- 畫面輸出 ---------- */
+const PAGES={home:{A:homeA,B:homeB,C:homeC},ledger:{A:ledger,B:ledger,C:ledger},budget:{A:budgetA,B:budgetB,C:budgetC},fixed:{A:fixedA,B:fixedB,C:fixedC}};
+const TITLES={home:'今天',ledger:'帳本',budget:'預算',fixed:'定期'},ORDER=['home','ledger','budget','fixed'];
+function render(dir){
+  const d=D(),tt=tata(d);
+  $('#pgTitle').textContent=TITLES[S.tab];$('#tataLine').innerHTML=tt.line;
+  if(!moodT)setMood(tt.mood);
+  const bn=$('#banner');bn.innerHTML=d.scn==='offline'?'<div class="banner" role="status"><span class="mk" aria-hidden="true">!</span><p>目前沒有網路。看到的是 09:12 的資料，修改會在連線後自動上傳。</p></div>':d.scn==='update'?'<div class="banner" role="status"><span class="mk" aria-hidden="true">!</span><p>有新版本。</p>'+B('toast','更新到新版',{cls:'pri',msg:'正式版會在這時重新整理一次。資料不會動。'})+'</div>':'';
+  const keep=dir?null:new Map($$('[data-flip]',main).map(e=>[e.dataset.flip,e.getBoundingClientRect().top]));
+  const st=dir?0:main.scrollTop;
+  try{bigFace&&bigFace.destroy()}catch(e){}bigFace=null;
+  main.innerHTML='<div class="pg'+(dir?' fresh in-'+dir:'')+'">'+(S.loading?skeleton():PAGES[S.tab][S.v](d))+'</div>';
+  main.scrollTop=dir?(S.scroll[S.tab+S.v]||0):st;
+  if(keep)$$('[data-flip]',main).forEach(e=>{const o=keep.get(e.dataset.flip);if(o!=null){const dy=o-e.getBoundingClientRect().top;if(Math.abs(dy)>2)anim(e,[{transform:'translateY('+dy+'px)'},{transform:'none'}])}});
+  const bf=$('#bigFace');$('#hdFace').style.visibility=bf?'hidden':'';
+  if(bf)bigFace=mountFace(bf,112,d.left<0?'over':'logged');
+  $$('.tab').forEach(b=>{const on=b.dataset.tab===S.tab;if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  const bd=$('#bdgHome');bd.hidden=!d.inbox.length;bd.textContent=d.inbox.length;bd.setAttribute('aria-label',d.inbox.length+' 筆待確認');
+  const cmp=S.v==='A'&&S.tab==='home'&&!d.err;$('#composer').classList.toggle('on',cmp);phone.classList.toggle('cmp',cmp);
+  rollNums();rollOn=false;renderAside();
+}
+function go(tab){if(tab===S.tab){main.scrollTo({top:0,behavior:rm?'auto':'smooth'});return}S.scroll[S.tab+S.v]=main.scrollTop;const dir=ORDER.indexOf(tab)>ORDER.indexOf(S.tab)?'r':'l';S.tab=tab;render(dir)}
+function renderSheetBody(sw){const top=S.stack[S.stack.length-1];if(!top)return;const r=SH[top.k](D(),top.id);$('#shT').textContent=r.t;const b=$('#shB');b.innerHTML=r.h;b.classList.toggle('sw',!!sw);if(sw)b.scrollTop=0;sheet.classList.toggle('tall',!!r.tall);
+  const bk=$('#shBack');if(S.stack.length>1){const p=S.stack[S.stack.length-2];bk.hidden=false;bk.textContent='‹ '+(SH[p.k](D(),p.id).t.slice(0,6))}else bk.hidden=true;rollNums()}
+let lastFocus=null,popping=false;
+function openSheet(k,id,push){closeBub();if(!sheet.classList.contains('on')){lastFocus=document.activeElement;S.stack=[];try{history.pushState({sh:1},'')}catch(e){}}
+  if(push===false)S.stack=[];S.stack.push({k:k,id:id});const sw=sheet.classList.contains('on');renderSheetBody(sw);sheet.classList.add('on');scrim.classList.add('on');if(!sw)setTimeout(()=>{const c=$('[data-act="close"]',sheet);c&&c.focus({preventScroll:true})},60)}
+function closeSheet(fromPop){if(!sheet.classList.contains('on'))return;sheet.classList.remove('on');if(!bub.classList.contains('on'))scrim.classList.remove('on');S.stack=[];S.ed=null;
+  if(!fromPop){try{if(history.state&&history.state.sh){popping=true;history.back()}}catch(e){}}
+  if(lastFocus&&lastFocus.isConnected)try{lastFocus.focus({preventScroll:true})}catch(e){}}
+window.addEventListener('popstate',()=>{if(popping){popping=false;return}if(S.stack.length>1){S.stack.pop();renderSheetBody(true);try{history.pushState({sh:1},'')}catch(e){}}else closeSheet(true)});
+function back(){if(S.stack.length>1){S.stack.pop();renderSheetBody(true)}else closeSheet()}
+
+/* ---------- 塔塔泡泡 ---------- */
+function reply(q,d){if(S.ctx&&/這筆|為什麼|哪/.test(q))return '這筆是照'+(S.ctx.ev||'清單')+'記的。金額 '+fmt(S.ctx.a||S.ctx.amt)+'。';
+  if(/花|剩|預算|超/.test(q))return d.left>=0?'還能花 '+fmt(d.left)+'，每天 '+fmt(d.perDay)+'。':'超支 '+fmt(-d.left)+'。';
+  if(/繳|帳單|扣/.test(q))return d.nb?d.nb.name+' '+fmt(d.nb.amt)+'，'+rel(d.nb.rel)+'。':'這期的帳單都繳了。';
+  if(/分類|補/.test(q))return d.un.n?'未分類 '+d.un.n+' 筆，共 '+fmt(d.un.s)+'。到帳本點「未分類」，一筆一筆給我。':'沒有未分類的。';
+  if(/收入|賺/.test(q))return '收入 '+fmt(d.income)+'，離目標還差 '+fmt(TARGET-d.income)+'。';
+  return '收到。這是原型，還沒接上我本人，正式版我會照你說的處理。'}
+function ask(q,into){q=q.trim();if(!q)return;const log=into==='feed'?S.chat:S.bchat,n=++S.seq;
+  if(into==='feed'){log.unshift({me:1,t:q,n:n});render()}else{log.push({me:1,t:q,n:n});renderBub()}
+  clearTimeout(moodT);moodT=1;try{hdFace&&hdFace.setMood('thinking')}catch(e){}
+  setTimeout(()=>{const a=reply(q,D()),m=++S.seq;moodT=0;if(into==='feed'){log.unshift({t:esc(a),n:m});rollOn=false;render()}else{log.push({t:a,n:m});renderBub()}setMood(tata(D()).mood)},900)}
+function renderBub(){const d=D(),tt=tata(d),cx=S.ctx;
+  bub.innerHTML='<p class="say">'+(tt.line==='更新於 2 分鐘前'?'沒事。還能花 <b class="num">'+fmt(Math.max(d.left,0))+'</b>。':tt.line)+'</p>'+(d.err?'':'<div class="acts" style="margin:0">'+B('sheet','看回報全文',{k:'report'})+B('q','還能花多少')+B('q','下一筆要繳什麼')+B('q','幫我補分類')+'</div>')+(cx?'<p class="ctx">在問這一筆：'+esc(cx.m||cx.name)+' '+fmt(cx.a||cx.amt)+'</p>':'')+'<div class="log" aria-live="polite">'+S.bchat.map(c=>'<div class="msg'+(c.me?' me':'')+'">'+(c.me?'':'<span class="eyes" aria-hidden="true"></span>')+'<div class="msg-b"><p>'+esc(c.t)+'</p></div></div>').join('')+'</div><form id="bubF" autocomplete="off" aria-label="跟塔塔說"><input id="bubIn" aria-label="跟塔塔說" placeholder="跟塔塔說" maxlength="500" enterkeyhint="send"><button class="btn pri" type="submit">傳給塔塔</button></form>'+B('closeBub','收起塔塔',{cls:'wide'});
+  bub.scrollTop=bub.scrollHeight}
+function openBub(){if(sheet.classList.contains('on'))closeSheet();renderBub();bub.classList.add('on');scrim.classList.add('on');$('#tataBtn').setAttribute('aria-expanded','true')}
+function closeBub(){if(!bub.classList.contains('on'))return;bub.classList.remove('on');if(!sheet.classList.contains('on'))scrim.classList.remove('on');$('#tataBtn').setAttribute('aria-expanded','false');S.ctx=null}
+
+/* ---------- 動作 ---------- */
+function done(el,fn){const card=el&&el.closest('[data-cf]');const run=()=>{fn();rollOn=true;render();if(sheet.classList.contains('on'))renderSheetBody()};
+  const a=card&&anim(card,[{opacity:1,transform:'none'},{opacity:0,transform:'translateX(48px)'}],{duration:Math.min(cssMs(),220),fill:'forwards'});if(a)a.finished.then(run,run);else run()}
+function deckMove(el,dx,fn){const c=$('.dcard',main);const a=c&&anim(c,[{opacity:1,transform:'none'},{opacity:0,transform:'translateX('+dx+'px)'}],{duration:Math.min(cssMs(),220),fill:'forwards'});if(a)a.finished.then(fn,fn);else fn()}
+function pager(k,step){const key=k==='b'?'bIdx':k==='f'?'fIdx':'cIdx';deckMove(null,step>0?-60:60,()=>{S[key]+=step;render()})}
+const ACT={
+ tab(el){go(el.dataset.tab)},
+ sheet(el){const k=el.dataset.k,inSheet=!!el.closest('.sheet');openSheet(k,el.dataset.id,inSheet&&k!=='review'?undefined:false)},
+ add(){S.add=null;openSheet('add',null,false)},
+ close(){closeSheet()},back(){back()},closeAll(){closeBub();closeSheet()},closeBub(){closeBub()},
+ tata(){try{hdFace&&hdFace.poke()}catch(e){}if(bub.classList.contains('on'))closeBub();else openBub()},
+ mask(el){S.mask=!S.mask;phone.classList.toggle('masked',S.mask);el.setAttribute('aria-pressed',String(S.mask));el.setAttribute('aria-label',S.mask?'顯示金額':'隱藏金額');toast(S.mask?'金額蓋住了':'金額顯示了')},
+ q(el){ask(el.textContent,'bub')},
+ toast(el){toast(el.dataset.msg)},
+ retry(){S.loading=true;render('f');setTimeout(()=>{S.loading=false;S.scn='normal';syncSkin();render('f');toast('讀到了')},1200)},
+ lf(el){S.lf=el.dataset.k;render()},ff(el){S.ff=el.dataset.k;render()},showPaid(){S.showPaid=true;render()},
+ goUn(){closeSheet();S.lf='un';if(S.tab==='ledger')render();else go('ledger')},
+ ok(el){const id=el.dataset.id,c=el.dataset.c,t=TX.find(x=>x.id===id),prev=S.fix[id];
+  done(el,()=>{S.ok.add(id);if(c)S.fix[id]=Object.assign({},prev,{c:c});if(S.stack.length&&S.stack[S.stack.length-1].k==='tx')closeSheet();setMood('logged',true);
+   toast((c?'「'+t.m+'」記成'+c:'「'+t.m+'」確認了'),()=>{S.ok.delete(id);if(c){if(prev)S.fix[id]=prev;else delete S.fix[id]}})})},
+ okAll(){const ids=D().inbox.filter(t=>t.c!=='未分類').map(t=>t.id),skip=D().inbox.length-ids.length;ids.forEach(i=>S.ok.add(i));setMood('logged',true);rollOn=true;render();renderSheetBody();toast(ids.length+' 筆確認了'+(skip?'，'+skip+' 筆未分類要你給':''),()=>ids.forEach(i=>S.ok.delete(i)))},
+ fix(el){S.ed=null;openSheet('edit',el.dataset.id,!!el.closest('.sheet')&&S.stack.length&&S.stack[S.stack.length-1].k==='tx'?undefined:false)},
+ edC(el){S.ed.c=el.dataset.c;const l=$('#edLearn');if(l)S.ed.learn=l.checked;renderSheetBody()},
+ edA(el){S.ed.ac=el.dataset.c;const l=$('#edLearn');if(l)S.ed.learn=l.checked;renderSheetBody()},
+ edSave(el){const e=S.ed,id=el.dataset.id,t=TX.find(x=>x.id===id)||S.added.find(x=>x.id===id),prev=S.fix[id],was=S.ok.has(id),learn=$('#edLearn')&&$('#edLearn').checked;
+  if(S.added.includes(t)){const o={c:t.c,ac:t.ac};t.c=e.c;t.ac=e.ac;closeSheet();rollOn=true;render();toast('改好了',()=>Object.assign(t,o));return}
+  S.fix[id]={c:e.c,ac:e.ac};S.ok.add(id);closeSheet();setMood('logged',true);rollOn=true;render();
+  toast('存成「'+e.c+'」'+(learn&&t.a<0?'，以後這家照這樣記':''),()=>{if(prev)S.fix[id]=prev;else delete S.fix[id];if(!was)S.ok.delete(id)})},
+ void(el){const id=el.dataset.id;S.voided.add(id);closeSheet();rollOn=true;render();toast('這筆作廢了',()=>S.voided.delete(id))},
+ paid(el){const id=el.dataset.id,b=BILLS.find(x=>x.id===id);done(null,()=>{S.paid.add(id);setMood('logged',true);toast(b.name+'標成已繳',()=>S.paid.delete(id))})},
+ unpaid(el){S.paid.delete(el.dataset.id);render();renderSheetBody();toast('改回還沒繳')},
+ cancel(el){const id=el.dataset.id;S.cancel.add(id);render();if(sheet.classList.contains('on'))renderSheetBody();toast('標成要取消，到期前我會提醒',()=>S.cancel.delete(id))},
+ uncancel(el){const id=el.dataset.id;S.cancel.delete(id);render();if(sheet.classList.contains('on'))renderSheetBody();toast('不取消了',()=>S.cancel.add(id))},
+ askTx(el){const t=D().txs.find(x=>x.id===el.dataset.id);closeSheet();S.ctx=t;openBub();setTimeout(()=>{const i=$('#bubIn');i&&i.focus({preventScroll:true})},80)},
+ askFx(el){const d=D(),x=d.bills.concat(d.subs).find(y=>y.id===el.dataset.id);closeSheet();S.ctx=x;openBub()},
+ cnext(){pager('c',1)},cprev(){pager('c',-1)},cgo(el){S.cIdx=+el.dataset.k;render('f')},
+ pnext(el){pager(el.dataset.k,1)},pprev(el){pager(el.dataset.k,-1)},
+ adT(el){S.add.type=el.dataset.c;S.add.c=el.dataset.c==='income'?'AI 影片案':'吃';keepAdd();renderSheetBody()},
+ adC(el){S.add.c=el.dataset.c;keepAdd();renderSheetBody()},adA(el){S.add.ac=el.dataset.c;keepAdd();renderSheetBody()},adD(el){S.add.date=el.dataset.c;keepAdd();renderSheetBody()},
+ key(el){const k=el.dataset.c,a=S.add;if(k==='⌫')a.v=a.v.slice(0,-1);else if(a.v.length<7&&!(a.v===''&&(k==='0'||k==='00')))a.v+=k;if(a.v.length>7)a.v=a.v.slice(0,7);
+  const v=+a.v||0;$('#adAmt').innerHTML=amt(v);const s=$('#adSave');s.disabled=!v;s.textContent=v?'記下 NT$'+fmt(v):'記下這筆';$('#adHint').textContent=v?'':'先輸入金額'},
+ adSave(){keepAdd();const a=S.add,v=+a.v;if(!v)return;const inc=a.type==='income',tr=a.type==='transfer',id='n'+(++S.seq);
+  const t={id:id,d:a.date==='今天'?'11/22':'11/21',t:'現在',m:tr?'轉帳':inc?a.c:'手動記的'+a.c,a:inc?v:-v,c:tr?'轉帳':inc?'收入':a.c,stream:inc?a.c:undefined,ac:a.ac,by:'老大',ev:'手動',transfer:tr?1:undefined,queued:S.scn==='offline'};
+  S.added.unshift(t);setMood('logged',true);const again=a.again;S.add=again?Object.assign({},a,{v:''}):null;if(again)renderSheetBody();else closeSheet();rollOn=true;render();
+  toast(S.scn==='offline'?'記下了，等連線後上傳':'記下 NT$'+fmt(v),()=>{S.added=S.added.filter(x=>x.id!==id)})}
+};
+function keepAdd(){const c=$('#adAgain');if(c&&S.add)S.add.again=c.checked}
+let dragged=false;
+phone.addEventListener('click',e=>{if(dragged){dragged=false;e.preventDefault();return}const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const f=ACT[el.dataset.act];if(f){e.preventDefault();f(el,e)}});
+phone.addEventListener('change',e=>{const c=e.target.dataset&&e.target.dataset.card;if(c){S.hide[c]=!e.target.checked;render()}});
+phone.addEventListener('submit',e=>{e.preventDefault();const i=$('input',e.target);if(e.target.id==='composer'){ask(i.value,'feed');main.scrollTo({top:0})}else ask(i.value,'bub');i.value=''});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(bub.classList.contains('on'))closeBub();else if(sheet.classList.contains('on'))back()}
+  if((e.key==='ArrowRight'||e.key==='ArrowLeft')&&!sheet.classList.contains('on')&&!/INPUT|SELECT/.test(document.activeElement.tagName)){const c=$('.dcard',main);if(c){const k=c.dataset.pager||'c',b=$('[data-act="'+(k==='c'?(e.key==='ArrowRight'?'cnext':'cprev'):(e.key==='ArrowRight'?'pnext':'pprev'))+'"]',$('.deck-nav',main));if(b&&!b.disabled)b.click()}}});
+
+/* C 版樣的左右滑：左滑下一張、右滑上一張，全 App 同一個意思；每個方向都有同功能按鈕 */
+let drag=null;
+main.addEventListener('pointerdown',e=>{const c=e.target.closest('.swipe');if(!c||rm||e.button>0)return;if(e.clientX-phone.getBoundingClientRect().left<24)return;drag={c:c,x:e.clientX,y:e.clientY,dx:0,on:false}});
+main.addEventListener('pointermove',e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(!drag.on){if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.3){drag.on=true;drag.c.classList.remove('snap','in')}else{if(Math.abs(dy)>14)drag=null;return}}
+  drag.dx=dx;drag.c.style.transform='translateX('+dx+'px) rotate('+(dx/60)+'deg)';drag.c.style.opacity=String(1-Math.min(Math.abs(dx)/360,.45))});
+function endDrag(){if(!drag)return;const g=drag;drag=null;if(!g.on)return;dragged=true;setTimeout(()=>{dragged=false},60);const k=g.c.dataset.pager||'c',nav=$('.deck-nav',main);
+  const b=Math.abs(g.dx)>90&&nav?$('[data-act="'+(k==='c'?(g.dx<0?'cnext':'cprev'):(g.dx<0?'pnext':'pprev'))+'"]',nav):null;
+  if(b&&!b.disabled){const key=k==='b'?'bIdx':k==='f'?'fIdx':'cIdx';S[key]+=g.dx<0?1:-1;render()}else{g.c.classList.add('snap');g.c.style.transform='';g.c.style.opacity=''}}
+main.addEventListener('pointerup',endDrag);main.addEventListener('pointercancel',endDrag);main.addEventListener('pointerleave',endDrag);
+
+/* ---------- 原型控制列與桌機側欄 ---------- */
+const VI={
+ A:{n:'A　塔塔說',l:'時間軸。塔塔一句一句講，你在句子下面直接按。',how:['往下捲，看塔塔記了什麼','卡片下面直接按「對」或「改分類」','最下面的輸入框隨時跟塔塔說'],tr:['最像有人在幫你管帳，塔塔的存在感最高','第一屏只有 1 個主數字，其他寫在句子裡','待確認很多筆時要捲比較久']},
+ B:{n:'B　儀表板',l:'一屏看完三個數字。最上面永遠只有今天最該處理的一件事。',how:['先看最上面那張「今天一件事」','按「開始確認」一次看完，可以全部確認','最下面「調整卡片」決定要看哪些'],tr:['掃一眼最快，三個主數字同時看到','最像一般記帳 App，塔塔比較退後','卡片多了容易回到資訊過剩，所以選配卡預設關']},
+ C:{n:'C　一次一張',l:'一個畫面只有一件事。看完一張換下一張，看完就關。',how:['按大按鈕處理這一張','左滑下一張、右滑上一張，或按下面的鍵','預算與定期也是一張一張看，另有總表']  ,tr:['最專心、最沉浸，字最大','看全貌要多按一下「總表」','沒事的日子兩張就結束']}
+};
+function renderAside(){const v=VI[S.v];
+  $('#asideL').innerHTML='<h2>'+v.n+'</h2><p>'+v.l+'</p><h3>怎麼操作</h3><ul>'+v.how.map(x=>'<li>'+x+'</li>').join('')+'</ul><h3>取捨</h3><ul>'+v.tr.map(x=>'<li>'+x+'</li>').join('')+'</ul><h3>提醒</h3><p>這是設計提案，資料是假的，按了不會寫進資料庫。左上角的塔塔可以點。</p>';
+  const J=[['home','首頁'],['confirm','確認'],['budget','預算'],['fixed','訂閱'],['detail','詳情'],['add','記一筆'],['tata','塔塔泡泡']];
+  const SC=[['normal','平常'],['done','都確認完'],['empty','新的一期'],['over','超支'],['offline','離線'],['error','讀取失敗'],['update','有新版本']];
+  $('#asideR').innerHTML='<h3>直接跳到畫面</h3><div class="jump">'+J.map(x=>'<button data-jump="'+x[0]+'">'+x[1]+'</button>').join('')+'</div><h3>切換狀態</h3><div class="jump">'+SC.map(x=>'<button data-scn="'+x[0]+'" aria-pressed="'+(S.scn===x[0])+'">'+x[1]+'</button>').join('')+'</div><h3>現在看的</h3><p>版樣 '+S.v+' · 外觀 '+S.skin+' · '+(S.theme==='dark'?'深色':'淺色')+'</p>';
+}
+function jump(k){closeBub();closeSheet();const d=D();
+  if(k==='home'){S.cIdx=0;S.tab='home';render('f')}
+  else if(k==='confirm'){S.tab='home';S.cIdx=1;render('f');if(S.v==='B')openSheet('review',null,false);else if(S.v==='A'){const c=$('.cf',main);c&&c.scrollIntoView({block:'center'})}}
+  else if(k==='budget'){S.tab='budget';render('f')}
+  else if(k==='fixed'){S.tab='fixed';render('f')}
+  else if(k==='detail'){S.tab='ledger';render('f');const t=d.txs[0];t&&openSheet('tx',t.id,false)}
+  else if(k==='add')ACT.add();
+  else if(k==='tata')openBub();
+}
+function setScn(v){S.scn=v;prevNum={};S.cIdx=0;S.loading=false;syncSkin();render('f')}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-pv],[data-ps],#ptT,[data-jump],[data-scn],#pbMin');if(!t)return;
+  if(t.dataset.pv){S.v=t.dataset.pv;prevNum={};closeBub();closeSheet();syncSkin();remountHd();render('f');toast('版樣 '+VI[S.v].n.replace('　','：'))}
+  else if(t.dataset.ps){S.skin=t.dataset.ps;syncSkin()}
+  else if(t.id==='ptT'){S.theme=S.theme==='dark'?'light':'dark';syncSkin()}
+  else if(t.dataset.jump)jump(t.dataset.jump)
+  else if(t.dataset.scn)setScn(t.dataset.scn)
+  else{const p=$('#pbar'),m=p.classList.toggle('min');t.textContent=m?'展開':'收起';t.setAttribute('aria-expanded',String(!m))}
+  if(t.dataset.ps||t.id==='ptT')renderAside()});
+$('#scn').addEventListener('change',e=>setScn(e.target.value));
+const onRM=()=>{rm=RMQ.matches;remountHd();render()};RMQ.addEventListener?RMQ.addEventListener('change',onRM):RMQ.addListener&&RMQ.addListener(onRM);
+if(!PAGES[S.tab])S.tab='home';if(!VI[S.v])S.v='A';
+syncSkin();remountHd();render('f');
+window.__proto={S:S,D:D,jump:jump};
+})();
+</script>
+</body>
+</html>
