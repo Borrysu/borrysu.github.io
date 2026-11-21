@@ -1,4 +1,4 @@
-const V='kk-v30';
+const V='kk-v30.1';
 const SHELL=['./','manifest.json','apple-touch-icon.png?v=20261116f','icon-192.png?v=20261116f'];
 const LAZY=['chart.min.js','supabase.js'];
 // install never blocks or fails because of one slow file; the big libraries are fetched lazily by the page itself
