@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f6f5f1">
+<title>技能地圖</title>
+<style>
+:root{--bg:#f6f5f1;--card:#fff;--ink:#1d1d1b;--sub:#6b6a64;--line:#e4e2da;--acc:#1f5f4a;--accbg:#e3efe9;--warn:#b25b12;--warnbg:#fbeedd;--r:14px}
+@media (prefers-color-scheme:dark){:root{--bg:#141413;--card:#1e1e1c;--ink:#efeee9;--sub:#a3a199;--line:#33322e;--acc:#7fcdb0;--accbg:#1f3a30;--warn:#e8a766;--warnbg:#3a2a18}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,"PingFang TC","Noto Sans TC",sans-serif}
+body{padding:0 16px calc(84px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto;overflow-x:hidden}
+header{padding:calc(14px + env(safe-area-inset-top)) 0 8px;position:sticky;top:0;background:var(--bg);z-index:5}
+h1{font-size:22px;margin:0}
+.meta{color:var(--sub);font-size:13px;margin-top:2px}
+.search{width:100%;margin:10px 0 8px;padding:12px 14px;font-size:16px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:20px;background:var(--card);color:var(--ink);font-size:14px}
+.chip.on{background:var(--acc);color:var(--bg);border-color:var(--acc)}
+h2{font-size:14px;color:var(--sub);margin:18px 0 8px;font-weight:600}
+h2 small{font-weight:400}
+.card{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:12px 14px;margin:0 0 8px;color:var(--ink);font:inherit;min-height:56px}
+.card b{font-size:17px}
+.card .id{color:var(--sub);font-size:13px;margin-left:6px}
+.card p{margin:4px 0 0;color:var(--sub);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tag{display:inline-block;font-size:12px;padding:1px 8px;border-radius:10px;background:var(--accbg);color:var(--acc);margin-left:6px;vertical-align:2px}
+.tag.inc{background:var(--warnbg);color:var(--warn)}
+.tag.ok{background:var(--accbg);color:var(--acc)}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:6}
+nav button{flex:1;min-height:56px;border:0;background:none;color:var(--sub);font-size:15px}
+nav button.on{color:var(--acc);font-weight:700}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10;display:none}
+.sheet.show{display:block}
+.panel{position:absolute;left:0;right:0;bottom:0;max-height:88vh;overflow-y:auto;background:var(--card);border-radius:20px 20px 0 0;padding:18px 16px calc(20px + env(safe-area-inset-bottom));max-width:720px;margin:0 auto}
+.panel h3{margin:0;font-size:22px}
+.panel .row{margin:12px 0}
+.panel .lab{font-size:12px;color:var(--sub);margin-bottom:2px}
+.links{display:flex;flex-wrap:wrap;gap:8px}
+.btns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px}
+.btn{min-height:48px;border-radius:12px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:15px}
+.btn.pri{background:var(--acc);color:var(--bg);border-color:var(--acc);font-weight:700}
+.btn:disabled{opacity:.5}
+textarea{width:100%;min-height:84px;margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);font:inherit}
+.close{position:absolute;right:10px;top:8px;width:44px;height:44px;border:0;background:none;font-size:24px;color:var(--sub)}
+.msg{margin:10px 0;font-size:14px;min-height:20px}
+.msg.err{color:var(--warn)}
+.step{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.step i{flex:none;width:28px;height:28px;border-radius:14px;background:var(--accbg);color:var(--acc);font-style:normal;text-align:center;line-height:28px;font-size:14px}
+.step button{border:0;background:none;color:var(--acc);font:inherit;padding:0;text-align:left;font-weight:600}
+.empty{padding:40px 0;text-align:center;color:var(--sub)}
+.gate{padding:30px 0}
+.gate input{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font-size:16px;background:var(--card);color:var(--ink);margin:10px 0}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>技能地圖</h1>
+  <div class="meta" id="meta">載入中…</div>
+  <div id="tools"><input class="search" id="q" type="search" placeholder="找技能：名字、做什麼" autocomplete="off">
+  <div class="chips" id="chips"></div></div>
+</header>
+<main id="main"></main>
+<nav id="nav">
+  <button data-t="skills" class="on">技能</button>
+  <button data-t="scen">情境</button>
+  <button data-t="mine">我的確認</button>
+</nav>
+<div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
+<script>
+'use strict';
+(function(){
+var API='https://wbfdpuytffyaetghqkbl.supabase.co/rest/v1/rpc/';
+var ANON='sb_publishable_yXl1iCBorFdHNsTl1A4UPg_MQLMYukO'; // 公開 key，可寫進網頁；私鑰只從網址或本機儲存來
+var $=function(s){return document.querySelector(s)};
+function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e}
+var LS={get:function(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
+var params=new URLSearchParams(location.search), hash=new URLSearchParams(location.hash.slice(1));
+var MOCK=params.get('mock')==='1';
+var KEY=params.get('k')||hash.get('k')||LS.get('skillmap_key');
+if(params.get('k')||hash.get('k')){LS.set('skillmap_key',KEY);history.replaceState(null,'',location.pathname+(MOCK?'?mock=1':''))}
+var S={map:null,layer:'ALL',q:'',tab:'skills',byId:{},confirms:[],commit:null,pending:0};
+
+var SAMPLE={map:{layers:[{id:'IN',name:'進料與感知'},{id:'CR',name:'創作'},{id:'GOV',name:'治理底座'}],
+ skills:[{id:'eyear',zh:'耳目',layer:'IN',status:'現役',version:'v2',one:'影音感知層。切點、逐字稿、四軌分離。',inp:'影片、音檔',out:'逐字稿、JSON',to:['splice']},
+ {id:'splice',zh:'連綴',layer:'CR',status:'現役',version:'v1',one:'後期剪接調度。',inp:'素材',out:'時間軸',to:[]},
+ {id:'craft',zh:'考工',layer:'GOV',status:'孵化',version:'0.1',one:'技能的先查後造。很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長很長的說明用來測換行。',inp:'想法',out:'草案',to:[]}],
+ scenarios:[{id:'mv',name:'一支 MV',steps:[{id:'eyear',say:'讀素材'},{id:'splice',say:'剪接交片'}]}]},pending:0,source_commit:'mock'};
+
+function rpc(name,body){
+  if(MOCK)return Promise.resolve(name==='skillmap_get'?SAMPLE:name==='skillmap_confirm_list'?[]:{status:'queued'});
+  var b=Object.assign({p_key:KEY},body||{});
+  var ac=new AbortController(),t=setTimeout(function(){ac.abort()},20000);
+  return fetch(API+name,{method:'POST',headers:{'content-type':'application/json',apikey:ANON},body:JSON.stringify(b),signal:ac.signal,cache:'no-store'})
+   .then(function(r){clearTimeout(t);return r.json().catch(function(){return {}}).then(function(j){if(!r.ok){var e=new Error(j&&j.message||('HTTP '+r.status));e.status=r.status;throw e}return j})});
+}
+
+function gate(msg){
+  $('#tools').classList.add('hidden');$('#nav').classList.add('hidden');
+  var m=$('#main');m.textContent='';
+  var g=el('div','gate');g.appendChild(el('b','', '需要金鑰'));g.appendChild(el('p','meta',msg||'貼上金鑰，這支手機之後就不用再貼。'));
+  var i=el('input');i.type='password';i.placeholder='金鑰';g.appendChild(i);
+  var b=el('button','btn pri','進入');b.style.width='100%';b.onclick=function(){var v=i.value.trim();if(v){LS.set('skillmap_key',v);KEY=v;load()}};
+  g.appendChild(b);m.appendChild(g);$('#meta').textContent='';
+}
+
+function load(){
+  if(!KEY&&!MOCK)return gate();
+  $('#tools').classList.remove('hidden');$('#nav').classList.remove('hidden');
+  $('#meta').textContent='載入中…';
+  Promise.all([rpc('skillmap_get'),rpc('skillmap_confirm_list',{p_limit:50})]).then(function(r){
+    var d=r[0];
+    if(d.empty){$('#meta').textContent='';$('#main').textContent='';$('#main').appendChild(el('div','empty','資料端還沒推地圖'));return}
+    S.map=d.map;S.commit=d.source_commit;S.pending=d.pending||0;S.confirms=Array.isArray(r[1])?r[1]:[];
+    S.byId={};S.map.skills.forEach(function(s){S.byId[s.id]=s});
+    var n=S.map.skills.length;
+    $('#meta').textContent=n+' 支技能，更新 '+(d.pushed_at?new Date(d.pushed_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'')+(S.pending?'，'+S.pending+' 筆等 Mac 取走':'');
+    buildChips();render();
+  }).catch(function(e){
+    if(e.status===401||e.status===403){LS.del('skillmap_key');KEY='';gate('金鑰不對或失效，重貼一次。')}
+    else{$('#meta').textContent='';var m=$('#main');m.textContent='';var x=el('div','empty','讀不到：'+e.message);var b=el('button','btn','重試');b.style.marginTop='12px';b.onclick=load;x.appendChild(el('br'));x.appendChild(b);m.appendChild(x)}
+  });
+}
+
+function buildChips(){
+  var c=$('#chips');c.textContent='';
+  var cnt={};S.map.skills.forEach(function(s){cnt[s.layer]=(cnt[s.layer]||0)+1});
+  function add(id,name){var b=el('button','chip'+(S.layer===id?' on':''),name);b.onclick=function(){S.layer=id;buildChips();render()};c.appendChild(b)}
+  add('ALL','全部 '+S.map.skills.length);
+  (S.map.layers||[]).forEach(function(l){if(cnt[l.id])add(l.id,l.name+' '+cnt[l.id])});
+}
+
+function statusTag(s){var t=el('span','tag'+(s.status==='孵化'?' inc':''),s.status||'');return t}
+function card(s){
+  var b=el('button','card');var h=el('div');h.appendChild(el('b','',s.zh||s.id));h.appendChild(el('span','id',s.id));h.appendChild(statusTag(s));b.appendChild(h);
+  b.appendChild(el('p','',s.one||''));b.onclick=function(){openSkill(s.id)};return b}
+
+function render(){
+  var m=$('#main');m.textContent='';
+  $('#tools').classList.toggle('hidden',S.tab!=='skills');
+  if(S.tab==='skills')renderSkills(m);else if(S.tab==='scen')renderScen(m);else renderMine(m);
+}
+function renderSkills(m){
+  var q=S.q.toLowerCase(),L=S.map.layers||[],any=false;
+  L.forEach(function(l){
+    if(S.layer!=='ALL'&&S.layer!==l.id)return;
+    var xs=S.map.skills.filter(function(s){return s.layer===l.id&&(!q||[s.id,s.zh,s.one,s.inp,s.out].join(' ').toLowerCase().indexOf(q)>=0)});
+    if(!xs.length)return;any=true;
+    var h=el('h2','',l.name+' ');h.appendChild(el('small','',l.role||''));m.appendChild(h);
+    xs.forEach(function(s){m.appendChild(card(s))});
+  });
+  if(!any)m.appendChild(el('div','empty','沒有符合的技能'));
+}
+function renderScen(m){
+  (S.map.scenarios||[]).forEach(function(sc){
+    m.appendChild(el('h2','',sc.name));
+    (sc.steps||[]).forEach(function(st,i){
+      var r=el('div','step');r.appendChild(el('i','',String(i+1)));
+      var d=el('div');var sk=S.byId[st.id];
+      var b=el('button','',sk?sk.zh+'（'+st.id+'）':st.id);b.onclick=function(){if(sk)openSkill(st.id)};
+      d.appendChild(b);d.appendChild(el('div','meta',st.say||''));r.appendChild(d);m.appendChild(r)});
+  });
+  if(!(S.map.scenarios||[]).length)m.appendChild(el('div','empty','沒有情境'));
+}
+var ACT={confirm:'確認',question:'提問',change:'要改'};
+function renderMine(m){
+  m.appendChild(el('h2','','你送出的（最近 50 筆）'));
+  if(!S.confirms.length)m.appendChild(el('div','empty','還沒有'));
+  S.confirms.forEach(function(c){
+    var sk=S.byId[c.skill_id];var b=el('div','card');var h=el('div');
+    h.appendChild(el('b','',sk?sk.zh:c.skill_id));h.appendChild(el('span','tag'+(c.taken_at?' ok':' inc'),(ACT[c.action]||c.action)+(c.taken_at?'・Mac 已取':'・等取')));
+    b.appendChild(h);if(c.note)b.appendChild(el('p','',c.note));
+    b.appendChild(el('p','',new Date(c.created_at).toLocaleString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})));
+    m.appendChild(b)});
+}
+
+function closeSheet(){$('#sheet').classList.remove('show')}
+function openSkill(id){
+  var s=S.byId[id];if(!s)return;var p=$('#panel');p.textContent='';
+  var x=el('button','close','×');x.setAttribute('aria-label','關閉');x.onclick=closeSheet;p.appendChild(x);
+  var h=el('h3','',s.zh||s.id);h.appendChild(el('span','id',' '+s.id));h.appendChild(statusTag(s));p.appendChild(h);
+  p.appendChild(el('div','meta',(s.version||'')+(S.commit?'　地圖版本 '+S.commit:'')));
+  function row(l,v){if(!v)return;var r=el('div','row');r.appendChild(el('div','lab',l));r.appendChild(el('div','',v));p.appendChild(r)}
+  row('做什麼',s.one);row('吃進來',s.inp);row('吐出去',s.out);
+  var to=(s.to||[]).filter(function(i){return S.byId[i]});
+  if(to.length){var r=el('div','row');r.appendChild(el('div','lab','接著用'));var l=el('div','links');
+    to.forEach(function(i){var b=el('button','chip',S.byId[i].zh||i);b.onclick=function(){openSkill(i)};l.appendChild(b)});r.appendChild(l);p.appendChild(r)}
+  var from=S.map.skills.filter(function(o){return (o.to||[]).indexOf(id)>=0});
+  if(from.length){var r2=el('div','row');r2.appendChild(el('div','lab','誰會接到它'));var l2=el('div','links');
+    from.forEach(function(o){var b=el('button','chip',o.zh||o.id);b.onclick=function(){openSkill(o.id)};l2.appendChild(b)});r2.appendChild(l2);p.appendChild(r2)}
+  var ta=el('textarea');ta.placeholder='備註（提問、要改時必填）';ta.className+=' hidden';p.appendChild(ta);
+  var msg=el('div','msg');p.appendChild(msg);
+  var bs=el('div','btns'),cur=null;
+  function send(action){
+    var note=ta.value.trim();
+    if(action!=='confirm'&&!note){msg.className='msg err';msg.textContent='先寫備註';return}
+    bs.querySelectorAll('button').forEach(function(b){b.disabled=true});msg.className='msg';msg.textContent='送出中…';
+    rpc('skillmap_confirm',{p_skill_id:id,p_action:action,p_note:note||null,p_ref_commit:S.commit}).then(function(){
+      msg.textContent='已送出，Mac 會在 5 分鐘內取走';ta.value='';ta.classList.add('hidden');S.pending++;
+      rpc('skillmap_confirm_list',{p_limit:50}).then(function(l){S.confirms=Array.isArray(l)?l:S.confirms});
+      setTimeout(closeSheet,1200);
+    }).catch(function(e){bs.querySelectorAll('button').forEach(function(b){b.disabled=false});msg.className='msg err';
+      msg.textContent=(e.status===403||e.status===401)?'這把金鑰不能送確認（只有你本人的金鑰可以）':'送不出去：'+e.message});
+  }
+  function mk(label,action,pri){var b=el('button','btn'+(pri?' pri':''),label);b.onclick=function(){
+    if(action==='confirm'){send('confirm');return}
+    if(cur!==action){cur=action;ta.classList.remove('hidden');ta.focus();msg.className='msg';msg.textContent='寫完再按一次「'+label+'」送出';return}
+    send(action)};bs.appendChild(b)}
+  mk('確認','confirm',true);mk('問一下','question');mk('要改','change');
+  p.appendChild(bs);
+  $('#sheet').classList.add('show');
+}
+
+$('#sheet').addEventListener('click',function(e){if(e.target===this)closeSheet()});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet()});
+$('#q').addEventListener('input',function(){S.q=this.value;render()});
+document.querySelectorAll('#nav button').forEach(function(b){b.onclick=function(){S.tab=b.dataset.t;document.querySelectorAll('#nav button').forEach(function(x){x.classList.toggle('on',x===b)});render()}});
+load();
+})();
+</script>
+</body>
+</html>
