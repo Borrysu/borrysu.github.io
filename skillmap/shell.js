@@ -317,18 +317,28 @@ function start(opt, map, D) {
       if (play.i > 0 && e < 1.2) { comet.visible = true; wpos(play.steps[play.i - 1].id, tmpA); wpos(play.steps[play.i].id, tmpB); var f2 = Math.min(1, e / 1.2); f2 = f2 * f2 * (3 - 2 * f2); comet.position.copy(tmpA).lerp(tmpB, f2); } else comet.visible = false;
       if (e > 2.4) next();
     }
-    // 標籤
-    var w = stage.clientWidth, h = stage.clientHeight, desk = mqDesk.matches;
+    // 標籤：先算位置與優先序，再由重要、近的開始放，跟已放的重疊就藏起來（避免底層擠成一團）
+    var w = stage.clientWidth, h = stage.clientHeight, desk = mqDesk.matches, cand = [];
     skills.forEach(function (s) {
       var n = nodes[s.id]; wpos(s.id, proj); var dcam = proj.distanceTo(camera.position); proj.project(camera);
       var show = proj.z < 1 && Math.abs(proj.x) < 1.1 && Math.abs(proj.y) < 1.1;
       var important = s.id === sel || s.id === hovered || (hs && hs.indexOf(s.id) >= 0) || (focusLayer && s.layer === focusLayer);
-      var op = important ? 1 : (desk ? Math.max(0, Math.min(.9, (230 - dcam) / 110)) : Math.max(0, Math.min(.85, (150 - dcam) / 70)));
+      var rel = dcam / Math.max(40, C.radius), op = important ? 1 : Math.max(0, Math.min(.9, (1.35 - rel) / .45));
       if (sel && !important) op *= .25;
       if (!show || op < .04) { n.label.style.opacity = 0; n.label.style.visibility = 'hidden'; return; }
-      n.label.style.visibility = 'visible'; n.label.style.opacity = op.toFixed(2);
-      n.label.style.transform = 'translate(' + ((proj.x * .5 + .5) * w).toFixed(1) + 'px,' + ((-proj.y * .5 + .5) * h).toFixed(1) + 'px)';
-      n.label.classList.toggle('hot', s.id === sel);
+      cand.push({ n: n, s: s, x: (proj.x * .5 + .5) * w, y: (-proj.y * .5 + .5) * h, op: op, imp: important, pr: (s.id === sel ? 1e6 : 0) + (important ? 1e5 : 0) - dcam });
+    });
+    cand.sort(function (a, b) { return b.pr - a.pr; });
+    var boxes = [];
+    cand.forEach(function (c) {
+      var n = c.n; n.label.classList.toggle('imp', c.imp); n.label.classList.toggle('hot', c.s.id === sel);
+      if (!n.lw || n.lwImp !== c.imp) { n.label.style.visibility = 'visible'; n.lw = n.label.offsetWidth || 60; n.lh = n.label.offsetHeight || 18; n.lwImp = c.imp; }
+      var bx = { x: c.x + 10, y: c.y + 10, w: n.lw, h: n.lh };
+      var hit = c.s.id !== sel && boxes.some(function (o) { return bx.x < o.x + o.w + 4 && bx.x + bx.w + 4 > o.x && bx.y < o.y + o.h && bx.y + bx.h > o.y; });
+      if (hit) { n.label.style.opacity = 0; n.label.style.visibility = 'hidden'; return; }
+      boxes.push(bx);
+      n.label.style.visibility = 'visible'; n.label.style.opacity = c.op.toFixed(2);
+      n.label.style.transform = 'translate(' + c.x.toFixed(1) + 'px,' + c.y.toFixed(1) + 'px)';
     });
     if (concept.labels) concept.labels(camera, w, h);
     renderer.render(scene, camera);

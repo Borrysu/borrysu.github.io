@@ -43,7 +43,7 @@ function star(ctx) {
 // ---------- 2 樓層：每層一塊浮空玻璃板，現役比孵化高 ----------
 function floor(ctx) {
   var T = ctx.THREE, bl = byLayer(ctx), ids = ORDER_FLOOR.filter(function (id) { return bl[id]; });
-  var floors = {}, GAP = 13, W = 64, Dp = 30;
+  var floors = {}, GAP = 15, W = 64, Dp = 30;
   ids.forEach(function (id, i) {
     var g = new T.Group(); var y0 = (i - (ids.length - 1) / 2) * GAP; g.position.y = y0;
     var slab = new T.Mesh(new T.BoxGeometry(W, .5, Dp), new T.MeshBasicMaterial({ transparent: true, opacity: .1, depthWrite: false }));
@@ -66,7 +66,7 @@ function floor(ctx) {
   });
   var hoverLayer = null, focus = null, dark = true;
   return {
-    camera: { theta: .78, phi: 1.0, radius: 150, target: [0, 0, 0] },
+    camera: { theta: .78, phi: 1.0, radius: 165, target: [0, 0, 0] },
     spin: .00004,
     theme: function (d) {
       dark = d; var C = ctx.colors();
