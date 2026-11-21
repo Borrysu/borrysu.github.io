@@ -135,6 +135,10 @@ input{-webkit-appearance:none;appearance:none;border-radius:0}
 .grp{border-bottom:1px solid var(--line)}.grp .cardrow{border-bottom:0}
 .note{font-size:13px;color:var(--mut);padding:0 16px 12px;background:var(--card);line-height:1.5;word-break:break-word}
 .foot{padding:10px 16px;font-size:13px;color:var(--mut)}
+.subsum{background:var(--card);padding:10px 16px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.6}.subsum b{font-weight:700}.subsum .m{color:var(--mut);font-size:13px}
+.cardrow.subred{background:rgba(229,72,77,.08);box-shadow:inset 4px 0 0 var(--exp)}.subred .sd{color:var(--exp);font-weight:700}
+.cardrow.subrow{align-items:flex-start;cursor:default}.subrow .chp{margin:4px 4px 0 0}.subrow .amt{flex:none;white-space:nowrap;font-weight:700;font-size:16px}
+.foot.err{color:var(--exp)}
 .assetsum{display:grid;grid-template-columns:1fr 1fr;background:var(--card);padding:14px 0;text-align:center;border-bottom:1px solid var(--line)}
 .assetsum>div+div{border-left:1px solid var(--line)}
 .assetsum b{display:block;font-size:20px}.assetsum span{font-size:12.5px;color:var(--mut)}
@@ -451,6 +455,10 @@ html.tthid .tt_sv,html.tthid .tt_eyes{animation-play-state:paused}
         <div class="gh"><span id="bill_h">本期固定帳單</span><span class="num" id="bill_sum"></span></div>
         <div id="bills"></div>
         <div class="foot" id="bill_foot">點一下未繳的帳單，就會標成已繳。</div>
+        <div class="gh" style="margin-top:14px"><span>訂閱</span></div>
+        <div id="subs_sum" class="subsum" hidden></div>
+        <div id="subs"><div class="foot">讀取中</div></div>
+        <div class="foot">訂閱由塔塔維護，這裡只能看。</div>
       </section>
       <section id="tab_assets" hidden>
         <div class="netcard n2" id="netcard2">
@@ -654,6 +662,7 @@ async function load(opt={}){
   if(!opt.silent&&!load._kkr){load._kkr=1;kkrStatus();}   // no token yet: stay on the paste screen, never fire a doomed request
   const silent=!!opt.silent, my=++seq;
   if(!silent)showErr('');
+  loadSubs();   // independent of get_overview: its own errors never reach showErr
   try{
     const pa=VIEW?{p_period_start:VIEW}:{};
     const [o,l]=await Promise.all([rpc('get_overview',pa),rpc('list_transactions',{...pa,p_include_void:voidOn})]);
@@ -767,6 +776,43 @@ function renderStats(){
     charts.tr=new Chart($('trend'),{type:'bar',data:{labels:tr.map(r=>r.period_start.slice(5).replace('-','/')),datasets:[{label:'收入',data:tr.map(r=>Number(r.income)),backgroundColor:'#16a765',borderRadius:4,maxBarThickness:18},{label:'支出',data:tr.map(r=>Number(r.expense)),backgroundColor:'#e5484d',borderRadius:4,maxBarThickness:18}]},options:{maintainAspectRatio:false,animation:{duration:450},scales:{x:{grid:{display:false},border:{display:false},ticks:{color:mut}},y:{beginAtZero:true,grid:{color:linec},border:{display:false},ticks:{color:mut,callback:short,maxTicksLimit:5}}},plugins:{legend:{position:'bottom',labels:{color:txc,usePointStyle:true,boxWidth:8,padding:14}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+' '+nt(c.parsed.y)}}}}});
     $('trend_tbl').innerHTML='<table class="tbl"><thead><tr><th>期間</th><th>收入</th><th>支出</th><th>結餘</th></tr></thead><tbody>'+[...tr].reverse().map(r=>{const n=Number(r.income)-Number(r.expense);return `<tr><td>${r.period_start.slice(5).replace('-','/')}</td><td class="num" style="color:var(--inc)">${nt(r.income)}</td><td class="num" style="color:var(--exp)">${nt(r.expense)}</td><td class="num">${n<0?'−':''}${nt(Math.abs(n))}</td></tr>`}).join('')+'</tbody></table>';
   }else{$('trend_wrap').innerHTML=emptyBox('📊','還沒有收支資料','記帳滿一期後，這裡會顯示近 6 期的收入和支出');$('trend_tbl').innerHTML='';}
+}
+/* ---------- subscriptions (read only; failures stay inside this card) ---------- */
+let SUBS=null,subsSeq=0;
+const mdStr=d=>Number(String(d).slice(5,7))+'/'+Number(String(d).slice(8,10));
+const origFmt=n=>Number(n).toLocaleString('en-US',{maximumFractionDigits:2});
+async function loadSubs(){
+  const my=++subsSeq;
+  try{const j=await rpc('kk_subs_list',{});if(my!==subsSeq)return;SUBS=j;renderSubs();}
+  catch(e){
+    if(my!==subsSeq)return;
+    if(SUBS&&e instanceof NetErr)return;   // silent refresh hiccup: keep what is on screen
+    SUBS=null;$('subs_sum').hidden=true;$('subs').innerHTML='<div class="foot err">訂閱讀不到：'+esc(e.message)+'</div>';
+  }
+}
+function renderSubs(){
+  const S=SUBS||{},items=Array.isArray(S.items)?S.items:[];
+  const soon=it=>Number(it.days_until)<=7&&it.paid_this_period!==true;
+  const near=items.filter(soon),nx=near.reduce((a,it)=>a+Number(it.amount||0),0);
+  let h=`<div>每月訂閱合計 <b class="num">NT$ ${nt(S.total_active||0)}</b></div>`;
+  h+=near.length?`<div>7 天內將扣 <b class="num">${near.length}</b> 筆・<b class="num">NT$ ${nt(nx)}</b></div>`:`<div class="m">7 天內沒有要扣的</div>`;
+  if(Number(S.total_yearly_due_this_period)>0)h+=`<div class="m">本期年費 <span class="num">NT$ ${nt(S.total_yearly_due_this_period)}</span></div>`;
+  $('subs_sum').innerHTML=h;$('subs_sum').hidden=false;
+  if(!items.length){$('subs').innerHTML=emptyBox('🔁','還沒有訂閱','塔塔記下訂閱後會出現在這裡');return;}
+  $('subs').innerHTML=items.map(it=>{
+    const red=soon(it),du=Number(it.days_until);
+    const when=du===0?'今天':du===1?'明天':du+' 天後';
+    const l1=[`<span class="sd num">${mdStr(it.next_charge_date)}・${when}</span>`];
+    if(it.account_name)l1.push('從 '+esc(it.account_name)+' 扣');
+    if(it.via)l1.push('經由 '+esc(it.via));
+    const chips=[];
+    if(it.billing_cycle==='yearly'){chips.push('<span class="chp">年繳</span>');chips.push(`<span class="chp num">每月約 NT$ ${nt(it.monthly_equiv)}</span>`);if(it.due_this_period===false)chips.push('<span class="chp">本期不扣</span>');}
+    if(it.orig_currency)chips.push(`<span class="chp num">${esc(it.orig_currency)} ${origFmt(it.orig_amount)}</span>`);
+    if(it.status==='idle')chips.push('<span class="chp o">閒置</span>');
+    if(it.status==='cancel')chips.push('<span class="chp r">要取消'+(it.cancel_by?'・'+mdStr(it.cancel_by)+' 前':'')+'</span>');
+    if(it.paid_this_period===true)chips.push('<span class="chp g">本期已扣</span>');
+    return `<div class="cardrow subrow${red?' subred':''}" data-sub="${esc(it.id)}"><div style="flex:1;min-width:0"><div class="t1">${esc(it.name)}</div><div class="t2">${l1.join('・')}</div>${chips.length?'<div>'+chips.join('')+'</div>':''}</div><div class="amt num">NT$ ${nt(it.amount)}</div></div>`;
+  }).join('');
 }
 function renderBills(){
   const B=D.bills||[],isCur=D.period_start===CUR;
