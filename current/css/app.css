@@ -540,3 +540,10 @@ html,body{overscroll-behavior-x:none}
 .lrow.l h3 em{background:#fde2df;color:#a3352a}
 .lrow p{margin:2px 0 0;font-size:13.5px;color:var(--mut);overflow-wrap:anywhere}
 .ltodo{margin:6px 0 0;padding-left:1.2em;font-size:14px;color:var(--mut)}
+
+/* 機會卡 iOS 外觀（v31，面板工坊 Q8 選 C）：沒有框線的淡色填色按鈕、較小圓角、細等級條；顏色沿用逐流霧青 */
+.card{border-radius:14px;border-left-width:4px}
+.ca button{border:0;border-radius:10px;background:var(--stat);color:var(--accent);font-weight:600}
+.ca .del{background:var(--danger-bg);color:var(--delc)}
+.ca .go{background:var(--accent);color:#fff;font-weight:700}
+.ca button:active{opacity:.7;transform:none}
