@@ -1,6 +1,6 @@
 // 機會雷達主程式：狀態、畫面、事件。只透過 adapter.js 取得與寫入資料。
-import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v31';
-import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v31';
+import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v32';
+import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v32';
 
 const $ = s => document.querySelector(s);
 // 個人版不收公司標案（Borry 2026-11-17：「公司標案我機會雷達似乎就不用了」），公司案只留在封存與舊資料的標籤
@@ -13,7 +13,7 @@ const BASKETS = [
 ];
 const BN = Object.fromEntries(BASKETS.map(b => [b.k, b.n]).concat([['company', '公司案'], ['todo', '待辦']]));
 // 進行中：手上所有專案（案務＋進度＋跟大器說）；待辦：要請 AI 建置的事，按「去執行」大器開子視窗跑（Borry 2026-11-17）
-const DOING = { k: 'doing', n: '進行中', d: '手上所有專案：案務、進度，有事直接跟大器說' };
+const DOING = { k: 'doing', n: '專案', d: '手上每個案子：階段、下一步、卡在哪，有事直接跟大器說' };
 const TODO = { k: 'todo', n: '待辦', d: '要請 AI 建置的事，按「去執行」大器就開跑並回報進度' };
 // 封存放在最右邊一欄，往左滑才看得到（Borry 2026-11-16 皮條客：「封存可以放到盯案後續的右邊，我們往左滑才看得到」）
 const ARCH = { k: 'archive', n: '封存', d: '結案與作廢的案子，不會自動消失' };
@@ -325,7 +325,7 @@ function wcard(it) {
     : it.status === 'paid' ? '已收款' + (it.receivedAmount != null ? ' ' + money(it.receivedAmount) : '')
     : it.deadline ? '<span data-cd="' + id + '" data-mode="line" data-lvl="' + lvOf(it) + '">' + cdLine(it) + '</span>' : (it.quoteAmount != null ? '報價 ' + money(it.quoteAmount) : '進行中');
   return '<article class="pc wk" data-id="' + id + '" data-lvl="' + lvOf(it) + '"><div class="dt-tags" style="margin:0">' + chip(it) + demo(it) + '</div><h3 class="sb">' + softBreak(it.title) + '</h3>' +
-    '<p class="st">' + st + '</p>' + progressHTML(it, true) +
+    '<p class="st">' + st + '</p>' + (nextStep(it) && it.status === 'doing' ? '<p class="nx sbp"><b>下一步</b>' + softBreak(nextStep(it)) + '</p>' : '') + progressHTML(it, true) +
     '<div class="pa"><button data-act="chat" data-id="' + id + '" type="button">跟大器說</button><button class="pg" data-act="open-folder" data-id="' + id + '" type="button">案務與進度</button></div></article>';
 }
 // ---------------- 今天頁（通告板） ----------------
@@ -402,10 +402,23 @@ async function hubAnswer(id, k) {
   finally { S.hubBusy.delete(id); renderBoard(); }
 }
 
+// 專案頁（總控台第四步，版型 A）：同一批進行中資料，按「要你看／進行中／等收款／已收款」分組，每張卡先講下一步與卡在哪
+const PGROUPS = [
+  { k: 'look', n: '要你看', d: '卡住、或大器做完等你看' },
+  { k: 'doing', n: '進行中', d: '' },
+  { k: 'delivered', n: '已交件，等收款', d: '' },
+  { k: 'paid', n: '已收款', d: '' },
+];
+const pgroup = it => it.status === 'delivered' ? 'delivered' : it.status === 'paid' ? 'paid' : (it.progressBlocker || it.runStatus === 'failed' || it.runStatus === 'done') ? 'look' : 'doing';
+function nextStep(it) {
+  const cur = it.progressSteps.find(x => x.status === 'current' || x.status === 'blocked') || it.progressSteps.find(x => x.status === 'pending');
+  return cur ? cur.name : (it.progressNote || '');
+}
 function doingLane() {
   const list = workItems(), loadingEmpty = !S.hadData && S.net === 'loading';
   const form = '<form class="addf" data-form="work"><input id="work-in" type="text" maxlength="200" placeholder="記一個手上的案子（案名）" aria-label="記一個手上的案子" enterkeyhint="done"><button class="btn btn-primary" type="submit">記下來</button></form>';
-  const body = loadingEmpty ? skel() + skel() : list.length ? list.map(wcard).join('')
+  const groups = PGROUPS.map(g => ({ g, l: list.filter(i => pgroup(i) === g.k) })).filter(x => x.l.length);
+  const body = loadingEmpty ? skel() + skel() : list.length ? groups.map(x => '<h3 class="pgh">' + esc(x.g.n) + '<em>' + x.l.length + '</em>' + (x.g.d ? '<small>' + esc(x.g.d) + '</small>' : '') + '</h3>' + x.l.map(wcard).join('')).join('')
     : '<div class="zero">' + IC.inbox + '<b>還沒有進行中的案子</b><span>機會按「要做」、或在上面記一個手上的案子，就會出現在這裡。大器每天也會整理一次。</span></div>';
   return '<section class="lane b-doing' + (S.tab === 'doing' ? ' cur' : '') + '" data-l="doing"><div class="lh"><h2><i class="ld"></i>' + DOING.n + (loadingEmpty ? '' : '<em>' + list.length + '</em>') + '</h2><p>' + DOING.d + '</p>' + form + '</div><div class="lbody">' + body + '</div></section>';
 }

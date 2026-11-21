@@ -547,3 +547,11 @@ html,body{overscroll-behavior-x:none}
 .ca .del{background:var(--danger-bg);color:var(--delc)}
 .ca .go{background:var(--accent);color:#fff;font-weight:700}
 .ca button:active{opacity:.7;transform:none}
+
+/* 專案頁（v32） */
+.pgh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:14px 2px 6px;font-size:14px;font-weight:800;color:var(--mut);letter-spacing:.02em}
+.pgh:first-child{margin-top:4px}
+.pgh em{font-style:normal;font-weight:700;color:var(--ink)}
+.pgh small{font-weight:500;font-size:12.5px}
+.pc .nx{font-size:14.5px;line-height:1.6;margin:6px 0 0}
+.pc .nx b{display:inline-block;margin-right:8px;padding:1px 8px;border-radius:8px;background:var(--stat);font-size:12.5px;color:var(--mut)}
