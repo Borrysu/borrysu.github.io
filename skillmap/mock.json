@@ -1,0 +1,390 @@
+{
+"map": {
+"layers": [
+{
+"id": "IN",
+"name": "進料與感知",
+"role": "把連結、田調、影音、參考片讀進來"
+},
+{
+"id": "CR",
+"name": "創作",
+"role": "寫字、寫鏡頭、寫音樂、做預演"
+},
+{
+"id": "PR",
+"name": "製作與後期",
+"role": "剪接、調色、混音、動態圖形"
+},
+{
+"id": "OUT",
+"name": "交付與對外",
+"role": "排版出檔、投標、替你發訊息"
+},
+{
+"id": "QA",
+"name": "把關與決策",
+"role": "驗成稿真偽、拿主意"
+},
+{
+"id": "GOV",
+"name": "治理底座",
+"role": "記過程、蒸經驗、管版本與守則"
+},
+{
+"id": "KB",
+"name": "知識與記憶",
+"role": "技能開跑時要讀的書"
+},
+{
+"id": "ENG",
+"name": "引擎與工具",
+"role": "實際動手的模型與 App"
+},
+{
+"id": "NEW",
+"name": "未分層",
+"role": "還沒歸類的新技能，等人判斷分層"
+}
+],
+"skills": [
+{
+"id": "eyear",
+"zh": "耳目",
+"kind": "skill",
+"layer": "IN",
+"layer_src": "set",
+"status": "現役",
+"version": "v2",
+"updated": "2026-11-18",
+"one": "影音感知層。切點、逐字稿、四軌分離、BPM。",
+"inp": "影片、音檔",
+"out": "逐字稿、JSON",
+"use": "",
+"gate": "",
+"to": [
+"splice",
+"copybook"
+]
+},
+{
+"id": "copybook",
+"zh": "臨帖",
+"kind": "skill",
+"layer": "IN",
+"layer_src": "set",
+"status": "孵化",
+"version": "0.9",
+"updated": "2026-11-02",
+"one": "把參考片拆成可以照著仿的風格數據。",
+"inp": "成片",
+"out": "風格包",
+"use": "",
+"gate": "畢業條件：真案 2 支、回測可仿度",
+"to": [
+"splice"
+]
+},
+{
+"id": "mise",
+"zh": "意匠",
+"kind": "skill",
+"layer": "CR",
+"layer_src": "set",
+"status": "現役",
+"version": "1.0",
+"updated": "2026-11-04",
+"one": "單顆生成鏡頭的提示詞分層建構。",
+"inp": "鏡頭需求",
+"out": "分層提示詞",
+"use": "",
+"gate": "",
+"to": [
+"splice",
+"archimise"
+]
+},
+{
+"id": "archimise",
+"zh": "大意匠",
+"kind": "skill",
+"layer": "CR",
+"layer_src": "set",
+"status": "現役",
+"version": "1.0",
+"updated": "2026-10-11",
+"one": "整片十顆以上的提示詞。",
+"inp": "分鏡表",
+"out": "整片提示詞包",
+"use": "",
+"gate": "",
+"to": [
+"splice"
+]
+},
+{
+"id": "lilt",
+"zh": "繡口",
+"kind": "skill",
+"layer": "CR",
+"layer_src": "set",
+"status": "現役",
+"version": "1.0",
+"updated": "2026-09-08",
+"one": "文字層：企劃、劇本敘述行、文案。",
+"inp": "草稿",
+"out": "定稿文字",
+"use": "",
+"gate": "",
+"to": [
+"folio"
+]
+},
+{
+"id": "splice",
+"zh": "連綴",
+"kind": "skill",
+"layer": "PR",
+"layer_src": "set",
+"status": "孵化",
+"version": "0.9",
+"updated": "2026-11-12",
+"one": "後期調度：剪接、調色、混音、字幕、交付。",
+"inp": "素材",
+"out": "時間軸、交片檔",
+"use": "",
+"gate": "畢業條件：真案 3 支",
+"to": [
+"copybook"
+]
+},
+{
+"id": "motion",
+"zh": "走馬",
+"kind": "skill",
+"layer": "PR",
+"layer_src": "set",
+"status": "孵化",
+"version": "0.5",
+"updated": "2026-10-26",
+"one": "程式碼渲染的動態圖形。",
+"inp": "文案",
+"out": "透明底圖層",
+"use": "",
+"gate": "",
+"to": [
+"splice"
+]
+},
+{
+"id": "folio",
+"zh": "裝幀",
+"kind": "skill",
+"layer": "OUT",
+"layer_src": "set",
+"status": "現役",
+"version": "1.0",
+"updated": "2026-10-26",
+"one": "呈現層：版型乘平台乘風格。",
+"inp": "定稿內容",
+"out": "PDF、Google Doc",
+"use": "",
+"gate": "",
+"to": []
+},
+{
+"id": "handy",
+"zh": "趁手",
+"kind": "skill",
+"layer": "OUT",
+"layer_src": "auto",
+"status": "孵化",
+"version": "0.1",
+"updated": "2026-11-21",
+"one": "設計並做出好用的互動介面。",
+"inp": "要給誰用",
+"out": "HTML 原型",
+"use": "",
+"gate": "",
+"to": [
+"lilt"
+]
+},
+{
+"id": "proof",
+"zh": "校讎",
+"kind": "skill",
+"layer": "QA",
+"layer_src": "set",
+"status": "現役",
+"version": "1.0",
+"updated": "2026-10-15",
+"one": "三軌獨立查證。",
+"inp": "成稿＋基準檔",
+"out": "標紅清單",
+"use": "",
+"gate": "",
+"to": [
+"folio"
+]
+},
+{
+"id": "vault",
+"zh": "倉庫",
+"kind": "skill",
+"layer": "GOV",
+"layer_src": "set",
+"status": "現役",
+"version": "1.0",
+"updated": "2026-11-22",
+"one": "技能資產治理。",
+"inp": "新技能",
+"out": "registry",
+"use": "",
+"gate": "",
+"to": []
+},
+{
+"id": "glean",
+"zh": "拾穗",
+"kind": "skill",
+"layer": "GOV",
+"layer_src": "set",
+"status": "現役",
+"version": "1.0",
+"updated": "2026-11-02",
+"one": "過程記錄，每個驗證節點寫一筆。",
+"inp": "工作過程",
+"out": "拾穗 log",
+"use": "",
+"gate": "",
+"to": [
+"vault"
+]
+},
+{
+"id": "newbie",
+"zh": "新來的",
+"kind": "skill",
+"layer": "NEW",
+"layer_src": "none",
+"status": "孵化",
+"version": "0.1",
+"updated": "2026-11-22",
+"one": "一支還沒分層的新技能（示範）。",
+"inp": "",
+"out": "",
+"use": "",
+"gate": "",
+"to": []
+},
+{
+"id": "kb-crew",
+"zh": "劇組知識庫",
+"kind": "kb",
+"layer": "KB",
+"layer_src": "set",
+"status": "",
+"version": "",
+"updated": "",
+"one": "十四本部門書。",
+"inp": "",
+"out": "",
+"use": "",
+"gate": "",
+"to": [
+"mise"
+]
+},
+{
+"id": "eng-pr",
+"zh": "Premiere／DaVinci",
+"kind": "eng",
+"layer": "ENG",
+"layer_src": "set",
+"status": "ok",
+"version": "",
+"updated": "",
+"one": "剪接與調色走 MCP。",
+"inp": "",
+"out": "",
+"use": "",
+"gate": "",
+"to": [
+"splice"
+]
+}
+],
+"scenarios": [
+{
+"id": "mv",
+"name": "一支 MV（示範）",
+"steps": [
+{
+"id": "mise",
+"say": "寫鏡頭提示詞"
+},
+{
+"id": "archimise",
+"say": "整片交部門"
+},
+{
+"id": "splice",
+"say": "剪接、調色、交片"
+},
+{
+"id": "copybook",
+"say": "把成片收成帖"
+},
+{
+"id": "glean",
+"say": "一路記驗證節點"
+},
+{
+"id": "vault",
+"say": "勾選的經驗入庫"
+}
+]
+},
+{
+"id": "meeting",
+"name": "會議記錄（示範）",
+"steps": [
+{
+"id": "eyear",
+"say": "逐字稿"
+},
+{
+"id": "lilt",
+"say": "修字"
+},
+{
+"id": "folio",
+"say": "送進 Google Doc"
+}
+]
+}
+]
+},
+"source_commit": "mock",
+"pushed_at": "2026-11-22T08:00:00Z",
+"pending": 1,
+"confirms": [
+{
+"id": 3,
+"skill_id": "splice",
+"action": "change",
+"note": "【要升級】調色段落要加 LUT 對照表",
+"created_at": "2026-11-22T07:40:00Z",
+"taken_at": null
+},
+{
+"id": 2,
+"skill_id": "mise",
+"action": "question",
+"note": "論鏡跟正式生成差在哪？",
+"created_at": "2026-11-21T10:00:00Z",
+"taken_at": "2026-11-21T10:04:00Z"
+}
+]
+}
