@@ -348,6 +348,22 @@ body.dragging{-webkit-user-select:none;user-select:none;-webkit-touch-callout:no
 .sbtn:active{opacity:.8}
 .sbtns{display:flex;gap:10px}.sbtns .sbtn{flex:1}
 #ss_err{color:var(--exp);font-weight:600;min-height:0}
+.gh .addb{min-height:44px;min-width:44px;padding:0 14px;border-radius:10px;background:var(--card);color:var(--tx);border:1px solid var(--line);font-size:14px;font-weight:700;margin:-6px -6px -6px 0}
+.subrow .chp.co{background:#e8eefc;color:#2b4a9a}
+@media(prefers-color-scheme:dark){.subrow .chp.co{background:#1c2a4d;color:#a9c0f5}}
+.af.dv.nrow{flex-direction:column;align-items:stretch;gap:4px}
+.af.dv.nrow .k{width:auto}
+.af.dv.nrow .nv{text-align:left;font-size:16px;word-break:break-word;white-space:pre-wrap;display:block}
+.af.dv.nrow .nv.clamp{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden}
+.af.dv.nrow .nv.tap{cursor:pointer}
+.af.dv.nrow .nh{font-size:12.5px;color:var(--mut)}
+.sbtns.three{display:grid;grid-template-columns:1fr 1fr;gap:10px}.sbtns.three .sbtn{margin-top:12px}.sbtns.three .sbtn.full{grid-column:1/-1}
+.sbtn.dg{color:var(--exp)}
+.af.ta{align-items:flex-start}.af.ta label{padding-top:15px}
+#ssheet .af textarea{text-align:left;overflow-y:auto;min-height:84px;padding:13px 0}
+.af input[type=date]{min-width:0}
+body.ss-on #tt_fab{z-index:125}
+body.ss-on #ssheet .sh_body{padding-bottom:calc(88px + var(--sab))}
 .kinds{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
 .kinds .cat{min-height:60px}
 .af{display:flex;align-items:center;min-height:50px;background:var(--card);padding:0 14px;border-bottom:1px solid var(--line);gap:10px}
@@ -474,7 +490,7 @@ html.tthid .tt_sv,html.tthid .tt_eyes{animation-play-state:paused}
         <div class="gh"><span id="bill_h">本期固定帳單</span><span class="num" id="bill_sum"></span></div>
         <div id="bills"></div>
         <div class="foot" id="bill_foot">點一下未繳的帳單，就會標成已繳。</div>
-        <div class="gh" style="margin-top:14px"><span>訂閱</span></div>
+        <div class="gh" style="margin-top:14px"><span>訂閱</span><button type="button" class="addb" id="sub_add">新增訂閱</button></div>
         <div id="subs_sum" class="subsum" hidden></div>
         <div id="subs"><div class="foot">讀取中</div></div>
         <div class="foot">點一筆可以改卡或換方案，存檔後會通知塔塔。</div>
@@ -820,11 +836,12 @@ async function loadSubs(){
 }
 function renderSubs(){
   const S=SUBS||{},items=Array.isArray(S.items)?S.items:[];
-  const soon=it=>Number(it.days_until)<=7&&it.paid_this_period!==true;
+  const soon=it=>it.payer!=='company'&&Number(it.days_until)<=7&&it.paid_this_period!==true;
   const near=items.filter(soon),nx=near.reduce((a,it)=>a+Number(it.amount||0),0);
   let h=`<div>每月訂閱合計 <b class="num">NT$ ${nt(S.total_active||0)}</b></div>`;
   h+=near.length?`<div>7 天內將扣 <b class="num">${near.length}</b> 筆・<b class="num">NT$ ${nt(nx)}</b></div>`:`<div class="m">7 天內沒有要扣的</div>`;
   if(Number(S.total_yearly_due_this_period)>0)h+=`<div class="m">本期年費 <span class="num">NT$ ${nt(S.total_yearly_due_this_period)}</span></div>`;
+  if(Number(S.total_company_monthly)>0)h+=`<div class="m">公司付 每月 NT$ ${nt(S.total_company_monthly)}（不算進合計）</div>`;
   $('subs_sum').innerHTML=h;$('subs_sum').hidden=false;
   if(!items.length){$('subs').innerHTML=emptyBox('🔁','還沒有訂閱','塔塔記下訂閱後會出現在這裡');return;}
   $('subs').innerHTML=items.map(it=>{
@@ -834,6 +851,7 @@ function renderSubs(){
     if(it.account_name)l1.push('從 '+esc(it.account_name)+' 扣');
     if(it.via)l1.push('經由 '+esc(it.via));
     const chips=[];
+    if(it.payer==='company')chips.push('<span class="chp co">公司付</span>');
     if(it.billing_cycle==='yearly'){chips.push('<span class="chp">年繳</span>');chips.push(`<span class="chp num">每月約 NT$ ${nt(it.monthly_equiv)}</span>`);if(it.due_this_period===false)chips.push('<span class="chp">本期不扣</span>');}
     if(it.orig_currency)chips.push(`<span class="chp num">${esc(it.orig_currency)} ${origFmt(it.orig_amount)}</span>`);
     if(it.status==='idle')chips.push('<span class="chp o">閒置</span>');
@@ -854,65 +872,119 @@ function ssRenewParts(it){   // 年繳的月、日：優先用 renew_month 與 c
   return {m:Number(it.renew_month)||Number(n.slice(5,7))||1,d:Number(it.charge_day)||Number(n.slice(8,10))||1};
 }
 function ssBody(h){$('ss_body').innerHTML=h;$('ss_body').scrollTop=0;}
+const ssPayer0=it=>it&&it.payer==='company'?'company':'self';
+const ssRound2=n=>Math.round(Number(n)*100)/100;
+const ssList=t=>{const a=[];String(t==null?'':t).split(/[\n\r、]+/).forEach(x=>{x=x.trim();if(x&&!a.includes(x))a.push(x);});return a;};
 function ssRows(it){
-  const yr=it.billing_cycle==='yearly',du=Number(it.days_until),rp=ssRenewParts(it);
+  const U='未填',yr=it.billing_cycle==='yearly',du=Number(it.days_until),rp=ssRenewParts(it);
   const when=du===0?'今天':du===1?'明天':du+' 天後';
-  const r=[['名稱',it.name],['金額','NT$ '+nt(it.amount)],['週期',ssCyc(it.billing_cycle)]];
-  if(yr){r.push(['每月約','NT$ '+nt(it.monthly_equiv)]);r.push(['續訂日',rp.m+'/'+rp.d]);}
-  else r.push(['每月扣款日',(it.charge_day==null?'未填':it.charge_day+' 號')]);
-  r.push(['下次扣款',it.next_charge_date?mdStr(it.next_charge_date)+'・'+when:'未填']);
-  r.push(['扣款帳戶',it.account_name||'未填']);
-  r.push(['經由',it.via||'未填']);
-  r.push(['狀態',ssStat[it.status]||it.status||'未填']);
-  if(it.status==='cancel')r.push(['取消期限',it.cancel_by?mdStr(it.cancel_by)+' 前':'未填']);
-  if(it.orig_currency)r.push(['外幣原額',it.orig_currency+' '+origFmt(it.orig_amount)]);
-  r.push(['本期已扣',it.paid_this_period===true?'是':'否']);
-  r.push(['備註',it.note||'未填']);
-  r.push(['對帳別名',Array.isArray(it.match_names)&&it.match_names.length?it.match_names.join('、'):'未填']);
+  const r=[['名稱',it.name||U],['台幣金額','NT$ '+nt(it.amount)]];
+  r.push(['原幣金額',it.orig_currency&&it.orig_amount!=null?it.orig_currency+' '+origFmt(it.orig_amount):U]);
+  r.push(['週期',yr?'年繳・每月約 NT$ '+nt(it.monthly_equiv):'月繳']);
+  r.push(['扣款日',yr?'每年 '+rp.m+'/'+rp.d:(it.charge_day==null?U:'每月 '+it.charge_day+' 號')]);
+  if(yr&&it.renew_date_this_period&&it.renew_date_this_period!==it.next_charge_date)r.push(['本期續訂','本期已在 '+mdStr(it.renew_date_this_period)+' 扣']);
+  r.push(['下次扣款日',it.next_charge_date?mdStr(it.next_charge_date)+'・'+when:U]);
+  r.push(['扣款帳戶',it.account_name||U]);
+  r.push(['經由',it.via||U]);
+  r.push(['狀態',ssStat[it.status]||it.status||U]);
+  r.push(['取消期限',it.cancel_by?mdStr(it.cancel_by)+' 前':U]);
+  r.push(['比對名稱',Array.isArray(it.match_names)&&it.match_names.length?it.match_names.join('、'):U]);
+  r.push(['公司付',it.payer==='company'?'是':'否']);
+  let paid=it.paid_this_period===true?'是':'否';
+  const tx=it.paid_tx;
+  if(tx&&typeof tx==='object'){const p=[];if(tx.occurred_at)p.push(mdStr(dayKey(tx.occurred_at)));if(tx.merchant)p.push(tx.merchant);if(tx.amount!=null)p.push('NT$ '+nt(tx.amount));if(p.length)paid='是・'+p.join('・');}
+  r.push(['本期已扣',paid]);
   return r;
 }
+function ssSwitch(id,label,on){return `<div class="af sw"><label for="${id}">${label}</label><button type="button" class="swb" id="${id}" aria-pressed="${on?'true':'false'}"></button></div>`;}
+const ssOv=it=>it&&it.orig_amount!=null?String(ssRound2(it.orig_amount)):'';
+const ssF={
+  via:it=>`<div class="af"><label for="ss_via">經由</label><input id="ss_via" type="text" maxlength="30" autocomplete="off" placeholder="例如 Apple" value="${esc(it&&it.via||'')}"></div>`,
+  payer:it=>ssSwitch('ss_payer','公司付',ssPayer0(it)==='company'),
+  cur:it=>`<div class="af"><label for="ss_cur">原幣幣別</label><input id="ss_cur" type="text" maxlength="3" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="例如 USD，沒有就空白" value="${esc(it&&it.orig_currency||'')}"></div>`,
+  oamt:it=>`<div class="af"><label for="ss_oamt">原幣金額</label><input id="ss_oamt" type="text" inputmode="decimal" autocomplete="off" placeholder="例如 9.99" value="${esc(ssOv(it))}"></div>`,
+  note:it=>`<div class="af ta"><label for="ss_notein">備註</label><textarea id="ss_notein" rows="3" maxlength="2000" placeholder="選填">\n${esc(it&&it.note||'')}</textarea></div>`,
+  match:it=>`<div class="af ta"><label for="ss_match">比對名稱</label><textarea id="ss_match" rows="3" placeholder="一行一個，或用「、」分隔">\n${esc(it&&Array.isArray(it.match_names)?it.match_names.join('\n'):'')}</textarea></div>`
+};
+const ssTitles={detail:'訂閱詳情',card:'改卡',plan:'換方案',other:'編輯其他欄位',add:'新增訂閱',cancel:'退訂'};
 function ssDraw(){
   const it=SS.it,v=SS.view;
-  $('ss_title').textContent=v==='card'?'改卡':v==='plan'?'換方案':'訂閱詳情';
+  $('ss_title').textContent=ssTitles[v]||'訂閱詳情';
   if(v==='detail'){
-    ssBody('<div class="sgrp" id="ss_rows">'+ssRows(it).map(([k,x])=>`<div class="af dv"><span class="k">${esc(k)}</span><span class="v">${esc(x)}</span></div>`).join('')+'</div>'+
-      '<div class="sbtns"><button type="button" class="sbtn" id="ss_go_card">改卡</button><button type="button" class="sbtn" id="ss_go_plan">換方案</button></div>'+
+    const note=String(it.note||'').trim();
+    const nrow=note?`<div class="af dv nrow"><span class="k">備註</span><div class="v nv clamp" id="ss_note">${esc(note)}</div><div class="nh" id="ss_nh" hidden>點一下展開全文</div></div>`:`<div class="af dv"><span class="k">備註</span><span class="v">未填</span></div>`;
+    const cn=it.status==='cancel';
+    ssBody('<div class="sgrp" id="ss_rows">'+ssRows(it).map(([k,x])=>`<div class="af dv"><span class="k">${esc(k)}</span><span class="v">${esc(x)}</span></div>`).join('')+nrow+'</div>'+
+      '<div class="sbtns three"><button type="button" class="sbtn" id="ss_go_card">改卡</button><button type="button" class="sbtn" id="ss_go_plan">換方案</button>'+
+      '<button type="button" class="sbtn full" id="ss_go_other">編輯其他欄位</button>'+
+      `<button type="button" class="sbtn g" id="ss_go_cancel"${cn?' disabled':''}>${cn?'已標要取消':'退訂'}</button><button type="button" class="sbtn g dg" id="ss_go_archive">封存</button></div>`+
       '<button type="button" class="sbtn g" id="ss_dismiss">關閉</button>');
+    ssNoteInit();
     return;
   }
-  const foot='<div class="ahint" id="ss_err" role="alert"></div><button type="button" class="sbtn" id="ss_save">存檔</button><button type="button" class="sbtn g" id="ss_back">取消</button>';
+  const foot=(lb,bk)=>`<div class="ahint" id="ss_err" role="alert"></div><button type="button" class="sbtn" id="ss_save" data-l="${lb}">${lb}</button><button type="button" class="sbtn g" id="ss_back">${bk||'取消'}</button>`;
   if(v==='card'){
     const names=ssAccts(),cur=it.account_name||'',has=names.includes(cur);
-    ssBody(`<div class="ahint">「${esc(it.name)}」目前${cur?'從「'+esc(cur)+'」扣款':'沒有指定扣款帳戶'}。</div><div class="sgrp"><div class="af"><label for="ss_acct">扣款帳戶</label><select id="ss_acct">${has?'':'<option value="" selected>請選擇</option>'}${names.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('')}</select></div></div>`+foot);
+    ssBody(`<div class="ahint">「${esc(it.name)}」目前${cur?'從「'+esc(cur)+'」扣款':'沒有指定扣款帳戶'}。</div><div class="sgrp"><div class="af"><label for="ss_acct">扣款帳戶</label><select id="ss_acct">${has?'':'<option value="" selected>請選擇</option>'}${names.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('')}</select></div></div>`+foot('存檔'));
+    return;
+  }
+  if(v==='other'){
+    ssBody(`<div class="ahint">「${esc(it.name)}」只改要換的欄位，其他資料會原封不動帶回去。存檔後不會通知塔塔。</div><div class="sgrp">${ssF.via(it)}${ssF.match(it)}${ssF.note(it)}${ssF.cur(it)}${ssF.oamt(it)}${ssF.payer(it)}</div>`+foot('存檔'));
+    return;
+  }
+  if(v==='add'){
+    const names=ssAccts();
+    ssBody(`<div class="ahint">新增後不會通知塔塔。名稱不能和現有的訂閱重複。</div><div class="sgrp">
+    <div class="af"><label for="ss_name">名稱</label><input id="ss_name" type="text" maxlength="60" autocomplete="off" placeholder="必填"></div>
+    <div class="af"><label for="ss_amt">台幣金額</label><input id="ss_amt" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="必填，整數"></div>
+    <div class="af"><label for="ss_cyc">週期</label><select id="ss_cyc"><option value="monthly" selected>月繳</option><option value="yearly">年繳</option></select></div>
+    <div id="ss_dyn"></div>
+    <div class="af"><label for="ss_acct">扣款帳戶</label><select id="ss_acct"><option value="" selected>不指定</option>${names.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select></div>
+    ${ssF.via(null)}${ssF.payer(null)}${ssF.cur(null)}${ssF.oamt(null)}${ssF.note(null)}${ssF.match(null)}</div>`+foot('新增'));
+    ssDyn();
+    return;
+  }
+  if(v==='cancel'){
+    ssBody(`<div class="ahint">把「${esc(it.name)}」標成要取消，並通知塔塔。取消期限可以不填。</div><div class="sgrp"><div class="af"><label for="ss_cb">取消期限</label><input id="ss_cb" type="date"></div></div>`+foot('標成要取消'));
     return;
   }
   ssBody(`<div class="ahint">只改要換的欄位，其他資料會原封不動帶回去。</div><div class="sgrp">
     <div class="af"><label for="ss_name">名稱</label><input id="ss_name" type="text" maxlength="60" autocomplete="off" value="${esc(it.name)}"></div>
     <div class="af"><label for="ss_amt">金額（台幣）</label><input id="ss_amt" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="${esc(Math.round(Number(it.amount)))}"></div>
     <div class="af"><label for="ss_cyc">週期</label><select id="ss_cyc"><option value="monthly"${it.billing_cycle!=='yearly'?' selected':''}>月繳</option><option value="yearly"${it.billing_cycle==='yearly'?' selected':''}>年繳</option></select></div>
-    <div id="ss_dyn"></div></div>`+foot);
+    <div id="ss_dyn"></div></div>`+foot('存檔'));
   ssDyn();
+}
+function ssNoteInit(){
+  const n=$('ss_note'),h=$('ss_nh');if(!n)return;
+  if(n.scrollHeight>n.clientHeight+1){n.classList.add('tap');n.setAttribute('role','button');n.tabIndex=0;n.setAttribute('aria-expanded','false');n.setAttribute('aria-label','備註，點一下展開全文');h.hidden=false;}
+  else{n.classList.remove('clamp');h.remove();}
+}
+function ssNoteToggle(){
+  const n=$('ss_note');if(!n||!n.classList.contains('tap'))return;
+  const c=n.classList.toggle('clamp');n.setAttribute('aria-expanded',c?'false':'true');n.setAttribute('aria-label',c?'備註，點一下展開全文':'備註，點一下收合');
+  $('ss_nh').textContent=c?'點一下展開全文':'點一下收合';
 }
 function ssDyn(){
   const it=SS.it,to=$('ss_cyc').value,box=$('ss_dyn');
-  if(to===(it.billing_cycle==='yearly'?'yearly':'monthly')){box.innerHTML='';return;}
+  if(it&&to===(it.billing_cycle==='yearly'?'yearly':'monthly')){box.innerHTML='';return;}
   box.innerHTML=to==='yearly'
-    ?`<div class="af"><label for="ss_renew">續訂日</label><input id="ss_renew" type="date" value="${esc(it.next_charge_date||'')}"></div>`
-    :`<div class="af"><label for="ss_day">每月扣款日</label><input id="ss_day" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="1 到 31" value="${esc(it.charge_day==null?'':it.charge_day)}"></div>`;
+    ?`<div class="af"><label for="ss_renew">續訂日</label><input id="ss_renew" type="date" value="${esc(it?it.next_charge_date||'':'')}"></div>`
+    :`<div class="af"><label for="ss_day">每月扣款日</label><input id="ss_day" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="1 到 31" value="${esc(it&&it.charge_day!=null?it.charge_day:'')}"></div>`;
 }
-function ssOpen(it,opener){
+function ssOpen(it,opener,view){
   if(SS)return;
-  SS={it,view:'detail'};ssBusy=false;ssOpener=opener||null;
+  SS={it,view:view||'detail'};ssBusy=false;ssOpener=opener||null;
   clearTimeout(msgT);$('msg').style.display='none';
   ssDraw();
   try{history.pushState({kks:1},'',location.href);}catch(e){}
-  document.body.classList.add('sheet-open');$('scrim').classList.add('on');$('ssheet').classList.add('on');
+  document.body.classList.add('sheet-open','ss-on');$('scrim').classList.add('on');$('ssheet').classList.add('on');
   setTimeout(()=>{if(SS)$('ss_close').focus({preventScroll:true});},60);
 }
 function ssHide(){
   if(!SS)return;
   SS=null;ssBusy=false;
-  document.body.classList.remove('sheet-open');$('ssheet').classList.remove('on');
+  document.body.classList.remove('sheet-open','ss-on');$('ssheet').classList.remove('on');
   if(!$('sheet').classList.contains('on')&&!$('asheet').classList.contains('on'))$('scrim').classList.remove('on');
   if(ssOpener&&ssOpener.isConnected)try{ssOpener.focus({preventScroll:true});}catch(e){}
   ssOpener=null;
@@ -921,29 +993,51 @@ function ssClose(){if(!SS||ssBusy)return;if(history.state&&history.state.kks)his
 window.addEventListener('popstate',()=>{if(SS)ssHide();});
 document.addEventListener('keydown',ev=>{if(ev.key==='Escape'&&SS&&!$('dlg').open)ssClose();});
 $('ss_close').onclick=ssClose;
-function ssView(v){if(!SS||ssBusy)return;SS.view=v;ssDraw();const f=$(v==='card'?'ss_acct':'ss_name');if(f)f.focus({preventScroll:true});}
+const ssFirst={card:'ss_acct',plan:'ss_name',other:'ss_via',add:'ss_name',cancel:'ss_cb'};
+function ssView(v){if(!SS||ssBusy)return;SS.view=v;ssDraw();const f=$(ssFirst[v]||'ss_close');if(f)f.focus({preventScroll:true});}
 $('ss_body').addEventListener('click',ev=>{
-  const b=ev.target.closest('button');if(!b)return;
+  if(ev.target.closest('#ss_note')){ssNoteToggle();return;}
+  const b=ev.target.closest('button');if(!b||b.disabled)return;
   if(b.id==='ss_go_card')ssView('card');else if(b.id==='ss_go_plan')ssView('plan');
-  else if(b.id==='ss_dismiss')ssClose();else if(b.id==='ss_back')ssView('detail');else if(b.id==='ss_save')ssSave();
+  else if(b.id==='ss_go_other')ssView('other');else if(b.id==='ss_go_cancel')ssView('cancel');else if(b.id==='ss_go_archive')ssArchive();
+  else if(b.id==='ss_dismiss')ssClose();else if(b.id==='ss_back'){if(SS.it)ssView('detail');else ssClose();}else if(b.id==='ss_save')ssSave();
+  else if(b.id==='ss_payer')b.setAttribute('aria-pressed',b.getAttribute('aria-pressed')==='true'?'false':'true');
 });
+$('ss_body').addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target.id==='ss_note'){ev.preventDefault();ssNoteToggle();}});
 $('ss_body').addEventListener('change',ev=>{if(ev.target.id==='ss_cyc')ssDyn();});
 $('subs').addEventListener('click',ev=>{
   const r=ev.target.closest('[data-sub]');if(!r)return;
   const it=((SUBS&&SUBS.items)||[]).find(x=>String(x.id)===r.dataset.sub);if(it)ssOpen(it,r);
 });
 $('subs').addEventListener('keydown',ev=>{if((ev.key==='Enter'||ev.key===' ')&&ev.target.dataset&&ev.target.dataset.sub){ev.preventDefault();ev.target.click();}});
+$('sub_add').addEventListener('click',ev=>{
+  if(SS)return;
+  if(!SUBS||!Array.isArray(SUBS.items)){showErr('訂閱清單還沒讀到，等一下再按新增。');return;}
+  ssOpen(null,ev.currentTarget,'add');
+});
 function ssErr(m){const e=$('ss_err');if(e)e.textContent=m||'';if(m)showErr(m);}
-function ssPayload(it,o){   // 所有原值都帶回去，只換掉 o 裡要改的
+function ssLock(on){   // 送出中：全部欄位與按鈕停用，存檔鈕顯示「存檔中…」
+  ssBusy=on;
+  $('ss_body').querySelectorAll('input,select,textarea,button').forEach(e=>{e.disabled=on;});
+  const sv=$('ss_save');if(sv)sv.textContent=on?'存檔中…':(sv.dataset.l||'存檔');
+}
+function ssBase(it){   // 所有原值，改卡、換方案、編輯其他欄位都從這裡出發
+  const cyc=it.billing_cycle==='yearly'?'yearly':'monthly',rp=ssRenewParts(it);
+  return {name:it.name,amount:Math.round(Number(it.amount)),cycle:cyc,account:it.account_name||'',match:Array.isArray(it.match_names)?it.match_names.slice():[],
+    day:it.charge_day==null?null:Number(it.charge_day),renewOn:'2028-'+ssPad(rp.m)+'-'+ssPad(rp.d),
+    via:it.via||'',note:it.note||'',cur:it.orig_currency||'',oamt:it.orig_amount==null?null:Number(it.orig_amount),payer:ssPayer0(it)};
+}
+function ssPayload(it,o){   // 所有原值都帶回去，只換掉 o 裡要改的；要清掉的欄位給空字串
   const a={p_name:o.name,p_amount:o.amount,p_billing_cycle:o.cycle};
   if(o.cycle==='yearly')a.p_renew_on=o.renewOn;else a.p_charge_day=o.day;
   if(o.account)a.p_account=o.account;
-  if(it.via)a.p_via=it.via;
+  if(o.via)a.p_via=o.via;else if(it.via)a.p_via='';
   a.p_status=it.status;
   if(it.status==='cancel'&&it.cancel_by)a.p_cancel_by=it.cancel_by;
-  if(it.orig_currency&&it.orig_amount!=null){a.p_orig_currency=it.orig_currency;a.p_orig_amount=Number(it.orig_amount);}
-  if(it.note)a.p_note=it.note;
+  if(o.cur){if(o.oamt!=null){a.p_orig_currency=o.cur;a.p_orig_amount=o.oamt;}}else if(it.orig_currency)a.p_orig_currency='';
+  if(o.note)a.p_note=o.note;else if(it.note)a.p_note='';
   a.p_match_names=o.match;
+  a.p_payer=o.payer;
   return a;
 }
 async function ssNotify(text){
@@ -960,11 +1054,87 @@ async function ssNotify(text){
   if(re==='webhook_failed')return {ok:false,why:'塔塔那邊沒接到（'+(j.http||'無回應')+'）'};
   return {ok:false,why:re?String(re):'伺服器回應 '+(r?r.status:'異常')};
 }
+async function ssDone(n,okMsg){   // 成功收尾：關視窗、重讀、顯示結果（n 是通知結果，null＝不通知）
+  ssBusy=false;ssClose();loadSubs();
+  if(n===null)showMsg(okMsg);else if(n.ok)showMsg('已存檔，已通知塔塔');else showErr('已存檔，但沒通知到塔塔：'+n.why);
+}
+function ssReadExtra(){   // 讀經由、備註、比對名稱、原幣、公司付；回傳 {err} 或值
+  const via=$('ss_via').value.trim(),note=$('ss_notein').value.trim(),match=ssList($('ss_match').value);
+  const cur=$('ss_cur').value.trim().toUpperCase(),oa=$('ss_oamt').value.trim().replace(/,/g,''),payer=$('ss_payer').getAttribute('aria-pressed')==='true'?'company':'self';
+  if(via.length>30)return {err:'經由最多 30 個字。'};
+  if(note.length>2000)return {err:'備註最多 2000 個字。'};
+  let oamt=null;
+  if(cur){
+    if(!/^[A-Z]{3}$/.test(cur))return {err:'原幣幣別要是 3 碼英文，例如 USD。'};
+    if(cur==='TWD')return {err:'台幣不用填原幣，請把原幣幣別留白。'};
+    if(!/^\d+(\.\d{1,2})?$/.test(oa)||!(Number(oa)>0))return {err:'原幣金額要大於 0，小數最多 2 位。'};
+    oamt=Number(oa);
+  }else if(oa)return {err:'有填原幣金額，請一起填原幣幣別。'};
+  return {via,note,match,cur,oamt,payer};
+}
+async function ssSaveOther(){
+  const it=SS.it;ssErr('');
+  const x=ssReadExtra();if(x.err){ssErr(x.err);return;}
+  const same=x.via===String(it.via||'').trim()&&x.note===String(it.note||'').trim()&&x.payer===ssPayer0(it)&&x.cur===(it.orig_currency||'')
+    &&(!x.cur||x.oamt===ssRound2(it.orig_amount))&&JSON.stringify(x.match)===JSON.stringify(ssList((it.match_names||[]).join('\n')));
+  if(same){ssErr('沒有要改的內容。');return;}
+  const o=ssBase(it);o.via=x.via;o.note=x.note;o.match=x.match;o.cur=x.cur;o.oamt=x.oamt;o.payer=x.payer;
+  ssLock(true);
+  try{await rpc('kk_sub_upsert',ssPayload(it,o));}
+  catch(e){ssLock(false);ssErr(e.message);return;}
+  ssDone(null,'已存檔');
+}
+async function ssSaveAdd(){
+  ssErr('');
+  const nm=$('ss_name').value.trim(),amt=$('ss_amt').value.trim().replace(/,/g,''),cyc=$('ss_cyc').value,acct=$('ss_acct').value;
+  if(!nm){ssErr('名稱不能空白。');return;}
+  if(nm.length>60){ssErr('名稱最多 60 個字。');return;}
+  if(!/^\d+$/.test(amt)||Number(amt)<=0||!Number.isSafeInteger(Number(amt))){ssErr('台幣金額要填大於 0 的整數。');return;}
+  const a={p_name:nm,p_amount:Number(amt),p_billing_cycle:cyc};
+  if(cyc==='yearly'){const d=$('ss_renew').value;if(!/^\d{4}-\d{2}-\d{2}$/.test(d)||isNaN(new Date(d+'T00:00:00Z'))){ssErr('請選續訂日。');return;}a.p_renew_on=d;}
+  else{const d=$('ss_day').value.trim();if(!/^\d{1,2}$/.test(d)||Number(d)<1||Number(d)>31){ssErr('每月扣款日要是 1 到 31。');return;}a.p_charge_day=Number(d);}
+  const x=ssReadExtra();if(x.err){ssErr(x.err);return;}
+  if(((SUBS&&SUBS.items)||[]).some(y=>ssNorm(y.name)===ssNorm(nm))){ssErr('已經有名稱相同的訂閱了（不分大小寫），請換一個名稱。');return;}
+  if(acct)a.p_account=acct;
+  if(x.via)a.p_via=x.via;
+  a.p_payer=x.payer;
+  if(x.cur){a.p_orig_currency=x.cur;a.p_orig_amount=x.oamt;}
+  if(x.note)a.p_note=x.note;
+  if(x.match.length)a.p_match_names=x.match;
+  ssLock(true);
+  try{await rpc('kk_sub_upsert',a);}
+  catch(e){ssLock(false);ssErr(e.message);return;}
+  ssDone(null,'已新增');
+}
+async function ssSaveCancel(){
+  const it=SS.it;ssErr('');
+  const cb=$('ss_cb').value;
+  if(cb&&(!/^\d{4}-\d{2}-\d{2}$/.test(cb)||isNaN(new Date(cb+'T00:00:00Z')))){ssErr('取消期限的日期不對。');return;}
+  const text=cb?`[訂閱:${it.name}] 老大要退訂，取消期限 ${cb}`:`[訂閱:${it.name}] 老大要退訂`;
+  ssLock(true);
+  try{await rpc('kk_sub_set_status',cb?{p_name:it.name,p_status:'cancel',p_cancel_by:cb}:{p_name:it.name,p_status:'cancel'});}
+  catch(e){ssLock(false);ssErr(e.message);return;}
+  const n=await ssNotify(text);
+  ssDone(n);
+}
+async function ssArchive(){
+  if(!SS||!SS.it||ssBusy)return;
+  const it=SS.it;
+  ssBusy=true;
+  const yes=await ask(`封存「${esc(it.name)}」？封存後不會出現在清單，塔塔之後用同名新增可以找回。`,'封存','取消',true);
+  if(!yes){ssBusy=false;return;}
+  ssLock(true);
+  try{await rpc('kk_sub_archive',{p_name:it.name});}
+  catch(e){ssBusy=false;ssDraw();showErr(e.message);return;}
+  ssBusy=false;ssClose();loadSubs();showMsg('已封存');
+}
 async function ssSave(){
   if(ssBusy||!SS)return;
-  const it=SS.it,kind=SS.view,cyc0=it.billing_cycle==='yearly'?'yearly':'monthly',rp=ssRenewParts(it);
-  const o={name:it.name,amount:Math.round(Number(it.amount)),cycle:cyc0,account:it.account_name||'',match:Array.isArray(it.match_names)?it.match_names.slice():[],
-    day:it.charge_day==null?null:Number(it.charge_day),renewOn:'2028-'+ssPad(rp.m)+'-'+ssPad(rp.d)};
+  const kind=SS.view;
+  if(kind==='other')return ssSaveOther();
+  if(kind==='add')return ssSaveAdd();
+  if(kind==='cancel')return ssSaveCancel();
+  const it=SS.it,o=ssBase(it),cyc0=o.cycle;
   let text,newName=it.name;
   ssErr('');
   if(kind==='card'){
@@ -990,22 +1160,17 @@ async function ssSave(){
     text=`[訂閱:${it.name}] 換方案成 ${nm}・NT$ ${nt(o.amount)}・${ssCyc(cyc)}`;
   }
   const renamed=newName!==it.name;
-  ssBusy=true;
-  const sv=$('ss_save');sv.disabled=true;sv.textContent='存檔中…';
-  $('ss_body').querySelectorAll('input,select,button').forEach(e=>{e.disabled=true;});
+  ssLock(true);
   let stage='upsert';
   try{
     await rpc('kk_sub_upsert',ssPayload(it,o));
     if(renamed){stage='archive';await rpc('kk_sub_archive',{p_name:it.name});}
   }catch(e){
-    ssBusy=false;
-    if(stage==='archive'){ssHide();loadSubs();showErr('新名稱「'+newName+'」已存檔，但舊名稱「'+it.name+'」沒封存成功：'+e.message);return;}
-    $('ss_body').querySelectorAll('input,select,button').forEach(x=>{x.disabled=false;});
-    sv.textContent='存檔';ssErr(e.message);return;
+    if(stage==='archive'){ssBusy=false;ssHide();loadSubs();showErr('新名稱「'+newName+'」已存檔，但舊名稱「'+it.name+'」沒封存成功：'+e.message);return;}
+    ssLock(false);ssErr(e.message);return;
   }
   const n=await ssNotify(text);
-  ssBusy=false;ssClose();loadSubs();
-  if(n.ok)showMsg('已存檔，已通知塔塔');else showErr('已存檔，但沒通知到塔塔：'+n.why);
+  ssDone(n);
 }
 function renderBills(){
   const B=D.bills||[],isCur=D.period_start===CUR;
@@ -1188,6 +1353,7 @@ const ttMoney=n=>{n=Number(n)||0;return (n<0?'-':'')+'$'+nt(Math.abs(n));};
 function ttCtxNow(){
   const sh=$('sheet').classList.contains('on'),as=$('asheet').classList.contains('on');
   if(as)return null;
+  if(SS&&SS.it&&$('ssheet').classList.contains('on')){const n=SS.it.name,lb='訂閱 '+n;return {ctx:{type:'subscription',id:SS.it.id,name:n,label:lb},label:lb};}
   if(sh&&typeof mode!=='undefined'&&mode==='edit'&&editing){
     const t=editing,date=dayKey(t.occurred_at),what=t.merchant||t.category||'交易',amt=Number(t.amount)||0;
     return {ctx:{type:'transaction',id:t.id,date,amount:amt,merchant:t.merchant||'',category:t.category||'',account:t.account_name||'',tx_type:t.type,label:date+' '+what+' $'+nt(amt)},label:date+' '+what+' $'+nt(amt)};
@@ -1251,12 +1417,13 @@ if(window.visualViewport){visualViewport.addEventListener('resize',()=>{ttPlace(
 addEventListener('resize',()=>{ttPlace();ttSync();});
 document.addEventListener('visibilitychange',()=>document.documentElement.classList.toggle('tthid',document.hidden));
 {const mo=new MutationObserver(()=>{ttSync();setTimeout(ttSync,380);});
- ['sheet','asheet','det'].forEach(i=>mo.observe($(i),{attributes:true,attributeFilter:['class']}));
+ ['sheet','asheet','ssheet','det'].forEach(i=>mo.observe($(i),{attributes:true,attributeFilter:['class']}));
  mo.observe($('det_t'),{childList:true,characterData:true,subtree:true});}
 async function kkmGo(){
-  const inp=$('kkm_in'),btn=$('kkm_send'),text=inp.value.trim();
+  const inp=$('kkm_in'),btn=$('kkm_send');let text=inp.value.trim();
   if(kkmBusy||KEY.length<20)return;
   if(!text){kkmSay('先寫點什麼再送出','err');return;}
+  if(ttCur&&ttCur.ctx&&ttCur.ctx.type==='subscription'){const pf='[訂閱:'+ttCur.ctx.name+']';if(!text.startsWith(pf))text=pf+' '+text;}
   if(text.length>500){kkmSay('最多 500 字，目前 '+text.length+' 字','err');return;}
   kkmBusy=true;kkmId=kkmId||kkmUuid();btn.disabled=true;inp.readOnly=true;btn.textContent='送出中…';kkmSay('');ttWaitSet(null);
   let r=null,j=null,net=false;
