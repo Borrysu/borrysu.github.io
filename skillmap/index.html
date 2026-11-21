@@ -68,6 +68,7 @@ textarea{width:100%;min-height:84px;margin-top:10px;padding:10px;border:1px soli
   <button data-t="skills" class="on">技能</button>
   <button data-t="scen">情境</button>
   <button data-t="mine">我的確認</button>
+  <button data-t="hub">地圖入口</button>
 </nav>
 <div class="sheet" id="sheet"><div class="panel" id="panel"></div></div>
 <script>
@@ -141,7 +142,7 @@ function card(s){
 function render(){
   var m=$('#main');m.textContent='';
   $('#tools').classList.toggle('hidden',S.tab!=='skills');
-  if(S.tab==='skills')renderSkills(m);else if(S.tab==='scen')renderScen(m);else renderMine(m);
+  if(S.tab==='skills')renderSkills(m);else if(S.tab==='scen')renderScen(m);else if(S.tab==='hub')renderHub(m);else renderMine(m);
 }
 function renderSkills(m){
   var q=S.q.toLowerCase(),L=S.map.layers||[],any=false;
@@ -164,6 +165,15 @@ function renderScen(m){
       d.appendChild(b);d.appendChild(el('div','meta',st.say||''));r.appendChild(d);m.appendChild(r)});
   });
   if(!(S.map.scenarios||[]).length)m.appendChild(el('div','empty','沒有情境'));
+}
+var HUB=[['系統架構地圖','這台電腦整體怎麼運作（11/19 第二版 PDF）','https://drive.google.com/file/d/1T7FhUA5K61ORl4dkjX0jJop5SiXWNyzO/view'],
+ ['核心規則','00_核心.md，每次開工先讀的一頁','https://github.com/Borrysu/daqi-workspace/blob/main/規則/工作行為準則/00_核心.md'],
+ ['總索引','00_總索引.md，所有案子和工具在哪','https://github.com/Borrysu/daqi-workspace/blob/main/任務/00_總索引.md']];
+function renderHub(m){
+  m.appendChild(el('h2','','大器地圖入口'));
+  var c=el('div','card');var h=el('div');h.appendChild(el('b','','技能地圖'));h.appendChild(el('span','tag','就是這一頁'));c.appendChild(h);c.appendChild(el('p','','技能怎麼接起來，可確認、提問、要改'));
+  c.onclick=function(){S.tab='skills';document.querySelectorAll('#nav button').forEach(function(x){x.classList.toggle('on',x.dataset.t==='skills')});render()};m.appendChild(c);
+  HUB.forEach(function(x){var a=el('a','card');a.href=x[2];a.target='_blank';a.rel='noopener';a.style.textDecoration='none';var h=el('div');h.appendChild(el('b','',x[0]));a.appendChild(h);a.appendChild(el('p','',x[1]));m.appendChild(a)});
 }
 var ACT={confirm:'確認',question:'提問',change:'要改'};
 function renderMine(m){
