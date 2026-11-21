@@ -1,10 +1,10 @@
-const V='kk-v30.2';
+const V='kk-v30.3';
 const SHELL=['./','manifest.json','apple-touch-icon.png?v=20261116f','icon-192.png?v=20261116f'];
 const LAZY=['chart.min.js','supabase.js'];
 // install never blocks or fails because of one slow file; the big libraries are fetched lazily by the page itself
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(SHELL.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()));});
 // a new version takes over at once and drops every older cache (the page reloads itself on controllerchange; never navigate clients from here: activation would wait on a navigation that waits on activation)
-self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
+self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k.startsWith('kk-')&&k!==V).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
 const withTimeout=(p,ms)=>new Promise((res,rej)=>{const t=setTimeout(()=>rej(new Error('timeout')),ms);p.then(v=>{clearTimeout(t);res(v);},e=>{clearTimeout(t);rej(e);});});
 self.addEventListener('fetch',e=>{
   const r=e.request,u=new URL(r.url);
