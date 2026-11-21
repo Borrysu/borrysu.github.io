@@ -1,4 +1,4 @@
-# 通告板（原機會雷達）前端
+# 逐流 Current（原機會雷達、通告板）前端
 
 靜態網頁，沒有建置步驟。`index.html` 加 `css/app.css` 加 `js/*.js`（ES modules，不擋畫面）。
 
@@ -12,6 +12,6 @@
 
 ## 金鑰
 用 `網址?k=金鑰` 開（也收舊的 `#k=金鑰`）。金鑰存進 localStorage 的 `opp_key`，**並留在網址列上（#k= 會改成 ?k=）**，和記帳面板一樣：iPhone 加到主畫面時網址帶著金鑰，獨立 App 第一次開也有金鑰。
-金鑰來源順序：?k=、#k=、localStorage。貼上金鑰按鈕會連網址一起換掉。manifest 刻意不寫 start_url，iOS 才會用加入當下的網址。
+金鑰來源順序：?k=、#k=、localStorage。貼上金鑰按鈕會連網址一起換掉。manifest 刻意不寫 start_url，iOS 才會用加入當下的網址；scope 寫相對的 `./`。
 `sw.js` 的 CACHE 名稱每次改版要換（網路優先，所以不換也不會卡舊版，但舊快取會留著）。
 金鑰不會寫在任何檔案裡。`SUPABASE_ANON_KEY` 是公開的 publishable key。
