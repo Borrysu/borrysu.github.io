@@ -151,7 +151,7 @@ function el(t,c,x){var e=document.createElement(t);if(c)e.className=c;if(x!=null
 var LS={get:function(k){try{return localStorage.getItem(k)||''}catch(e){return ''}},set:function(k,v){try{localStorage.setItem(k,v)}catch(e){}},del:function(k){try{localStorage.removeItem(k)}catch(e){}}};
 var params=new URLSearchParams(location.search), hash=new URLSearchParams(location.hash.slice(1));
 var MOCK=params.get('mock')==='1', XSS=params.get('xss')==='1';
-var KEY=params.get('k')||hash.get('k')||LS.get('skillmap_key');
+var KEY=params.get('k')||hash.get('k')||LS.get('skillmap_key')||LS.get('opp_key');
 var DESK=window.matchMedia('(min-width:1024px)');
 var keep=(MOCK?'?mock=1'+(XSS?'&xss=1':''):'');
 if(params.get('k')||hash.get('k')){LS.set('skillmap_key',KEY);history.replaceState(null,'',location.pathname+keep)}
