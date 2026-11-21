@@ -1,0 +1,17 @@
+# Supabase 免費版一週沒活動會暫停；這個排程每天打一次公開 API 保活，不靠 Mac。
+# 用的是前端本來就公開的 publishable key，沒有私密金鑰。2026-11-21 大器
+name: supabase-keepalive
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://wbfdpuytffyaetghqkbl.supabase.co/auth/v1/settings" -H "apikey: sb_publishable_yXl1iCBorFdHNsTl1A4UPg_MQLMYukO")
+          echo "auth settings HTTP $code"
+          code2=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://wbfdpuytffyaetghqkbl.supabase.co/rest/v1/" -H "apikey: sb_publishable_yXl1iCBorFdHNsTl1A4UPg_MQLMYukO")
+          echo "rest HTTP $code2"
+          [ "$code" = 200 ]
