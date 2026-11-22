@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v68');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v69');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3063,7 +3063,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  function bar(){let b=$('#mkBar');if(!MK.on){if(b)b.remove();document.documentElement.classList.remove('marking');return}
   if(!b){b=document.createElement('div');b.id='mkBar';b.className='mkbar';b.setAttribute('role','toolbar');b.setAttribute('aria-label','標記修改意見');document.body.appendChild(b)}
   document.documentElement.classList.add('marking');const n=MK.list.length;
-  b.innerHTML=`<span class="mkt">${n?`已記 ${n} 則，繼續點或送出`:'點畫面上有問題的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
+  b.innerHTML=`<span class="mkt"><b>編修模式</b>${n?`已記 ${n} 則，繼續點或送出`:'點要改的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
  function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
   MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
   if(kind==='pick'){const p=MK.pick;x.setAttribute('aria-label','寫修改意見');
@@ -3072,8 +3072,8 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   else{x.setAttribute('aria-label','修改意見清單');
    x.innerHTML=`<p class="mkw">這一輪的修改意見 ${MK.list.length} 則</p><ol class="mkl">${MK.list.map((m,i)=>`<li><b>${esc(m.note)}</b><small>${esc(m.where)}${m.txt?'｜「'+esc(cut(m.txt,24))+'」':''}</small><button class="btn ghost" data-mk="del" data-i="${i}" aria-label="刪掉第 ${i+1} 則">✕</button></li>`).join('')}</ol><div class="btns"><button class="btn pri" data-mk="send"${MK.list.length?'':' disabled'}>全部送出</button><button class="btn ghost" data-mk="cancel">繼續點</button></div>`}}
  function clearSel(){document.querySelectorAll('.mk-sel').forEach(e=>e.classList.remove('mk-sel'))}
- function setOn(v){MK.on=v;clearSel();box('');bar();const k=$('#mkBtn');if(k)k.setAttribute('aria-pressed',v?'true':'false');
-  if(v)toast(MK.list.length?`接著上次的 ${MK.list.length} 則繼續`:'點有問題的地方，寫一句意見')}
+ function setOn(v){MK.on=v;clearSel();box('');bar();const k=$('#mkBtn');if(k){k.setAttribute('aria-pressed',v?'true':'false');const t=k.querySelector('b');if(t)t.textContent=v?'完成':'編修'}
+  if(v)toast(MK.list.length?`編修模式：接著上次的 ${MK.list.length} 則`:'編修模式：點要改的地方，寫一句意見')}
  async function send(){if(!MK.list.length)return;const ver=(document.querySelector('link[href*="app.css?v"]')||{}).href||'';const v=(ver.match(/\?v(\d+)/)||[])[1]||'';
   const dark=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'';
   const body=`【面板修改意見】逐流 v${v}，${MK.list.length} 則（螢幕 ${innerWidth}×${innerHeight}${/dark/.test(dark)?'，深色':''}）\n`+MK.list.map((m,i)=>`${i+1}. ${m.note}\n   位置：${m.where||'（沒判斷出來）'}${m.txt?'；點的是「'+m.txt+'」':''}\n   元件：${m.code}`).join('\n');
@@ -3086,7 +3086,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  window.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('#mkBtn');if(k){stop(e);setOn(!MK.on);return}
   if(!MK.on)return;const m=e.target.closest&&e.target.closest('[data-mk]');
   if(m){stop(e);if(m.disabled)return;const a=m.dataset.mk;
-   if(a==='end'){setOn(false);if(MK.list.length)toast(`${MK.list.length} 則還沒送，下次按 ✎ 接著寫`)}
+   if(a==='end'){setOn(false);if(MK.list.length)toast(`${MK.list.length} 則還沒送，下次按「編修」接著寫`)}
    else if(a==='list'){clearSel();box('list')}
    else if(a==='cancel'){clearSel();box('')}
    else if(a==='del'){MK.list.splice(+m.dataset.i,1);save();bar();box(MK.list.length?'list':'')}
@@ -3096,7 +3096,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   if(mine(e.target))return;stop(e);const p=grab(e.target);MK.pick=p;clearSel();p.el.classList.add('mk-sel');box('pick')},true);
  window.addEventListener('keydown',e=>{if(MK.on&&e.key==='Escape'){if(MK.box){clearSel();box('')}else setOn(false)}});
  function btn(){const top=$('#top');if(!top||$('#mkBtn'))return;const k=document.createElement('button');k.id='mkBtn';k.className='mkbtn';k.type='button';
-  k.setAttribute('aria-label','標記要改的地方');k.setAttribute('aria-pressed','false');k.innerHTML='<span aria-hidden="true">✎</span>';
+  k.setAttribute('aria-pressed','false');k.innerHTML='<span aria-hidden="true">✎</span><b>編修</b>';
   const hv=$('#hav');top.insertBefore(k,hv||null)}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',btn);else btn();
  window.__zlMK=MK}
