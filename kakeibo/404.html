@@ -1220,12 +1220,35 @@ details.rep .rep-t{font-size:12px;color:var(--muted);font-weight:500;flex:none}
 .updrow .updgo{flex:none;font-weight:600;color:var(--ink2)}
 /* v34.4 補單 4：iPhone 主畫面底部空白。外殼高度用 --kk-vh（主畫面模式短少狀態列時改用螢幕高度），底下若還有縫用分頁列同色 */
 html{background-color:var(--x-surface-solid,var(--surface))}
-/* v32.2：外殼不再撐到螢幕高度（kk-vhfix 停用），一律不超過實際可見區 */
-html{height:100%;height:-webkit-fill-available}
-body{max-height:100vh;max-height:-webkit-fill-available;max-height:100svh;max-height:100dvh}
-.phone,.app{max-height:100%}
+/* v34.7（2026-11-22）：iPhone 主畫面底部多一塊。
+ 真機 v34.1 截圖：外殼從螢幕頂 0 畫到 793pt，螢幕 852pt，少的 59pt 正好等於上方安全區。推測是 iOS 主畫面模式（black-translucent＋viewport-fit=cover）把版面視窗少算一個上方安全區，100%、100dvh、100svh、fixed 四邊 0 全都只有 793。v34.5 的 max-height:100dvh 就是又被壓回 793。
+ 修法：拿掉所有 max-height 上限；外殼高度改用 --kk-shell-h 一個變數，四種模式由除錯浮層切換（存 localStorage kk_hmode）：
+ A（預設）貼滿視窗；只有主畫面模式、且量到 100lvh 比視窗多出的高度剛好等於上方安全區時，才改用 100lvh 的量測值。
+ B 100lvh。C fixed 四邊 0、無上限（等於 v34.1）。D 視窗高＋上方安全區。
+ 安全區底部只算在分頁列自己的 padding；html 背景與分頁列同色當保險。 */
+html{height:100%;max-height:none;overflow:hidden;--kk-shell-h:100%}
+html.kk-lvhfix{--kk-shell-h:var(--kk-lvh,100%)}
+html[data-kkh="B"]{--kk-shell-h:100vh;--kk-shell-h:100lvh}
+html[data-kkh="D"]{--kk-shell-h:calc(100% + env(safe-area-inset-top,0px))}
+#kkdbg{position:fixed;z-index:2147483000;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 8px);max-height:80%;overflow:auto;background:rgba(0,0,0,.88);color:#fff;border-radius:14px;padding:10px 12px 12px;font:15px/1.45 ui-monospace,Menlo,monospace;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#kkdbg[hidden]{display:none}
+#kkdbg table{border-collapse:collapse;width:100%}
+#kkdbg td{padding:1px 4px;vertical-align:top}
+#kkdbg td+td{text-align:right;font-weight:700}
+#kkdbg .kkdbg-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px;font-weight:700}
+#kkdbg button{min-width:44px;min-height:44px;border-radius:10px;border:1px solid #888;background:#222;color:#fff;font:inherit;font-weight:700}
+#kkdbg button.on{background:#f99b1d;color:#111;border-color:#f99b1d}
+#kkdbg .kkdbg-m{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+#kkdbg .kkdbg-n{font-size:13px;color:#ccc;margin-top:6px}
+html{background-color:var(--x-surface-solid,var(--bg));background-image:linear-gradient(var(--surface),var(--surface))}
+body{position:fixed;top:0;left:0;right:0;bottom:auto;width:100%;height:var(--kk-shell-h);max-height:none;margin:0;padding:0}
+.stage,.phone,.app{max-height:none}
+html[data-kkh="C"] body{bottom:0;height:auto}
+.hd-t h1{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .hd{border-bottom:1px solid var(--line)}
 </style>
+<script>/* v34.7 外殼高度模式，先套再畫 */try{var m=localStorage.getItem('kk_hmode');if(m==='B'||m==='C'||m==='D')document.documentElement.setAttribute('data-kkh',m)}catch(e){}</script>
+
 </head>
 <body>
 <a class="vh" href="#main">跳到內容</a>
@@ -3750,15 +3773,73 @@ function updAgo(iso) { var t = thMs(iso); return t ? (Date.now() - t) / 864e5 : 
 var UPD = {}; try { UPD = JSON.parse(localStorage.getItem('kk_upd') || '{}') || {}; } catch (e) { UPD = {}; }
 function updMark(id) { UPD[id] = Date.now(); try { localStorage.setItem('kk_upd', JSON.stringify(UPD)); } catch (e) {} }
 function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶] 請登入「' + name + '」的網銀或 App 實查目前真實餘額' + (isCard ? '（信用卡查未出帳與帳單）' : '') + '，查完回報並更新，附查到的時間。帳上目前 ' + bal + '，上次實查 ' + (asof || '沒有資料') + '。查不到就說查不到，不要用推算的。'; }
-/* ---------- v32.2 手機外殼高度（取代 v34.4 的 kk-vhfix） ----------
- v34.4 在主畫面模式把外殼硬撐到 screen.height；可見區真的比螢幕短時（例如沒蓋到狀態列），外殼比畫面長，底部分頁與＋鈕被切掉。
- 現在外殼一律貼著實際可見區（position:fixed 四邊 0＋max-height 100dvh），不再超過；--kk-vh 只記錄可見高度給需要的地方用。 */
+/* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
+ 不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
+ 長按標題 3 秒開關除錯浮層，可切 A／B／C／D，存 localStorage kk_hmode。 */
+var KK_VER = 'kk-v34.7', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
+function kkProbe() {
+  var d = document.createElement('div');
+  d.style.cssText = 'position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:100vh;height:100lvh;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);box-sizing:content-box';
+  var f = document.createElement('div'); f.style.cssText = 'position:fixed;left:0;top:0;bottom:0;width:1px;visibility:hidden;pointer-events:none';
+  var s = document.createElement('div'); s.style.cssText = 'position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:100vh;height:100svh';
+  var y = document.createElement('div'); y.style.cssText = 'position:fixed;left:0;top:0;width:1px;visibility:hidden;pointer-events:none;height:100vh;height:100dvh';
+  document.body.appendChild(d); document.body.appendChild(f); document.body.appendChild(s); document.body.appendChild(y);
+  var cs = getComputedStyle(d), r = { lvh: d.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0), fixH: f.getBoundingClientRect().height, svh: s.getBoundingClientRect().height, dvh: y.getBoundingClientRect().height, st: parseFloat(cs.paddingTop) || 0, sb: parseFloat(cs.paddingBottom) || 0 };
+  r.lvh = d.getBoundingClientRect().height - r.st - r.sb;
+  [d, f, s, y].forEach(function (x) { x.remove(); });
+  return r;
+}
+function kkMode() { var m = document.documentElement.getAttribute('data-kkh'); return m === 'B' || m === 'C' || m === 'D' ? m : 'A'; }
+var KK_GUARD = '';
 function kkVH() {
   try {
     var de = document.documentElement, vv = window.visualViewport, h = Math.round(vv ? Math.min(vv.height, window.innerHeight) : window.innerHeight);
     de.style.setProperty('--kk-vh', h + 'px'); de.classList.remove('kk-vhfix');
+    var p = kkProbe(), gap = p.lvh - p.fixH, kb = vv && vv.height < window.innerHeight - 100, fix = kkMode() === 'A' && kkStandalone() && !kb && p.st > 0 && Math.abs(gap - p.st) <= 2;
+    if (fix) de.style.setProperty('--kk-lvh', Math.round(p.lvh) + 'px'); else de.style.removeProperty('--kk-lvh');
+    de.classList.toggle('kk-lvhfix', !!fix);
+    KK_GUARD = kkMode() !== 'A' ? '不適用' : fix ? '有補（lvh 多 ' + Math.round(gap) + '）' : '沒補（lvh 多 ' + Math.round(gap) + '，安全區 ' + Math.round(p.st) + '）';
+    kkDbgRender();
   } catch (e) {}
 }
+function kkSetMode(m) {
+  try { if (m === 'A') { localStorage.removeItem('kk_hmode'); document.documentElement.removeAttribute('data-kkh'); } else { localStorage.setItem('kk_hmode', m); document.documentElement.setAttribute('data-kkh', m); } } catch (e) {}
+  kkVH(); setTimeout(kkVH, 60);
+}
+function kkDbgRender() {
+  var box = document.getElementById('kkdbg'); if (!box || box.hidden) return;
+  var vv = window.visualViewport, de = document.documentElement, p = kkProbe(), sh = document.querySelector(KK_SHELL), tb = document.querySelector('.tabbar');
+  var r = function (el) { if (!el) return null; var b = el.getBoundingClientRect(); return Math.round(b.top) + '／' + Math.round(b.bottom); };
+  var bd = document.body.getBoundingClientRect(), m = kkMode();
+  var rows = [['版號', KK_VER], ['外殼模式', m], ['A 自動補', KK_GUARD], ['standalone', kkStandalone() ? '是' : '否'], ['innerWidth', innerWidth], ['innerHeight', innerHeight], ['outerHeight', outerHeight],
+    ['vv.height', vv ? Math.round(vv.height * 10) / 10 : '無'], ['vv.offsetTop', vv ? Math.round(vv.offsetTop * 10) / 10 : '無'], ['html.clientHeight', de.clientHeight],
+    ['safe-area 上', Math.round(p.st * 10) / 10], ['safe-area 下', Math.round(p.sb * 10) / 10], ['100lvh', Math.round(p.lvh)], ['100svh', Math.round(p.svh)], ['100dvh', Math.round(p.dvh)], ['fixed 四邊 0', Math.round(p.fixH)],
+    ['body 上／下', Math.round(bd.top) + '／' + Math.round(bd.bottom)], ['外殼 上／下', r(sh) || '無'], ['分頁列 上／下', r(tb) || '無'], ['dpr', window.devicePixelRatio]];
+  box.innerHTML = '<div class="kkdbg-h"><span>高度讀數（截圖給大器）</span><button type="button" data-kkdbg="x" aria-label="關閉">×</button></div><table>' +
+    rows.map(function (x) { return '<tr><td>' + x[0] + '</td><td>' + x[1] + '</td></tr>'; }).join('') + '</table>' +
+    '<div class="kkdbg-m">' + ['A', 'B', 'C', 'D'].map(function (k) { return '<button type="button" data-kkdbg="' + k + '" class="' + (k === m ? 'on' : '') + '" aria-pressed="' + (k === m) + '">' + k + '</button>'; }).join('') + '</div>' +
+    '<div class="kkdbg-n">A 目前修法／B 100lvh／C fixed 四邊 0／D 視窗＋上方安全區。切完看底部有沒有空白或被切，各截一張。</div>';
+}
+function kkDbgToggle(show) {
+  var box = document.getElementById('kkdbg');
+  if (!box) { box = document.createElement('div'); box.id = 'kkdbg'; box.hidden = true; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', '高度除錯讀數'); document.body.appendChild(box);
+    box.addEventListener('click', function (e) { var b = e.target.closest('[data-kkdbg]'); if (!b) return; e.stopPropagation(); var k = b.getAttribute('data-kkdbg'); if (k === 'x') kkDbgToggle(false); else kkSetMode(k); }); }
+  box.hidden = show === undefined ? !box.hidden : !show; kkDbgRender();
+}
+(function () {
+  var t = null, sx = 0, sy = 0, eat = false;
+  function clear() { if (t) { clearTimeout(t); t = null; } }
+  document.addEventListener('pointerdown', function (e) {
+    var h = e.target.closest && (e.target.closest(KK_TITLE) || e.target.closest('#kkdbg')); if (!h) return;
+    sx = e.clientX; sy = e.clientY; clear();
+    t = setTimeout(function () { t = null; eat = true; kkDbgToggle(); setTimeout(function () { eat = false; }, 800); }, 3000);
+  }, true);
+  document.addEventListener('pointermove', function (e) { if (t && (Math.abs(e.clientX - sx) > 10 || Math.abs(e.clientY - sy) > 10)) clear(); }, true);
+  ['pointerup', 'pointercancel'].forEach(function (n) { document.addEventListener(n, clear, true); });
+  document.addEventListener('click', function (e) { if (eat && e.target.closest && e.target.closest(KK_TITLE)) { e.preventDefault(); e.stopPropagation(); eat = false; } }, true);
+  document.addEventListener('contextmenu', function (e) { if (e.target.closest && (e.target.closest(KK_TITLE) || e.target.closest('#kkdbg'))) e.preventDefault(); }, true);
+})();
 kkVH(); window.addEventListener('resize', kkVH); window.addEventListener('orientationchange', function () { setTimeout(kkVH, 300); });
 /* ---------- v34.4 信用卡欠款拆兩筆：上期帳單未繳、本期未出帳 ----------
  上期未繳先用 debts 裡名稱對得上這張卡的那筆，沒有就讀帳戶備註「未繳 N」；都沒有就不拆。本期＝卡片欠款減上期未繳。 */
