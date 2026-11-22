@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v70');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v71');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3145,6 +3145,49 @@ ACT.ydskip=id=>ydAsk(id,'這件我不想做，原因：');
  h=h.split(`<div class="mrow">${mb('＋ 新增','add')}</div>`).join('');
  const top=`<div class="addtop">${B(s==='sup'?'＋ 新增備品':'＋ 新增例行','add',null,'pri')}</div>`;
  const i=h.indexOf('<section class="sec"');return i<0?h+top:h.slice(0,i)+top+h.slice(i)}}
+/* ---------- v71（2026-11-23）：意見第二批之一，案子房間新增案子、案子可編輯 ----------
+   老大原話：「這裡沒有我自己增加工作或案子的內容條件」「內容裡面也都不可以人為編輯 感覺怪怪的 但是我編輯也要能同步知道才可以」
+   - 案子分頁多「＋ 新增案子」：標題、說明、期限（交件日），走 opp_work_add，再用 opp_card_edit 補說明、opp_work_update 補期限。
+   - 案子詳情頁多「✎ 編輯」：標題、下一步、期限、說明。改了在卡上留「老大 11/23 改過」（寫在說明第一行），並寫一則給大器的訊息，AI 端同步知道。 */
+const dTag=()=>{const d=new Date();return `${d.getMonth()+1}/${d.getDate()}`};
+const EDM=/^【老大 [\d\/]+ 改過[^】]*】\n?/;
+const edMark=c=>{const m=String((c&&c.why)||'').match(/^【老大 ([\d\/]+) 改過[：:]?([^】]*)】/);return m?{d:m[1],f:m[2]}:null};
+{const _m=mapProj;mapProj=function(c){const x=_m(c);x.next=String(x.next||'').replace(EDM,'')||'還沒寫下一步';x.ask=String(x.ask||'').replace(EDM,'');x.edited=edMark(c);return x}}
+{const _pc=projCard;projCard=function(p){const h=_pc(p);return p.edited?h.replace('</h3>',`</h3><p class="note edm">老大 ${esc(p.edited.d)} 改過</p>`):h}}
+const WHYOF=c=>String((c&&c.why)||'').replace(EDM,'');
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':'),t=a[0];
+ if(t==='padd'){return shHead('新增案子')+`<label class="f">案名<input id="paTitle" maxlength="120" placeholder="例：品牌短片導演" autocomplete="off"></label><label class="f">說明（要做什麼、客戶是誰）<textarea id="paWhy" rows="4"></textarea></label><label class="f">期限（交件日）<input type="date" id="paDue"></label>${S.err==='padd'?'<p class="err" role="alert">▲ 還沒寫案名。</p>':''}<div class="btns">${B('建好案子','pasave',null,'pri wide')}</div>`}
+ if(t==='pedit'){const id=S.sheet.slice(6),p=DB.proj.find(x=>x.id===id),c=p&&p.raw;if(!c)return shHead('這件不在了');
+  return shHead('編輯案子')+`<label class="f">案名<input id="peTitle" maxlength="120" value="${esc(c.title||'')}"></label><label class="f">下一步<input id="peNext" maxlength="200" value="${esc(c.firstStep||'')}" placeholder="${esc(p.next||'')}"></label><label class="f">期限（交件日）<input type="date" id="peDue" value="${esc(String(c.deliveryDate||'').slice(0,10))}"></label><label class="f">說明<textarea id="peWhy" rows="5">${esc(WHYOF(c))}</textarea></label>${S.err==='pedit'?'<p class="err" role="alert">▲ 案名不能空白。</p>':''}<div class="btns">${B('存好','pesave',id,'pri wide')}</div><p class="note">存了會在卡上留「老大 ${dTag()} 改過」，也會告訴大器。</p>`}
+ return _s()}}
+// 案子分頁頂端的新增鈕；案子詳情頁的編輯鈕
+{const _zp=zoneProj;zoneProj=function(){const h=_zp();if(S.sub.proj!=='proj')return h;
+ const top=`<div class="addtop">${B('＋ 新增案子','sheet','padd','pri')}</div>`;const i=h.indexOf('<section class="sec"'),j=h.indexOf('class="empty');
+ const k=h.indexOf('aria-label="案子分類">');const e=k<0?-1:h.indexOf('</div>',k);return e<0?top+h:h.slice(0,e+6)+top+h.slice(e+6)}}
+{const _p=pageHTML;pageHTML=function(){const h=_p(),a=(S.page||'').split(':');if(a[0]!=='proj')return h;const p=DB.proj.find(x=>x.id===a[1]);if(!p||!p.raw||!p.raw.id)return h;
+ const m=p.edited?`<p class="note edm">老大 ${esc(p.edited.d)} 改過${p.edited.f?'：'+esc(p.edited.f):''}</p>`:'';
+ return h.replace(/(<h1 class="pt">[\s\S]*?<\/h1>)/,`$1${m}<div class="mrow">${mb('✎ 編輯','sheet','pedit:'+p.id)}</div>`)}}
+ACT.pasave=()=>{const g=s=>{const e=document.getElementById(s);return e?e.value:''},t=g('paTitle').trim(),why=g('paWhy').trim(),due=g('paDue');
+ if(!t){S.err='padd';render('keep');return}S.err='';
+ if(!LV.api||!LV.api.workAdd){toast('離線中，連上再加');return}
+ closeThen(async()=>{try{const c=await LV.api.workAdd(t.slice(0,120));const id=c&&c.id;
+  if(id){if(why&&LV.api.cardEdit)await LV.api.cardEdit(id,{why});if(due)await LV.api.act(id,'work',{patch:{delivery_date:due}})}
+  await reload();toast('新增了案子：'+clip(t,20))}catch(e){toast('沒存上：'+LERR(e))}})};
+ACT.pesave=id=>{const g=s=>{const e=document.getElementById(s);return e?e.value:''},p=DB.proj.find(x=>x.id===id),c=p&&p.raw;if(!c)return;
+ const t=g('peTitle').trim();if(!t){S.err='pedit';render('keep');return}S.err='';
+ const nx=g('peNext').trim(),due=g('peDue'),why=g('peWhy').trim(),ch=[];
+ const patch={};if(t!==c.title){patch.title=t;ch.push('案名')}if(nx!==(c.firstStep||'')){patch.first_step=nx;ch.push('下一步')}
+ const oldDue=String(c.deliveryDate||'').slice(0,10),dueCh=due!==oldDue;if(dueCh)ch.push('期限');
+ if(why!==WHYOF(c).trim())ch.push('說明');
+ if(!ch.length){toast('沒有改動');closeThen(()=>{});return}
+ const mk=`【老大 ${dTag()} 改過：${ch.join('、')}】`;patch.why=mk+'\n'+why;
+ const old={why:c.why||'',title:c.title,first_step:c.firstStep||''};
+ closeThen(async()=>{try{
+  await LV.api.cardEdit(id,patch);if(dueCh)await LV.api.act(id,'work',{patch:{delivery_date:due||null}});
+  try{await LV.api.say(id,`【老大改了案子】〈${t}〉改了：${ch.join('、')}。請以面板現在的內容為準（${dTag()}）。`,'daqi')}catch(e){}
+  await reload();toast(`存好了，大器知道你改了${ch.join('、')}`,async()=>{try{await LV.api.cardEdit(id,old);if(dueCh)await LV.api.act(id,'work',{patch:{delivery_date:oldDue||null}});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})
+ }catch(e){toast('沒存上：'+LERR(e))}})};
+WRITE.push('pasave','pesave');
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

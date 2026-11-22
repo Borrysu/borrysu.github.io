@@ -1219,3 +1219,4 @@ html.marking main,html.marking .tabs,html.marking .dock{cursor:crosshair}
 .scan{margin:0;align-self:center}
 .card p,.card .note,.card small,.card .lbl,.card h3{overflow-wrap:anywhere;word-break:break-word}
 .card .meta{flex-wrap:wrap;row-gap:4px}
+.edm{color:var(--mute,#9a9a9a);font-size:12px;margin:2px 0 0}
