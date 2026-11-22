@@ -135,7 +135,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v61');
+  const { mockAdapter } = await import('./mock.js?v63');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -264,9 +264,19 @@ function liveAdapter() {
   }
   const card = d => { d = Array.isArray(d) ? d[0] : d; return d && typeof d === 'object' && d.id ? normalize(d) : null; };
   const R = CONFIG.RPC, W = { work: true };
-  function wake() {   // 不等、不報錯；text/plain 免預檢
+  function wake(extra) {   // 不等、不報錯；text/plain 免預檢
     try { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), CONFIG.WAKE_MS);
-      fetch(CONFIG.WAKE_URL, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(KEY.length >= 20 ? { k: KEY } : { t: SESS ? SESS.a : '' }), signal: ac.signal, cache: 'no-store', credentials: 'omit' }).catch(() => {}).finally(() => clearTimeout(t)); } catch (e) {}
+      fetch(CONFIG.WAKE_URL, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ ...(KEY.length >= 20 ? { k: KEY } : { t: SESS ? SESS.a : '' }), ...(extra || {}) }), signal: ac.signal, cache: 'no-store', credentials: 'omit' }).catch(() => {}).finally(() => clearTimeout(t)); } catch (e) {}
+  }
+  // 2026-11-22 面板按鈕叫 Mac 做事（要你做卡：我做好了、開始登入、貼回）；要等回覆，失敗丟錯
+  async function macAct(p) {
+    const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 15000);
+    try {
+      const r = await fetch(CONFIG.WAKE_URL, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ ...(KEY.length >= 20 ? { k: KEY } : { t: SESS ? SESS.a : '' }), ...p }), signal: ac.signal, cache: 'no-store', credentials: 'omit' });
+      let d = {}; try { d = await r.json() } catch (e) {}
+      if (!r.ok) throw new AdapterError(r.status === 409 ? 'state' : 'server', r.status === 503 ? 'Mac 還沒準備好' : r.status === 409 ? 'Mac 那邊沒在等，先按開始' : 'Mac 回 ' + r.status, r.status);
+      return d;
+    } catch (e) { if (e instanceof AdapterError) throw e; throw new AdapterError('server', 'Mac 連不上（關機或沒網路）'); } finally { clearTimeout(t); }
   }
   return {
     mode: 'live',
@@ -308,7 +318,8 @@ function liveAdapter() {
     async company() { return rpc(R.company, {}, 0, W); },
     async coTask(cardId, who, body) { const r = await rpc(R.coTask, { p_card_id: cardId, p_assignee: who, p_body: body }, 0, W); if (who === 'daqi') wake(); return r; },
     async cardEdit(id, patch) { return card(await rpc(R.cardEdit, { p_id: id, p_patch: patch || {} }, 0, W)); },
-    async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
+    async hubAnswer(id, k, note) { const r = await rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); if (k) wake({ act: 'decided' }); return r; },
+    async macAct(p) { return macAct(p); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },
     async workAdd(title) { return card(await rpc(R.workAdd, { p_title: title }, 0, W)); },
     async scanRequest(basket) { return rpc(R.scanRequest, { p_basket: BACK_BASKET[basket] || basket }); },   // 立即掃描：留單給集集

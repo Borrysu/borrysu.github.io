@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v61';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v63';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -163,6 +163,9 @@ export function mockAdapter(modeStr) {
     jobs: [{ id: 'j1', agent: flags.has('xss') ? badH : '大器（Claude）', machine: 'Mac', title: flags.has('xss') ? badH : '藍鯨 NOVA 試看帶', status: 'waiting_mac', updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }, { id: 'j2', agent: flags.has('xss') ? badH : '【監工】外拍', machine: 'Borry 的 MacBook', title: '拍板後續｜週末外拍要不要改到週日', status: 'running', source_key: 'dec-h0', note: flags.has('xss') ? badH : '決定 h0｜老大選「照你建議的做」｜已交給【監工】外拍，開工了', updated_at: new Date(Date.now() - 5 * 60e3).toISOString() }],
     events: [{ id: 1, at: new Date(Date.now() - 2 * H).toISOString(), actor: flags.has('xss') ? badH : '大器（Claude）', summary: flags.has('xss') ? badH : '品牌短片分鏡第二版交出去了，等你看' }, { id: 2, at: new Date(Date.now() - 5 * H).toISOString(), actor: '金金', summary: '這週花得比平常少一成。12 月底現金會低於安全線，比賽代製那筆 3 萬尾款要盯緊，大筆的先不要買。' }],
     beats: [{ name: flags.has('xss') ? badH : 'Mac 同步', machine: 'MacBook', note: '待辦與紀錄同步', expect_every_s: 300, last_at: new Date(Date.now() - 2 * 60e3).toISOString(), late: false }, { name: '大器 收訊', machine: 'MacBook', note: '訊息收件有在聽', expect_every_s: 300, last_at: new Date(Date.now() - 3 * H).toISOString(), late: true }] };
+  // 2026-11-22 要你做卡示範：卡上能直接做完（開始登入→連結→貼回→我做好了）
+  hub.jobs.push({ id: 'j9', agent: '老大', machine: 'Borry 的 MacBook', title: '拍板後續｜示範平台三個帳號登入', status: 'waiting_you', source_key: 'dec-h9', ask: flags.has('xss') ? badH : '按開始登入示範平台三帳號',
+    note: (flags.has('xss') ? badH + '\n' : '') + '決定 h9｜老大選「照你建議的做」｜三個帳號要你本人登入。\n已試：連接器未授權。\n按開始登入後卡上出現連結，登入完把網址貼回。\n動作：hf_login｜開始登入' + (flags.has('xss') ? '\n連結：javascript:window.__xss=9' : ''), updated_at: new Date(Date.now() - 3 * 60e3).toISOString() });
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }
   // v41 示範資料
   const iso = n => { const x = new Date(Date.now() + n * D); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
@@ -249,6 +252,11 @@ export function mockAdapter(modeStr) {
       const j = hub.shelf.findIndex(s => s.kind === kind && String(s.row.id) === String(id)); if (j < 0) throw new AdapterError('server', 'not found or too late'); const s = hub.shelf.splice(j, 1)[0]; hub[s.row._from || key].unshift(s.row); return s.row; },
     async shelf() { await wait(100); return JSON.parse(JSON.stringify(hub.shelf || [])); },
     async cardEdit(id, patch) { await wait(200); sorry(); const r = find(id); ['ask', 'title', 'short_title', 'why', 'first_step'].forEach(k => { if (k in patch) r[k] = patch[k] || (k === 'title' ? r.title : null); }); return normalize(view(r)); },
+    async macAct(p) { await wait(400); sorry(); const j = hub.jobs.find(x => x.id === p.job);
+      if (p.act === 'done' && j) j.status = 'done';
+      if (p.act === 'run' && j) { j.note = String(j.note).split('\n').filter(l => !/^(連結|貼回|進度)：/.test(l)).join('\n') + '\n進度：第 1 組（示範帳號）\n連結：https://example.com/login\n貼回：登入完把 localhost 開頭的網址整串貼在這裡'; j.ask = '點連結登入第 1 組'; }
+      if (p.act === 'paste' && j) { j.note = String(j.note).split('\n').filter(l => !/^(連結|貼回|進度)：/.test(l)).join('\n') + '\n進度：三組都登入好了'; j.status = 'done'; }
+      return { ok: true }; },
     async hubAnswer(id, k, note) { await wait(300); sorry();
       const d = hub.open.concat(hub.answered).find(x => x.id === id); if (!d) throw new AdapterError('server', '找不到這筆');
       hub.open = hub.open.filter(x => x.id !== id); hub.answered = hub.answered.filter(x => x.id !== id);

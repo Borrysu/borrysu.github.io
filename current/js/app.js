@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v61');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v63');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2927,6 +2927,54 @@ async function coLoad(){const api=LV.api;if(LV.mode!=='live'||!api||!api.company
   .catch(e=>{if(NOFN(e))LV.coNo='nofn';else if(e&&e.kind==='forbidden')LV.coNo='forbidden';else LV.coErr=LERR(e)})}
 {const _x=loadExtra;loadExtra=async function(){await _x();await coLoad()}}
 {const _sg=sigOf;sigOf=function(){let s=_sg();try{const d=LV.co;if(d)s+='|co'+d.cards.length+':'+(d.meta&&d.meta.written_at||'')+':'+d.tasks.map(t=>t.id+(t.job_status||t.status)).join(',')}catch(e){}return s}}
+/* ---------- 要你做（2026-11-22，拍板後續第三輪） ----------
+   老大原話：「要我做的東西不就應該在上面跟我講嗎？」「我希望這個面板可以讓我在上面操作就完成，我所有要做的事情可以不用離開面板」
+   hub_jobs status=waiting_you 的工作放首頁最上面。卡上一句；點開是步驟，能直接做完：
+   備註裡「動作：名字｜按鈕字」＝按下由 Mac 跑（wake.py 白名單）；「連結：https://…」＝打開連結；「貼回：提示」＝貼回欄位；
+   最後一律有「我做好了」，按了工作改 done、卡收掉。按鈕都經 /current-wake，Mac 用金鑰驗是老大才做。 */
+const YD={busy:0};
+const ydJobs=()=>((LV.hub&&LV.hub.jobs)||[]).filter(j=>j.status==='waiting_you');
+function ydParse(j){const o={act:null,actLabel:'',link:'',paste:'',prog:'',steps:[]};
+ String(j.note||'').replace(/^決定 [^｜\n]+｜(老大選「[^」]*」｜)?/,'').split('\n').forEach(l=>{let m;
+  if((m=l.match(/^動作：([a-z_]+)｜(.+)$/)))o.act=m[1],o.actLabel=m[2];
+  else if((m=l.match(/^連結：(\S+)/)))o.link=/^https:\/\//i.test(m[1])?m[1]:'';
+  else if((m=l.match(/^貼回：(.+)$/)))o.paste=m[1];
+  else if((m=l.match(/^進度：(.+)$/)))o.prog=m[1];
+  else if(l.trim())o.steps.push(l)});return o}
+const ydFace=j=>j.ask||askCut(String(j.title||'').replace(/^拍板後續｜/,''),26);
+function ydMain(j){const p=ydParse(j);
+ if(p.link)return `<a class="btn pri" style="text-decoration:none" style="text-decoration:none" href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">打開連結</a>`;
+ if(p.act)return B(esc(p.actLabel),'ydrun',j.id,'pri');
+ return B('我做好了','yddone',j.id,'pri')}
+function ydSec(){const a=ydJobs();if(!a.length)return '';
+ return `<section class="sec" id="secYou">${sh('daqi','要你做',a.length+' 件')}<div class="rows">`+a.map(j=>
+  `<div class="rowi" data-card="${esc(j.id)}"><div class="rowb"><button class="tx" data-act="sheet" data-id="youdo:${esc(j.id)}" style="min-height:44px;text-align:left"><b>${esc(ydFace(j))}</b><small>${esc((j.project?j.project+'・':'')+LAGO(j.updatedAt))}</small></button><span class="rt">${ydMain(j)}</span></div></div>`).join('')+`</div></section>`}
+{const _h=homeL2;homeL2=function(){const h=_h(),y=ydSec();if(!y)return h;const i=h.indexOf('id="secDec"');
+ if(i<0)return y+h;const k=h.lastIndexOf('<section',i);return h.slice(0,k)+y+h.slice(k)}}
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='youdo')return _s();const id=a.slice(1).join(':');
+ const j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);if(!j)return shHead('這件不在了');
+ if(j.status!=='waiting_you')return shHead(esc(ydFace(j)))+`<p class="note">${j.status==='done'?'做好了，卡已收。':'Mac 在處理：'+esc(j.agent||'大器')+'。'}</p>`+(ydParse(j).prog?`<p class="note">${esc(ydParse(j).prog)}</p>`:'');
+ const p=ydParse(j),bz=YD.busy?' disabled':'';
+ return shHead(esc(ydFace(j)))+(p.prog?`<p class="note"><b>${esc(p.prog)}</b></p>`:'')+fullP('怎麼做',p.steps.join('\n'))
+  +(p.link?`<div class="btns"><a class="btn pri wide" style="text-decoration:none" style="text-decoration:none" href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">打開連結</a></div>`:'')
+  +(p.paste?`<label class="f">${esc(p.paste)}<textarea id="ydPaste" rows="3" placeholder="貼在這裡"></textarea></label><div class="btns">${B(YD.busy?'送出中…':'送出','ydpaste',j.id,'pri wide',bz)}</div>`:'')
+  +(p.act&&!p.link?`<div class="btns">${B(esc(p.actLabel),'ydrun',j.id,'pri wide',bz)}</div>`:'')
+  +`<div class="btns">${B('我做好了','yddone',j.id,p.act||p.link||p.paste?'ghost wide':'pri wide',bz)}</div>`+kvs([['案子',j.project],['更新',LAGO(j.updatedAt)]])}}
+async function ydCall(id,payload,okMsg){if(YD.busy)return;YD.busy=1;render('keep');
+ try{await LV.api.macAct({job:id,...payload});toast(okMsg);[3e3,8e3,15e3,30e3,60e3].forEach(t=>setTimeout(()=>hubAfter(),t))}
+ catch(e){toast('沒送到：'+LERR(e))}finally{YD.busy=0;await hubAfter()}}
+ACT.yddone=id=>ydCall(id,{act:'done'},'記下了，卡收掉');
+ACT.ydrun=id=>{const j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);const p=j&&ydParse(j);if(!p||!p.act)return;
+ if(!S.sheet||S.sheet!=='youdo:'+id)ACT.sheet('youdo:'+id);ydCall(id,{act:'run',name:p.act},'Mac 開始跑了，連結幾秒內出現在卡上')};
+ACT.ydpaste=id=>{const t=document.getElementById('ydPaste'),v=t?t.value.trim():'';if(!v){toast('先貼上網址');return}ydCall(id,{act:'paste',val:v},'交給 Mac 了')};
+// v62（2026-11-22）：案子房間「待辦」可以直接新增。老大原話：「那個專案待辦那邊 我想要可以新增」。走既有 opp_todo_add。
+{const _zp=zoneProj;zoneProj=function(){const h=_zp();if(S.sub.proj!=='todo')return h;
+ const f=`<div class="wadd"><label class="vh" for="pjIn">新增待辦</label><input id="pjIn" type="text" placeholder="要做的事，例：寄合約給客戶" enterkeyhint="done" autocomplete="off" maxlength="200"><button class="btn pri" data-act="pjadd">加進去</button></div>${S.err==='pj'?'<p class="err" role="alert">▲ 還沒寫字。寫要做的事就好。</p>':''}`;
+ const m='aria-label="案子分類">',i=h.indexOf(m);if(i<0)return f+h;const j=h.indexOf('</div>',i);return j<0?f+h:h.slice(0,j+6)+f+h.slice(j+6)}}
+ACT.pjadd=()=>{const t=$('#pjIn'),v=t?t.value.trim():'';if(!v){S.err='pj';render('keep');const x=$('#pjIn');if(x)x.focus();return}S.err='';
+ if(!LV.api||!LV.api.todoAdd){toast('離線中，等連上再加');return}
+ LV.api.todoAdd(v.slice(0,200)).then(()=>{const x=$('#pjIn');if(x)x.value='';toast('加進待辦了：'+clip(v,24));return reload()}).catch(e=>toast('沒存上：'+LERR(e)))};
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='pjIn'&&!e.isComposing){e.preventDefault();ACT.pjadd()}});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

@@ -181,3 +181,9 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 派工：卡上兩張臉。肉咖的臉＝開「派肉咖做」→ `hub_company_task_add(rouka)`，公司電腦 `hub_rouka_take` 拿單交給肉咖、`hub_rouka_report` 回報；大器的臉＝開大器對話帶這張卡，送出時另記一筆 `hub_company_task_add(daqi)`。兩種都會建一筆 `hub_jobs`（source_key `cotask:編號`），今天頁「正在跑」看得到；大器做完用 `hub_job_set(p_source_key:'cotask:編號', p_status:'done')` 回報。
    - 肉咖鑰匙（角色「肉咖」，`can_rouka`）：`_opp_cap` 擋掉它的所有其他函式，讀不到老大任何其他資料。金鑰只在 Mac `~/.config/borry-opportunities/rouka.key` 與公司電腦同路徑。對公司群組發訊照肉咖既有規則，不從逐流直接發。
    - 資料庫：遷移與退回在 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v60_*`；`tools/rpc.sh hub_company_summary '{}'` 回 PGRST202＝還沒套（AI協作金鑰套上後會回 28000，正常）。
+
+36. **要你做卡（v63，2026-11-22）**：老大原話「我希望這個面板可以讓我在上面操作就完成，我所有要做的事情可以不用離開面板」。
+   - 要老大做的事一律開 `hub_job_set` status=`waiting_you`，帶 `p_ask`（卡面一句）；首頁最上面「要你做」區顯示，不准只寫在對話訊息。
+   - 備註（p_note）特殊行：`動作：<名字>｜<按鈕字>`＝按鈕，由 Mac `current-daqi-wake/wake.py` 白名單 RUNNERS 執行（目前 `hf_login`）；`連結：https://…`＝打開連結；`貼回：<提示>`＝貼回欄位；`進度：…`＝粗體進度。其他行是步驟。卡上一定有「我做好了」。
+   - 前端按鈕 POST `/current-wake`（`{k, act:'done'|'run'|'paste', job, name, val}`），Mac 驗金鑰角色＝Borry 才做；老大拍板時另送 `act:'decided'`，Mac 立刻跑 hub-sync（不等 5 分鐘）。
+   - 新增動作：在 `runners/` 寫程式（用 `common.py` 改卡），加進 `RUNNERS`，卡備註寫同名「動作：」行。
