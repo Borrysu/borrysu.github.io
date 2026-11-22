@@ -34,23 +34,23 @@ const BOTS={
 };
 const DB={
  dec:[
-  {id:'h1',proj:'木星 TAPIN',q:'產品段配樂不變速，只有 3 個接點在拍上，能不能接受？',detail:'扣合那一下不在拍上。要對拍就得把這段變速到 120 BPM，音色會變。',kind:'choice',by:'大器',origin:'巡查待辦',ago:'5 小時前',opts:[{k:'ok',label:'接受，不變速',note:'聽感自然',rec:1},{k:'speed',label:'改成變速對拍',note:'音色會變'}]},
+  {id:'h1',proj:'藍鯨 NOVA',q:'產品段配樂不變速，只有 3 個接點在拍上，能不能接受？',detail:'扣合那一下不在拍上。要對拍就得把這段變速到 120 BPM，音色會變。',kind:'choice',by:'大器',origin:'巡查待辦',ago:'5 小時前',opts:[{k:'ok',label:'接受，不變速',note:'聽感自然',rec:1},{k:'speed',label:'改成變速對拍',note:'音色會變'}]},
   {id:'h3',proj:'某品牌形象短片（示意）',q:'分鏡第二版客戶兩天沒回，要不要先照這版排拍攝日？',detail:'客戶已讀沒回。先排的話，之後改動超過三場就要重排。',kind:'choice',by:'大器',origin:'專案進度',ago:'1 小時前',opts:[{k:'wait',label:'再等一天，明天中午提醒我',note:'改動風險最小',rec:1},{k:'go',label:'先照第二版排',note:'可能要重排'},{k:'draft',label:'幫我擬一句催客戶的話',note:'只擬稿，不代發'}]},
-  {id:'h2',proj:'文化部青年藝術補助',q:'線上申請系統要你本人登入才能送件',detail:'資料都備好了，AI 自查完成，等你決定。登入與按下送件只能你本人做。',kind:'talk',by:'大器',origin:'大器',ago:'26 小時前',link:'https://example.com/',opts:[]}
+  {id:'h2',proj:'青年創作補助',q:'線上申請系統要你本人登入才能送件',detail:'資料都備好了，AI 自查完成，等你決定。登入與按下送件只能你本人做。',kind:'talk',by:'大器',origin:'大器',ago:'26 小時前',link:'https://example.com/',opts:[]}
  ],
  jobs:[
-  {id:'j1',bot:'daqi',who:'大器（Claude）',title:'木星 TAPIN 試看帶',st:'等 Mac 開機',wait:true,ago:'40 分鐘前'},
+  {id:'j1',bot:'daqi',who:'大器（Claude）',title:'藍鯨 NOVA 試看帶',st:'等 Mac 開機',wait:true,ago:'40 分鐘前'},
   {id:'j2',bot:'jiji',who:'集集',title:'掃描創作資金新公告',st:'進行中',ago:'6 分鐘前'}
  ],
  events:[
-  {at:'2 小時前',who:'大器（Claude）',bot:'daqi',text:'總控台亮相交付，等你定名字、櫃台、開工'},
+  {at:'2 小時前',who:'大器（Claude）',bot:'daqi',text:'品牌短片分鏡第二版交出去了，等你看'},
   {at:'昨天 21:40',who:'塔塔',bot:'tata',text:'本月訂閱對帳，AI 自查完成，等你決定示意訂閱 D 要不要留'},
   {at:'昨天 18:02',who:'集集',bot:'jiji',text:'找到 2 張新機會，放進創作資金'},
-  {at:'昨天 11:15',who:'大器（Claude）',bot:'daqi',text:'木星 TAPIN 初剪上傳到試看資料夾'}
+  {at:'昨天 11:15',who:'大器（Claude）',bot:'daqi',text:'藍鯨 NOVA 初剪上傳到試看資料夾'}
  ],
  beats:[
-  {name:'Mac 同步',note:'巡查待辦與交接帳同步',late:false,ago:'2 分鐘前'},
-  {name:'大器 LINE 收訊',note:'8789 埠有在聽',late:true,ago:'3 小時前，該 5 分鐘一次'},
+  {name:'Mac 同步',note:'待辦與紀錄同步',late:false,ago:'2 分鐘前'},
+  {name:'大器 收訊',note:'訊息收件有在聽',late:true,ago:'3 小時前，該 5 分鐘一次'},
   {name:'集集 找案',note:'每 3 小時掃一次',late:false,ago:'6 分鐘前'},
   {name:'塔塔 記帳',note:'每天對帳一次',late:false,ago:'1 小時前'}
  ],
@@ -66,18 +66,18 @@ const DB={
  ],
  arch:[{id:'a1',title:'婚禮紀錄側拍（示意）',next:'日期撞期，沒接。',st:'沒接'}],
  opp:[
-  {id:'ncafroc',b:'honor',title:'國藝會國際文化交流 第 6 期',org:'國藝會',amt:'沒寫金額',days:1,due:'明天截止',why:'你去年提過想帶作品出國放映。',facts:['補助出國展演、放映、駐村的機票與住宿','個人與團體都能申請','線上系統送件'],warn:['明天 23:59 截止，要先註冊帳號']},
+  {id:'ncafroc',b:'honor',title:'海外放映交流計畫 第 6 期',org:'藝術交流基金會',amt:'沒寫金額',days:1,due:'明天截止',why:'你去年提過想帶作品出國放映。',facts:['補助出國展演、放映、駐村的機票與住宿','個人與團體都能申請','線上系統送件'],warn:['明天 23:59 截止，要先註冊帳號']},
   {id:'honor',b:'honor',title:'某影展短片單元評審邀請（示意）',org:'示意資料',amt:'酬勞沒寫',days:4,due:'4 天後截止',why:'對方直接來信邀請。',facts:['評審 12 支短片','線上看片，一場線上會議'],warn:['酬勞沒寫，回信前先問清楚']},
-  {id:'pro360kh',b:'personal',title:'高雄 80 組簡報轉 Reel',org:'PRO360 個人案主',amt:'NT$ 5,000～10,000',days:4,due:'4 天後收走',exp:true,why:'量大但單價低，適合套版。',facts:['80 組簡報各轉一支直式短片','素材對方提供'],warn:['單支換算不到 NT$ 125']},
-  {id:'pro360cy',b:'personal',title:'嘉義童裝直播 Reels 剪輯',org:'PRO360 公司案主',amt:'詳談後報價',days:5,due:'5 天後收走',exp:true,why:'長期合作型，每週固定量。',facts:['每週 3 支直播精華','長期配合'],warn:['報價沒寫，要先問']},
+  {id:'pro360kh',b:'personal',title:'80 組簡報轉直式短片',org:'接案城 個人案主',amt:'NT$ 5,000～10,000',days:4,due:'4 天後收走',exp:true,why:'量大但單價低，適合套版。',facts:['80 組簡報各轉一支直式短片','素材對方提供'],warn:['單支換算不到 NT$ 125']},
+  {id:'pro360cy',b:'personal',title:'童裝品牌直播精華剪輯',org:'接案城 公司案主',amt:'詳談後報價',days:5,due:'5 天後收走',exp:true,why:'長期合作型，每週固定量。',facts:['每週 3 支直播精華','長期配合'],warn:['報價沒寫，要先問']},
   {id:'song',b:'personal',title:'獨立歌手 MV 詞曲委託（示意）',org:'示意資料',amt:'報價 NT$ 3 萬',days:6,due:'6 天後收走',exp:true,why:'詞曲加 MV 一起，跟你的本業最貼。',facts:['一首歌的詞曲','MV 另談'],warn:[]},
-  {id:'artefact',b:'fund',title:'Artefact AI Film Festival 第三屆',org:'Artefact',amt:'大獎 € 10,000',days:17,due:'17 天後截止',why:'AI 短片可投，你手上有現成作品。',facts:['AI 生成短片競賽','片長 5 分鐘內','線上投件'],warn:['報名費 € 25，你按付款鈕才付'],pay:'報名費 € 25'},
-  {id:'moclang',b:'fund',title:'文化部語言友善環境及創作應用補助',org:'文化部',amt:'補助最高 NT$ 100 萬',days:23,due:'23 天後截止',why:'台語創作可以申請。',facts:['本土語言創作與應用','補助上限 100 萬','要附企劃書與預算表'],warn:['企劃書要 20 頁內']},
-  {id:'chroma',b:'fund',title:'Chroma Awards 第二季',org:'ElevenLabs 孵化',amt:'MV 類獎金 US$ 24,000',days:53,due:'53 天後截止',why:'有 MV 類別。',facts:['AI 影片、MV、遊戲三類','線上投件'],warn:[]},
-  {id:'tkfan',b:'other',title:'異世界企劃宣傳片後製',org:'Tasker',amt:'預算 NT$ 3 萬',days:6,due:'6 天後收走',exp:true,why:'純後製，時間可控。',facts:['宣傳片後製一支','素材已拍好'],warn:[]},
-  {id:'tkmil',b:'other',title:'軍事 YouTube 長片剪輯',org:'Tasker',amt:'每支 NT$ 2,000～3,000',days:6,due:'6 天後收走',exp:true,why:'單價低，列出來讓你知道有這類。',facts:['每支 20 分鐘上下','每月 4 支'],warn:['單價偏低']},
-  {id:'tycg',b:'fund',title:'桃園市文化局 116 年補助影視製作',org:'桃園市文化局',amt:'補助上限 NT$ 80 萬',days:30,due:'30 天後截止',st:'snoozed',why:'之前暫存。',facts:['影視製作補助'],warn:[]},
-  {id:'flick',b:'fund',title:'Flick AI 影展',org:'FlickArt',amt:'首獎 US$ 10,000',days:40,due:'40 天後截止',st:'snoozed',why:'之前暫存。',facts:['AI 影展徵件'],warn:[]}
+  {id:'artefact',b:'fund',title:'Lumen AI 短片獎 第三屆',org:'Lumen',amt:'大獎 € 10,000',days:17,due:'17 天後截止',why:'AI 短片可投，你手上有現成作品。',facts:['AI 生成短片競賽','片長 5 分鐘內','線上投件'],warn:['報名費 € 25，你按付款鈕才付'],pay:'報名費 € 25'},
+  {id:'moclang',b:'fund',title:'母語影像創作補助',org:'城市文化基金會',amt:'補助最高 NT$ 100 萬',days:23,due:'23 天後截止',why:'台語創作可以申請。',facts:['本土語言創作與應用','補助上限 100 萬','要附企劃書與預算表'],warn:['企劃書要 20 頁內']},
+  {id:'chroma',b:'fund',title:'Prism 影像獎 第二季',org:'聲波實驗室',amt:'MV 類獎金 US$ 24,000',days:53,due:'53 天後截止',why:'有 MV 類別。',facts:['AI 影片、MV、遊戲三類','線上投件'],warn:[]},
+  {id:'tkfan',b:'other',title:'奇幻企劃宣傳片後製',org:'外包市集',amt:'預算 NT$ 3 萬',days:6,due:'6 天後收走',exp:true,why:'純後製，時間可控。',facts:['宣傳片後製一支','素材已拍好'],warn:[]},
+  {id:'tkmil',b:'other',title:'歷史頻道長片剪輯',org:'外包市集',amt:'每支 NT$ 2,000～3,000',days:6,due:'6 天後收走',exp:true,why:'單價低，列出來讓你知道有這類。',facts:['每支 20 分鐘上下','每月 4 支'],warn:['單價偏低']},
+  {id:'tycg',b:'fund',title:'海港市影視製作補助',org:'海港市文化局',amt:'補助上限 NT$ 80 萬',days:30,due:'30 天後截止',st:'snoozed',why:'之前暫存。',facts:['影視製作補助'],warn:[]},
+  {id:'flick',b:'fund',title:'微光 AI 影展',org:'微光影展',amt:'首獎 US$ 10,000',days:40,due:'40 天後截止',st:'snoozed',why:'之前暫存。',facts:['AI 影展徵件'],warn:[]}
  ],
  subs:[
   {id:'s1',name:'示意訂閱 A',amt:390,cyc:'每月',in:2,payer:'自付'},
@@ -497,7 +497,7 @@ ACT.pay=id=>{const p=PAY[id];if(!p||p.st!=='idle'||p.bad)return;p.st='count';p.n
 ACT.paycancel=id=>payStop(id,'付款取消了，沒有扣款');
 ACT.payrc=id=>{const p=PAY[id];p.rc=!p.rc;paySync(id)};
 ACT.payfix=id=>{const p=PAY[id];p.bad=null;p.amt=p.want;if(p.fix)p.fix();CH[p.by].push({w:'bot',t:`我重新確認了：店家把運費多算一次，已經改回 ${p.want}。`,fresh:1});if(S.chat)logSync();else paySync(id);arrive(p.by)};
-function oppPay(o){payReg('o_'+o.id,{amt:'€ 25',to:'Artefact（報名費）',by:'jiji'});return `<p class="h4">報名費</p>${payHTML('o_'+o.id)}`}
+function oppPay(o){payReg('o_'+o.id,{amt:'€ 25',to:'Lumen（報名費）',by:'jiji'});return `<p class="h4">報名費</p>${payHTML('o_'+o.id)}`}
 function billsHTML(){const bs=E()?[]:DB.bills;if(!bs.length)return '';
  return `<section class="sec">${sh('','待繳帳單',bs.filter(b=>PAY['b_'+b.id].st!=='paid').length+' 筆')}<div class="stack">${bs.map(b=>`<div class="card"><div class="meta">${chip(b.in+' 天後到期',b.in<=3)}</div><div class="li"><div><h3>${esc(b.name)}</h3></div><span class="amt">${nt(b.amt)}</span></div>${payHTML('b_'+b.id)}</div>`).join('')}</div></section>`}
 
@@ -794,24 +794,24 @@ const CAL=[
  {id:'c1',d:0,t:'14:30',e:'15:30',n:'剪頭髮',src:'me',cat:'L',place:'示意髮廊（永和）'},
  {id:'c2',d:0,t:'18:30',e:'20:30',n:'家庭聚餐',src:'me',cat:'L',place:'示意餐廳（板橋）',who:'家人'},
  {id:'c3',d:0,t:'21:00',e:'22:30',n:'新歌副歌詞第二版',src:'me',cat:'C',place:'家裡'},
- {id:'c4',d:1,t:'10:00',e:'11:00',n:'週會',src:'co',cs:'好咖',place:'公司會議室',who:'好咖全員',why:'你是參加者'},
- {id:'c5',d:2,t:'14:00',e:'15:00',n:'試看帶回饋會議',src:'co',cs:'木星 TAPIN',place:'Google Meet',who:'客戶、大器',why:'你負責的案子'},
- {id:'c6',d:2,t:'15:00',e:'19:00',n:'木星 TAPIN Bcopy 修正',src:'me',cat:'E',place:'家裡'},
- {id:'c7',d:5,t:'13:00',e:'18:00',n:'Borry 有事',src:'co',hold:1,why:'私人案的占位，不寫內容'},
- {id:'c8',d:5,t:'13:00',e:'18:00',n:'牧星 外拍',src:'me',cat:'S',place:'示意外拍地點',priv:1},
+ {id:'c4',d:1,t:'10:00',e:'11:00',n:'週會',src:'co',cs:'星芒',place:'公司會議室',who:'星芒全員',why:'你是參加者'},
+ {id:'c5',d:2,t:'14:00',e:'15:00',n:'試看帶回饋會議',src:'co',cs:'藍鯨 NOVA',place:'Google Meet',who:'客戶、大器',why:'你負責的案子'},
+ {id:'c6',d:2,t:'15:00',e:'19:00',n:'藍鯨 NOVA Bcopy 修正',src:'me',cat:'E',place:'家裡'},
+ {id:'c7',d:5,t:'13:00',e:'18:00',n:'我有事',src:'co',hold:1,why:'私人案的占位，不寫內容'},
+ {id:'c8',d:5,t:'13:00',e:'18:00',n:'晴川 外拍',src:'me',cat:'S',place:'示意外拍地點',priv:1},
  {id:'c9',d:9,t:'10:00',e:'12:00',n:'勘景',src:'co',cs:'品牌短片',place:'示意攝影棚',who:'攝影師、美術',why:'你負責的案子'},
  {id:'c10',d:9,t:'10:00',e:'12:00',n:'品牌短片 勘景',src:'me',cat:'S',place:'示意攝影棚'},
  {id:'c11',d:7,t:'',e:'',all:1,n:'剪接休息日',src:'me',cat:'L',place:''}];
 const RULES=[
- '兩個日曆：公司「好咖文創」一律黃色；個人「Borry\'s Calendar」照分類碼上色，黃色只給公司。',
- '公司放對外日期：公司業務、客戶交件日、外部會議、進組出班、團隊協作。標題寫【案名】事件名稱 @Borry。',
+ '兩個日曆：公司「星芒影像」一律黃色；個人「我的行事曆」照分類碼上色，黃色只給公司。',
+ '公司放對外日期：公司業務、客戶交件日、外部會議、進組出班、團隊協作。標題寫【案名】事件名稱 @我。',
  '個人放你實際工作和生活的時段。標題寫「分類碼.事件名」，句點是半形。',
  '分類碼：S 出班（櫻花粉）、E 剪接（薰衣草）、W 企劃行政（孔雀藍）、C 創作（橘）、L 生活（淡綠）。',
  '對外交件日放公司、實際排程放個人；同一件事可以兩邊各一筆，各用各的格式。個人可以比對外日期提前，對外日期不因個人提前而改。',
- '私人案只放個人；公司同時段放匿名「Borry 有事」占位，不寫內容。',
+ '私人案只放個人；公司同時段放匿名「我有事」占位，不寫內容。',
  '分類想超過三秒就先記事件名，分類碼事後補。',
  '不主動改行事曆上既有的事件；你在面板上親手改的那一筆，才算你指定。'];
-const rawTitle=e=>e.src==='co'?(e.hold?'Borry 有事':`【${e.cs||'案名待補'}】${e.n} @Borry`):`${e.cat||'（分類待補）'}${e.cat?'.':''}${e.n}`;
+const rawTitle=e=>e.src==='co'?(e.hold?'我有事':`【${e.cs||'案名待補'}】${e.n} @我`):`${e.cat||'（分類待補）'}${e.cat?'.':''}${e.n}`;
 const etaN=o=>o.dn!=null?o.dn:/明天/.test(o.eta)?1:/後天/.test(o.eta)?2:(/(\d+) 天後/.exec(o.eta)||[])[1]?+/(\d+) 天後/.exec(o.eta)[1]:(/11\/(\d+)/.exec(o.eta)||[])[1]?+/11\/(\d+)/.exec(o.eta)[1]-22:3;
 function calAll(){if(E())return[];const a=CAL.filter(e=>!e.del).map(e=>Object.assign({},e));
  Object.keys(DT).forEach(k=>{const x=DT[k],p=DB.proj.find(q=>q.id===x.p),m=SY['proj:'+x.p],s=SY['dt:'+k];if(m&&(!m.on||m.st==='ask'))return;if(s&&!s.on)return;
@@ -838,7 +838,7 @@ function calPage(){const v=S.calv||'week',f=S.calf||'all',all=calAll().filter(e=
   h+=its.length?`<div class="rows">${its.map(evRow).join('')}</div>`:`<div class="card" style="margin-top:12px"><p>${dayName(n)}沒有${f==='me'?'個人的':f==='co'?'公司的':''}行程。</p></div>`}
  else{let any=0;for(let n=0;n<=13;n++){const its=all.filter(e=>e.d===n);if(!its.length)continue;any=1;h+=`<section class="cday"><h3>${dayName(n)}${n<3?'　'+dlw(n):''}</h3><div class="rows">${its.map(evRow).join('')}</div></section>`}
   if(!any)h+=`<div class="card" style="margin-top:12px"><p>往後 14 天沒有${f==='me'?'個人的':'公司的'}行程。</p></div>`}
- return h+`<p class="note" style="margin-top:18px">公司行事曆只列標題有 @Borry 的（跟你有關的）。每 30 分鐘從 Google 行事曆同步一次。</p></div>`}
+ return h+`<p class="note" style="margin-top:18px">公司行事曆只列標題有 @我 的（跟你有關的）。每 30 分鐘從 Google 行事曆同步一次。</p></div>`}
 ACT.calv=id=>{S.calv=id;render('keep')};ACT.calf=id=>{S.calf=id;render('keep')};ACT.cald=id=>{S.cald=+id;render('keep')};
 const shHead=t=>`<div class="grab" aria-hidden="true"></div><div class="shead"><h2 id="sTitle">${t}</h2>${B('關閉 ✕','close',null,'ghost',' id="sClose"')}</div>`;
 function calSheet(id){const e=calFind(id);if(!e)return shHead('這筆行程不在了')+'<p style="margin-top:8px">可能已經取消或改到 14 天以外。</p>';
@@ -855,19 +855,19 @@ ACT.evundo=id=>{const e=CAL.find(x=>x.id===id);closeThen(()=>{e.cancel=0;e.st='r
 
 /* 新增行程：表單下面即時顯示大器會照規則放到哪邊，可以手動改 */
 function guess(f){const t=(f.title+' '+f.note+' '+f.who),G={};
- G.priv=/牧星|牧昕|私人案|私案/.test(t);G.life=/健身|聚餐|吃飯|看醫生|牙醫|剪頭髮|家人|約會|運動|私事|休息/.test(t)&&!G.priv;
+ G.priv=/晴川|私人案|私案/.test(t);G.life=/健身|聚餐|吃飯|看醫生|牙醫|剪頭髮|家人|約會|運動|私事|休息/.test(t)&&!G.priv;
  G.kind=/交件|交片|交分鏡|送件|交稿/.test(t)?'交件':/拍攝|出班|進組|外拍|勘景/.test(t)?'拍攝':/會議|開會|提案|比稿|週會|回饋/.test(t)?'會議':'';
- G.cs=/品牌短片/.test(t)?'品牌短片':/木星|TAPIN/i.test(t)?'木星 TAPIN':/好咖/.test(t)?'好咖':'';
+ G.cs=/品牌短片/.test(t)?'品牌短片':/藍鯨|NOVA/i.test(t)?'藍鯨 NOVA':/星芒/.test(t)?'星芒':'';
  G.cat=/拍攝|出班|進組|外拍|勘景/.test(t)?'S':/剪|後期|調色|混音|交片|試看|copy/i.test(t)?'E':/企劃|腳本|分鏡|提案|報價|會議|文件|行政|交件|交稿|開會/.test(t)?'W':/創作|寫歌|demo|新歌|作品|詞/i.test(t)?'C':G.life?'L':'';
  G.co=!G.priv&&!G.life&&(!!G.kind||!!G.cs);G.me=true;G.lead=G.kind==='交件'?2:0;
  const wd=f.n!=null&&dOf(f.n).w>0&&dOf(f.n).w<6,work=f.s>='09:00'&&f.s<'18:00';G.hold=G.priv||(G.life&&wd&&work);return G}
 function readForm(){const v=id=>{const e=$('#'+id);return e?e.value.trim():''};return{title:v('cfT'),note:v('cfN'),who:v('cfW'),place:v('cfP'),n:nOfIso(v('cfD')),s:v('cfS'),e:v('cfE')}}
 function ctlOf(){const g=id=>$('#'+id);return{co:!!(g('cfCo')&&g('cfCo').checked),me:!!(g('cfMe')&&g('cfMe').checked),cat:g('cfCat')?g('cfCat').value:'',lead:g('cfLead')?+g('cfLead').value:0}}
 function predHTML(f,c,G){if(!f.title)return '<b>寫了標題，這裡會顯示放哪邊。</b>';
- const parts=[];if(c.co)parts.push(G.hold?'公司（同時段放「Borry 有事」，不寫內容）':`公司（${G.kind==='交件'?'對外交件日':G.kind==='拍攝'?'進組出班':G.kind==='會議'?'外部會議':'公司業務'}）`);
+ const parts=[];if(c.co)parts.push(G.hold?'公司（同時段放「我有事」，不寫內容）':`公司（${G.kind==='交件'?'對外交件日':G.kind==='拍攝'?'進組出班':G.kind==='會議'?'外部會議':'公司業務'}）`);
  if(c.me)parts.push(c.cat?`個人 ${c.cat}.${CAT[c.cat][0]}（${G.kind==='交件'?'實際工作時段':c.cat==='L'?'生活時段':'實際時段'}${c.lead?`，提前 ${c.lead} 天`:''}）`:'個人（分類想不出來，先記名，分類碼之後補）');
  if(!parts.length)return '<b>兩邊都沒勾，這筆不會放上行事曆。</b>';
- const ttl=[];if(c.co)ttl.push(`公司：${G.hold?'Borry 有事':`【${G.cs||'案名待補'}】${f.title} @Borry`}${f.n!=null?'・'+dl(f.n):''}`);
+ const ttl=[];if(c.co)ttl.push(`公司：${G.hold?'我有事':`【${G.cs||'案名待補'}】${f.title} @我`}${f.n!=null?'・'+dl(f.n):''}`);
  if(c.me)ttl.push(`個人：${c.cat?c.cat+'.':''}${f.title}${f.n!=null?'・'+dl(Math.max(0,f.n-c.lead)):''}`);
  return `<b>會放到：${parts.join('＋')}</b><p class="ttl">${ttl.map(esc).join('<br>')}</p>`}
 function predSync(auto){const f=readForm(),G=guess(f);
@@ -888,7 +888,7 @@ document.addEventListener('change',e=>{const id=e.target.id||'';if(/^cf(Co|Me|Ca
 ACT.calmk=()=>{const f=readForm(),c=ctlOf(),G=guess(f);if(!f.title){const x=$('#cfErr');if(x)x.hidden=false;const t=$('#cfT');if(t)t.focus();return}
  if(f.n==null||f.n<0){toast('日期要選今天以後');return}if(!c.co&&!c.me){toast('兩邊都沒勾，先勾一邊');return}
  const to=[c.co?'公司':'',c.me?'個人':''].filter(Boolean).join('＋'),made=[],sq=++seq;
- if(c.co)made.push({id:'n'+sq+'co',d:f.n,t:f.s,e:f.e,n:G.hold?'Borry 有事':f.title,src:'co',cs:G.cs,hold:G.hold?1:0,place:G.hold?'':f.place,who:G.hold?'':f.who,why:'你建立的',mk:'run',mkTo:to,pair:c.me?1:0});
+ if(c.co)made.push({id:'n'+sq+'co',d:f.n,t:f.s,e:f.e,n:G.hold?'我有事':f.title,src:'co',cs:G.cs,hold:G.hold?1:0,place:G.hold?'':f.place,who:G.hold?'':f.who,why:'你建立的',mk:'run',mkTo:to,pair:c.me?1:0});
  if(c.me)made.push({id:'n'+sq+'me',d:Math.max(0,f.n-c.lead),t:f.s,e:f.e,n:f.title,src:'me',cat:c.cat,place:f.place,who:f.who,mk:'run',mkTo:to,pair:c.co?1:0});
  closeThen(()=>{CAL.push(...made);if(S.page!=='cal')ACT.page('cal');else render('keep');
   setTimeout(()=>{made.forEach(m=>m.mk='ok');render('keep');toast(`已加到 ${to}`)},RM?300:1400)})};
@@ -1133,8 +1133,8 @@ const GSEED=()=>[
   steps:[['故事大綱','d','9/30 完成'],['分場','d','10/28 完成'],['初稿','n','38／90 場'],['修訂稿','',''],['定稿','','']]},
  {id:'grant',name:'拿到一筆創作補助',room:'opp',bot:'jiji',why:'補助是拍自己作品的第一筆錢，也是履歷上的一行。',due:'6/30',dueWhat:'',left:220,
   kind:'pips',now:0,total:1,unit:'筆',label:'拿到',st:'ok',stText:'照進度',short:'補助 0／1，送審中 1',extra:'送審中 1',
-  base:'送審中 1 件，準備中 1 件。',next:'國藝會企劃書 12/15 截止，還缺預算表。',src:'機會房間標成補助的機會，送件與結果自動帶入',auto:1,
-  steps:[['短片輔導金','n','送審中，1 月公布'],['國藝會常態補助','n','準備中，12/15 截止'],['拿到一筆','','']]},
+  base:'送審中 1 件，準備中 1 件。',next:'藝術交流基金會企劃書 12/15 截止，還缺預算表。',src:'機會房間標成補助的機會，送件與結果自動帶入',auto:1,
+  steps:[['短片輔導金','n','送審中，1 月公布'],['藝術交流基金會常態補助','n','準備中，12/15 截止'],['拿到一筆','','']]},
  {id:'crew',name:'進一個劇組待一檔',room:'proj',bot:'daqi',why:'劇組經驗和人脈，光靠接案長不出來。',due:'9/30',dueWhat:'',left:312,
   kind:'pips',now:0,total:3,unit:'步',label:'走到',st:'stall',stText:'34 天沒動',short:'劇組 0／3 步',
   base:'10/19 立了之後還沒動過。',next:'還沒定下一步。',src:'自己打勾',auto:0,
@@ -1231,7 +1231,7 @@ const GQ={din:{goals:['這週力氣放哪','劇本還追得回來嗎','劇組那
  if(b==='kim'&&a[0]==='goal')return '照現在的速度，什麼時候到？';
  return _a(b,ctx)}}
 // 定定的看法卡（建議、理由、風險；照做＝交給大器）
-const GV={goals:{adv:'這週推補助：先把國藝會預算表拉出來',why:'補助 12/15 截止，錯過要等半年；劇本慢 8 場，晚一週還追得回來。',risk:'劇本會再慢約 6 場。下週起每週寫 8 場，3/28 前可以寫完。'},
+const GV={goals:{adv:'這週推補助：先把藝術交流基金會預算表拉出來',why:'補助 12/15 截止，錯過要等半年；劇本慢 8 場，晚一週還追得回來。',risk:'劇本會再慢約 6 場。下週起每週寫 8 場，3/28 前可以寫完。'},
  'goal:script':{adv:'期限不動，每週多寫 2 場',why:'初稿挪期限會連帶壓到補助送件的作品附件。',risk:'每週 8 場比現在多三成，週末要留一天給它。'},
  'goal:crew':{adv:'這週只做一件：寫下三個想跟的導演或副導',why:'34 天沒動，通常是第一步太大；名單寫出來，下一步自然會出現。',risk:'名單太遠會再卡住，三個人裡至少一個是聊得到的。'},
  'goal:grant':{adv:'今晚請集集拉預算表初稿',why:'企劃書只缺預算表，其他都齊了。',risk:'預算表要你過目，12/12 前看完才不會壓到截止。'}};
@@ -1652,7 +1652,7 @@ goalStrip=goalCard;
  return h.replace('<h1 class="pt">目標</h1>',`<div class="zh zhx" data-z="goal"><div class="zht"><h1>目標</h1><p class="zown">定定的房間</p><p class="sum">${a.length?esc(m.t):'還沒立目標'}</p></div>${bigF('din','goal')}</div>`)}}
 window.__zl={DB,GL,S,render:d=>render(d)};
 
-/* ---------- 1122-N 新增行程改成一句話輸入（2026-11-22，大器 Opus 5.5，好咖 CLI 派工） ----------
+/* ---------- 1122-N 新增行程改成一句話輸入（2026-11-22，大器 Opus 5.5，星芒 CLI 派工） ----------
    老大 2026-11-22：「差不多很漂亮 只差那個新增行事曆的部分 這些詳細的內容當然可以保留，但我我希望可以就是我口語隨便說大器也知道怎麼寫 所以應該是在標題列那邊我直接輸入就好，對吧？」
    浮窗最上面只放一個大輸入框，打口語，按「整理」（或 Enter）→ 右上大器的臉「整理中」→ 填進下面的欄位、顯示預判句。
    原本的詳細欄位全部保留，收在「細節」裡（預設收起）。主按鈕寫結果：「加到 公司＋個人」。
@@ -1662,7 +1662,7 @@ window.__zl={DB,GL,S,render:d=>render(d)};
 const NLN={'零':0,'一':1,'二':2,'兩':2,'三':3,'四':4,'五':5,'六':6,'七':7,'八':8,'九':9,'十':10,'十一':11,'十二':12};
 const nlNum=s=>/^\d+$/.test(s)?+s:NLN[s]!=null?NLN[s]:/^十[一二]$/.test(s)?10+NLN[s[1]]:null;
 const NLWK={'日':0,'天':0,'一':1,'二':2,'三':3,'四':4,'五':5,'六':6};
-const NLPROJ=[[/木星|TAPIN/i,'木星'],[/品牌短片/,'品牌短片'],[/牧星|牧昕/,'牧星'],[/好咖/,'好咖'],[/新歌/,'新歌 demo']];
+const NLPROJ=[[/藍鯨|NOVA/i,'藍鯨'],[/品牌短片/,'品牌短片'],[/晴川/,'晴川'],[/星芒/,'星芒'],[/新歌/,'新歌 demo']];
 const nlP2=n=>String(n).padStart(2,'0');
 const addH=(t,h)=>{const [a,b]=t.split(':').map(Number);const m=Math.min(23*60+59,a*60+b+h*60);return nlP2(Math.floor(m/60))+':'+nlP2(m%60)};
 
@@ -1713,7 +1713,7 @@ function nlFaceHTML(){const st=S.nl&&S.nl.busy?'thinking':'idle',lab=S.nl&&S.nl.
 function calNew(){S.cfMan=0;S.nl=S.nl||{};const P=S.nl.p||{},v=x=>x?esc(x):'';
  return `<div class="grab" aria-hidden="true"></div><div class="shead nlhead"><h2 id="sTitle">新增行程</h2>${nlFaceHTML()}${B('關閉 ✕','close',null,'ghost',' id="sClose"')}</div>
  <label class="vh" for="nlT">用一句話說這筆行程</label>
- <div class="nlbox"><textarea id="nlT" rows="2" enterkeyhint="done" autocomplete="off" placeholder="明天下午三點跟木星開剪接會，在公司">${v(S.nl.txt)}</textarea>
+ <div class="nlbox"><textarea id="nlT" rows="2" enterkeyhint="done" autocomplete="off" placeholder="明天下午三點跟藍鯨開剪接會，在公司">${v(S.nl.txt)}</textarea>
  <button class="btn nlgo" data-act="nlgo" id="nlGo" aria-label="交給大器整理這句">整理</button></div>
  <p class="nlex">隨便講，大器會拆成時間、地點、放哪邊。</p>
  <div class="pred nlpred" id="cfPred" aria-live="polite"${S.nl.p?'':' hidden'}></div>
@@ -1741,7 +1741,7 @@ function nlSync(auto){const f=readForm(),G=guess(f),all=!!($('#cfAll')||{}).chec
  if(!p||!S.nl||!S.nl.p)return;p.hidden=false;
  if(!f.title){p.innerHTML='<b>大器沒抓到這是什麼事，打開細節補一下標題。</b>';return}
  const cs=nlCs(G),parts=[];
- if(c.co)parts.push(G.hold?'公司「Borry 有事」（不寫內容）':`公司【${cs||'案名待補'}】${f.title} @Borry`);
+ if(c.co)parts.push(G.hold?'公司「我有事」（不寫內容）':`公司【${cs||'案名待補'}】${f.title} @我`);
  if(c.me)parts.push(`個人 ${c.cat?c.cat+'.':''}${nlMeTitle(f)}${c.cat?'':'（分類碼之後補）'}`);
  const when=f.n!=null?dlw(f.n)+(all?'　全天':'　'+f.s+'～'+f.e):'';
  const meta=[when,f.place,f.who?'跟'+f.who:''].filter(Boolean).join('・');
@@ -1783,7 +1783,7 @@ ACT.calmk=()=>{const t=$('#nlT'),txt=t?t.value.trim():'';
  if(!f.title){ACT.nlfix('title');return}
  if(f.n==null||f.n<0){toast('日期要選今天以後');return}if(!c.co&&!c.me){toast('兩邊都沒勾，先勾一邊');return}
  const to=nlTo(c),made=[],sq=++seq,cs=nlCs(G),tm=all?{t:'',e:'',all:1}:{t:f.s,e:f.e};
- if(c.co)made.push(Object.assign({id:'n'+sq+'co',d:f.n,n:G.hold?'Borry 有事':f.title,src:'co',cs,hold:G.hold?1:0,place:G.hold?'':f.place,who:G.hold?'':f.who,why:'你建立的',mk:'run',mkTo:to,pair:c.me?1:0},tm));
+ if(c.co)made.push(Object.assign({id:'n'+sq+'co',d:f.n,n:G.hold?'我有事':f.title,src:'co',cs,hold:G.hold?1:0,place:G.hold?'':f.place,who:G.hold?'':f.who,why:'你建立的',mk:'run',mkTo:to,pair:c.me?1:0},tm));
  if(c.me)made.push(Object.assign({id:'n'+sq+'me',d:Math.max(0,f.n-c.lead),n:nlMeTitle(f),src:'me',cat:c.cat,place:f.place,who:f.who,mk:'run',mkTo:to,pair:c.co?1:0},tm));
  closeThen(()=>{CAL.push(...made);if(S.page!=='cal')ACT.page('cal');else render('keep');
   setTimeout(()=>{made.forEach(m=>m.mk='ok');render('keep');toast(`已加到 ${to}`,()=>{made.forEach(m=>{const i=CAL.indexOf(m);if(i>-1)CAL.splice(i,1)});render('keep')})},RM?300:1400)})};

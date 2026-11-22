@@ -158,3 +158,8 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 資產與配置：負債一列寫卡債、借款、分期，下面加「淨資產」＝上面三項合計扣負債；掛在信用卡上的分期已含在卡債，不重複扣。
    - 資料：只讀函式 `hub_money_trend(p_key, p_months)`（3～24 個月，回 months[m,income,expense,saved,n,partial,before_data]、liab_accounts、installments、liab_total、net_worth），門跟 `hub_money_overview` 一樣：老大本人或管理員金鑰；AI協作金鑰回 28000（403）。遷移 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v54_收支趨勢與負債_遷移.sql`、退回 `_退回.sql`。**遷移套上前**趨勢區寫「收支趨勢還沒接上」，負債照帳戶算、註明分期還沒算進來。
    - 程式在 `js/app.js` 檔尾「v54」段（`kmTrend`、包一層 `kmAssets`）。退回：`git revert` v54 的 commit；資料庫照退回 SQL。
+37. **示範模式給錄影用（2026-11-22，v55）**：老大原話「設計頁面給我沒有我真實資料的，我想要錄下來很想」。網址 `?mock=1`。
+   - `js/demo.js` 在 head 同步載入，只在網址帶 `?mock=`（不是 0）時生效：localStorage 換成記憶體裡的一份（讀不到也不寫老大手機上的 `opp_key`、快照、已讀位置，網址不會被加上 `?k=`，重整就還原）；畫面上的「示意」標籤、殘留真名換成虛構名字；右上角很小地標「示範資料」。
+   - 示範資料（`js/mock.js`、`js/app.js` 前段設計稿資料）一律虛構：案名、機構、金額、網址都不准放真的。新增示範資料時不要用真案名、真客戶、真帳戶數字或真的案子連結。
+   - 示範模式不連後端（adapter 走 mock），0 個 supabase 請求；驗收腳本與截圖在 `/Users/borry/大器工作區/面板工坊/AI工作夾/06_紀錄/1122_逐流示範模式/`。
+   - 退回：`git revert` v55 的 commit。

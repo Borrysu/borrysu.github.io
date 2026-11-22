@@ -29,47 +29,47 @@ function build() {
   const exp = h => new Date(now - h * H + 7 * D).toISOString();
   const tomorrow8 = at(1, 8);
   const row = (o) => Object.assign({ status: 'new', currency: '', amount_display: '', amount_text: '', amount_label: '', tags: [], detail_text: '', detail_fetched_at: null, work_folder_url: '', warn: [], quick: [], facts: [], is_demo: false, source_url: '', snooze_until: null, due_at: null, found_by: 'Gig Gig' }, o);
-  const pcc = 'https://web.pcc.gov.tw/tps/QueryTender/query/searchTenderDetail?pkPmsMain=';
+  const pcc = 'https://example.com/';
   return [
-    row({ id: 'moea', basket: 'company', title: '內政部建築研究所 115 年度業務宣導案', org: '內政部建築研究所', amount_label: '預算', currency: 'NT$', amount_display: '70 萬', deadline: at(2, 17), found_at: ago(30), expires_at: exp(30), found_by: 'Kim Kim', fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: pcc + 'NzEzODEzNjk',
+    row({ id: 'moea', basket: 'company', title: '內政部建築研究所 115 年度業務宣導案', org: '內政部建築研究所', amount_label: '預算', currency: 'NT$', amount_display: '70 萬', deadline: at(2, 17), found_at: ago(30), expires_at: exp(30), found_by: 'Kim Kim', fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: 'https://example.com/?n=NzEzODEzNjk',
       why: '不用押標金，11/11 流標後重新招標', quick: ['要公司行號，營業項目含一般廣告服務業', '不用押標金'],
       facts: ['資格：公司行號，營業項目要有一般廣告服務業', '押標金：不用', '流標：11/11 流標、重新招標，我推測競爭會比較少', '影片占多少：要看招標文件'], warn: ['要借公司名義投的話，得先問能不能借。'], first_step: '先確認能不能借那間公司的名義投。' }),
-    row({ id: 'mingtan', basket: 'company', title: '明潭發電廠簡介影片（公開徵求參考資料）', org: '明潭發電廠', amount_text: '沒寫金額', deadline: at(2, 23, 59), found_at: ago(26), expires_at: exp(26), fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: 'https://web.pcc.gov.tw/prkms/tender/common/noticeDate/redirectPublic',
+    row({ id: 'mingtan', basket: 'company', title: '明潭發電廠簡介影片（公開徵求參考資料）', org: '明潭發電廠', amount_text: '沒寫金額', deadline: at(2, 23, 59), found_at: ago(26), expires_at: exp(26), fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: 'https://example.com/',
       why: '現在只是徵求參考資料，未來正式招標值得盯', quick: ['內容有執導、空拍、動畫、配音', '還不是正式招標'], facts: ['現況：公開徵求參考資料', '內容：執導、空拍、動畫、配音', '後續：未來正式招標值得盯'], first_step: '看徵求內容，決定要不要提供參考資料。' }),
-    row({ id: 'tust', basket: 'company', title: '臺灣科技大學 116 年形象影片', org: '臺灣科技大學', amount_label: '預算', currency: 'NT$', amount_display: '75 萬', deadline: at(3, 13, 30), found_at: ago(28), expires_at: exp(28), fit: '高', honor: '中等', source_site: '政府電子採購網', source_url: pcc + 'NzEzNjcxOTY',
+    row({ id: 'tust', basket: 'company', title: '臺灣科技大學 116 年形象影片', org: '臺灣科技大學', amount_label: '預算', currency: 'NT$', amount_display: '75 萬', deadline: at(3, 13, 30), found_at: ago(28), expires_at: exp(28), fit: '高', honor: '中等', source_site: '政府電子採購網', source_url: 'https://example.com/?n=NzEzNjcxOTY',
       why: '最能救 11 月現金流，但只收紙本、要先押標金', quick: ['公司或商業登記加納稅證明、信用證明', '只收紙本，要先繳押標金 3.7 萬'],
       facts: ['資格：公司或商業登記、最近一期納稅證明、信用證明（半年內票據交換所非拒絕往來證明，或會計師簽證財報）', '收件：只收紙本，截止前送到台科大行政大樓 1 樓總務處事務組；企劃書 4 份加 1 份電子檔', '押標金：37,000 元，截止前繳；得標 5 天內再繳履約保證金 37,000 元', '開標：現場可能減價或協商，最多 2 人到場', '限制：不能共同投標；報價高於 75 萬不合格；2027/5/31 前交片', '未寫明：影片支數、長度、評分配比，電子領標後才看得到'],
       warn: ['送件前只剩一個上班日：信用證明和押標金要先辦好。', '手上沒有現成的信用證明，這案基本上來不及。'], first_step: '用公司的採購網帳號電子領標，拿到需求規範書與評審須知。' }),
-    row({ id: 'taichung', basket: 'company', title: '臺中市環境教育園區宣導活動計畫（116 年度）', org: '臺中市政府', amount_label: '預算', currency: 'NT$', amount_display: '299 萬', deadline: at(13, 17), found_at: ago(32), expires_at: exp(32), found_by: 'Kim Kim', fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: pcc + 'NzEzODQ1NDk',
+    row({ id: 'taichung', basket: 'company', title: '臺中市環境教育園區宣導活動計畫（116 年度）', org: '臺中市政府', amount_label: '預算', currency: 'NT$', amount_display: '299 萬', deadline: at(13, 17), found_at: ago(32), expires_at: exp(32), found_by: 'Kim Kim', fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: 'https://example.com/?n=NzEzODQ1NDk',
       why: '主體是辦活動，影片和企劃算加分', quick: ['公司或商業登記加納稅證明', '影片占多少要看工作項目'], facts: ['資格：公司或商業登記加納稅證明', '內容：主體是辦活動，影片和企劃算加分'], first_step: '先電子領標，看工作項目裡影片占多少。' }),
-    row({ id: 'tyenv', basket: 'company', title: '桃園市 116 年度環境教育行銷推廣計畫', org: '桃園市政府', amount_label: '預算', currency: 'NT$', amount_display: '770 萬', deadline: at(9, 9), found_at: ago(32), expires_at: exp(32), found_by: 'Kim Kim', fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: pcc + 'NzEzODM0Mzk',
+    row({ id: 'tyenv', basket: 'company', title: '海港市 116 年度環境教育行銷推廣計畫', org: '海港市政府', amount_label: '預算', currency: 'NT$', amount_display: '770 萬', deadline: at(9, 9), found_at: ago(32), expires_at: exp(32), found_by: 'Kim Kim', fit: '中', honor: '普通', source_site: '政府電子採購網', source_url: 'https://example.com/?n=NzEzODM0Mzk',
       why: '規模太大，適合去當得標團隊的分包', quick: ['要有 I1 顧問服務業登記', '適合找夥伴一起投'], facts: ['資格：要有 I1 顧問服務業登記', '規模：大，適合去當得標團隊的影片或企劃分包'], warn: ['你自己投不了，要有 I1 登記的夥伴。'], first_step: '先找有 I1 登記的夥伴合作。' }),
-    row({ id: 'taoart', basket: 'company', status: 'snoozed', snooze_until: tomorrow8, title: '桃園市兒童美術館特展暨活動宣傳影片', org: '桃園市兒童美術館', amount_label: '預算', currency: 'NT$', amount_display: '34.4 萬', deadline: at(5, 17), found_at: ago(30), expires_at: exp(30), found_by: 'Gig Gig', fit: '高', honor: '中等', source_site: '政府電子採購網', source_url: pcc + 'NzEzNzk0MjE',
+    row({ id: 'taoart', basket: 'company', status: 'snoozed', snooze_until: tomorrow8, title: '海港市兒童美術館特展暨活動宣傳影片', org: '海港市兒童美術館', amount_label: '預算', currency: 'NT$', amount_display: '34.4 萬', deadline: at(5, 17), found_at: ago(30), expires_at: exp(30), found_by: 'Gig Gig', fit: '高', honor: '中等', source_site: '政府電子採購網', source_url: 'https://example.com/?n=NzEzNzk0MjE',
       why: '規模剛好，自然人也能投', quick: ['登記證明（自然人附身分證）', '服務建議書 6 份'], facts: ['資格：登記證明（自然人附身分證）、納稅證明、服務建議書 6 份', '名義：自然人也能投，用個人名義可以'], first_step: '領標，看影片支數和評選配分。' }),
-    row({ id: 'pro360kh', basket: 'personal', title: '高雄 80 組簡報轉 Reel', org: 'PRO360 個人案主', amount_label: '預算', currency: 'NT$', amount_display: '5,000～10,000', found_at: ago(54), expires_at: exp(54), found_by: 'Kim Kim', fit: '高', honor: '低', source_site: 'PRO360', source_url: 'https://www.pro360.com.tw/case/request/4911020',
-      why: '用 AI 剪很快，先確認能不能遠端', quick: ['個人案主，11/11 發案', '頁面寫要到高雄三民區現場'], facts: ['預算：5 千到 1 萬', '案主：個人，11/11 發案', '地點：頁面寫要到高雄三民區現場'], warn: ['要到現場的話，先確認能不能遠端。'], first_step: '報價，附一支類似的 Reel 樣片。' }),
-    row({ id: 'pro360cy', basket: 'personal', title: '嘉義童裝直播 Reels 剪輯', org: 'PRO360 公司案主', amount_text: '詳談後報價', found_at: ago(54), expires_at: exp(54), found_by: 'Kim Kim', fit: '高', honor: '低', source_site: 'PRO360', source_url: 'https://www.pro360.com.tw/case/request/4911111',
+    row({ id: 'pro360kh', basket: 'personal', title: '80 組簡報轉直式短片', org: '接案城 個人案主', amount_label: '預算', currency: 'NT$', amount_display: '5,000～10,000', found_at: ago(54), expires_at: exp(54), found_by: 'Kim Kim', fit: '高', honor: '低', source_site: '接案城', source_url: 'https://example.com/',
+      why: '用 AI 剪很快，先確認能不能遠端', quick: ['個人案主，11/11 發案', '頁面寫要到南區現場'], facts: ['預算：5 千到 1 萬', '案主：個人，11/11 發案', '地點：頁面寫要到南區現場'], warn: ['要到現場的話，先確認能不能遠端。'], first_step: '報價，附一支類似的 Reel 樣片。' }),
+    row({ id: 'pro360cy', basket: 'personal', title: '童裝品牌直播精華剪輯', org: '接案城 公司案主', amount_text: '詳談後報價', found_at: ago(54), expires_at: exp(54), found_by: 'Kim Kim', fit: '高', honor: '低', source_site: '接案城', source_url: 'https://example.com/',
       why: '有機會變成每月固定的長期案', quick: ['案主自己拍，要你建議內容再剪', '詳談後報價'], facts: ['報價：詳談後報價', '案主：公司，他們自己拍，要你建議內容再剪', '機會：有機會變成每月固定的長期案'], first_step: '回覆時直接開「每月幾支多少錢」的方案價。' }),
-    row({ id: 'demo-song', basket: 'personal', title: '獨立歌手 MV 詞曲委託', org: '示意資料', amount_label: '報價', currency: 'NT$', amount_display: '3 萬', found_at: ago(20), expires_at: exp(20), is_demo: true, found_by: '皮皮（示意）', fit: '中', honor: '普通',
-      why: '用個人名義接，詞曲加導演一起做', quick: ['示意資料，不是真實案子', '用來示範個人案籃'], facts: ['說明：這是示意資料'], first_step: '（示意）先回覆想聽哪首 demo。' }),
-    row({ id: 'tkfan', basket: 'other', title: '異世界企劃宣傳片後製', org: 'Tasker', amount_label: '預算', currency: 'NT$', amount_display: '3 萬', found_at: ago(30), expires_at: exp(30), fit: '高', honor: '低', source_site: 'Tasker', source_url: 'https://www.tasker.com.tw/cases/TK26091604WBPX40',
-      why: '可遠端，適合匿名帳號接；先確認還開著', quick: ['可以遠端', '適合用 nightdesk 匿名帳號接'], facts: ['預算：3 萬元', '地點：可以遠端，適合用 nightdesk 匿名帳號接', '提案：沒付費每月 1 次免費，之後每次扣 T Points（1 點約 1 元），沒成交不退'], warn: ['案子是 9 月貼的，要先確認還開著。'], first_step: '先開頁確認案子還開著，再用 nightdesk 提案。' }),
-    row({ id: 'tkmil', basket: 'other', title: '軍事 YouTube 長片剪輯', org: 'Tasker', amount_label: '每支', currency: 'NT$', amount_display: '2,000～3,000', found_at: ago(26), expires_at: exp(26), fit: '中', honor: '低', source_site: 'Tasker', source_url: 'https://www.tasker.com.tw/cases/TK26110904JMPG28',
-      why: '每月約 6 支，可以穩定接', quick: ['每個月大約 6 支', 'nightdesk 已完成實名認證'], facts: ['報酬：每支 2,000 到 3,000 元，每月約 6 支', '帳號：nightdesk 已完成實名認證，可以提案', '提案：每月 1 次免費，之後扣 T Points'], first_step: '寫提案草稿給你看，你說投再投。' }),
-    row({ id: 'moclang', basket: 'funding', title: '文化部語言友善環境及創作應用補助', org: '文化部', amount_label: '補助最高', currency: 'NT$', amount_display: '100 萬', deadline: at(15, 23, 59), found_at: ago(30), expires_at: exp(30), fit: '高', honor: '加分', source_site: '文化部獎補助資訊網', source_url: 'https://grants.moc.gov.tw/Web/',
+    row({ id: 'demo-song', basket: 'personal', title: '獨立歌手 MV 詞曲委託', org: '獨立音樂人 小海', amount_label: '報價', currency: 'NT$', amount_display: '3 萬', found_at: ago(20), expires_at: exp(20), is_demo: false, found_by: 'Gig Gig', fit: '中', honor: '普通',
+      why: '用個人名義接，詞曲加導演一起做', quick: ['詞曲加 MV 一起談', '對方先給 demo 聽'], facts: ['內容：一首歌的詞曲，MV 另外談'], first_step: '先回覆想聽哪首 demo。' }),
+    row({ id: 'tkfan', basket: 'other', title: '奇幻企劃宣傳片後製', org: '外包市集', amount_label: '預算', currency: 'NT$', amount_display: '3 萬', found_at: ago(30), expires_at: exp(30), fit: '高', honor: '低', source_site: '外包市集', source_url: 'https://example.com/',
+      why: '可遠端，適合匿名帳號接；先確認還開著', quick: ['可以遠端', '適合用 副業帳號接'], facts: ['預算：3 萬元', '地點：可以遠端，適合用 副業帳號接', '提案：沒付費每月 1 次免費，之後每次扣 平台點數（1 點約 1 元），沒成交不退'], warn: ['案子是 9 月貼的，要先確認還開著。'], first_step: '先開頁確認案子還開著，再用 副業帳號 提案。' }),
+    row({ id: 'tkmil', basket: 'other', title: '歷史頻道長片剪輯', org: '外包市集', amount_label: '每支', currency: 'NT$', amount_display: '2,000～3,000', found_at: ago(26), expires_at: exp(26), fit: '中', honor: '低', source_site: '外包市集', source_url: 'https://example.com/',
+      why: '每月約 6 支，可以穩定接', quick: ['每個月大約 6 支', '副業帳號 已完成實名認證'], facts: ['報酬：每支 2,000 到 3,000 元，每月約 6 支', '帳號：副業帳號 已完成實名認證，可以提案', '提案：每月 1 次免費，之後扣 平台點數'], first_step: '寫提案草稿給你看，你說投再投。' }),
+    row({ id: 'moclang', basket: 'funding', title: '母語影像創作補助', org: '城市文化基金會', amount_label: '補助最高', currency: 'NT$', amount_display: '100 萬', deadline: at(15, 23, 59), found_at: ago(30), expires_at: exp(30), fit: '高', honor: '加分', source_site: '城市文化基金會網站', source_url: 'https://example.com/',
       why: '整支 AI 生成不補助，要改成 AI 輔助才拿得到', quick: ['自然人可申請「創作及應用」', '台語占 50% 以上優先'], facts: ['金額：每案最高 100 萬，不超過總經費 49%，其餘自籌', '資格：自然人可申請「創作及應用」，要是創作者本人', 'AI：申請和結案都要交使用 AI 的具結書，成品要標示用 AI 的地方', '優先：台語占 50% 以上、放上 YouTube 這類可擴散的影音', '請款：做完後憑單據請款，前期要自己墊'], warn: ['要點寫明整支都是 AI 生成的作品不補助，事後被查到要退錢。', 'AI 占多少算輔助，要點沒寫，要打電話問承辦人。'], first_step: '先決定要不要改成 AI 輔助，再決定送不送。' }),
-    row({ id: 'tycg', basket: 'funding', status: 'snoozed', snooze_until: tomorrow8, title: '桃園市文化局 116 年補助影視製作', org: '桃園市文化局', amount_label: '補助上限', currency: 'NT$', amount_display: '300 萬', deadline: at(46, 17), found_at: ago(30), expires_at: exp(30), fit: '高', honor: '加分', source_site: '桃園市文化局', source_url: 'https://culture.tycg.gov.tw/News_Content.aspx?n=11134&s=1911492',
-      why: '掛你名的作品，但要在桃園取景達三分之一', quick: ['要有電影片或節目製作業登記', '桃園取景達片長 1/3 以上'], facts: ['金額：每案上限 300 萬，各級政府補助合計不超過製作成本 50%', '資格：要有電影片製作業或節目製作業登記', '取景：在桃園取景達片長三分之一以上'], warn: ['純雲端生成、不在桃園拍，很可能不符。'], first_step: '確認影視業登記，下載實施要點和申請書。' }),
-    row({ id: 'chroma', basket: 'funding', title: 'Chroma Awards 第二季', org: 'ElevenLabs 孵化', amount_label: 'MV 類獎金', currency: 'US$', amount_display: '24,000', deadline: at(53, 23, 59), found_at: ago(3), expires_at: exp(3), fit: '高', honor: '加分', source_site: 'chromaawards.com', source_url: 'https://www.chromaawards.com',
+    row({ id: 'tycg', basket: 'funding', status: 'snoozed', snooze_until: tomorrow8, title: '海港市影視製作補助', org: '海港市文化局', amount_label: '補助上限', currency: 'NT$', amount_display: '300 萬', deadline: at(46, 17), found_at: ago(30), expires_at: exp(30), fit: '高', honor: '加分', source_site: '海港市文化局', source_url: 'https://example.com/News_Content.aspx?n=11134&s=1911492',
+      why: '掛你名的作品，但要在海港取景達三分之一', quick: ['要有電影片或節目製作業登記', '海港取景達片長 1/3 以上'], facts: ['金額：每案上限 300 萬，各級政府補助合計不超過製作成本 50%', '資格：要有電影片製作業或節目製作業登記', '取景：在海港取景達片長三分之一以上'], warn: ['純雲端生成、不在海港拍，很可能不符。'], first_step: '確認影視業登記，下載實施要點和申請書。' }),
+    row({ id: 'chroma', basket: 'funding', title: 'Prism 影像獎 第二季', org: '聲波實驗室', amount_label: 'MV 類獎金', currency: 'US$', amount_display: '24,000', deadline: at(53, 23, 59), found_at: ago(3), expires_at: exp(3), fit: '高', honor: '加分', source_site: 'prism-awards.example', source_url: 'https://www.prism-awards.example',
       why: 'MV 類，可以直接投你自己的歌', quick: ['全球可投，免報名費', '用贊助工具做的片有加碼和算力點數'], facts: ['金額：總獎池 US$45 萬以上，其中 Music Video 類 2.4 萬', '報名費：免', '加碼：用贊助工具做的片另有加碼獎金和算力點數'], first_step: '讀完第二季規則，挑一首自己的歌來做 MV。' }),
-    row({ id: 'artefact', basket: 'funding', title: 'Artefact AI Film Festival 第三屆', org: 'Artefact', amount_label: '大獎', currency: '€', amount_display: '10,000', deadline: at(17, 23, 59), found_at: ago(3), expires_at: exp(3), fit: '高', honor: '高加分', source_site: 'artefact-ai-film-festival.com', source_url: 'https://artefact-ai-film-festival.com',
-      why: '得獎能上巴黎院線，18 天內要做完', quick: ['大獎含 mk2 院線映一週 30 秒', '片長上限 314 秒'], facts: ['金額：大獎 1 萬歐元，加上在法國 mk2 院線映一週 30 秒', '主題：(Dis)Connection', '片長：上限 314 秒', '報名費：免'], warn: ['「前期、拍攝、後期都要用生成式 AI」這條來自第三方網站，官網沒寫，要核對。'], first_step: '決定拿手上的素材改，還是新做一支 5 分鐘內的短片。' }),
-    row({ id: 'flick', basket: 'funding', status: 'snoozed', snooze_until: tomorrow8, title: 'Flick AI 影展', org: 'FlickArt', amount_label: '首獎', currency: 'US$', amount_display: '10,000', deadline: at(31, 15, 59), found_at: ago(22), expires_at: exp(22), fit: '高', honor: '普通', source_site: 'flick.art 官方規則', source_url: 'https://flick.art/festival/rules',
+    row({ id: 'artefact', basket: 'funding', title: 'Lumen AI 短片獎 第三屆', org: 'Lumen', amount_label: '大獎', currency: '€', amount_display: '10,000', deadline: at(17, 23, 59), found_at: ago(3), expires_at: exp(3), fit: '高', honor: '高加分', source_site: 'lumen-film.example', source_url: 'https://lumen-film.example',
+      why: '得獎能上海外院線，18 天內要做完', quick: ['大獎含 合作院線映一週 30 秒', '片長上限 314 秒'], facts: ['金額：大獎 1 萬歐元，加上在合作院線映一週 30 秒', '主題：斷線之後', '片長：上限 314 秒', '報名費：免'], warn: ['「前期、拍攝、後期都要用生成式 AI」這條來自第三方網站，官網沒寫，要核對。'], first_step: '決定拿手上的素材改，還是新做一支 5 分鐘內的短片。' }),
+    row({ id: 'flick', basket: 'funding', status: 'snoozed', snooze_until: tomorrow8, title: '微光 AI 影展', org: '微光影展', amount_label: '首獎', currency: 'US$', amount_display: '10,000', deadline: at(31, 15, 59), found_at: ago(22), expires_at: exp(22), fit: '高', honor: '普通', source_site: 'flick.art 官方規則', source_url: 'https://flick.art/festival/rules',
       why: '免報名費，但投稿要先公開發全片', quick: ['全球可投，個人或 4 人內團隊', '免報名費'], facts: ['金額：最佳影片 US$10,000，動畫 5,000，導演 2,500', '報名費：免', '資格：2026/3/1 後完成、要有英文字幕', '權利：著作權歸你，送件即非獨家授權 FlickTV 放全片'], warn: ['投稿時要在自己的社群公開發全片、加官方浮水印，之後重視首映權的影展會被卡。', '獎金怎麼匯到台灣、扣不扣稅，規則沒寫。'], first_step: '挑一支不打算再投大影展的作品，或為這個比賽新做一支。' }),
-    row({ id: 'ncafroc', basket: 'achievement', title: '國藝會國際文化交流 第 6 期', org: '國藝會', amount_text: '沒寫金額', deadline: at(1, 23, 59), found_at: ago(28), expires_at: exp(28), fit: '中', honor: '加分', source_site: '國藝會', source_url: 'https://www.ncafroc.org.tw/founding_detail.html?categoryId=culturalExchange',
+    row({ id: 'ncafroc', basket: 'achievement', title: '海外放映交流計畫 第 6 期', org: '藝術交流基金會', amount_text: '沒寫金額', deadline: at(1, 23, 59), found_at: ago(28), expires_at: exp(28), fit: '中', honor: '加分', source_site: '藝術交流基金會', source_url: 'https://www.ncafroc.org.tw/founding_detail.html?categoryId=culturalExchange',
       why: '要明年有出國參展的行程才用得上', quick: ['成就機會，能掛導演名', '頁面沒寫金額'], facts: ['籃別：成就機會', '金額：頁面沒寫', '條件：要明年有出國參展的行程才用得上'], first_step: '先確認明年有沒有出國參展的行程。' }),
-    row({ id: 'demo-honor', basket: 'achievement', title: '某影展短片單元評審邀請', org: '示意資料', amount_label: '酬勞', amount_text: '沒寫金額', deadline: at(4, 18), found_at: ago(14), expires_at: exp(14), is_demo: true, found_by: '皮皮（示意）', fit: '高', honor: '加分',
-      why: '掛導演名的評審位，錢少但加分', quick: ['示意資料，不是真實案子', '用來示範「成就機會」籃'], facts: ['說明：這是示意資料，用來讓成就機會籃有東西可看'], first_step: '（示意）回覆邀請，確認檔期。' }),
+    row({ id: 'demo-honor', basket: 'achievement', title: '城南短片影展評審邀請', org: '城南短片影展', amount_label: '酬勞', amount_text: '沒寫金額', deadline: at(4, 18), found_at: ago(14), expires_at: exp(14), is_demo: false, found_by: 'Gig Gig', fit: '高', honor: '加分',
+      why: '掛導演名的評審位，錢少但加分', quick: ['評審 12 支短片，線上看片', '一場線上評審會議'], facts: ['內容：評審 12 支短片', '形式：線上看片，加一場線上會議', '酬勞：信裡沒寫'], first_step: '回覆邀請，確認檔期。' }),
   ];
 }
 
@@ -112,12 +112,12 @@ const today = () => { const d = new Date(), p = n => String(n).padStart(2, '0');
 const dayOff = n => { const d = new Date(Date.now() + n * D), p = x => String(x).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()); };
 // 案務示範卡：集集記進來的既有案，沒有建資料夾
 function workRows() {
-  const base = (o) => Object.assign(toBackend({ basket: 'personal', title: '', org: '示意資料', found_at: new Date(Date.now() - 10 * D).toISOString(), expires_at: null, found_by: 'Gig Gig', is_demo: true, why: '', quick: [], facts: [], warn: [] }),
+  const base = (o) => Object.assign(toBackend({ basket: 'personal', title: '', org: '晴日生活', found_at: new Date(Date.now() - 10 * D).toISOString(), expires_at: null, found_by: 'Gig Gig', is_demo: false, why: '', quick: [], facts: [], warn: [] }),
     { source_site: '既有案', folder_status: 'done', folder_path: '（既有案，沒有建資料夾）', decided_at: new Date(Date.now() - 10 * D).toISOString() }, o);
   return [
     base({ id: 'work-doing', status: 'doing', title: '某品牌形象短片導演（示意）', run_status: 'running', progress_note: '分鏡第二版寫好，等客戶回。', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 2 * H).toISOString(),
       progress_steps: [{ name: '讀客戶 brief', status: 'done' }, { name: '分鏡第一版', status: 'done' }, { name: '分鏡第二版', status: 'current', note: '等客戶回覆' }, { name: '拍攝', status: 'pending' }, { name: '剪接交片', status: 'pending' }], quote_amount: 120000, signed: true, deposit_amount: 36000, deposit_date: dayOff(-6), final_amount: 84000, final_due: dayOff(30), payment_terms: '簽約付三成，交片後 30 天付尾款',
-      career: { line: '個人導演', public_identity: '導演 Borry', status_gain: '中', status_gain_note: '品牌會在片尾掛導演名', est_hours: 60, tax_withheld: true, referrer: '朋友介紹', kim_judgment: '錢普通，但能放作品集。' } }),
+      career: { line: '個人導演', public_identity: '導演 林遠', status_gain: '中', status_gain_note: '品牌會在片尾掛導演名', est_hours: 60, tax_withheld: true, referrer: '朋友介紹', kim_judgment: '錢普通，但能放作品集。' } }),
     base({ id: 'work-delivered', status: 'delivered', title: 'AI 影片比賽代製（示意）', basket: 'other', quote_amount: 30000, delivery_date: dayOff(-2), delivered_at: new Date(Date.now() - 2 * D).toISOString(), expected_pay_date: dayOff(12), payment_terms: '交件後兩週匯款',
       career: { line: 'AI 影片與比賽', est_hours: 12, actual_hours: 15, tax_withheld: false } }),
     base({ id: 'work-paid', status: 'paid', title: '工作坊講師鐘點（示意）', basket: 'achievement', quote_amount: 8000, received_amount: 7200, delivery_date: dayOff(-20), delivered_at: new Date(Date.now() - 20 * D).toISOString(), paid_at: new Date(Date.now() - 5 * D).toISOString(),
@@ -125,7 +125,7 @@ function workRows() {
     base({ id: 'todo-1', status: 'new', basket: 'todo', title: '建一個報價單產生器（示意）', why: '每次報價都要重打，想要填幾個欄位就出 PDF。', source_site: '待辦', folder_status: 'none', folder_path: null }),
     base({ id: 'todo-2', status: 'doing', basket: 'todo', title: '把 IG 貼文排程接上 Notion（示意）', source_site: '待辦', folder_status: 'none', folder_path: null, run_status: 'running',
       progress_steps: [{ name: '查 IG API 能不能排程', status: 'done' }, { name: '寫串接', status: 'current' }, { name: '測一篇', status: 'pending' }], progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 20 * 60e3).toISOString() }),
-    base({ id: 'work-gone', status: 'dropped', drop_reason: 'skipped', title: '婚禮紀錄側拍（示意）', folder_status: 'none', folder_path: null, source_site: 'PRO360', drop_note: '日期跟另一案撞期' }),
+    base({ id: 'work-gone', status: 'dropped', drop_reason: 'skipped', title: '婚禮紀錄側拍（示意）', folder_status: 'none', folder_path: null, source_site: '接案城', drop_note: '日期跟另一案撞期' }),
   ];
 }
 
@@ -134,9 +134,9 @@ export function mockAdapter(modeStr) {
   let rows = (flags.has('empty') ? [] : build()).map(toBackend);
   if (flags.has('emptybasket')) rows = rows.filter(r => r.basket !== 'honor');
   if (flags.has('longname') && rows[0]) Object.assign(rows[0], { title: '臺南市安平區台江國家公園地區人物故事暨影像史料徵集計畫第二期委託專業服務案', short_title: '' });   // 驗長案名不跑版
-  if (rows[0] && !flags.has('xss')) rows[0].links = [{ kind: 'pay', label: '去領標付款', url: 'https://web.pcc.gov.tw/', amount: 'NT$ 200' }];   // 示範：還沒說要做也能領標
+  if (rows[0] && !flags.has('xss')) rows[0].links = [{ kind: 'pay', label: '去領標付款', url: 'https://example.com/', amount: 'NT$ 200' }];   // 示範：還沒說要做也能領標
   if (rows.length > 3 && !flags.has('xss')) Object.assign(rows[rows.length - 1], { status: 'closed', close_result: 'won', closed_at: new Date(Date.now() - 3 * D).toISOString(), decided_at: new Date(Date.now() - 20 * D).toISOString(),
-    folder_status: 'done', folder_name: '10-27_示意結案', links: [{ kind: 'pool', label: 'Pool（官方文件、標書、成品）', path: '/Users/borry/Desktop/示意/10-27_示意結案' }, { kind: 'review', label: '內審（製作過程）', path: '/Users/borry/Desktop/示意/10-27_示意結案/製作2026-10-27' }] });
+    folder_status: 'done', folder_name: '10-27_示意結案', links: [{ kind: 'pool', label: 'Pool（官方文件、標書、成品）', path: '/Users/me/案子/10-27_示意結案' }, { kind: 'review', label: '內審（製作過程）', path: '/Users/me/案子/10-27_示意結案/製作2026-10-27' }] });
   if (!flags.has('empty')) rows = rows.concat(workRows());   // 放在「示意結案」之後，免得被當成最後一張改成結案
   if (flags.has('xss') && rows[0]) {
     const bad = '<img src=x onerror="window.__xss=1">';
@@ -156,39 +156,42 @@ export function mockAdapter(modeStr) {
   // 今天頁的示範資料
   const badH = '<img src=x onerror="window.__xss=7">';
   const hub = { open: [
-      { id: 'h1', project: flags.has('xss') ? badH : '木星 TAPIN', question: flags.has('xss') ? badH : '產品段配樂不變速，只有 3 個接點在拍上，能不能接受？', detail: flags.has('xss') ? badH : '扣合那一下不在拍上。\n\n要對拍就得把這段變速到 120 BPM，音色會變。', kind: 'choice', asked_by: flags.has('xss') ? badH : '大器', origin: '巡查待辦', created_at: new Date(Date.now() - 5 * H).toISOString(),
+      { id: 'h1', project: flags.has('xss') ? badH : '藍鯨 NOVA', question: flags.has('xss') ? badH : '產品段配樂不變速，只有 3 個接點在拍上，能不能接受？', detail: flags.has('xss') ? badH : '扣合那一下不在拍上。\n\n要對拍就得把這段變速到 120 BPM，音色會變。', kind: 'choice', asked_by: flags.has('xss') ? badH : '大器', origin: '巡查待辦', created_at: new Date(Date.now() - 5 * H).toISOString(),
         options: [{ key: 'ok', label: flags.has('xss') ? badH : '接受，不變速', note: flags.has('xss') ? badH : '聽感自然', recommended: true }, { key: 'speed', label: '改成變速對拍' }] },
-      { id: 'h2', project: '文化部青年藝術補助', question: '線上申請系統要你本人登入送出', detail: '', kind: 'talk', link: flags.has('xss') ? 'javascript:window.__xss=8' : 'https://example.com/', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - 26 * H).toISOString(), options: [] }],
-    answered: [{ id: 'h0', project: '系統', question: '示範：之前回過的一題', kind: 'choice', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - 2 * D).toISOString(), options: [{ key: 'ok', label: '照你建議的做' }], status: 'answered', answer_key: 'ok', answer_label: '照你建議的做', answer_note: flags.has('xss') ? badH : '', answer_via: flags.has('xss') ? badH : 'LINE', answer_quote: flags.has('xss') ? badH : '照建議', answered_at: new Date(Date.now() - 20 * H).toISOString(), picked_up_at: new Date(Date.now() - 19 * H).toISOString() }],
-    jobs: [{ id: 'j1', agent: flags.has('xss') ? badH : '大器（Claude）', machine: 'Mac', title: flags.has('xss') ? badH : '木星 TAPIN 試看帶', status: 'waiting_mac', updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }],
-    events: [{ id: 1, at: new Date(Date.now() - 2 * H).toISOString(), actor: flags.has('xss') ? badH : '大器（Claude）', summary: flags.has('xss') ? badH : '總控台亮相交付，等你定名字、櫃台、開工' }],
-    beats: [{ name: flags.has('xss') ? badH : 'Mac 同步', machine: 'MacBook', note: '巡查待辦與交接帳同步', expect_every_s: 300, last_at: new Date(Date.now() - 2 * 60e3).toISOString(), late: false }, { name: '大器 LINE 收訊', machine: 'MacBook', note: '8789 埠有在聽', expect_every_s: 300, last_at: new Date(Date.now() - 3 * H).toISOString(), late: true }] };
+      { id: 'h2', project: '青年創作補助', question: '線上申請系統要你本人登入送出', detail: '', kind: 'talk', link: flags.has('xss') ? 'javascript:window.__xss=8' : 'https://example.com/', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - 26 * H).toISOString(), options: [] }],
+    answered: [{ id: 'h0', project: '生活', question: '週末外拍要不要改到週日', kind: 'choice', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - 2 * D).toISOString(), options: [{ key: 'ok', label: '照你建議的做' }], status: 'answered', answer_key: 'ok', answer_label: '照你建議的做', answer_note: flags.has('xss') ? badH : '', answer_via: flags.has('xss') ? badH : 'LINE', answer_quote: flags.has('xss') ? badH : '照建議', answered_at: new Date(Date.now() - 20 * H).toISOString(), picked_up_at: new Date(Date.now() - 19 * H).toISOString() }],
+    jobs: [{ id: 'j1', agent: flags.has('xss') ? badH : '大器（Claude）', machine: 'Mac', title: flags.has('xss') ? badH : '藍鯨 NOVA 試看帶', status: 'waiting_mac', updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }],
+    events: [{ id: 1, at: new Date(Date.now() - 2 * H).toISOString(), actor: flags.has('xss') ? badH : '大器（Claude）', summary: flags.has('xss') ? badH : '品牌短片分鏡第二版交出去了，等你看' }, { id: 2, at: new Date(Date.now() - 5 * H).toISOString(), actor: '金金', summary: '這週花得比平常少一成。12 月底現金會低於安全線，比賽代製那筆 3 萬尾款要盯緊，大筆的先不要買。' }],
+    beats: [{ name: flags.has('xss') ? badH : 'Mac 同步', machine: 'MacBook', note: '待辦與紀錄同步', expect_every_s: 300, last_at: new Date(Date.now() - 2 * 60e3).toISOString(), late: false }, { name: '大器 收訊', machine: 'MacBook', note: '訊息收件有在聽', expect_every_s: 300, last_at: new Date(Date.now() - 3 * H).toISOString(), late: true }] };
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }
   // v41 示範資料
   const iso = n => { const x = new Date(Date.now() + n * D); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
   const at = (n, h, m) => { const x = new Date(Date.now() + n * D); x.setHours(h, m || 0, 0, 0); return x.toISOString(); };
   const X = flags.has('xss') ? badH : null;
   const mgoals = [
-    { id: 'script', name: X || '完成一部長片劇本', why: X || '導演要走精緻路線。', due: iso(129), due_what: '初稿', unit: '場', kind: 'bar', now_val: 38, total: 90, expect: 46, label: '初稿', room: 'proj', bot: 'daqi', status: 'active', focus: true, next_step: X || '這週寫第 39 到 44 場。', src: '案子房間', auto: true, steps: [['故事大綱', 'd', '完成'], ['初稿', 'n', '38／90 場'], ['定稿', '', '']], demo: true, sort: 10, updated_at: new Date().toISOString() },
-    { id: 'crew', name: '進一個劇組待一檔', why: '劇組經驗。', due: iso(312), unit: '步', kind: 'pips', now_val: 0, total: 3, label: '走到', room: 'proj', bot: 'daqi', status: 'active', next_step: '還沒定下一步。', src: '自己打勾', steps: [['列出三個想跟的人', '', ''], ['約一個出來聊', '', ''], ['談到一個位置', '', '']], demo: true, sort: 30, updated_at: new Date(Date.now() - 40 * D).toISOString() },
-    { id: 'fund', name: '緊急預備金存到 6 個月', why: '撐得住才敢挑案子。', due: iso(404), unit: '個月', kind: 'bar', now_val: 2.1, total: 6, label: '存到', room: 'money', bot: 'kim', status: 'active', next_step: '發薪日撥進去。', demo: true, sort: 40, updated_at: new Date().toISOString() },
-    { id: 'move', name: '每週運動三次', why: '腰撐得住才拍得久。', due: null, unit: '次', kind: 'pips', now_val: 1, total: 3, label: '本週', room: 'life', bot: 'peng', status: 'active', next_step: '今天動一次。', week: null, demo: true, sort: 70, updated_at: new Date().toISOString() }];
+    { id: 'script', name: X || '完成一部長片劇本', why: X || '導演要走精緻路線。', due: iso(129), due_what: '初稿', unit: '場', kind: 'bar', now_val: 38, total: 90, expect: 46, label: '初稿', room: 'proj', bot: 'daqi', status: 'active', focus: true, next_step: X || '這週寫第 39 到 44 場。', src: '案子房間', auto: true, steps: [['故事大綱', 'd', '完成'], ['初稿', 'n', '38／90 場'], ['定稿', '', '']], demo: false, sort: 10, updated_at: new Date().toISOString() },
+    { id: 'crew', name: '進一個劇組待一檔', why: '劇組經驗。', due: iso(312), unit: '步', kind: 'pips', now_val: 0, total: 3, label: '走到', room: 'proj', bot: 'daqi', status: 'active', next_step: '還沒定下一步。', src: '自己打勾', steps: [['列出三個想跟的人', '', ''], ['約一個出來聊', '', ''], ['談到一個位置', '', '']], demo: false, sort: 30, updated_at: new Date(Date.now() - 40 * D).toISOString() },
+    { id: 'fund', name: '緊急預備金存到 6 個月', why: '撐得住才敢挑案子。', due: iso(404), unit: '個月', kind: 'bar', now_val: 2.1, total: 6, label: '存到', room: 'money', bot: 'kim', status: 'active', next_step: '發薪日撥進去。', demo: false, sort: 40, updated_at: new Date().toISOString() },
+    { id: 'move', name: '每週運動三次', why: '腰撐得住才拍得久。', due: null, unit: '次', kind: 'pips', now_val: 1, total: 3, label: '本週', room: 'life', bot: 'peng', status: 'active', next_step: '今天動一次。', week: null, demo: false, sort: 70, updated_at: new Date().toISOString() }];
   const mcal = [
-    { id: 'me:1', cal: 'me', title: X || 'E.木星 TAPIN 修正', start: at(0, 15), end: at(0, 19), all_day: false, location: X || '家裡' },
-    { id: 'co:1', cal: 'co', title: '【木星 TAPIN】試看帶回饋會議 @Borry', start: at(1, 14), end: at(1, 15), all_day: false, location: 'Google Meet', link: flags.has('xss') ? 'javascript:window.__xss=9' : 'https://example.com/' },
+    { id: 'me:1', cal: 'me', title: X || 'E.藍鯨 NOVA 修正', start: at(0, 15), end: at(0, 19), all_day: false, location: X || '家裡' },
+    { id: 'co:1', cal: 'co', title: '【藍鯨 NOVA】試看帶回饋會議 @我', start: at(1, 14), end: at(1, 15), all_day: false, location: 'Google Meet', link: flags.has('xss') ? 'javascript:window.__xss=9' : 'https://example.com/' },
     { id: 'me:2', cal: 'me', title: 'L.剪頭髮', start: at(2, 14, 30), end: at(2, 15, 30), all_day: false, location: '' },
-    { id: 'co:2', cal: 'co', title: '【投標截止】示意標案 @Borry', start: null, end: null, all_day: true, start_date: iso(3), end_date: iso(4) }];
+    { id: 'co:2', cal: 'co', title: '【投標截止】示意標案 @我', start: null, end: null, all_day: true, start_date: iso(3), end_date: iso(4) }];
   const mlife = [
     { id: 'l1', kind: 'wish', name: X || '乳清蛋白 2.2 kg', url: flags.has('xss') ? 'javascript:window.__xss=10' : 'https://example.com/whey', note: X || '巧克力口味', price: 1280, shop: '示意商城', status: 'active', created_at: new Date().toISOString() },
     { id: 'l2', kind: 'rout', name: X || '洗冷氣濾網', cycle_days: 30, last_date: iso(-41), status: 'active' },
     { id: 'l3', kind: 'rout', name: '換床單', cycle_days: 14, last_date: iso(-9), status: 'active' },
+    { id: 'l9', kind: 'rout', name: '澆陽台的花', cycle_days: 3, last_date: iso(-2), status: 'active' }, { id: 'l10', kind: 'rout', name: '剪頭髮', cycle_days: 35, last_date: iso(-30), status: 'active' }, { id: 'l11', kind: 'rout', name: '換牙刷', cycle_days: 90, last_date: iso(-60), status: 'active' },
+    { id: 'l12', kind: 'sup', name: '乳清蛋白', cat: '健身補充', need: true, last_date: iso(-25), status: 'active' }, { id: 'l13', kind: 'sup', name: '洗髮精', cat: '沐浴', need: false, last_date: iso(-12), status: 'active' }, { id: 'l14', kind: 'sup', name: '咖啡豆', cat: '超市補貨', need: false, last_date: iso(-6), status: 'active' },
+    { id: 'l15', kind: 'todo', name: '換機車機油', note: '上次是 8 月', status: 'active', created_at: new Date().toISOString() },
     { id: 'l4', kind: 'sup', name: X || '防曬乳', cat: '保養', need: true, last_date: iso(-50), status: 'active' },
     { id: 'l5', kind: 'sup', name: '洗面乳', cat: '保養', need: false, last_date: iso(-17), status: 'active' },
     { id: 'l6', kind: 'wish', name: '示意鏡頭 35mm', note: '拍長片用', price: 62000, shop: '示意相機店', status: 'active', created_at: new Date(Date.now() - 864e5).toISOString() },
-    { id: 'l7', kind: 'todo', name: X || '預約牙醫洗牙', note: '示意待辦', status: 'active', created_at: new Date().toISOString() },
+    { id: 'l7', kind: 'todo', name: X || '預約牙醫洗牙', note: '上次洗牙是半年前', status: 'active', created_at: new Date().toISOString() },
     { id: 'l8', kind: 'todo', name: '寄回保固卡', status: 'done', created_at: new Date(Date.now() - 2 * 864e5).toISOString() }];
-  const mmoney = { today: iso(0), cash: 117666, burn: 42000, income: 30000,
-    accounts: [{ name: X || '示意銀行', kind: 'bank', balance: 88459, spendable: true, suffix: '0328' }, { name: '示意預備金', kind: 'bank', balance: 60000, spendable: false }, { name: '示意證券 00692', kind: 'stock', balance: 52000, spendable: false }, { name: '示意信用卡', kind: 'credit_card', balance: -12480, spendable: false }],
+  const mmoney = { today: iso(0), cash: 86420, burn: 38500, income: 30000,
+    accounts: [{ name: X || '示意銀行', kind: 'bank', balance: 86420, spendable: true, suffix: '0328' }, { name: '示意預備金', kind: 'bank', balance: 45000, spendable: false }, { name: '台股 ETF 定期定額', kind: 'stock', balance: 36800, spendable: false }, { name: '示意信用卡', kind: 'credit_card', balance: -12480, spendable: false }],
     bills: [{ id: 1, name: X || '示意房租', amount: 17000, kind: 'expense', auto: false, account: '示意銀行', due_date: iso(3), days: 3, paid: false }, { id: 2, name: '示意電信費', amount: 699, kind: 'expense', auto: true, account: '示意銀行', due_date: iso(-2), days: -2, paid: true, paid_at: new Date().toISOString() }],
     recv: [{ id: 'work-delivered', title: X || '示意已交件案', status: 'delivered', amount: 30000, date: iso(8), terms: '交件後 30 天' }],
     big: [{ name: '示意壽險年繳', amount: 24600, date: iso(13), how: '年繳訂閱' }],
@@ -202,7 +205,7 @@ export function mockAdapter(modeStr) {
   const WEEK = 7 * D;
 
   if (flags.has('live')) setTimeout(() => {
-    rows.unshift(Object.assign(toBackend(build()[0]), { id: 'new-' + (++nextN), title: '某縣市觀光宣傳短片', org: '示意資料', is_demo: true, found_by: '皮皮（示意）', created_at: new Date().toISOString() }));
+    rows.unshift(Object.assign(toBackend(build()[0]), { id: 'new-' + (++nextN), title: '濱海小鎮觀光宣傳短片', org: '濱海鎮公所', is_demo: false, found_by: 'Gig Gig', created_at: new Date().toISOString() }));
     ping();
   }, 9000);
 
@@ -235,7 +238,7 @@ export function mockAdapter(modeStr) {
     async moneyTrend(n) { await wait(120); n = n || 12; const now = new Date(), inc = [52000, 61000, 48000, 70000, 55000, 66000, 58000, 72000, 64000, 50000, 41000, 18000], exp = [44000, 47000, 45000, 49000, 43000, 46000, 48000, 42000, 34000, 45000, 36000, 21000];
       const months = []; for (let k = n - 1; k >= 0; k--) { const d = new Date(now.getFullYear(), now.getMonth() - k, 1), j = 11 - k, i = inc[j] == null ? 0 : inc[j], e = exp[j] == null ? 0 : exp[j];
         months.push({ m: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), income: i, expense: e, saved: i - e, n: j < 0 ? 0 : 30 + j, partial: k === 0, before_data: j < 0 }) }
-      return { months, assets: 182000, liab_accounts: [{ name: '玉山信用卡', kind: 'credit_card', amount: 18600 }, { name: '跟家裡借的', kind: 'loan_in', amount: 30000 }],
+      return { months, assets: 182000, liab_accounts: [{ name: '晨星信用卡', kind: 'credit_card', amount: 18600 }, { name: '跟家裡借的', kind: 'loan_in', amount: 30000 }],
         installments: [{ name: '筆電 12 期', per: 4200, left: 5, amount: 21000, on_card: true }, { name: '機車 24 期', per: 3100, left: 9, amount: 27900, on_card: false }],
         liab_total: 76500, net_worth: 105500 } },
     // v46 示範：卡片編輯、封存、刪除（72 小時可救回）
@@ -256,7 +259,7 @@ export function mockAdapter(modeStr) {
     async botInbox() { await wait(60); return normInbox({ replies: msgs.filter(m => m.kind === 'bot'), waiting: msgs.filter(m => m.kind === 'user' && m.bot && m.bot !== 'daqi' && !msgs.some(x => x.kind === 'bot' && x.bot === m.bot && x.id > m.id)) }); },
     async say(id, body, bot) { await wait(250); sorry(); bot = bot || 'daqi'; const NM = { daqi: '大器', jiji: '集集', tata: '塔塔', peng: '朋朋', mon: '萌萌', din: '定定', kim: '金金' };
       const m = { id: msgs.length + 1, item_id: id || null, kind: 'user', bot, author: 'Borry', body, created_at: new Date().toISOString() }; msgs.push(m);
-      setTimeout(() => { msgs.push({ id: msgs.length + 1, item_id: id || null, kind: bot === 'daqi' ? 'daqi' : 'bot', bot, author: NM[bot], body: '（示範）收到：「' + body.slice(0, 30) + '」。真的版本會由' + (bot === 'daqi' ? ' Mac 上的大器' : NM[bot]) + '回覆。', created_at: new Date().toISOString() }); ping(); }, 2500); return m; },
+      setTimeout(() => { msgs.push({ id: msgs.length + 1, item_id: id || null, kind: bot === 'daqi' ? 'daqi' : 'bot', bot, author: NM[bot], body: '收到，「' + body.slice(0, 30) + '」我來處理，好了在這裡跟你說。', created_at: new Date().toISOString() }); ping(); }, 2500); return m; },
     async todoAdd(title) { await wait(250); sorry(); const r = Object.assign(workRows()[0], { id: 'todo-n' + (++nextN), basket: 'todo', status: 'new', title, source_site: '待辦', folder_status: 'none', folder_path: null, quote_amount: null, signed: null, deposit_amount: null, final_amount: null, payment_terms: '', career: {}, progress_steps: [], run_status: null, progress_note: '', created_at: new Date().toISOString() }); rows.push(r); return normalize(view(r)); },
     async workAdd(title) { await wait(250); sorry(); const r = Object.assign(workRows()[0], { id: 'work-n' + (++nextN), title, quote_amount: null, signed: null, deposit_amount: null, final_amount: null, payment_terms: '', career: {}, progress_steps: [], run_status: null, progress_note: '', is_demo: false, decided_at: new Date().toISOString() }); rows.push(r); return normalize(view(r)); },
     async scanRequest(basket) { await wait(300); sorry(); const b = { funding: 'fund', achievement: 'honor' }[basket] || basket; if (scans[b] && Date.now() - Date.parse(scans[b].requested_at) < 60e3) return { ok: true, throttled: true }; scans[b] = { status: 'sent', requested_at: new Date().toISOString() }; setTimeout(ping, 50); return { ok: true }; },
@@ -283,7 +286,7 @@ export function mockAdapter(modeStr) {
           const d = new Date(), pad = n => String(n).padStart(2, '0');
           r.folder_name = pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + '_' + r.title.replace(/[（）()\s]/g, '').slice(0, 8);
           setTimeout(() => { r.folder_status = 'building'; ping(); }, flags.has('folderslow') ? 4000 : 1200);
-          setTimeout(() => { r.folder_status = 'done'; r.folder_path = '（示意資料，沒有建資料夾）'; r.links = [{ kind: 'pool', label: 'Pool（官方文件、標書、成品）', path: '/Users/borry/Desktop/示意/11-16_示意案' }, { kind: 'review', label: '內審（製作過程）', path: '/Users/borry/Desktop/示意/11-16_示意案/製作2026-11-16' }, { kind: 'pay', label: '去領標付款', url: 'https://web.pcc.gov.tw/', amount: 'NT$ 200' }]; ping(); }, flags.has('folderslow') ? 12000 : 3000);
+          setTimeout(() => { r.folder_status = 'done'; r.folder_path = '/Users/me/案子/' + r.title.slice(0, 10); r.links = [{ kind: 'pool', label: 'Pool（官方文件、標書、成品）', path: '/Users/me/案子/11-16_示意案' }, { kind: 'review', label: '內審（製作過程）', path: '/Users/me/案子/11-16_示意案/製作2026-11-16' }, { kind: 'pay', label: '去領標付款', url: 'https://example.com/', amount: 'NT$ 200' }]; ping(); }, flags.has('folderslow') ? 12000 : 3000);
           break;
         }
         case 'work': applyWork(r, o.patch || {}); break;
@@ -307,7 +310,7 @@ export function mockAdapter(modeStr) {
           r.crawl_status = 'crawling'; r.crawl_error = null;
           setTimeout(() => {
             if (flags.has('crawlfail') || !r.source_url) { r.crawl_status = 'failed'; r.crawl_error = r.source_url ? '對方網站沒有回應，或擋掉了讀取' : '這張卡沒有來源網址'; }
-            else { r.crawl_status = 'done'; r.full_text = '# ' + r.title + '\n來源：' + (r.source_site || '') + '\n\n' + r.facts.join('\n') + '\n\n' + (r.warn.length ? '注意事項\n' + r.warn.join('\n') + '\n\n' : '') + '（示範用全文。真後端上線後，這裡會是從公告頁讀回來的原文。）'; }
+            else { r.crawl_status = 'done'; r.full_text = '# ' + r.title + '\n來源：' + (r.source_site || '') + '\n\n' + r.facts.join('\n') + '\n\n' + (r.warn.length ? '注意事項\n' + r.warn.join('\n') + '\n\n' : '') + '（以上是集集從公告頁讀回來的重點，完整條文以官方公告為準。）'; }
             ping();
           }, flags.has('crawlhang') ? 24 * H : flags.has('crawlslow') ? 16000 : flags.has('crawlfail') ? 1200 : 2200);
           break;
