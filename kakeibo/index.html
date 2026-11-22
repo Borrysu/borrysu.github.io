@@ -1215,6 +1215,9 @@ details.rep .rep-t{font-size:12px;color:var(--muted);font-weight:500;flex:none}
 .cper-h{margin:0 0 6px;font-size:15px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .cst{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);flex:none}
 .cst-due{color:var(--neg,#c0392b);border-color:currentColor}.cst-part{color:var(--warn,#b7791f);border-color:currentColor}.cst-paid{color:var(--pos,#2f855a);border-color:currentColor}
+.updrow{display:flex;width:100%;min-height:44px;align-items:center;justify-content:space-between;gap:8px;padding:0 4px 0 52px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:12px;color:var(--muted);text-align:left}
+.updrow .updl{display:inline;font-size:12px}
+.updrow .updgo{flex:none;font-weight:600;color:var(--ink2)}
 </style>
 </head>
 <body>
@@ -2431,9 +2434,9 @@ function acctExp(a){const hs=HOLD.filter(h=>h.ac===a.id),x=[acctSubLine(a)].conc
 function acctRow(a,i,n,plain){const cu=S.asort==='custom'&&!plain,op=!cu&&!plain&&S.aopen.has(a.id);
   return '<div class="row arow" data-flip="ac-'+a.id+'"'+(plain?'':' data-aid="'+a.id+'"')+'>'
     +(cu?'<button class="grip" data-grip="'+a.id+'" aria-label="按住拖動「'+esc(a.n)+'」調整順序。也可以用右邊的上移、下移" title="按住拖動調整順序">'+GRI+'</button>':'')
-    +'<button class="rowb" data-act="sheet" data-k="acct" data-id="'+a.id+'">'+(cu?'':'<span class="g'+(a.icon?' emo':'')+'" aria-hidden="true">'+(a.icon?esc(a.icon):KN(a.k)[2])+'</span>')+'<span class="row-m"><b>'+esc(a.n)+(a.arch?'<span class="tag">停用</span>':a.rec?'<span class="tag">待對帳</span>':'')+'</b><small>'+esc(acctSubLine(a))+'</small>'+updLine(a)+'</span>'+amt(a.bal,{c:a.bal<0?'neg':''})+(cu?'':CHEV)+'</button>'
+    +'<button class="rowb" data-act="sheet" data-k="acct" data-id="'+a.id+'">'+(cu?'':'<span class="g'+(a.icon?' emo':'')+'" aria-hidden="true">'+(a.icon?esc(a.icon):KN(a.k)[2])+'</span>')+'<span class="row-m"><b>'+esc(a.n)+(a.arch?'<span class="tag">停用</span>':a.rec?'<span class="tag">待對帳</span>':'')+'</b><small>'+esc(acctSubLine(a))+'</small></span>'+amt(a.bal,{c:a.bal<0?'neg':''})+(cu?'':CHEV)+'</button>'
     +(cu?'<button class="mv" data-act="mv" data-id="'+a.id+'" data-c="-1" aria-label="把'+esc(a.n)+'往上移"'+(i===0?' disabled':'')+'>↑</button><button class="mv" data-act="mv" data-id="'+a.id+'" data-c="1" aria-label="把'+esc(a.n)+'往下移"'+(i===n-1?' disabled':'')+'>↓</button>'
-      :plain?'':updBtn(a)+'<button class="xp" data-act="xp" data-id="'+a.id+'" aria-expanded="'+op+'" aria-label="「'+esc(a.n)+'」的開關與說明：計入資產、可動用">開關'+XPI+'</button>')+'</div>'+(op?acctExp(a):'')}
+      :plain?'':'<button class="xp" data-act="xp" data-id="'+a.id+'" aria-expanded="'+op+'" aria-label="「'+esc(a.n)+'」的開關與說明：計入資產、可動用">開關'+XPI+'</button>')+'</div>'+(plain?'':updRow(a))+(op?acctExp(a):'')}
 const holdRow=h=>'<button class="row" data-act="sheet" data-k="holding" data-id="'+h.id+'"><span class="g" aria-hidden="true">股</span><span class="row-m"><b>'+h.sym+' '+h.name+'</b><small>'+fmt(h.sh)+' 股 · '+(h.live&&!h.live.fallback?qLine(h):h.date+' 收盤 '+h.px)+'</small></span>'+amt(h.mv)+CHEV+'</button>';
 function numBtn(k,label,v,o){o=o||{};return '<button class="card tile" data-act="sheet" data-k="comp" data-id="'+k+'"><span class="lab">'+label+' ›</span><span class="'+(o.cls||'mid')+'">'+amt(v,{c:o.neg?'neg':'',abs:o.neg})+'</span>'+(o.sub?'<span class="sub">'+o.sub+'</span>':'')+'</button>'}
 function acctPage(d){
@@ -3849,12 +3852,12 @@ function rerenderNow() { if (sheet.classList.contains('on')) renderSheetBody(); 
 function acctUpdSend(id) {
   if (id === 'all') {
     var L = S.accts.filter(function (a) { return !a.arch && !a.sys; });
-    var text = '[面板請塔塔全部更新] 請登入每個帳戶的網銀或 App 實查目前真實餘額（信用卡查未出帳與帳單），查完逐一回報並更新，附查到的時間。查不到的帳戶就說查不到，不要用推算的。帳上：' + L.map(function (a) { return a.n + ' NT$' + fmt(a.bal) + '（上次實查 ' + (asofText(a) || '沒有資料') + '）'; }).join('、');
+    var text = '[面板請塔塔全部更新] 請登入每個帳戶的網銀或 App 實查目前真實餘額（信用卡查未出帳與帳單），查完逐一回報並更新，附查到的時間。查不到的帳戶就說查不到，不要用推算的。帳上：' + L.map(function (a) { return a.n + (a.bal < 0 ? ' 欠 NT$' : ' NT$') + fmt(Math.abs(a.bal)) + '（上次實查 ' + (asofText(a) || '沒有資料') + '）'; }).join('、');
     if (text.length > 495) text = text.slice(0, 494) + '…';
     var t = thSendDirect('acct:all', '帳戶總覽', '全部請塔塔更新', text); if (t) { t.upd = 1; thSave(); L.forEach(function (a) { updMark(a.id); }); rerenderNow(); } return;
   }
   var a = acctBy(id); if (!a) return;
-  var t2 = thSendDirect('acct:' + a.id, '帳戶 ' + a.n, '請塔塔更新「' + a.n + '」', updText(a.n, 'NT$' + fmt(a.bal), asofText(a), a.k === 'credit_card'));
+  var t2 = thSendDirect('acct:' + a.id, '帳戶 ' + a.n, '請塔塔更新「' + a.n + '」', updText(a.n, (a.bal < 0 ? '欠 NT$' : 'NT$') + fmt(Math.abs(a.bal)), asofText(a), a.k === 'credit_card'));
   if (t2) { t2.upd = 1; thSave(); updMark(a.id); rerenderNow(); }
 }
 function thOnFresh(fresh) { if (fresh.some(function (t) { return t.upd; })) { try { kkReload(); } catch (e) {} } }
@@ -3898,6 +3901,9 @@ function cardSegText(a, s, k, v) {
   return '[面板：老大繳了卡費] 「' + a.n + '」' + lab + ' 繳了 NT$' + fmt(v) + '，請核對銀行後記帳並更新。';
 }
 function askAmount(what) { var v = window.prompt(what + '（只填數字）'); if (v == null) return null; var n = Number(String(v).replace(/[,\s，]/g, '')); if (!(n > 0)) { toast('要填大於 0 的數字'); return null; } return Math.round(n); }
+/* 帳戶列下方一條：上次實查＋請塔塔更新（不擠帳戶名） */
+function updRow(a) { if (a.sys || a.arch) return ''; var t = a.raw && a.raw.balance_as_of, ag = t ? updAgo(t) : null, q = UPD[a.id], pend = q && (!t || thMs(t) < q);
+  return '<button class="updrow' + (!t || ag > 3 ? ' old' : '') + '" data-act="acctUpd" data-id="' + a.id + '" aria-label="請塔塔更新「' + esc(a.n) + '」"><span class="updl' + (!t || ag > 3 ? ' old' : '') + '">上次實查 ' + (t ? asofText(a) : '沒有資料') + (pend ? '・已請塔塔去查' : '') + '</span><span class="updgo">↻ 請塔塔更新</span></button>'; }
 
 syncSkin();remountHd();
 if(KEY.length>=20&&kkCacheLoad()){kkApply();KD.loaded=true;S.loading=false}

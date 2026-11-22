@@ -1239,6 +1239,8 @@ details.kk-more[open]>summary::after{transform:rotate(-90deg)}
 .cper-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:6px}
 .cst{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);flex:none}
 .cst-due{color:var(--bad);border-color:currentColor}.cst-part{color:var(--warn,#b7791f);border-color:currentColor}.cst-paid{color:var(--good);border-color:currentColor}
+.updb{flex:none;width:44px;height:44px;display:grid;place-items:center;color:var(--muted);font-size:18px}
+.acr .updl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 </style></head><body data-skin="6" data-theme="light">
 <a class="skip" href="#scroll">跳到內容</a>
@@ -4287,7 +4289,7 @@ function thOrgE(c) {
 }
 function thCtxE(c) {
   if (!c) return '';
-  if (c.type === 'account' && c.id != null) { var a = acctId(c.id); if (a) return '（關於帳戶：' + a.name + '，餘額 ' + (a.computed_balance == null ? '待對帳' : 'NT$' + nt(a.computed_balance)) + '，' + kindName(a.kind) + '）'; }
+  if (c.type === 'account' && c.id != null) { var a = acctId(c.id); if (a) return '（關於帳戶：' + a.name + '，餘額 ' + (a.computed_balance == null ? '待對帳' : (Number(a.computed_balance) < 0 ? '欠 NT$' : 'NT$') + nt(Math.abs(Number(a.computed_balance)))) + '，' + kindName(a.kind) + '）'; }
   if (c.type === 'acctAll') { var T = D.totals || {}; return '（關於：全部帳戶，可動用 NT$' + nt(T.spendable_cash || 0) + '，淨資產 NT$' + nt(T.net_worth || 0) + '）'; }
   return '';
 }
@@ -4443,11 +4445,11 @@ function eAsof(a) { return a.balance_as_of ? thTime(a.balance_as_of) : null; }
 function eUpdLine(a) { if (a.is_system || a.archived) return ''; var t = a.balance_as_of, ag = t ? updAgo(t) : null, q = UPD[a.id], pend = q && (!t || thMs(t) < q); return '<div class="updl' + (!t || ag > 3 ? ' old' : '') + '">上次實查：' + (t ? eAsof(a) : '沒有資料') + (pend ? '・已請塔塔去查' : '') + '</div>'; }
 function eUpdSend(id) {
   if (id === 'all') { var L = (D.accounts || []).filter(function (a) { return !a.archived && !a.is_system; });
-    var text = '[面板請塔塔全部更新] 請登入每個帳戶的網銀或 App 實查目前真實餘額（信用卡查未出帳與帳單），查完逐一回報並更新，附查到的時間。查不到的帳戶就說查不到，不要用推算的。帳上：' + L.map(function (a) { return a.name + ' ' + (a.computed_balance == null ? '待對帳' : 'NT$' + nt(a.computed_balance)) + '（上次實查 ' + (eAsof(a) || '沒有資料') + '）'; }).join('、');
+    var text = '[面板請塔塔全部更新] 請登入每個帳戶的網銀或 App 實查目前真實餘額（信用卡查未出帳與帳單），查完逐一回報並更新，附查到的時間。查不到的帳戶就說查不到，不要用推算的。帳上：' + L.map(function (a) { return a.name + ' ' + (a.computed_balance == null ? '待對帳' : (Number(a.computed_balance) < 0 ? '欠 NT$' : 'NT$') + nt(Math.abs(Number(a.computed_balance)))) + '（上次實查 ' + (eAsof(a) || '沒有資料') + '）'; }).join('、');
     if (text.length > 495) text = text.slice(0, 494) + '…';
     var t = eSend('acct:all', '帳戶總覽', '全部請塔塔更新', text); if (t) { t.upd = 1; thSave(); L.forEach(function (a) { updMark(a.id); }); render(); } return; }
   var a = acctId(Number(id)); if (!a) return;
-  var t2 = eSend('acct:' + a.id, '帳戶 ' + a.name, '請塔塔更新「' + a.name + '」', updText(a.name, a.computed_balance == null ? '待對帳' : 'NT$' + nt(a.computed_balance), eAsof(a), a.kind === 'credit_card'));
+  var t2 = eSend('acct:' + a.id, '帳戶 ' + a.name, '請塔塔更新「' + a.name + '」', updText(a.name, a.computed_balance == null ? '待對帳' : (Number(a.computed_balance) < 0 ? '欠 NT$' : 'NT$') + nt(Math.abs(Number(a.computed_balance))), eAsof(a), a.kind === 'credit_card'));
   if (t2) { t2.upd = 1; thSave(); updMark(a.id); if (DET.length) drawDet(true); render(); }
 }
 function thOnFresh(fresh) { if (fresh.some(function (t) { return t.upd; })) { try { load({ force: true }); } catch (e) {} } }
@@ -4508,7 +4510,7 @@ renderAssets = function () {
   var xs = document.querySelectorAll('#tab_assets .xp');
   for (var i = 0; i < xs.length; i++) { var g = xs[i].closest('[data-gid]'); if (!g || xs[i].querySelector('[data-eupd]')) continue; var a = acctId(Number(g.getAttribute('data-gid'))); if (!a) continue; var ask = xs[i].querySelector('[data-dask]'); var h = eUpdLine(a) + eUpdBtn(a.id); if (ask) ask.insertAdjacentHTML('afterend', h); else xs[i].insertAdjacentHTML('beforeend', h); }
   var rows = document.querySelectorAll('#tab_assets .acr[data-aid]');
-  for (var j = 0; j < rows.length; j++) { var r = rows[j]; if (r.querySelector('.updl')) continue; var ac = acctId(Number(r.getAttribute('data-aid'))); if (!ac || ac.is_system || ac.archived) continue; var t1 = r.querySelector('.t1'); if (t1) t1.insertAdjacentHTML('afterend', eUpdLine(ac)); }
+  for (var j = 0; j < rows.length; j++) { var r = rows[j]; if (r.querySelector('.updl')) continue; var ac = acctId(Number(r.getAttribute('data-aid'))); if (!ac || ac.is_system || ac.archived) continue; var t1 = r.querySelector('.t1'); if (t1) t1.insertAdjacentHTML('afterend', eUpdLine(ac)); var ln = r.closest('.line'); if (ln && !ln.querySelector('.updb')) { var inf = ln.querySelector('.inf,.mv'); var bh = '<button type="button" class="updb" data-eupd="' + ac.id + '" aria-label="請塔塔更新「' + esc(ac.name) + '」" title="請塔塔更新"><span aria-hidden="true">↻</span></button>'; if (inf) inf.insertAdjacentHTML('beforebegin', bh); else ln.insertAdjacentHTML('beforeend', bh); } }
 };
 document.addEventListener('click', function (e) {
   if (!e.target.closest) return; var u = e.target.closest('[data-eupd]'); if (u) { e.stopPropagation(); eUpdSend(u.getAttribute('data-eupd')); return; }
