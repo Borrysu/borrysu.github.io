@@ -1803,7 +1803,7 @@ window.__nlParse=nlParse;window.__nl=()=>({page:S.page,sheet:S.sheet,miss:S.nl&&
 ['dec','jobs','events','beats','proj','todo','arch','opp','subs','rout','sup','deleted','wish','orders','bills','due'].forEach(k=>{DB[k]=[]});
 CAL.length=0;GL.list=[];GL.focus=null;MZ.recv=[];MZ.big=[];MZ.dec=[];Object.keys(DT).forEach(k=>{delete DT[k]});
 ['kim','mon','din','jiji','tata','peng','daqi'].forEach(b=>{CH[b]=[]});
-S.layout=2;S.skin=6;S.st='loading';S.bound=true;   // bound=true 只為了讓生活房間標頭顯示 FRESH.peng（還沒接上），綁定流程沒有後端、畫面不出現
+S.layout=2;S.skin=6;S.st='loading';S.bound=false;   // v39：生活照設計稿顯示「朋朋還沒綁定」與各空狀態按鈕；綁定與新增沒有後端，按了出現「還沒接上」
 const LV={api:null,A:null,mode:'',items:[],hub:null,money:null,moneyErr:'',scan:{},at:0,net:'loading',nokey:false,forced:false,hist:{},arch:[],thread:'',sig:'',dirty:false};
 const LMD=t=>{const d=new Date(t);return (d.getMonth()+1)+'/'+d.getDate()};
 const LHM=t=>{const d=new Date(t);return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0')};
@@ -1857,7 +1857,7 @@ function applyData(){const it=LV.items;
  DB.todo=it.filter(c=>c.basket==='todo'&&c.status==='new').map(mapTodo);
  DB.arch=LV.arch.map(mapArch);
  const h=LV.hub||{open:[],jobs:[],events:[],beats:[]};
- DB.dec=h.open.map(mapDec);DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
+ DB.dec=h.open.map(mapDec);Object.keys(PD).forEach(k=>{delete PD[k]});DB.dec.forEach(d=>{const p=DB.proj.find(x=>x.title===d.proj||x.short===d.proj);if(p)PD[d.id]=p.id});DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
  DB.subs=LV.money?LV.money.items.filter(s=>s.status!=='cancel'||s.cancelBy).map(mapSub).sort((a,b)=>a.in-b.in):[];
  const t=LV.at?LHM(LV.at):'';FRESH.daqi=LV.forced?'示範資料':t?t+' 更新':'讀取中';
  const ls=lastScan();FRESH.jiji=ls?LHM(ls.at)+' 整理':'還沒掃描過';FRESH.tata=LV.money?'訂閱 '+t+' 讀取':'還沒接上帳戶';FRESH.peng='還沒接上';
@@ -1903,13 +1903,17 @@ ACT.pastekey=()=>{let v='';try{v=prompt('貼上金鑰或老大專屬網址')||''
 
 /* ---------- 首頁 ---------- */
 {const _h=homeL2;homeL2=function(){return _h().replace(/11 月 22 日　週日/g,esc(dateTxt())).replace(/午安，老大。/g,esc(greet()))}}
-todayStrip=function(){if(S.st==='loading'||S.st==='error')return '';
- return `<section class="sec tday">${sh('','今天行程','')}<div class="card lcard"><p>行事曆還沒接上</p><small>接上之後，今天的行程會一張一張排在這裡。</small></div></section>`};
+todayStrip=function(){if(S.st==='loading'||S.st==='error')return '';   // v39：照設計稿留「看全部」與「＋ 新增行程」
+ return `<section class="sec tday">${sh('','今天行程','',moreB('看全部','page','cal'))}<div class="card lcard"><p>行事曆還沒接上</p></div><div class="mrow tdnew">${mb('＋ 新增行程','sheet','calnew')}</div></section>`};
+calPage=function(){return `<div class="page-in"><div class="phead">${B('‹ 返回','back',null,'ghost',' id="pBack"')}</div><h1 class="pt">行事曆</h1>
+ <div class="seg" role="group" aria-label="怎麼看">${[['day','日'],['week','週（往後 14 天）']].map(x=>`<button aria-pressed="${(S.calv||'week')===x[0]}" data-act="calv" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>
+ <div class="seg" role="group" aria-label="看哪邊">${[['all','全部'],['me','只看個人'],['co','只看公司']].map(x=>`<button aria-pressed="${(S.calf||'all')===x[0]}" data-act="calf" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>
+ <div class="btns">${B('＋ 新增行程','sheet','calnew','pri')}${mb('規則 ›','sheet','calrules')}</div><div class="card lcard" style="margin-top:12px"><p>行事曆還沒接上</p></div></div>`};
 goalCard=function(){if(S.st==='loading'||S.st==='error')return '';delete CV.goal;
  return `<div class="room groomh lgoal" data-z="goal"><div class="rgo"><span class="rh">目標</span><span class="rs">目標還沒接上</span></div>${bigF('din','goal')}</div>`};
 goalStrip=goalCard;
 goalSlides=function(z){return S.st==='ok'&&(z==='proj'||z==='opp'||z==='life')?[{id:'gnone',name:'目標',html:`<p class="mzhl cvhl">目標還沒接上</p>`}]:[]};
-roomGoals=()=>'';gcNote=()=>'';projSync=()=>'';autoFor=()=>null;
+roomGoals=()=>'';gcNote=()=>'';projSync=()=>'';
 monthSelf=()=>subs().filter(s=>s.payer==='自付').reduce((a,s)=>a+(s.mo||0),0);
 {const _z=zsum;zsum=function(z){const s=_z(z);
  if(z==='opp'){s.b='';const a=opps('all');s.s=a.length?`最急：${a[0].org||a[0].title}，${a[0].due}`:'現在沒有新機會'}
@@ -1957,17 +1961,18 @@ ACT.dive=id=>oppDo(id,'dive','已請集集讀完整公告，讀完會放進「�
  const c=o.raw||{},fd=c.folderStatus==='done'?'案子資料夾建好了':c.folderStatus&&c.folderStatus!=='none'?'建資料夾中':'';
  return shHead(esc(o.title))+`<dl class="kv"><div><dt>金額</dt><dd>${esc(o.amt)}</dd></div><div><dt>時間</dt><dd>${esc(o.st==='snoozed'?o.snz:o.due)}</dd></div><div><dt>來源</dt><dd>${esc(o.org)}・${BASK[o.b]}</dd></div></dl>
  ${o.why?`<p class="h4">集集的判斷</p><p>${esc(o.why)}</p>`:''}${o.facts.length?`<p class="h4">重點</p><ul class="ul">${o.facts.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>`:''}${o.warn.length?`<p class="h4">要注意</p><ul class="ul">${o.warn.map(f=>`<li>▲ ${esc(f)}</li>`).join('')}</ul>`:''}
- ${fd?`<p class="note">${esc(fd)}</p>`:''}${aifs([aiF('jiji','opp:'+o.id,o.took?'建好了':'')])}<div class="mrow">${o.st==='snoozed'?mb('↺ 放回清單','unsnooze',o.id):mb('⏸ 暫存','snooze',o.id)}${mb('🗑 刪掉','del',o.id)}${c.folderStatus==='none'||!c.folderStatus?mb('✓ 要做，建資料夾','build',o.id):''}${mb('完整公告 ›','page','oppfull:'+o.id)}</div>`}}
+ ${fd?`<p class="note">${esc(fd)}</p>`:''}${aifs([aiF('jiji','opp:'+o.id,o.took?'建好了':fd==='建資料夾中'?'建資料夾中':'')])}<div class="mrow">${o.st==='snoozed'?mb('↺ 放回清單','unsnooze',o.id):mb('⏸ 暫存到明天','snooze',o.id)}${mb('🗑 刪掉','del',o.id)}${mb('完整公告 ›','page','oppfull:'+o.id)}</div>`}}
 {const _p=pageHTML;pageHTML=function(){const a=S.page.split(':');if(a[0]!=='oppfull')return _p();const o=DB.opp.find(x=>x.id===a[1]);
  let h=`<div class="page-in"><div class="phead">${B('‹ 返回','back',null,'ghost',' id="pBack"')}</div>`;if(!o)return h+emptyBox('這張機會不在了','',B('回機會清單','back',null,'pri'))+'</div>';
  const c=o.raw||{},full=LV.full&&LV.full[o.id];
  h+=`<div class="meta" style="margin-top:8px">${chip(o.due,o.days<=4)}<span class="lbl">${BASK[o.b]}・${esc(o.org)}</span></div><h1 class="pt">${esc(o.title)}</h1><dl class="kv"><div><dt>金額</dt><dd>${esc(o.amt)}</dd></div><div><dt>時間</dt><dd>${esc(o.due)}</dd></div></dl>`;
- h+=`<p class="h4">完整公告</p>`+(full?`<div class="lfull">${esc(full).replace(/\n/g,'<br>')}</div>`:c.crawlStatus==='running'||c.crawlStatus==='queued'?LNONE('集集讀公告中，讀完會出現在這裡。'):`${LNONE(c.hasFullText?'讀取中…':'還沒讀完整公告。')}${c.hasFullText?'':`<div class="mrow">${mb('請集集讀完整公告','dive',o.id)}</div>`}`);
+ h+=`<p class="h4">完整公告</p>`+(full?`<div class="lfull">${esc(full).replace(/\n/g,'<br>')}</div>`:c.crawlStatus==='running'||c.crawlStatus==='queued'?LNONE('集集讀公告中，讀完會出現在這裡。'):LNONE(c.hasFullText?'讀取中…':'還沒讀完整公告。'));
+ const hs=LV.hist[o.id];if(hs&&hs.length)h+=`<p class="h4">紀錄</p><ul class="tl">${hs.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`;
  if((c.attachments||[]).length)h+=`<p class="h4">附件</p><ul class="ul">${c.attachments.map(x=>`<li><a href="${esc(LWEB(x.url))}" target="_blank" rel="noopener noreferrer">${esc(x.name||'附件')}</a></li>`).join('')}</ul>`;
  return h+`<div class="btns">${o.url?B('打開官方公告 ↗','ext',o.id):''}</div>${aifs([aiF('jiji','opp:'+o.id,o.took?'建好了':'')])}</div>`}}
 {const _pg=ACT.page;ACT.page=function(id){const r=_pg.apply(this,arguments);const a=String(id).split(':');
  if(a[0]==='oppfull'){LV.full=LV.full||{};const o=DB.opp.find(x=>x.id===a[1]);if(o&&o.raw.hasFullText&&!LV.full[a[1]])LV.api.get(a[1]).then(c=>{if(c&&c.detailText){LV.full[a[1]]=c.detailText;render('keep')}}).catch(()=>{})}
- if(a[0]==='proj'&&!LV.hist[a[1]]&&LV.api.history)LV.api.history(a[1]).then(hs=>{LV.hist[a[1]]=hs.map(e=>`${LMD(e.at)} ${LHM(e.at)}　${e.actor}：${e.action}`);const p=DB.proj.find(x=>x.id===a[1]);if(p)p.hist=LV.hist[a[1]];render('keep')}).catch(()=>{});
+ if((a[0]==='proj'||a[0]==='oppfull')&&!LV.hist[a[1]]&&LV.api.history)LV.api.history(a[1]).then(hs=>{LV.hist[a[1]]=hs.map(e=>`${LMD(e.at)} ${LHM(e.at)}　${e.actor}：${e.action}`);const p=DB.proj.find(x=>x.id===a[1]);if(p)p.hist=LV.hist[a[1]];render('keep')}).catch(()=>{});
  return r}}
 
 /* ---------- 案子 ---------- */
@@ -1978,20 +1983,43 @@ pxOf=function(p){const c=p.raw||{},dates=[],money=[],files=[];
  if(c.earnings&&c.earnings.net!=null)money.push(['實拿',nt(c.earnings.net)+(c.earnings.hourly!=null?`，時薪 ${nt(c.earnings.hourly)}`:'')]);if(!money.length)money.push(['狀態',p.money]);
  if(c.folderPath)files.push(['案子資料夾',c.folderPath]);(c.links||[]).forEach(l=>files.push([l.label||({pool:'Pool（素材與專案檔）',review:'內審（給你看的版本）',pay:'付款',other:'連結'}[l.kind]),l.path||l.url]));
  return {client:c.org||'沒寫',doNext:p.next,block:c.progressBlocker||(p.g==='delivered'?'等對方付款':'沒有卡住'),left:p.due,leftSub:'',dates,money,team:[[p.who,'負責'],['你','拍板']],files}};
-{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj;if(s!=='todo')return _zp();
- const h=_zp(),i=h.indexOf('<section class="sec"><h2 class="vh">待辦</h2>');if(i<0)return h;
- return h.slice(0,i)+`<section class="sec"><h2 class="vh">待辦</h2><div class="stack stg">${DB.todo.map(t=>`<article class="card cardx" data-card="${esc(t.id)}"><div class="meta">${chip(t.st)}</div><h3>${esc(t.title)}</h3>${t.next?`<p>${esc(t.next)}</p>`:''}${t.run?'':`<div class="mrow">${mb('▶ 去執行','run',t.id)}</div>`}</article>`).join('')}</div></section>`}}
-{const _ms=mineSheet;mineSheet=function(id){const i=id.indexOf(':'),k=id.slice(0,i),x=id.slice(i+1);if(k!=='proj')return _ms(id);
- const p=DB.proj.find(q=>q.id===x);if(!p)return shHead('這件不在了');const st=p.raw.status;let r='';
+{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj;if(s==='proj')return _zp();   // v39：待辦、封存卡照設計稿（標籤、標題、一句話），舊版正式功能收進「⋯」
+ const h=_zp(),k=s==='todo'?'待辦':'封存',i=h.indexOf(`<section class="sec"><h2 class="vh">${k}</h2>`);if(i<0)return h;const a=DB[s];
+ return h.slice(0,i)+`<section class="sec"><h2 class="vh">${k}</h2><div class="stack stg">${a.map(t=>`<article class="card cardx" data-card="${esc(t.id)}">${mineB(s+':'+t.id,t.title)}<div class="meta">${chip(t.st)}</div><h3>${esc(t.title)}</h3>${t.next?`<p>${esc(t.next)}</p>`:''}</article>`).join('')}</div></section>`}}
+const swNC=()=>`<div class="mi msw"><div class="sync"><span class="st">同步到行事曆（還沒接上）</span><button class="swi" role="switch" aria-checked="false" aria-label="同步到行事曆" data-act="nc" data-id="行事曆還沒接上"></button></div></div>`;
+{const _ms=mineSheet;mineSheet=function(id){const i=id.indexOf(':'),k=id.slice(0,i),x=id.slice(i+1);
+ if(k==='opp'){const o=DB.opp.find(q=>q.id===x);if(!o)return shHead('這張機會不在了');const c=o.raw||{};   // 設計稿：暫存或放回、刪掉；舊版的「要做，建資料夾」收在這裡
+  return _ms(id).replace(/<\/div>$/,(c.folderStatus==='none'||!c.folderStatus?mi('✓','要做，建案子資料夾','build',x):'')+'</div>')}
+ if(k==='todo'){const t=DB.todo.find(q=>q.id===x);if(!t)return shHead('這件不在了');return shHead(esc(t.title))+`<div class="mlist">${t.run?mi('✓',esc(t.st),'nc','已經交給大器了，進度會寫回這張卡'):mi('▶','去執行','run',x)}</div>`}
+ if(k==='arch'){const t=DB.arch.find(q=>q.id===x);if(!t)return shHead('這件不在了');return shHead(esc(t.title))+`<div class="mlist">${mi('↶','放回進行中','preopen',x)}${mi('🗑','徹底刪除（不進封存區）','ppurge',x)}</div>`}
+ if(k==='pclose'){const p=DB.proj.find(q=>q.id===x);if(!p)return shHead('這件不在了');return shHead('結案：'+esc(p.title))+`<div class="mlist">${Object.keys(PCR).map(r=>mi('✓',PCR[r],'pclosedo',x+'|'+r)).join('')}</div>`}
+ if(k!=='proj')return _ms(id);
+ const p=DB.proj.find(q=>q.id===x);if(!p)return shHead('這件不在了');const st=p.raw.status,done=p.cur>=p.steps.length;
+ let r=(done?'':mi('✓',`「${esc(p.steps[p.cur])}」做完了`,'mstep',x))+(p.cur>0?mi('↶','退回上一步','mstepb',x):'')+mi('📅','改日期','mdate',x)+swNC();   // 設計稿四項
  if(st==='doing')r+=mi('✓','已交件，等收款','pdeliver',x);if(st==='delivered')r+=mi('✓','已收款','ppaid',x)+mi('↶','退回進行中','pback',x);if(st==='paid')r+=mi('↶','退回等收款','pback2',x);
- r+=mi('›','看詳情','page','proj:'+x)+mi('💬','跟大器說這件','talk',x);return shHead(esc(p.title))+`<div class="mlist">${r}</div>`}}
+ r+=mi('▣','結案，收進封存','sheet','mine:pclose:'+x);
+ return shHead(esc(p.title))+`<div class="mlist">${r}</div>`}}
 async function projDo(id,action,o,msg){closeThen(async()=>{try{const c=await LV.api.act(id,action,o||{});if(c){const i=LV.items.findIndex(x=>x.id===id);if(i>-1)LV.items[i]=c}LV.sig='';paint();toast(msg);reload()}catch(e){toast('沒有成功：'+LERR(e))}})}
 ACT.pdeliver=id=>projDo(id,'deliver',null,'標成已交件，收進「等收款」');
 ACT.ppaid=id=>projDo(id,'paid',{patch:{}},'標成已收款');
 ACT.pback=id=>projDo(id,'back',{to:'doing'},'退回進行中');
 ACT.pback2=id=>projDo(id,'back',{to:'delivered'},'退回等收款');
 ACT.run=id=>projDo(id,'run',null,'交給大器了，進度會寫回這張卡');
-ACT.mstep=ACT.mstepb=ACT.mdate=()=>{};
+const PCR={won:'得標／核定',lost:'未得標',submitted:'已送件結案',void:'作廢（做一半不要了）'};
+// v39：「這步做完」「退回上一步」照設計稿。有大器寫的步驟就改步驟（opp_progress_set 只帶 p_steps）；沒有步驟就照製作→交件→收款改狀態
+function stepsSet(p,cur){return p.raw.progressSteps.map((x,i)=>({name:x.name,note:x.note||'',status:x.status==='skipped'?'skipped':i<cur?'done':i===cur?'current':'pending'}))}
+function stepGo(id,dir){const p=DB.proj.find(q=>q.id===id);if(!p)return;const o=p.cur,n=o+dir,lab=dir>0?`「${p.steps[o]}」做完了`:`退回「${p.steps[n]}」`;
+ if(p.raw.progressSteps.length){const nw=stepsSet(p,n),old=stepsSet(p,o);
+  closeThen(async()=>{try{const c=await LV.api.act(id,'steps',{steps:nw});if(c){const i=LV.items.findIndex(x=>x.id===id);if(i>-1)LV.items[i]=c}LV.sig='';paint();
+   toast(lab,async()=>{try{await LV.api.act(id,'steps',{steps:old});reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}catch(e){toast('沒有成功：'+LERR(e))}})}
+ else{const st=p.raw.status;if(dir>0){if(st==='doing')ACT.pdeliver(id);else if(st==='delivered')ACT.ppaid(id)}else{if(st==='delivered')ACT.pback(id);else if(st==='paid')ACT.pback2(id)}}}
+ACT.mstep=id=>stepGo(id,1);ACT.mstepb=id=>stepGo(id,-1);
+ACT.pclosedo=v=>{const [id,r]=v.split('|'),p=DB.proj.find(q=>q.id===id);if(!p||!PCR[r])return;let ok=false;try{ok=confirm(`把「${p.title}」標成「${PCR[r]}」，收進封存？之後可以在封存放回進行中。`)}catch(e){}if(!ok)return;
+ closeThen(async()=>{try{await LV.api.act(id,'close',{result:r});toast('收進封存了：'+PCR[r]);const a=await LV.api.archive('',null);LV.arch=a.items||[];reload()}catch(e){toast('沒有成功：'+LERR(e))}})};
+ACT.preopen=id=>closeThen(async()=>{try{await LV.api.act(id,'reopen');toast('放回進行中了');const a=await LV.api.archive('',null);LV.arch=a.items||[];reload()}catch(e){toast('沒有成功：'+LERR(e))}});
+ACT.ppurge=id=>{const t=DB.arch.find(q=>q.id===id);if(!t)return;let v=null;try{v=prompt('徹底刪除後面板和封存都找不回來（電腦裡的資料夾不會動）。\n要刪就輸入完整案名：\n'+t.title)}catch(e){}if(v==null)return;if(v.trim()!==t.title){toast('案名不對，沒有刪');return}
+ closeThen(async()=>{try{await LV.api.act(id,'purge',{confirm:v.trim()});toast('徹底刪除了');const a=await LV.api.archive('',null);LV.arch=a.items||[];reload()}catch(e){toast('沒有刪：'+LERR(e))}})};
+ACT.nc=msg=>toast(msg||'這個動作還沒接上');
 
 /* ---------- 錢：設計稿的大卡三頁；有後端的只有訂閱 ---------- */
 mzHero=function(){const st=FRESH.tata,ss=subs(),d=due7();
@@ -2003,26 +2031,22 @@ mzHero=function(){const st=FRESH.tata,ss=subs(),d=due7();
 mz2HTML=function(){const id=cvCur('money')||'S';if(id!=='S')return `<section class="sec">${sh('',id==='A'?'撐多久':'這三個月')}<div class="card lcard"><p>${id==='A'?'帳戶還沒接上':'收支還沒接上'}</p><small>要接塔塔記帳的帳戶與帳單（只讀）才算得出來。</small></div></section>`;
  const ss=subs(),d=due7();if(!LV.money)return `<section class="sec">${sh('','訂閱')}<div class="card lcard"><p>${esc(LV.moneyErr||'訂閱還沒讀到')}</p></div></section>`;
  if(!ss.length)return `<section class="sec">${sh('','訂閱','0 筆')}<div class="card lcard"><p>還沒有訂閱資料</p></div></section>`;
- let h=`<section class="sec">${sh('','7 天內要扣',d.length+' 筆')}${d.length?`<div class="hs">${d.map(s=>`<div class="card"><div class="meta">${chip(s.in<=0?'今天扣':s.in+' 天後扣',s.in<=2)}</div><h3>${esc(s.name)}</h3><p class="amt" style="color:var(--ink)">${nt(s.amt)}</p></div>`).join('')}</div>`:`<div class="card"><p>7 天內沒有要扣的。</p></div>`}</section>`;
+ let h=`<section class="sec">${sh('','7 天內要扣',d.length+' 筆')}${d.length?`<div class="hs">${d.map(s=>`<div class="card"><div class="meta">${chip(s.in<=0?'今天扣':s.in+' 天後扣',s.in<=2)}</div><h3>${esc(s.name)}</h3><p class="amt" style="color:var(--ink)">${nt(s.amt)}</p>${aifs([aiF('tata','sub:'+s.id)])}</div>`).join('')}</div>`:`<div class="card"><p>7 天內沒有要扣的。</p></div>`}</section>`;
  const op=S.open.subs!==false;
  h+=`<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="subs" aria-expanded="${op}"><span class="tx"><b>全部訂閱 ${ss.length} 筆</b><small>自付 ${ss.filter(s=>s.payer==='自付').length}・公司付 ${ss.filter(s=>s.payer!=='自付').length}</small></span><span class="rt"><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></span></button></div>${op?ss.map(s=>`<div class="rowi"><button class="rowb" data-act="sheet" data-id="sub:${esc(s.id)}"><span class="tx"><b>${esc(s.name)}</b><small>${s.cancel?'▲ '+esc(s.cancel)+'・':''}${esc(s.cyc)}・${s.payer}・${s.in} 天後扣</small></span><span class="rt"><span class="amt">${nt(s.amt)}</span></span></button></div>`).join(''):''}</div></section>`;
  return h};
 mzIn=function(){return `<section class="sec">${sh('','會進來的')}<div class="card lcard"><p>待收款還沒接上</p><small>已交件的案子在「案子」房間的「已交件，等收款」。</small></div></section>`};
 mzOut=function(){return `<section class="sec">${sh('','要出去的大筆')}<div class="card lcard"><p>帳單還沒接上</p></div></section>`};
 {const _s=sheetHTML;sheetHTML=function(){const a=S.sheet.split(':');if(a[0]!=='sub')return _s();const s=DB.subs.find(x=>x.id===a[1]);if(!s)return shHead('這筆不在了');
- return shHead(esc(s.name))+`<dl class="kv"><div><dt>金額</dt><dd>${nt(s.amt)}</dd></div><div><dt>週期</dt><dd>${esc(s.cyc)}</dd></div><div><dt>下次扣款</dt><dd>${esc(s.next||s.in+' 天後')}</dd></div><div><dt>誰付</dt><dd>${s.payer}</dd></div>${s.acct?`<div><dt>帳戶</dt><dd>${esc(s.acct)}</dd></div>`:''}</dl>${s.cancel?`<p class="err">▲ ${esc(s.cancel)}</p>`:''}<p class="note">改訂閱請到塔塔記帳。</p>`}}
+ return shHead(esc(s.name))+`<dl class="kv"><div><dt>金額</dt><dd>${nt(s.amt)}</dd></div><div><dt>週期</dt><dd>${esc(s.cyc)}</dd></div><div><dt>下次扣款</dt><dd>${esc(s.next||s.in+' 天後')}</dd></div><div><dt>誰付</dt><dd>${s.payer}</dd></div>${s.acct?`<div><dt>帳戶</dt><dd>${esc(s.acct)}</dd></div>`:''}</dl>${s.cancel?`<p class="err">▲ ${esc(s.cancel)}</p>`:''}${aifs([aiF('tata','sub:'+s.id)])}`}}
 
-/* ---------- 生活：位置照設計稿，資料還沒接上 ---------- */
-zoneLife=function(){const s=S.sub.life;let h=zoneHead('life','生活還沒接上');
- h+=`<div class="card" style="margin-top:14px;border-style:dashed"><h3 aria-level="2">朋朋還沒接上</h3><p class="note">例行提醒、備品、購物清單、訂單之後由朋朋接。</p></div>`;
- h+=`<div class="seg" role="group" aria-label="生活分類">${[['rout','例行 0'],['sup','備品 0'],['wish','想買 0'],['ord','訂單 0']].map(x=>`<button aria-pressed="${s===x[0]}" data-act="sub" data-id="life:${x[0]}">${x[1]}</button>`).join('')}</div>`;
- const n={rout:'例行',sup:'備品',wish:'想買清單',ord:'訂單'}[s]||'例行';
- return h+`<section class="sec" style="margin-top:14px"><div class="card lcard"><p>${n}還沒接上</p><small>接上之後會出現在這裡。</small></div></section>`};
+/* ---------- 生活：v39 用設計稿的 zoneLife（朋朋還沒綁定、各空狀態與按鈕），會寫的動作沒有後端，按了出現「還沒接上」 ---------- */
+['bindok','unbind','add','done','saverout','buy','bought','wishadd','copy'].forEach(k=>{ACT[k]=()=>toast(k==='bindok'?'綁定朋朋還沒接上':'生活還沒接上，這個動作還沒接上')});
+/* 行事曆：建立、改時間、取消、改規則沒有後端 */
+['calmk','evsave','evcancel','evundo','rlsave','synctog','syncyes','syncno','dtedit'].forEach(k=>{ACT[k]=()=>toast('行事曆還沒接上，這個動作還沒接上')});
 
 /* ---------- 對話：只有大器有後端；其他 Bot 照設計稿開得起來，但說明還沒接上 ---------- */
-havSync=function(){const h=$('#hav'),b='daqi';if(h&&h.dataset.id!==b+'|'){h.dataset.id=b+'|';const o=h.querySelector('.bm');if(o)o.outerHTML=bm(b,'idle')}
- document.querySelectorAll('.hav').forEach(e=>{const n=UNREAD.daqi||0,d=e.querySelector('.dot');if(d){d.hidden=!n;d.textContent=n||''}e.setAttribute('aria-label','跟大器說話'+(n?`，${n} 則新回覆`:''))})};
-headBot=()=>'daqi';
+// v39：右上頭像照設計稿＝這一頁的主人（havSync、headBot 用設計稿原本的）
 const NAMES={daqi:'大器',jiji:'集集',tata:'塔塔',peng:'朋朋',din:'定定',kim:'金金',mon:'萌萌'};
 const ctxItem=ctx=>{const a=(ctx||'').split(':');return (a[0]==='proj'||a[0]==='opp')&&LV.items.some(c=>c.id===a[1])?a[1]:null};
 async function loadMsgs(){const on=S.chat;if(!on||on.b!=='daqi'||!LV.api)return;const id=ctxItem(on.ctx);
@@ -2032,27 +2056,28 @@ async function loadMsgs(){const on=S.chat;if(!on||on.b!=='daqi'||!LV.api)return;
   if(fresh)logSync()}catch(e){CH.daqi=[{w:'bot',t:'對話讀不到：'+LERR(e),b:'daqi'}];logSync()}}
 {const _o=openChat;openChat=function(b,ctx,el,auto){if(!CH[b])CH[b]=[];
  if(b==='daqi'){LV.thread='';CH.daqi=[{w:'bot',t:'讀取中…',b:'daqi'}];setTimeout(loadMsgs,0)}
- else CH[b]=[{w:'bot',t:`${NAMES[b]||'這隻'}的對話還沒接上。要交代事情，先點右上角跟大器說。`,b}];
- return _o(b,ctx,el,null)}}
-quick=function(on){const k=(on.ctx||'').split(':')[0];if(on.b==='daqi')return BOTS.daqi.cmds||[];if(on.b==='jiji'&&k==='opp')return ['要做，建案子資料夾','讀完整公告給我'];return []};
+ else CH[b]=[{w:'bot',t:`${NAMES[b]||'這隻'}的對話還沒接上。要交代事情，點首頁右上角跟大器說。`,b}];
+ return _o(b,ctx,el,auto)}}
+// v39：快捷照設計稿（設計稿的 quick 原樣保留，不再覆寫）
 say=function(b,text,ctx){
  if(b==='jiji'){const id=(ctx||'').split(':')[1];CH.jiji.push({w:'me',t:text,fresh:1});
   if(id&&/建/.test(text)){oppDo(id,'build','要做了，Mac 的程式會建案子資料夾');CH.jiji.push({w:'bot',t:'已送出「要做，建資料夾」，進度看這張卡。（這是直接動作，不是集集回話）',fresh:1})}
+  else if(/掃描|創作資金/.test(text)&&!/截止/.test(text)){const fund=/創作資金/.test(text);CH.jiji.push({w:'bot',t:fund?'已送出「只掃創作資金」，新卡片會直接放進清單。（這是直接動作，不是集集回話）':'已送出「立即掃描」，新卡片會直接放進清單。（這是直接動作，不是集集回話）',fresh:1});logSync();if(fund){LV.api.scanRequest('funding').then(()=>{S.scan=1;S.scanAt=Date.now();render('keep');schedule()}).catch(e=>toast('沒叫到集集：'+LERR(e)))}else ACT.scan();return}
   else if(id&&/公告/.test(text)){oppDo(id,'dive','已請集集讀完整公告');CH.jiji.push({w:'bot',t:'已送出「讀完整公告」，讀完放在卡片的「完整公告」。（這是直接動作，不是集集回話）',fresh:1})}
-  else CH.jiji.push({w:'bot',t:'集集的對話還沒接上，這句沒有送出。要交代事情，先跟大器說。',fresh:1});logSync();return}
- if(b!=='daqi'){CH[b].push({w:'me',t:text,fresh:1},{w:'bot',t:`${NAMES[b]||'這隻'}的對話還沒接上，這句沒有送出。要交代事情，先跟大器說。`,fresh:1});logSync();return}
+  else CH.jiji.push({w:'bot',t:'集集的對話還沒接上，這句沒有送出。要交代事情，點首頁右上角跟大器說。',fresh:1});logSync();return}
+ if(b!=='daqi'){CH[b].push({w:'me',t:text,fresh:1},{w:'bot',t:`${NAMES[b]||'這隻'}的對話還沒接上，這句沒有送出。要交代事情，點首頁右上角跟大器說。`,fresh:1});logSync();return}
  const a=(ctx||'').split(':'),id=ctxItem(ctx),d=a[0]==='dec'?DB.dec.find(x=>x.id===a[1]):null,body=d?`關於「${d.proj}：${d.q}」：${text}`:text;
  const w={w:'bot',wait:1,b:'daqi',fresh:1};CH.daqi=CH.daqi.filter(m=>m.t!=='寫一句，或點下面的指令。只有大器本人回，回覆會出現在這裡。');CH.daqi.push({w:'me',t:text,fresh:1},w);mood('daqi','thinking');hop($('#cAv'));logSync();
  LV.api.say(id,body).then(()=>{const i=CH.daqi.indexOf(w);if(i>-1)CH.daqi.splice(i,1,{w:'bot',t:'傳給大器了，回覆會出現在這裡。',b:'daqi',fresh:1});logSync();setTimeout(loadMsgs,1500)})
   .catch(e=>{const i=CH.daqi.indexOf(w);if(i>-1)CH.daqi.splice(i,1,{w:'bot',t:'沒送出：'+LERR(e)+'。這句還在上面，可以再傳一次。',b:'daqi',fresh:1});logSync()})};
 ACT.askdin=(ctx,el)=>openChat('din',ctx,el);
-ACT.cmd=id=>{const i=id.indexOf(':');openChat(id.slice(0,i),'',null)};
-{const _cs=chatShell;chatShell=function(on){return _cs(on).replace(/<textarea id="cText"/,on.b==='daqi'||on.b==='jiji'?'<textarea id="cText"':'<textarea id="cText" disabled')}}
-WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive');
+ACT.cmd=id=>{const i=id.indexOf(':'),b=id.slice(0,i),c=id.slice(i+1);if(b==='jiji'&&/掃描/.test(c))return ACT.scan();toast(`${NAMES[b]||'這隻'}還沒接上，這個動作還沒接上`)};
+
+WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v38');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v39');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();

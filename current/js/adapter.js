@@ -31,7 +31,7 @@ export const CONFIG = {
          close: 'opp_close', reopen: 'opp_reopen', archive: 'opp_archive', purge: 'opp_purge',
          scanRequest: 'opp_scan_request', scanStatus: 'opp_scan_status',
          workUpdate: 'opp_work_update', setStatus: 'opp_set_status', workAdd: 'opp_work_add',
-         msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', todoAdd: 'opp_todo_add', run: 'opp_run',
+         msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
          hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer' },   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
 
@@ -68,7 +68,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v38');
+  const { mockAdapter } = await import('./mock.js?v39');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -227,6 +227,7 @@ function liveAdapter() {
         case 'deliver': return card(await rpc(R.setStatus, { p_id: id, p_status: 'delivered', ...(o.patch ? { p_patch: o.patch } : {}) }, 0, W));
         case 'paid': return card(await rpc(R.setStatus, { p_id: id, p_status: 'paid', p_patch: o.patch || {} }, 0, W));
         case 'run': return card(await rpc(R.run, { p_id: id }));
+        case 'steps': return card(await rpc(R.progress, { p_id: id, p_steps: o.steps || [] }, 0, W));   // v39：案子「⋯」這步做完／退回上一步，只改步驟，不動 note、blocker
         case 'back': return card(await rpc(R.setStatus, { p_id: id, p_status: o.to === 'delivered' ? 'delivered' : 'doing' }, 0, W));
       }
       throw new AdapterError('server', '未知動作');
