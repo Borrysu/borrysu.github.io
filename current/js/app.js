@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v56');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v57');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2791,6 +2791,13 @@ function fitFoots(){document.querySelectorAll('.kfoot .cf-l').forEach(l=>{const 
  for(let i=bs.length-1;i>0&&l.scrollWidth>l.clientWidth+1;i--)bs[i].classList.add('cfx')})}
 {const _r=render;render=function(d){_r(d);fitFoots()}}
 addEventListener('resize',fitFoots);try{document.fonts&&document.fonts.ready.then(fitFoots)}catch(e){}
+// 案子卡底部加動作鈕（老大 2026-11-22：「那個 面板卡片 專案的怎麼沒有什麼鈕可以進行？」）
+// 要你看／進行中＝「這步做完」；已交件＝「收到款了」；都有「看細節」。按了有復原。放不下照 v56 從後面收進⋯
+{const _pc=projCard;projCard=function(p){const h=_pc(p);let a='';
+ if(p.g==='need'||p.g==='doing'){if(p.cur<p.steps.length)a+=B('這步做完','mstep',p.id,'pri sm')}
+ else if(p.g==='delivered')a+=B('收到款了','ppaid',p.id,'pri sm');
+ a+=mb('看細節','page','proj:'+p.id);
+ return h.replace('<div class="kfoot"><div class="cf-l"></div>',`<div class="kfoot"><div class="cf-l">${a}</div>`)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
