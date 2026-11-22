@@ -68,7 +68,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v34');
+  const { mockAdapter } = await import('./mock.js?v35');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -202,7 +202,7 @@ function liveAdapter() {
     async msgs(id) { return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80 })); },
     async say(id, body) { return rpc(R.msgAdd, { p_item_id: id || null, p_body: body }); },
     async hubToday() { return normHub(await rpc(R.hubToday, {})); },
-    async moneySubs() { return normMoney(await rpc(R.moneySubs, {})); },
+    async moneySubs() { return normMoney(await rpc(R.moneySubs, {}, 0, W)); },   // v35：403＝這把金鑰不能看錢（AI協作金鑰），不是金鑰失效，不清金鑰
     async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },
     async workAdd(title) { return card(await rpc(R.workAdd, { p_title: title }, 0, W)); },

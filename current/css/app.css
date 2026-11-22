@@ -1,780 +1,1093 @@
-/* 機會雷達：p1 霧青。B 五欄看板骨架加 C 的色票與卡片形狀。 */
+/* 逐流 Current v35 樣式：設計正本 逐流_App設計v3.html 的樣式原樣搬過來（含原型用的 .proto 樣式，正式版沒有那個元素，不影響），檔尾是 v35 補充。 */
+
+/* 逐流 App 設計 v3：單檔原型。主角是版面 2 四個房間 × 外觀 6 暮光色塊（暮光＋遊樂色塊融合）；保留版面 1 與外觀 1、4 供對照，其餘 v2 樣式留著但不開放切換。孵化中資產，只做設計，不是正式程式。 */
+*{box-sizing:border-box;margin:0}
 :root{
-  /* 字型：系統字型優先，網路字型載入後只是補強（font-display 在字型 CSS 網址裡設為 swap） */
-  --ff:'PingFang TC','Noto Sans TC','Noto Sans CJK TC','Microsoft JhengHei','Heiti TC',system-ui,-apple-system,'Segoe UI',sans-serif;
-  --num:'Noto Serif TC','Songti TC','Noto Serif CJK TC','PMingLiU','Source Han Serif TC',serif;
-  --bg:#f2f6f4;--lane:#e8efec;--ink:#1d3331;--mut:#50635f;--line:#d9e3df;--card:#fff;
-  --accent:#2b7a70;--accent-ink:#fff;--accent-dk:#24574f;--first:#e4f1ec;--stat:#edf3f0;--sheet:#f7faf8;--dash:#9db8b1;
-  --scrim:rgba(29,51,49,.42);--danger:#b3261e;--danger-bg:#fdecea;--hot:#b3261e;--warm:#8a5a00;--calm:#2f6f66;
-  --delc:#a8322a;--delb:#e6bdb8;--link:#1d5fa8;--first-h:#24574f;--warn-h:#8c1b14;--warn-ink:#4a1511;
-  --demo-b:#8a5a00;--demo-i:#6b4500;--demo-bg:#fff6dc;--ringbg:#d9e3df;--ok:#2f6b3f;--ok-bg:#e3f1e6;--ok-ink:#1f4a2c;
-  --r:18px;--shadow:0 1px 2px rgba(29,51,49,.08),0 8px 18px -12px rgba(29,51,49,.3);
+  --zh:"Noto Sans TC","Microsoft JhengHei","Heiti TC",sans-serif;
+  --zs:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --e-std:cubic-bezier(.4,0,.2,1);--e-in:cubic-bezier(.16,1,.3,1);--e-out:cubic-bezier(.4,0,1,1);
+  --tabh:64px;--dock:0px;--bw:1px;--blur:0px;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
-body{font-family:var(--ff);color:var(--ink);background:var(--bg);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;
-  line-break:strict;overflow-wrap:break-word;word-break:normal;overscroll-behavior:none;-webkit-text-size-adjust:100%}
-button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
-a{color:inherit}
-ul,ol{list-style:none}
+/* ========== 外觀 1 暮光（深色，光只在場景裡） ========== */
+html[data-skin="1"]{color-scheme:dark;--bg:#000;--sf:rgba(15,15,16,.78);--sf2:#1c1c20;--solid:#0f0f10;--ink:#ecedf0;--ink2:#a3a6ad;--line:rgba(255,255,255,.13);--line2:rgba(255,255,255,.3);
+  --pri:#fff;--pri-ink:#000;--urg:#ffb59e;--urg-bg:#4a2016;--urg-ink:#ffd2c4;--ok:#8fd9b0;--acc:#4da6ff;
+  --band:#1d1830;--band-ink:#fff;--band-btn:#fff;--band-btn-ink:#000;--b2:#17171a;--b2-ink:#ecedf0;
+  --r:24px;--rb:999px;--rs:8px;--shadow:0 1px 4px rgba(0,0,0,.25),0 4px 59px rgba(0,0,0,.1);--bar:rgba(0,0,0,.72);--blur:16px;
+  --fb:"Inter",var(--zh);--fd:"Inter",var(--zh);--wd:600;--fn:"Inter",var(--zh);--ls:-.03em}
+/* ========== 外觀 2 奶油紙（方角、細線、無陰影） ========== */
+html[data-skin="2"]{color-scheme:light dark;--bg:#fffaec;--sf:#fffaec;--sf2:#fff3cc;--solid:#fffaec;--ink:#290a08;--ink2:#6b5850;--line:#d5ccc0;--line2:#290a08;
+  --pri:#290a08;--pri-ink:#fffaec;--urg:#810c00;--urg-bg:#810c00;--urg-ink:#fffaec;--ok:#5a5403;--acc:#810c00;
+  --band:#810c00;--band-ink:#fffaec;--band-btn:#fffaec;--band-btn-ink:#810c00;--b2:#6b6503;--b2-ink:#fffaec;
+  --r:0px;--rb:0px;--rs:0px;--shadow:none;--bar:rgba(255,250,236,.94);
+  --fb:"DM Sans",var(--zh);--fd:"EB Garamond",var(--zs);--wd:400;--fn:"EB Garamond",var(--zs);--ls:0}
+/* ========== 外觀 3 單色工具（白底黑字，一層邊影） ========== */
+html[data-skin="3"]{color-scheme:light dark;--bg:#fff;--sf:#fff;--sf2:#f5f5f5;--solid:#fff;--ink:#0a0a0a;--ink2:#5e5e5e;--line:#e5e5e5;--line2:#a3a3a3;
+  --pri:#171717;--pri-ink:#fff;--urg:#c81e1e;--urg-bg:#fee2e2;--urg-ink:#991b1b;--ok:#15803d;--acc:#171717;
+  --band:#171717;--band-ink:#fff;--band-btn:#fff;--band-btn-ink:#171717;--b2:#f5f5f5;--b2-ink:#0a0a0a;
+  --r:24px;--rb:26px;--rs:10px;--shadow:0 0 0 1px rgba(23,23,23,.05),0 1px 3px rgba(0,0,0,.1),0 1px 2px -1px rgba(0,0,0,.1);--bar:rgba(255,255,255,.92);
+  --fb:"Geist",var(--zh);--fd:"Geist",var(--zh);--wd:600;--fn:"Geist",var(--zh);--ls:-.05em}
+/* ========== 外觀 4 遊樂色塊（每個 Bot 一個顏色世界） ========== */
+html[data-skin="4"]{color-scheme:light dark;--bg:#f3efe0;--sf:#fffdf5;--sf2:#fff2b7;--solid:#f3efe0;--ink:#000;--ink2:#474337;--line:rgba(0,0,0,.16);--line2:#000;
+  --pri:#000;--pri-ink:#f3efe0;--urg:#000;--urg-bg:#000;--urg-ink:#ff6700;--ok:#000;--acc:#000;
+  --band:#a37aff;--band-ink:#000;--band-btn:#000;--band-btn-ink:#fff;--b2:#ff6700;--b2-ink:#000;
+  --r:24px;--rb:48px;--rs:10px;--shadow:none;--bar:rgba(243,239,224,.94);
+  --fb:"Nunito Sans",var(--zh);--fd:"Barlow Condensed",var(--zh);--wd:900;--fn:"Barlow Condensed",var(--zh);--ls:0}
+/* ========== 外觀 5 藍墨印刷（暖紙配單一電藍） ========== */
+html[data-skin="5"]{color-scheme:light dark;--bg:#f8f7ef;--sf:#f8f7ef;--sf2:#e9e8e0;--solid:#f8f7ef;--ink:#0f4fcf;--ink2:#0f4fcf;--line:#1664eb;--line2:#1664eb;
+  --pri:#1664eb;--pri-ink:#fdf9f9;--urg:#0f4fcf;--urg-bg:#1664eb;--urg-ink:#fdf9f9;--ok:#0f4fcf;--acc:#0f4fcf;
+  --band:#1664eb;--band-ink:#fdf9f9;--band-btn:#fdf9f9;--band-btn-ink:#0f4fcf;--b2:#e9e8e0;--b2-ink:#0f4fcf;
+  --r:0px;--rb:0px;--rs:0px;--shadow:none;--bar:rgba(248,247,239,.95);
+  --fb:var(--zh);--fd:var(--zh);--wd:400;--fn:"Libre Caslon Display",var(--zs);--ls:0}
+/* 各 Bot 的標記色：只有外觀 4 用顏色，其他靠字（器、集、塔、朋） */
+html{--c-daqi:var(--sf2);--i-daqi:var(--ink);--c-jiji:var(--sf2);--i-jiji:var(--ink);--c-tata:var(--sf2);--i-tata:var(--ink);--c-peng:var(--sf2);--i-peng:var(--ink)}
+html[data-skin="4"]{--c-daqi:#a37aff;--i-daqi:#000;--c-jiji:#2668fd;--i-jiji:#fff;--c-tata:#ff6700;--i-tata:#000;--c-peng:#00b351;--i-peng:#000}
+html[data-skin="1"]{--c-daqi:#2a2a30;--c-jiji:#2a2a30;--c-tata:#2a2a30;--c-peng:#2a2a30}
+@media (prefers-color-scheme:dark){
+  html[data-skin="2"]{--bg:#1c0d0a;--sf:#1c0d0a;--sf2:#2e1712;--solid:#1c0d0a;--ink:#fffaec;--ink2:#cdbcac;--line:#4d3028;--line2:#fffaec;--pri:#fffaec;--pri-ink:#290a08;--urg:#ffb4a3;--urg-bg:#ffb4a3;--urg-ink:#290a08;--ok:#d6cf6a;--acc:#ffb4a3;--band:#810c00;--band-ink:#fffaec;--b2:#57520a;--b2-ink:#fffaec;--bar:rgba(28,13,10,.94)}
+  html[data-skin="3"]{--bg:#0a0a0a;--sf:#141414;--sf2:#1f1f1f;--solid:#141414;--ink:#fafafa;--ink2:#a8a8a8;--line:#2a2a2a;--line2:#5c5c5c;--pri:#fafafa;--pri-ink:#0a0a0a;--urg:#f87171;--urg-bg:#450a0a;--urg-ink:#fecaca;--ok:#4ade80;--acc:#fafafa;--band:#fafafa;--band-ink:#0a0a0a;--band-btn:#0a0a0a;--band-btn-ink:#fafafa;--b2:#1f1f1f;--b2-ink:#fafafa;--shadow:0 0 0 1px rgba(255,255,255,.08);--bar:rgba(10,10,10,.9)}
+  html[data-skin="4"]{--bg:#121210;--sf:#1e1d19;--sf2:#2c2a22;--solid:#121210;--ink:#f3efe0;--ink2:#bdb8a6;--line:rgba(243,239,224,.2);--line2:#f3efe0;--pri:#f3efe0;--pri-ink:#000;--urg:#ff6700;--urg-bg:#ff6700;--urg-ink:#000;--ok:#f3efe0;--acc:#f3efe0;--bar:rgba(18,18,16,.94)}
+  html[data-skin="5"]{--bg:#1e1e1e;--sf:#1e1e1e;--sf2:#2b2b2b;--solid:#1e1e1e;--ink:#e2e2df;--ink2:#c2c2be;--line:#8fb2ff;--line2:#8fb2ff;--pri:#a9c4ff;--pri-ink:#101010;--urg:#a9c4ff;--urg-bg:#a9c4ff;--urg-ink:#101010;--ok:#e2e2df;--acc:#a9c4ff;--band:#a9c4ff;--band-ink:#101010;--band-btn:#101010;--band-btn-ink:#e2e2df;--b2:#2b2b2b;--b2-ink:#e2e2df;--bar:rgba(30,30,30,.95)}
+}
+html{background:var(--bg);-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:400 15px/1.6 var(--fb);min-height:100vh;overflow-x:hidden}
+html[data-skin="5"] body{font-size:16.5px;line-height:1.55}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer;background:none;border:0;padding:0;text-align:inherit;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 [hidden]{display:none!important}
-:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.b-company{--bf:#2b5f9e;--bb:#e3edf8}.b-personal{--bf:#7a4a9c;--bb:#f0e8f6}.b-other{--bf:#5c5a52;--bb:#eceae4}
-.b-funding{--bf:#2c7050;--bb:#dff0e6}.b-achievement{--bf:#8a5a1c;--bb:#f7e8d2}
+.vh{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.sx{font-style:normal}html[data-skin="5"] .sx{font-family:var(--zs);font-weight:700}
 
-/* 標題與短句：只在塊與塊之間（<wbr>）或空白換行，不從詞中間切開 */
-.sb{word-break:keep-all;overflow-wrap:anywhere;text-wrap:balance}
-.sbp{word-break:keep-all;overflow-wrap:anywhere;text-wrap:pretty}
-p,li{text-wrap:pretty}
+/* ---------- 原型專用切換列（不屬於設計） ---------- */
+.proto{background:#111;color:#f5f5f5;font:400 13px/1.4 var(--zh);position:relative;z-index:70}
+.proto-toggle{width:100%;min-height:44px;padding:6px 16px;display:flex;gap:8px;align-items:center;justify-content:space-between;color:#f5f5f5}
+.proto-toggle span span{color:#cfcfcf}
+.proto-panel{padding:4px 16px 14px;display:grid;gap:10px;max-width:980px;margin:0 auto}
+.proto-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.proto-row>span{width:44px;color:#cfcfcf}
+.proto-row button{min-height:44px;min-width:44px;padding:0 12px;border:1px solid #6b6b6b;border-radius:10px;color:#f5f5f5}
+.proto-row button[aria-pressed=true]{background:#f5f5f5;color:#111;border-color:#f5f5f5;font-weight:700}
+.proto-note{color:#cfcfcf;font-size:12px}
 
-/* ---------- 小元件 ---------- */
-.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px 0 8px;border-radius:99px;background:var(--bb);color:var(--bf);font-size:13px;font-weight:700;line-height:1;white-space:nowrap}
-.chip i{width:8px;height:8px;border-radius:50%;background:var(--bf)}
-.demo-badge{display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:6px;border:1.5px dashed var(--demo-b);color:var(--demo-i);background:var(--demo-bg);font-size:12.5px;font-weight:700;white-space:nowrap;flex:none;max-width:100%;overflow:hidden;text-overflow:clip}
-.amt{display:flex;align-items:baseline;flex-wrap:wrap;gap:0 4px;min-height:30px}
-.amt em{font-style:normal;font-size:12.5px;font-weight:500;color:var(--mut);margin-right:2px}
-.amt i{font-style:normal;font-size:13px;font-weight:700;color:var(--mut)}
-.amt b{font-family:var(--num);font-weight:900;font-size:26px;line-height:1.15;font-variant-numeric:tabular-nums}
-.amt u{text-decoration:none;font-size:14px;font-weight:700}
-.amt.noamt b{font-family:var(--ff);font-size:16px;font-weight:700;color:var(--mut)}
-.amt.long b{font-size:21px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 20px;border-radius:14px;font-weight:700;font-size:16px;transition:transform .12s,background .15s;text-decoration:none}
-.btn:active{transform:scale(.97)}
-.btn-primary{background:var(--accent);color:var(--accent-ink)}
-.btn-primary:hover{background:var(--accent-dk)}
-.btn-ghost{background:var(--card);border:1.5px solid var(--line);color:var(--ink)}
-.ic{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.spin{display:inline-block;flex:none;width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite}
-@keyframes sp{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}.spin{animation:none;border-top-color:var(--line);border-right-color:var(--accent)}}
-[data-lvl=hot]{--lv:var(--hot)}[data-lvl=warm]{--lv:var(--warm)}[data-lvl=calm]{--lv:var(--calm)}
+/* ---------- 外殼 ---------- */
+.app{position:relative;min-height:100vh;padding-bottom:calc(var(--tabh) + var(--dock) + 28px + env(safe-area-inset-bottom));isolation:isolate}
+html[data-layout="1"]{--dock:60px}
+/* 暮光的光場：換區時移動一次，不循環 */
+.field{position:fixed;inset:0;z-index:-1;pointer-events:none;overflow:hidden;display:none;opacity:.42;transition:opacity 1.2s ease-in-out}
+html[data-skin="1"] .field{display:block}
+html[data-skin="1"][data-tab=today] .field{opacity:1}
+.field i{position:absolute;left:-40vmax;top:-30vmax;width:180vmax;height:110vmax;background:radial-gradient(closest-side,#c386ab 0,#855a92 14%,#543c7b 32%,#29285e 54%,#00052e 78%,transparent 100%);transition:transform 1.2s ease-in-out}
+html[data-tab=today] .field i{transform:translate(0,-34vmax)}
+html[data-tab=proj] .field i{transform:translate(-36vmax,-48vmax)}
+html[data-tab=opp] .field i{transform:translate(30vmax,-52vmax)}
+html[data-tab=money] .field i{transform:translate(-20vmax,60vmax)}
+html[data-tab=life] .field i{transform:translate(34vmax,56vmax)}
+html[data-tab=daqi] .field i{transform:translate(0,64vmax)}
 
-/* ---------- 版面骨架 ---------- */
-.app{height:100dvh;display:grid;grid-template-rows:auto auto auto minmax(0,1fr);grid-template-columns:minmax(0,1fr);overflow:hidden}
-.top{grid-row:1;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:calc(env(safe-area-inset-top) + 12px) 16px 8px}
-.top h1{font-size:19px;font-weight:800;line-height:1.25}
-.top-r{display:flex;align-items:center;gap:14px}
-.live{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--mut);line-height:1.4}
-.dot{flex:none;width:8px;height:8px;border-radius:50%;background:#1f9d62;animation:pulse 2s infinite}
-.dot.off{background:#9a6b00;animation:none}.dot.idle{background:#7a8a86;animation:none}
-@keyframes pulse{70%{box-shadow:0 0 0 7px rgba(31,157,98,0)}0%{box-shadow:0 0 0 0 rgba(31,157,98,.5)}}
-.sum{white-space:nowrap;font-size:13.5px;color:var(--mut);text-align:right;line-height:1.45}
-.sum b{color:var(--ink)}.sum .hotn{color:var(--hot);font-weight:800}
-.holdbtn{display:none}
-.notice{grid-row:2;display:flex;align-items:center;gap:10px;margin:0 12px 6px;padding:8px 8px 8px 14px;border-radius:12px;font-size:14px;line-height:1.5;background:var(--first);color:var(--ink)}
-.notice span.txt{flex:1;min-width:0}
-.notice.off{background:var(--demo-bg);color:#4d3400}
-.notice.bad{background:var(--danger-bg);color:var(--warn-ink)}
-.notice button{flex:none;min-height:44px;padding:0 14px;border-radius:10px;border:1.5px solid currentColor;font-weight:700;font-size:14px}
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:56px;padding:6px 16px;background:var(--bar);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
+html[data-skin="1"] .top,html[data-skin="3"] .top,html[data-skin="4"] .top{border-bottom-color:transparent}
+.brand{display:flex;align-items:center;gap:10px;min-height:44px}
+.brand b{font:var(--wd) 20px/1 var(--fd);letter-spacing:.04em}
+html[data-skin="2"] .brand b{font-size:24px}
+html[data-skin="4"] .brand b{font-family:var(--zh);font-size:22px}
+.brand small{color:var(--ink2);font-size:12px}
+.talkbtn{min-height:44px;padding:0 14px 0 6px;display:none;align-items:center;gap:8px;border:1px solid var(--line2);border-radius:var(--rb);font-weight:500;background:var(--solid)}
+html[data-layout="2"] .talkbtn{display:inline-flex}
+html[data-skin="2"] .talkbtn,html[data-skin="5"] .talkbtn{padding-left:12px}
+.offline{margin:8px 16px 0;padding:10px 14px;border-radius:var(--rs);background:var(--urg-bg);color:var(--urg-ink);font-size:14px;display:flex;gap:8px;max-width:688px}
+main{display:block;max-width:720px;margin:0 auto;padding:4px 16px 24px}
 
-.tabs{grid-row:3;display:grid;grid-template-columns:repeat(5,1fr);gap:5px;padding:2px 10px 8px}
-.tab{min-height:58px;padding:0 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;font-size:13px;line-height:1.3;white-space:nowrap;border-radius:14px;background:rgba(255,255,255,.6);border:1.5px solid transparent}
-.tab b{font-family:var(--num);font-weight:900;font-size:19px;line-height:1.15}
-.tab[aria-selected=true]{background:var(--card);border-color:var(--accent);box-shadow:var(--shadow)}
-.sk-n{display:block;width:22px;height:18px;border-radius:6px;margin:1px 0}
+/* ---------- 共用元件 ---------- */
+.bm{flex:none;width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;font:700 14px/1 var(--zh);border:1px solid var(--line2)}
+html[data-skin="2"] .bm,html[data-skin="5"] .bm{border-radius:0}
+html[data-skin="4"] .bm{border:0}html[data-skin="3"] .bm{border-color:var(--line);border-radius:10px}
+.bm[data-b=daqi]{background:var(--c-daqi);color:var(--i-daqi)}.bm[data-b=jiji]{background:var(--c-jiji);color:var(--i-jiji)}
+.bm[data-b=tata]{background:var(--c-tata);color:var(--i-tata)}.bm[data-b=peng]{background:var(--c-peng);color:var(--i-peng)}
+.lbl{font-size:12px;color:var(--ink2);letter-spacing:.02em}
+html[data-skin="2"] .lbl,html[data-skin="2"] .sh h2{text-transform:uppercase;letter-spacing:.2em;font-size:11px}
+.num{font-family:var(--fn);font-variant-numeric:tabular-nums}
+.sec{margin-top:28px}
+.sh{display:flex;align-items:center;gap:8px;min-height:44px;margin-bottom:6px}
+.sh h2{font:700 14px/1.3 var(--fb);letter-spacing:.04em;flex:1;min-width:0}
+.sh h2 small{font-weight:400;color:var(--ink2);margin-left:6px;letter-spacing:0;text-transform:none}
+html[data-skin="5"] .sh{border-top:2px solid var(--line);padding-top:4px}html[data-skin="5"] .sh h2{font-weight:700;font-size:16px}
+.stack{display:grid;gap:12px}
+.card{position:relative;background:var(--sf);border:var(--bw) solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:16px;min-width:0;backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur))}
+html[data-skin="2"] .card,html[data-skin="5"] .card{border-width:1px 0 0;padding:16px 0 18px;background:transparent}
+html[data-skin="2"] .stack,html[data-skin="5"] .stack{gap:0}
+html[data-skin="4"] .card{border:0}html[data-skin="3"] .card{border:0}
+.card h3{font:700 17px/1.4 var(--fb);overflow-wrap:anywhere}
+html[data-skin="2"] .card h3{font:400 22px/1.3 var(--fd)}
+html[data-skin="5"] .card h3{font-weight:400;font-size:19px}
+.card p{color:var(--ink2);margin-top:4px;overflow-wrap:anywhere}
+.meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.chip{display:inline-flex;align-items:center;gap:4px;min-height:24px;padding:1px 9px;border-radius:999px;font-size:12px;background:var(--sf2);color:var(--ink);white-space:nowrap}
+html[data-skin="2"] .chip,html[data-skin="5"] .chip{border-radius:0;border:1px solid var(--line2);background:transparent}
+html[data-skin="4"] .chip{border-radius:5px;font-weight:700}
+.chip.urg{background:var(--urg-bg);color:var(--urg-ink);font-weight:700;border-color:transparent}
+html[data-skin="2"] .chip.urg,html[data-skin="5"] .chip.urg{background:var(--urg-bg);border-color:var(--urg-bg)}
+.note{font-size:13px;color:var(--ink2);margin-top:8px}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+.btn{min-height:44px;min-width:44px;padding:8px 16px;border-radius:var(--rb);border:1px solid var(--line2);font-weight:500;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center;background:transparent;color:var(--ink);transition:transform .12s var(--e-std),background-color .15s var(--e-std),opacity .15s var(--e-std)}
+.btn:active,.tab:active,.rowb:active,.room:active,.stat:active{transform:scale(.97)}
+html[data-skin="2"] .btn:active,html[data-skin="5"] .btn:active{transform:none;opacity:.7}
+.btn.pri{background:var(--pri);color:var(--pri-ink);border-color:var(--pri);font-weight:700}
+.btn.ghost{border-color:transparent;color:var(--ink2);padding-left:8px;padding-right:8px;text-decoration:underline;text-underline-offset:4px}
+.btn.wide{width:100%}
+.btn.big{width:100%;min-height:58px;font-size:16px;flex-direction:column;gap:0;line-height:1.3}
+.btn.big small{font-weight:400;font-size:12px}
+html[data-skin="2"] .btn.pri:not(.big)::after,html[data-skin="2"] .btn.big span::after{content:" →";font-weight:400}
+html[data-skin="2"] .btn{min-height:52px}
+.btn[disabled]{opacity:.45;cursor:default}
+.bar{height:6px;border-radius:99px;background:var(--sf2);overflow:hidden;margin-top:10px}
+html[data-skin="2"] .bar,html[data-skin="5"] .bar{border-radius:0;height:4px;background:var(--line)}html[data-skin="5"] .bar{background:var(--sf2)}
+html[data-skin="4"] .bar{height:10px;background:var(--line)}
+.bar i{display:block;height:100%;background:var(--ink);transform-origin:left;border-radius:inherit}
+.bar.over i{background:var(--urg)}
+.steps{display:flex;gap:4px;margin-top:12px}
+.steps i{flex:1;height:5px;border-radius:99px;background:var(--line)}
+.steps i.d{background:var(--ink)}.steps i.c{background:var(--ink);opacity:.5}
+html[data-skin="2"] .steps i,html[data-skin="5"] .steps i{border-radius:0}
+textarea,input[type=text],input[type=date],input[type=number]{width:100%;min-height:48px;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--line2);background:var(--sf2);color:var(--ink)}
+::placeholder{color:var(--ink2);opacity:1}
+label.f{display:grid;gap:6px;margin-top:14px;font-size:13px;color:var(--ink2)}
+.err{color:var(--urg);font-size:13px;font-weight:700;margin-top:6px}
 
-.board{grid-row:4;position:relative;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
-.lanes{min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
-.lane{display:none;min-height:0;flex-direction:column;overflow:hidden;background:var(--lane);border-radius:20px;border-top:5px solid var(--bf,var(--accent-dk))}
-.lane.cur{display:flex}
-.lh{padding:12px 16px 8px}
-.lh h2{font-family:var(--num);font-size:20px;font-weight:900;display:flex;align-items:center;gap:8px;line-height:1.3}
-.lh h2 .ld{width:10px;height:10px;border-radius:50%;background:var(--bf);flex:none}
-.lh h2 em{font-style:normal;font-family:var(--ff);font-size:13.5px;font-weight:800;background:var(--accent-dk);color:#fff;border-radius:99px;padding:1px 10px;margin-left:auto}
-.lh p{font-size:13.5px;color:var(--mut);line-height:1.5}
-.lbody{overflow:auto;padding:6px 12px 96px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overscroll-behavior:contain}
-.lbody>*{flex:none}
+/* 列（清單、河、收合標題共用） */
+.rows{background:var(--sf);border:var(--bw) solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur))}
+html[data-skin="2"] .rows,html[data-skin="5"] .rows{border-width:1px 0;background:transparent}
+html[data-skin="3"] .rows,html[data-skin="4"] .rows{border:0}
+.rowi{border-top:1px solid var(--line)}.rowi:first-child{border-top:0}
+.rowb{display:flex;gap:12px;align-items:center;width:100%;min-height:60px;padding:10px 14px}
+html[data-skin="2"] .rowb,html[data-skin="5"] .rowb{padding:10px 0}
+.rowb>.tx{flex:1;min-width:0;line-height:1.4}
+.rowb .tx b{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+html[data-skin="5"] .rowb .tx b{font-weight:400}
+.rowb .tx small{display:block;color:var(--ink2);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rowb .rt{flex:none;display:flex;align-items:center;gap:6px;color:var(--ink2)}
+.rowx{padding:0 14px 16px}html[data-skin="2"] .rowx,html[data-skin="5"] .rowx{padding:0 0 16px}
+.chev{color:var(--ink2);font-size:18px;line-height:1}
+.more{min-height:44px;padding:0 4px;color:var(--ink2);font-size:13px;white-space:nowrap;display:inline-flex;align-items:center;gap:2px;text-decoration:underline;text-underline-offset:4px}
 
-/* ---------- 卡片 ---------- */
-.card{position:relative;container-type:inline-size;background:var(--card);border-radius:var(--r);padding:14px 14px 12px;border-left:6px solid var(--lv,var(--calm));box-shadow:var(--shadow);cursor:pointer;
-  transition:opacity .28s,transform .28s,max-height .3s .05s,margin .3s;max-height:520px;overflow:hidden}
-.card:hover{box-shadow:0 1px 2px rgba(29,51,49,.1),0 12px 24px -12px rgba(29,51,49,.4)}
-.card:focus-visible{outline:3px solid var(--accent);outline-offset:0}
-.card.leave{opacity:0;transform:translateX(-24px);max-height:0;padding-top:0;padding-bottom:0;margin-bottom:-12px}
-.card.leave.r{transform:translateX(28px)}
-.card.fresh{animation:fresh 2.4s ease-out}
-@keyframes fresh{0%{box-shadow:0 0 0 3px var(--accent)}100%{box-shadow:var(--shadow)}}
-.c1{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin:0 0 4px;min-height:34px;min-width:0}
-.tm{display:inline-flex;align-items:baseline;gap:6px;color:var(--lv);line-height:1.15;font-size:13px;font-weight:600;white-space:nowrap}
-.tm b{font-family:var(--num);font-weight:900;font-size:28px;line-height:1.1;color:var(--lv)}
-.tm .nodl{color:var(--mut);font-size:14px;font-weight:600}
-.card h3{font-size:17px;font-weight:700;line-height:1.45;margin:0 0 6px}
-.c3{margin-bottom:12px}
-.ca{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:8px}
-.ca button{white-space:nowrap;min-height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;gap:6px;transition:transform .12s}
-.ca button:active{transform:scale(.97)}
-.ca .del{color:var(--delc)}
-.ca .go{background:var(--accent);border-color:var(--accent);color:#fff}
-.ca .go:hover{background:var(--accent-dk)}
-@container (max-width:300px){
-  .ca .ic{display:none}
-  .ca{grid-template-columns:auto auto 1fr;gap:6px}
-  .ca button{min-height:44px;min-width:44px;padding:0 8px;font-size:14.5px}
-  .ca .go{padding:0 6px}
-  .c1{min-height:32px}.tm b{font-size:26px}
-  .card h3{font-size:15.5px;margin-bottom:4px}
-  .c3{margin-bottom:8px}
-  .amt b{font-size:22px}.amt.long b{font-size:17px}
+/* 區域標頭：這一區誰負責、怎麼叫它 */
+.zh{padding:14px 2px 2px}
+.zh h1{font:var(--wd) 32px/1.15 var(--fd);letter-spacing:var(--ls)}
+html[data-skin="2"] .zh h1{font-size:44px;font-weight:300}
+html[data-skin="4"] .zh h1{font:900 44px/1 var(--zh)}
+html[data-skin="5"] .zh h1{font-size:34px}
+.zh .sum{color:var(--ink2);margin-top:6px}
+html[data-skin="4"] .zh{background:var(--zc);color:var(--zi);border-radius:24px;padding:22px 16px 14px;margin-top:10px;transition:background-color 1s ease-in-out}
+html[data-skin="4"] .zh .sum,html[data-skin="4"] .zh .owner small{color:var(--zi)}
+.zh[data-z=proj],.zh[data-z=daqi]{--zc:var(--c-daqi);--zi:var(--i-daqi)}.zh[data-z=opp]{--zc:var(--c-jiji);--zi:var(--i-jiji)}
+.zh[data-z=money]{--zc:var(--c-tata);--zi:var(--i-tata)}.zh[data-z=life]{--zc:var(--c-peng);--zi:var(--i-peng)}
+.owner{margin-top:12px;width:100%;min-height:56px;display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--r);border:1px dashed var(--line2);background:transparent}
+html[data-skin="4"] .owner{border:2px solid var(--zi);border-radius:16px}html[data-skin="4"] .owner .bm{background:var(--zi);color:var(--zc)}html[data-skin="4"] .owner .chev{color:var(--zi)}
+html[data-skin="3"] .owner{border-radius:16px;border-style:solid;border-color:var(--line)}
+.owner>.tx{flex:1;min-width:0;line-height:1.35}
+.owner small{display:block;color:var(--ink2);font-size:12px}
+.seg{display:flex;gap:8px;overflow-x:auto;padding:12px 16px 4px;margin:0 -16px;scrollbar-width:none;-webkit-overflow-scrolling:touch;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.seg::-webkit-scrollbar{display:none}
+.seg button{flex:none;min-height:44px;padding:0 14px;border-radius:var(--rb);border:1px solid var(--line2);color:var(--ink);white-space:nowrap}
+html[data-skin="3"] .seg button{border-color:var(--line);border-radius:10px}
+.seg button[aria-pressed=true]{background:var(--pri);color:var(--pri-ink);border-color:var(--pri);font-weight:700}
+.seg button:last-child{margin-right:28px}
+
+/* 今天：晨報主視覺 */
+.hero{padding:22px 2px 4px}
+.hero .date{font-size:13px;color:var(--ink2);letter-spacing:.06em}
+html[data-skin="2"] .hero .date{text-transform:uppercase;letter-spacing:.24em;font-size:11px}
+.hero h1{font:var(--wd) 34px/1.2 var(--fd);letter-spacing:var(--ls);margin-top:6px}
+.hero .say{font:400 19px/1.6 var(--fb);margin-top:8px;color:var(--ink2)}
+.hero .say b{color:var(--ink);font-weight:600}
+html[data-skin="1"] .hero{padding-top:34px}html[data-skin="1"] .hero .date,html[data-skin="1"] .hero .say{color:#d6d7de}html[data-skin="1"] .hero .say b{color:#fff}
+html[data-skin="2"] .hero h1{font-size:46px;font-weight:300;line-height:1.1}html[data-skin="2"] .hero .say{font:300 21px/1.55 var(--zs)}html[data-skin="2"] .hero .say b{font-weight:700}
+html[data-skin="3"] .hero h1{font-size:38px}
+html[data-skin="4"] .hero{background:var(--c-daqi);color:var(--i-daqi);border-radius:24px;padding:22px 16px 16px;margin-top:10px}
+html[data-skin="4"] .hero h1{font:900 46px/1 var(--zh)}html[data-skin="4"] .hero .date,html[data-skin="4"] .hero .say,html[data-skin="4"] .hero .say b{color:#000}html[data-skin="4"] .hero .say b{font-weight:900}
+html[data-skin="5"] .hero h1{font-size:34px}html[data-skin="5"] .hero .say{font-size:20px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+.stat{min-height:68px;padding:8px 10px;border-radius:calc(var(--r)*.66);background:var(--sf);border:var(--bw) solid var(--line);box-shadow:var(--shadow);display:grid;align-content:center;gap:2px;backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur))}
+html[data-skin="2"] .stat,html[data-skin="5"] .stat{border-width:1px 0;background:transparent;padding:8px 0}
+html[data-skin="3"] .stat{border:0}
+html[data-skin="4"] .stat{border:0;background:#000;color:#fff;border-radius:16px}html[data-skin="4"] .stat span{color:#fff}
+.stat b{font:var(--wd) 24px/1.1 var(--fn);font-variant-numeric:tabular-nums}
+html[data-skin="2"] .stat b,html[data-skin="5"] .stat b{font-size:30px;font-weight:400}html[data-skin="4"] .stat b{font-size:32px}
+.stat span{font-size:12px;color:var(--ink2)}
+.stat.urg b{color:var(--urg)}html[data-skin="4"] .stat.urg b{color:#ff6700}
+
+/* 版面 1：長流裡的區段摘要、底部「跟大器說」 */
+.kline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.kline b{font:var(--wd) 28px/1.2 var(--fn);font-variant-numeric:tabular-nums;white-space:nowrap}
+.kline span{color:var(--ink2);font-size:13px}
+.dock{position:fixed;left:0;right:0;bottom:calc(var(--tabh) + env(safe-area-inset-bottom));z-index:29;padding:8px 12px;background:var(--bar);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line);display:none}
+html[data-layout="1"] .dock{display:block}
+.dock button{width:100%;max-width:688px;margin:0 auto;min-height:44px;display:flex;align-items:center;gap:10px;padding:4px 14px 4px 6px;border-radius:var(--rb);border:1px solid var(--line2);background:var(--sf2);color:var(--ink)}
+html[data-skin="2"] .dock button,html[data-skin="5"] .dock button{padding-left:12px}
+
+/* 版面 2：拍板帶與房間牆 */
+.band{background:var(--band);color:var(--band-ink);border-radius:var(--r);padding:18px 16px;margin-top:14px}
+html[data-skin="1"] .band{border:1px solid rgba(195,134,171,.5);background:linear-gradient(160deg,#2b2248,#17131f)}
+html[data-skin="2"] .band,html[data-skin="5"] .band{margin-left:-16px;margin-right:-16px;padding:22px 16px}
+.band .lbl,.band p{color:var(--band-ink)}
+.band h2{font:var(--wd) 22px/1.35 var(--fd);margin-top:6px;overflow-wrap:anywhere}
+html[data-skin="2"] .band h2{font-size:26px;font-weight:400}html[data-skin="4"] .band h2{font:900 22px/1.35 var(--zh)}
+.band .btn{color:var(--band-ink);border-color:var(--band-ink)}
+.band .btn.pri{background:var(--band-btn);color:var(--band-btn-ink);border-color:var(--band-btn)}
+.band .btn.ghost{border-color:transparent;color:var(--band-ink)}
+.bandtop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wall{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.room{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:168px;padding:14px;border-radius:var(--r);background:var(--sf);border:var(--bw) solid var(--line);box-shadow:var(--shadow);min-width:0;backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur))}
+html[data-skin="3"] .room{border:0}
+html[data-skin="2"] .room,html[data-skin="5"] .room{border-color:var(--line2)}
+html[data-skin="4"] .room{border:0;background:var(--zc);color:var(--zi)}
+html[data-skin="4"] .room small,html[data-skin="4"] .room .rs{color:var(--zi)}html[data-skin="4"] .room .bm{background:var(--zi);color:var(--zc)}
+.room[data-z=proj]{--zc:var(--c-daqi);--zi:var(--i-daqi)}.room[data-z=opp]{--zc:var(--c-jiji);--zi:var(--i-jiji)}
+.room[data-z=money]{--zc:var(--c-tata);--zi:var(--i-tata)}.room[data-z=life]{--zc:var(--c-peng);--zi:var(--i-peng)}
+.room .rh{display:flex;align-items:center;gap:8px;width:100%;font-weight:700}
+.room .rh small{font-weight:400;color:var(--ink2);font-size:12px;margin-left:auto}
+.room .rn{font:var(--wd) 40px/1.05 var(--fn);font-variant-numeric:tabular-nums;margin-top:8px;white-space:nowrap;letter-spacing:var(--ls)}
+.room .rn.sm{font-size:28px;margin-top:14px}
+html[data-skin="4"] .room .rn{font-size:54px}html[data-skin="4"] .room .rn.sm{font-size:36px}
+.room .rs{font-size:13px;line-height:1.4}
+.room small.rb{color:var(--ink2);font-size:12px;margin-top:auto;padding-top:6px}
+
+/* 錢 */
+.kband{background:var(--b2);color:var(--b2-ink);border-radius:var(--r);padding:18px 16px;margin-top:14px;box-shadow:var(--shadow);border:var(--bw) solid var(--line)}
+html[data-skin="2"] .kband,html[data-skin="4"] .kband,html[data-skin="3"] .kband{border:0;box-shadow:none}
+html[data-skin="2"] .kband{margin-left:-16px;margin-right:-16px}
+html[data-skin="5"] .kband{border-width:2px 0}
+.kband .lbl,.kband small{color:var(--b2-ink);font-size:12.5px}
+.kband b{display:block;font:var(--wd) 40px/1.15 var(--fn);font-variant-numeric:tabular-nums;letter-spacing:var(--ls)}
+.hs{display:flex;gap:10px;overflow-x:auto;margin:0 -16px;padding:2px 16px 6px;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+.hs::-webkit-scrollbar{display:none}
+.hs .card{flex:none;width:64%;max-width:260px}
+html[data-skin="2"] .hs .card,html[data-skin="5"] .hs .card{border-width:1px;padding:14px}
+.li{display:flex;gap:12px;align-items:center;justify-content:space-between}
+.li>div:first-child{flex:1;min-width:0}
+.amt{font:700 15px/1.3 var(--fn);font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* 空、載入、失敗 */
+.empty{text-align:center;padding:36px 16px!important}
+.empty .big{font:var(--wd) 22px/1.4 var(--fd);color:var(--ink)}
+.empty p{color:var(--ink2);margin:6px 0 16px}
+.empty .btns{justify-content:center}
+.sk{border-radius:var(--rs);background:var(--sf2);animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.5}}
+
+/* 底部分頁 */
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;height:calc(var(--tabh) + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:var(--bar);backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);border-top:1px solid var(--line)}
+.tabs-in{position:relative;display:grid;grid-template-columns:repeat(var(--tn,5),1fr);max-width:560px;height:var(--tabh);margin:0 auto}
+.tabs .ind{position:absolute;top:0;left:0;width:calc(100%/var(--tn,5));height:3px;pointer-events:none;transition:transform .28s var(--e-in);display:grid;justify-items:center}
+.tabs .ind::before{content:"";width:36px;height:100%;background:var(--ink);border-radius:0 0 3px 3px}
+html[data-skin="4"] .tabs .ind{height:100%}html[data-skin="4"] .tabs .ind::before{width:calc(100% - 10px);height:calc(100% - 14px);margin-top:7px;border-radius:18px;background:var(--sf2)}
+.tab{position:relative;display:grid;justify-items:center;align-content:center;gap:2px;min-height:44px;color:var(--ink2);font-size:11px}
+.tab>svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.tab .bm{width:26px;height:26px;font-size:12px}
+.tab[aria-current=page]{color:var(--ink);font-weight:700}
+.badge{position:absolute;top:6px;left:calc(50% + 7px);min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--urg-bg);color:var(--urg-ink);font:700 11px/18px var(--zh);text-align:center}
+html[data-skin="1"] .badge{background:#ffb59e;color:#2a0d05}html[data-skin="3"] .badge{background:#c81e1e;color:#fff}
+
+/* 推入的整頁、底部抽屜、提示條 */
+.page{position:fixed;inset:0;z-index:40;background:var(--bg);overflow-y:auto;transform:translateX(100%);transition:transform .2s var(--e-out);-webkit-overflow-scrolling:touch}
+.page.in{transform:none;transition:transform .28s var(--e-in)}
+.page-in{max-width:720px;margin:0 auto;padding:0 16px 120px}
+.phead{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;min-height:56px;margin:0 -16px;padding:6px 8px;background:var(--bar);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.page h1.pt{font:var(--wd) 26px/1.3 var(--fd);margin-top:10px;overflow-wrap:anywhere;letter-spacing:var(--ls)}
+.kv{margin-top:14px;border-top:1px solid var(--line)}
+.kv div{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-bottom:1px solid var(--line)}
+.kv dt{color:var(--ink2);flex:none}.kv dd{text-align:right;overflow-wrap:anywhere}
+.h4{font:700 13px/1.2 var(--fb);color:var(--ink2);letter-spacing:.06em;margin:22px 0 8px}
+.ul{padding-left:20px}.ul li{margin:4px 0}
+.tl{list-style:none;padding:0}
+.tl li{position:relative;padding:0 0 12px 24px;font-size:14px}
+.tl li::before{content:"";position:absolute;left:4px;top:8px;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.tl li::after{content:"";position:absolute;left:7.5px;top:20px;bottom:-4px;width:1px;background:var(--line2)}
+.tl li:last-child::after{display:none}
+.scrim{position:fixed;inset:0;z-index:49;background:rgba(0,0,0,.5);opacity:0;transition:opacity .2s var(--e-out)}
+.scrim.in{opacity:1;transition:opacity .28s var(--e-std)}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;max-height:86vh;overflow-y:auto;background:var(--solid);border:1px solid var(--line);border-bottom:0;border-radius:max(var(--r),0px) max(var(--r),0px) 0 0;padding:8px 16px calc(22px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .2s var(--e-out);max-width:640px;margin:0 auto}
+html[data-skin="2"] .sheet,html[data-skin="5"] .sheet{border-top:2px solid var(--line2)}
+.sheet.in{transform:none;transition:transform .3s var(--e-in)}
+.sheet .grab{width:40px;height:4px;border-radius:9px;background:var(--line2);margin:4px auto 6px;opacity:.6}
+.shead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.shead h2{font:var(--wd) 21px/1.35 var(--fd);padding-top:8px;overflow-wrap:anywhere;letter-spacing:var(--ls)}
+html[data-skin="4"] .shead h2{font:900 21px/1.35 var(--zh)}html[data-skin="2"] .shead h2{font-size:25px}
+.can{display:grid;gap:6px;margin-top:8px;font-size:14px}
+.can div{display:flex;gap:10px}.can b{flex:none;width:48px}
+.bubble{padding:10px 14px;border-radius:var(--rs);background:var(--sf2);margin-top:8px;overflow-wrap:anywhere}
+.bubble small{display:block;color:var(--ink2);font-size:12px;margin-top:4px}
+.toast{position:fixed;left:12px;right:12px;bottom:calc(var(--tabh) + var(--dock) + 14px + env(safe-area-inset-bottom));z-index:55;max-width:520px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:52px;padding:4px 8px 4px 16px;border-radius:max(var(--rs),0px);background:var(--pri);color:var(--pri-ink);box-shadow:0 10px 30px rgba(0,0,0,.25);transform:translateY(16px);opacity:0;transition:transform .2s var(--e-out),opacity .2s var(--e-out);pointer-events:none}
+.toast.in{transform:none;opacity:1;pointer-events:auto;transition:transform .26s var(--e-in),opacity .26s var(--e-in)}
+.app.over .toast{bottom:auto;top:12px}
+.toast button{min-height:44px;min-width:56px;padding:0 12px;font-weight:700;color:inherit;text-decoration:underline;text-underline-offset:3px}
+
+/* 動態：只用來說明方向與給回饋 */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}}
+@keyframes slideL{from{opacity:0;transform:translateX(24px)}}
+@keyframes slideR{from{opacity:0;transform:translateX(-24px)}}
+@keyframes zoomin{from{opacity:0;transform:scale(.88)}}
+@keyframes zoomout{from{opacity:0;transform:scale(1.06)}}
+@keyframes fade{from{opacity:0}}
+@keyframes grow{from{transform:scaleX(0)}}
+@keyframes leave{to{opacity:0;transform:translateX(-18px)}}
+@media (prefers-reduced-motion:no-preference){
+  .stg>*{animation:rise .28s var(--e-in) both}
+  .stg>*:nth-child(2){animation-delay:35ms}.stg>*:nth-child(3){animation-delay:70ms}.stg>*:nth-child(4){animation-delay:105ms}.stg>*:nth-child(n+5){animation-delay:120ms}
+  .goL{animation:slideL .26s var(--e-in) both}.goR{animation:slideR .26s var(--e-in) both}
+  .zin{animation:zoomin .28s var(--e-in) both}.zout{animation:zoomout .26s var(--e-in) both}
+  .fadein{animation:fade .2s var(--e-std) both}
+  .stg .bar i{animation:grow .4s var(--e-in) both}
+  .leaving{animation:leave .18s var(--e-out) both}
+  .tick{animation:fade .2s var(--e-std) both}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
 }
 
-.zero{display:grid;justify-items:center;text-align:center;gap:6px;padding:28px 16px;margin:2px 0;background:rgba(255,255,255,.6);border-radius:var(--r);color:var(--mut);font-size:14.5px}
-.zero b{color:var(--ink);font-size:16px}
-.zero svg{width:38px;height:38px;stroke:var(--calm);fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-.sk{background:linear-gradient(90deg,#dfe8e4 0%,#edf3f0 50%,#dfe8e4 100%);background-size:200% 100%;animation:sh 1.4s linear infinite;border-radius:8px}
-@keyframes sh{to{background-position:-200% 0}}
-.card.skel{cursor:default;border-left-color:#c9d6d1;display:grid;gap:10px;pointer-events:none}
-.card.skel .sk:nth-child(1){height:26px;width:40%}.card.skel .sk:nth-child(2){height:42px}.card.skel .sk:nth-child(3){height:44px}
-
-/* 整個面板沒東西、載入失敗、沒金鑰 */
-.board-msg{grid-area:1/1;display:grid;place-content:center;justify-items:center;text-align:center;gap:10px;padding:24px 28px 90px;margin:0 12px 12px;border-radius:20px;background:var(--lane)}
-.board-msg h2{font-family:var(--num);font-size:22px;font-weight:900;line-height:1.4}
-.board-msg p{max-width:32em;color:var(--mut);font-size:15px}
-.board-msg svg{width:48px;height:48px;stroke:var(--calm);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.board-msg .btn{margin-top:6px}
-
-/* ---------- 疊層：待決區（sheet）與詳細資料（drawer） ---------- */
-.hpill{position:fixed;right:14px;bottom:calc(env(safe-area-inset-bottom) + 14px);z-index:30;display:inline-flex;align-items:center;gap:10px;min-height:52px;padding:0 8px 0 18px;font-weight:800;font-size:16px;
-  background:var(--card);border:1.5px dashed var(--dash);border-radius:16px;box-shadow:0 8px 20px -8px rgba(29,51,49,.35)}
-.hpill b,.holdbtn b{display:inline-grid;place-items:center;min-width:32px;height:32px;padding:0 8px;border-radius:99px;background:var(--accent-dk);color:#fff;font-size:16px;font-weight:800}
-.scrim{position:fixed;inset:0;background:var(--scrim);opacity:0;pointer-events:none;transition:opacity .25s;z-index:40}
-.scrim.show{opacity:1;pointer-events:auto}
-.panel{position:fixed;left:0;right:0;bottom:0;height:90dvh;background:var(--sheet);color:var(--ink);border-radius:24px 24px 0 0;display:flex;flex-direction:column;transform:translateY(105%);visibility:hidden;
-  transition:transform .34s cubic-bezier(.2,.8,.2,1),visibility 0s .34s;box-shadow:0 -20px 50px -20px rgba(29,51,49,.45)}
-.panel.show{transform:none;visibility:visible;transition:transform .34s cubic-bezier(.2,.8,.2,1),visibility 0s}
-.sheet{z-index:50;height:84dvh}
-.drawer{z-index:60}
-.dh{display:flex;align-items:center;justify-content:space-between;padding:8px 8px 4px 18px;border-bottom:1px solid var(--line);flex:none}
-.dh span{font-size:14px;color:var(--mut);font-weight:700}
-.xb{min-width:48px;min-height:48px;display:grid;place-items:center;font-size:26px;line-height:1;border-radius:50%}
-.db{flex:1;overflow:auto;padding:16px 18px 24px;overscroll-behavior:contain}
-.df{display:flex;gap:10px;padding:12px 16px calc(env(safe-area-inset-bottom) + 14px);border-top:1px solid var(--line);background:var(--card);flex:none}
-.df .btn{min-height:56px;flex:1;font-size:16px}
-.df .del{flex:0 0 auto;min-width:104px;color:var(--delc);border-color:var(--delb)}
-.df .hold{flex:0 0 auto;min-width:92px}
-
-/* 預覽與完整內容 */
-.dt-tags{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
-.dt{display:grid;gap:18px}
-.dt h2{font-size:23px;line-height:1.4;font-weight:800}
-.dt-org{color:var(--mut);font-size:15px;margin-top:2px}
-.dt-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.dt-stat{padding:14px 16px;border-radius:14px;background:var(--stat);display:grid;gap:2px;align-content:start}
-.dt-stat em{font-style:normal;font-size:12.5px;color:var(--mut);font-weight:500}
-.dt-stat .amt em{flex-basis:100%;margin:0 0 2px}
-.dt-stat .amt b{font-size:32px}.dt-stat .amt.long b{font-size:22px}
-.dt-stat .amt.noamt b{font-size:17px}
-.dt-cd{display:block;font-size:22px;font-weight:800;line-height:1.3;color:var(--lv,var(--ink))}
-.dt-stat small{font-size:13px;color:var(--mut);line-height:1.4}
-.dt-why{font-size:18px;font-weight:700;line-height:1.55}
-.dt-fit{display:flex;gap:16px;flex-wrap:wrap;margin-top:6px;font-size:14.5px;color:var(--mut)}
-.dt-fit b{color:var(--ink)}
-.dt-list{display:grid;gap:0}
-.dt-list li{position:relative;padding:11px 0;border-top:1px solid var(--line);font-size:15.5px;line-height:1.65}
-.dt-list li:first-child{border-top:0}
-.dt-list b{display:block;font-size:13px;color:var(--mut);font-weight:700;margin-bottom:1px}
-.pv-list{display:grid;gap:8px}
-.pv-list li{position:relative;padding-left:18px;font-size:15.5px}
-.pv-list li::before{content:'';position:absolute;left:2px;top:.72em;width:7px;height:7px;border-radius:50%;background:var(--mut)}
-.dt-warn{padding:14px 16px;border-radius:14px;background:var(--danger-bg);border-left:5px solid var(--danger)}
-.dt-warn h3{font-size:14px;color:var(--warn-h);margin-bottom:4px}
-.dt-warn li{font-size:15.5px;line-height:1.6;color:var(--warn-ink);padding:3px 0}
-.dt-first{padding:14px 16px;border-radius:14px;background:var(--first);color:var(--ink)}
-.dt-first h3{font-size:14px;color:var(--first-h);margin-bottom:2px}
-.dt-first p{font-size:17px;font-weight:700;line-height:1.55}
-.dt-sec h3{font-size:14px;margin-bottom:6px;color:var(--mut);font-weight:700}
-.dt-src{display:grid;gap:2px;font-size:14px;color:var(--mut)}
-.dt-src a{display:inline-flex;align-items:center;min-height:44px;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
-.dt-meta{font-size:13.5px;color:var(--mut);line-height:1.5}
-
-/* 爬全文的三種狀態：讀取中、失敗、逾時 */
-.dt-crawl{padding:14px 16px;border-radius:14px;background:var(--stat);display:grid;gap:10px}
-.dt-crawl .row{display:flex;gap:12px;align-items:flex-start}
-.dt-crawl b{display:block;font-size:16px;line-height:1.45}
-.dt-crawl small{display:block;font-size:14px;color:var(--mut);line-height:1.55;margin-top:2px}
-.dt-crawl.fail{background:var(--demo-bg);border:1.5px solid #e2c27a}
-.dt-crawl.fail b{color:#5a3b00}.dt-crawl.fail small{color:#5a4210}
-.dt-crawl .acts{display:flex;gap:10px;flex-wrap:wrap}
-.dt-crawl .acts .btn{min-height:48px;font-size:15px;padding:0 16px}
-.dt-crawl.wait{background:var(--first);border:1.5px solid #c5ddd4}
-.crawl-sk{display:grid;gap:8px;padding:4px 0 2px}
-.crawl-sk .sk{display:block;height:12px;border-radius:6px;background:linear-gradient(90deg,#bbd0c8 0%,#d4e4de 50%,#bbd0c8 100%);background-size:200% 100%;animation:sh 1.4s linear infinite}
-.crawl-sk .sk:nth-child(1){width:92%}.crawl-sk .sk:nth-child(2){width:78%}.crawl-sk .sk:nth-child(3){width:64%}
-.dt-crawl .spin{width:22px;height:22px;margin-top:2px}
-.dt-text .txt{font-size:15px;line-height:1.75;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;max-height:15em;overflow:hidden;position:relative}
-.dt-text .txt.open{max-height:none}
-.dt-text .txt:not(.open)::after{content:'';position:absolute;left:0;right:0;bottom:0;height:3.2em;background:linear-gradient(transparent,#fff)}
-.dt-text .more{margin-top:6px;min-height:44px;padding:0 6px;font-weight:700;color:var(--link);text-decoration:underline;text-underline-offset:3px}
-
-/* 要做：資料夾狀態 */
-.fold{display:grid;gap:12px;max-width:460px;margin:0 auto;padding-top:8px}
-.fold-t{display:flex;align-items:center;gap:10px;font-size:20px;font-weight:800;line-height:1.4}
-.fold-t .spin{width:24px;height:24px}
-.ok-ic{display:inline-grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;background:var(--ok);color:#fff;font-size:17px}
-.fold p{color:var(--mut);font-size:15px}
-.path{padding:12px 14px;border-radius:12px;background:var(--ok-bg);color:var(--ok-ink);font-weight:700;font-size:15px;line-height:1.6;overflow-wrap:anywhere;word-break:break-all}
-.fold .acts{display:flex;gap:10px;flex-wrap:wrap}
-.fold .acts .btn{min-height:48px;font-size:15px}
-
-/* 待決區內的卡 */
-.sheet .db{padding:8px 14px 20px;display:grid;gap:12px;align-content:start;background:var(--sheet)}
-.grp{font-size:13.5px;font-weight:700;color:var(--mut);margin:10px 2px -2px}
-.pc{background:var(--card);border-radius:16px;padding:14px 14px 12px;box-shadow:0 1px 2px rgba(29,51,49,.06);cursor:pointer}
-.pc.done{background:var(--ok-bg)}
-.pc h3{font-size:16px;line-height:1.45;margin:8px 0 4px;font-weight:700}
-.pc .st{font-size:14px;color:var(--mut);line-height:1.6}
-.pc .st b{color:var(--lv,var(--ink))}
-.pc .pa{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.pc .pa button{flex:1;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-weight:700;font-size:15px}
-.pc .pa .pg{background:var(--accent);border-color:var(--accent);color:#fff}
-.pc .pa .pd{color:var(--delc)}
-.pc .pa .pu{flex:1 0 100%;min-height:44px;border-color:var(--line);background:var(--sheet);color:var(--mut);font-size:14.5px;font-weight:700}
-.pc .pa .pu:hover{background:var(--stat);border-color:var(--line);color:var(--ink)}
-.pc .st .spin{width:14px;height:14px;border-width:2.5px;vertical-align:-2px;margin-right:6px}
-.gone{margin-top:6px}
-.gone summary{display:flex;align-items:center;min-height:44px;padding:0 4px;font-size:14px;font-weight:700;color:var(--mut);cursor:pointer}
-.gone .pc{margin-top:8px;opacity:.9;cursor:default}
-.sheet-note{font-size:13px;color:var(--mut);line-height:1.6;padding:6px 4px 0}
-
-/* toast */
-#toast{position:fixed;left:50%;width:max-content;bottom:calc(env(safe-area-inset-bottom) + 92px);transform:translate(-50%,24px);opacity:0;pointer-events:none;z-index:99;display:flex;align-items:center;gap:12px;max-width:min(92vw,520px);
-  padding:8px 8px 8px 18px;border-radius:14px;background:#1f3331;color:#fff;font-size:15px;line-height:1.5;box-shadow:0 10px 30px rgba(0,0,0,.25);transition:opacity .25s,transform .25s}
-#toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
-#toast.bad{background:#7a1a14}
-#toast button{min-height:44px;padding:0 14px;border-radius:10px;background:#ffd24d;color:#14202e;font-weight:700;white-space:nowrap}
-#toast.bad button{background:#fff;color:#7a1a14}
-
-/* ---------- 桌機：五個籃子並排，放不下就橫向捲動 ---------- */
-@media (min-width:960px){
-  .tabs,.hpill{display:none}
-  .top{padding:18px 16px 10px}
-  .top h1{font-size:22px}
-  .holdbtn{display:inline-flex;align-items:center;gap:10px;min-height:48px;padding:0 8px 0 16px;border-radius:14px;background:var(--card);border:1.5px dashed var(--dash);font-weight:800;font-size:15.5px}
-  .notice{margin:0 16px 8px}
-  .board{padding:0 16px 20px}
-  .board-msg{margin:0}
-  /* 五欄固定均分，960 寬要一次放下；欄太窄時靠容器查詢改按鈕排法，而不是把第五籃推去橫向捲 */
-  .lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-flow:row;gap:8px;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;scrollbar-width:thin;scrollbar-color:#9db8b1 transparent;padding-bottom:6px}
-  .lane,.lane.cur{display:flex;min-width:0;scroll-snap-align:start}
-  .lh{padding:12px 10px 6px}
-  .lh h2{font-size:17px}
-  .lh p{font-size:12.5px}
-  .lbody{padding:6px 8px 22px}
-  .card{padding:10px 8px 8px}
-  .c3{margin-bottom:8px}
-  .ca{grid-template-columns:auto auto 1fr}
-  .ca button{min-height:44px}
-  /* 只有真的捲得出去時才顯示淡出；淡出帶落在捲動留白上，不蓋住可點按鈕 */
-  .board.sr .lanes{padding-right:28px;scroll-padding-inline:28px}
-  .board.sl .lanes{padding-left:20px}
-  .board::after{content:'';position:absolute;top:0;right:16px;bottom:26px;width:28px;pointer-events:none;background:linear-gradient(90deg,rgba(242,246,244,0),var(--bg) 90%);opacity:0;transition:opacity .2s;z-index:2}
-  .board.sr::after{opacity:1}
-  .board::before{content:'';position:absolute;top:0;left:16px;bottom:26px;width:20px;pointer-events:none;background:linear-gradient(270deg,rgba(242,246,244,0),var(--bg) 90%);opacity:0;transition:opacity .2s;z-index:2}
-  .board.sl::before{opacity:1}
-  /* 疊層改成靠右的側欄 */
-  .panel{left:auto;top:0;bottom:0;height:auto;width:min(560px,92vw);border-radius:24px 0 0 24px;transform:translateX(105%);box-shadow:-20px 0 50px -20px rgba(29,51,49,.45)}
-  .panel.show{transform:none}
-  .sheet{width:min(440px,92vw);height:auto}
-  .db{padding:22px 28px 28px}
-  .sheet .db{padding:10px 18px 24px}
-  .df{padding:14px 24px 18px}
-  #toast{bottom:28px}
-}
-@media (min-width:1360px){
-  .top{padding:18px 32px 10px}.board{padding:0 32px 22px}.notice{margin:0 32px 8px}
-  .board::after{right:32px}.board::before{left:32px}
-  .lanes{gap:14px}
-  .lh{padding:14px 14px 8px}
-  .lh h2{font-size:19px}
-  .lh p{font-size:13px}
-  .lbody{padding:6px 10px 22px}
-  .card{padding:12px 12px 10px}
+/* 桌機：左側導航、今天兩欄、抽屜改右側面板 */
+@media (min-width:1000px){
+  .app{padding-left:220px;padding-bottom:40px}
+  html[data-layout="1"] .app{padding-bottom:110px}
+  .tabs{left:0;right:auto;top:0;bottom:0;width:220px;height:auto;border-top:0;border-right:1px solid var(--line);padding:120px 12px 0}
+  .tabs-in{grid-template-columns:1fr;height:auto;max-width:none;gap:4px}
+  .tabs .ind{display:none}
+  .tab{grid-template-columns:26px 1fr auto;justify-items:start;gap:12px;padding:0 14px;min-height:48px;font-size:15px;border-radius:min(var(--r),14px)}
+  .tab[aria-current=page]{background:var(--sf2)}
+  .badge{position:static}
+  main{max-width:1080px;padding:8px 32px 24px}
+  .cols{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:36px;align-items:start}
+  .wall{grid-template-columns:repeat(4,1fr)}
+  .grid2{grid-template-columns:1fr 1fr}
+  .dock{left:220px}.toast{left:232px}.page{left:220px}
+  .sheet{left:auto;right:0;top:0;bottom:0;max-height:none;width:440px;border-radius:0;border-width:0 0 0 1px;transform:translateX(105%);padding-top:20px}
+  .sheet .grab{display:none}
+  .offline{margin-left:32px}
 }
 
+/* ========== v3 新外觀 6 暮光色塊：底取暮光（深夜、光場、玻璃面板、銀字），顏色取遊樂色塊（每間房一個主色） ==========
+   規則：房間色只給「這間房的身分與動作」（房間卡、標題列、Bot 頭像、叫它做事的膠囊鈕、房內主鈕）。
+   提醒色只有一個：奶油白底黑字（拍板帶、急迫標籤、徽章），不和四個房間色撞。其他一律壓暗。 */
+html[data-skin="6"]{color-scheme:dark;--bg:#07060d;--sf:rgba(20,19,28,.88);--sf2:#262531;--solid:#13121b;--ink:#f4f4f7;--ink2:#b9bbc6;--line:rgba(255,255,255,.14);--line2:rgba(255,255,255,.38);
+  --alert:#f3efe0;--alert-ink:#000;--rc:#f3efe0;
+  --pri:var(--rc);--pri-ink:#000;--urg:#f3efe0;--urg-bg:#f3efe0;--urg-ink:#000;--ok:#8fd9b0;--acc:#f3efe0;
+  --band:#f3efe0;--band-ink:#000;--band-btn:#000;--band-btn-ink:#f3efe0;--b2:#1b1a25;--b2-ink:#f4f4f7;
+  --r:24px;--rb:999px;--rs:10px;--shadow:0 1px 4px rgba(0,0,0,.3);--bar:rgba(7,6,13,.94);--blur:16px;
+  --fb:"Inter",var(--zh);--fd:var(--zh);--wd:900;--fn:"Inter",var(--zh);--fx:"Barlow Condensed","Inter",var(--zh);--ls:0;
+  --c-daqi:#a37aff;--i-daqi:#000;--c-jiji:#4d86ff;--i-jiji:#000;--c-tata:#ff6700;--i-tata:#000;--c-peng:#00b351;--i-peng:#000}
+html[data-skin="6"][data-tab=proj],html[data-skin="6"][data-tab=daqi]{--rc:var(--c-daqi)}
+html[data-skin="6"][data-tab=opp]{--rc:var(--c-jiji)}
+html[data-skin="6"][data-tab=money]{--rc:var(--c-tata)}
+html[data-skin="6"][data-tab=life]{--rc:var(--c-peng)}
+/* 光場：暮光的黃昏場在首頁；進房間時沉下去，換上該房間色的一層光，各動一次（0.4 秒），之後靜止 */
+html[data-skin="6"] .field{display:block;opacity:1}
+html[data-skin="6"][data-tab] .field i{transform:translate(0,-50vmax);opacity:.38;transition:transform .4s var(--e-std),opacity .4s var(--e-std)}
+html[data-skin="6"][data-tab=today] .field i{transform:translate(0,-30vmax);opacity:1}
+html[data-skin="6"][data-tab=today][data-calm] .field i{transform:translate(0,-40vmax);opacity:.7}
+html[data-skin="6"] .field::after{content:"";position:absolute;inset:0;background:var(--rc);opacity:.3;-webkit-mask-image:radial-gradient(130% 46% at 50% 0,#000 0,transparent 72%);mask-image:radial-gradient(130% 46% at 50% 0,#000 0,transparent 72%);transition:opacity .4s var(--e-std),background-color .4s var(--e-std)}
+html[data-skin="6"][data-tab=today] .field::after{opacity:0}
+html[data-skin="6"] .top{border-bottom-color:transparent}
+html[data-skin="6"] .brand b{font-size:21px}
+html[data-skin="6"] .bm{border:0}
+html[data-skin="6"] .card,html[data-skin="6"] .rows,html[data-skin="6"] .stat{border-color:var(--line)}
+html[data-skin="6"] .chip{border-radius:6px}
+html[data-skin="6"] .chip.urg{font-weight:700}
+html[data-skin="6"] .bar i{background:#8d8f9c}
+html[data-skin="6"] .bar.over i{background:var(--alert)}
+html[data-skin="6"] .btn.warn{border-color:var(--alert);color:var(--alert)}
+html[data-skin="6"] .btn[data-act=cmd]{background:var(--pri);color:#000;border-color:var(--pri);font-weight:700}
+html[data-skin="6"] .hero{padding-top:34px}
+html[data-skin="6"] .hero .date,html[data-skin="6"] .hero .say{color:#dcdde4}html[data-skin="6"] .hero .say b{color:#fff}
+html[data-skin="6"] .stat b,html[data-skin="6"] .kline b,html[data-skin="6"] .kband b,html[data-skin="6"] .room .rn{font-family:var(--fx);font-weight:800}
+html[data-skin="6"] .stat b{font-size:30px}html[data-skin="6"] .kline b{font-size:32px}html[data-skin="6"] .kband b{font-size:48px}
+/* 拍板帶：整塊提醒色 */
+html[data-skin="6"] .band{box-shadow:0 12px 40px rgba(0,0,0,.45)}
+html[data-skin="6"] .band h2{font:900 22px/1.35 var(--zh)}
+/* 房間卡：要你動手的整塊亮房間色；現在不用動手的壓暗，只留頭像與細邊的顏色 */
+html[data-skin="6"] .room{border:0;background:var(--zc);color:#000;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+html[data-skin="6"] .room small,html[data-skin="6"] .room .rs,html[data-skin="6"] .room small.rb{color:#000}
+html[data-skin="6"] .room .bm{background:#000;color:var(--zc)}
+html[data-skin="6"] .room .rn{font-size:60px;line-height:1}html[data-skin="6"] .room .rn.sm{font-size:40px}
+html[data-skin="6"] .room[data-hot="off"]{background:var(--sf);color:var(--ink);border:1px solid color-mix(in srgb,var(--zc) 55%,transparent);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+html[data-skin="6"] .room[data-hot="off"] small,html[data-skin="6"] .room[data-hot="off"] small.rb{color:var(--ink2)}html[data-skin="6"] .room[data-hot="off"] .rs{color:var(--ink)}
+html[data-skin="6"] .room[data-hot="off"] .bm{background:var(--zc);color:#000}
+/* 房間內標題列：整塊房間色；「叫它做事」是黑底膠囊，字用房間色 */
+html[data-skin="6"] .zh[data-z]:not([data-z=today]){background:var(--zc);color:#000;border-radius:24px;padding:22px 16px 14px;margin-top:10px}
+html[data-skin="6"] .zh h1{font:900 40px/1.05 var(--zh)}
+html[data-skin="6"] .zh[data-z]:not([data-z=today]) .sum{color:#000}
+html[data-skin="6"] .owner{border:0;border-radius:999px;background:#000;color:var(--zc);padding:8px 16px 8px 10px}
+html[data-skin="6"] .owner .bm{background:var(--zc);color:#000}
+html[data-skin="6"] .owner small{color:#d3d5dd}html[data-skin="6"] .owner .chev{color:var(--zc)}
+html[data-skin="6"] .owner:focus-visible{outline-color:#000}
+/* 底部分頁：現在這間用房間色，其他壓暗 */
+html[data-skin="6"] .tabs .ind::before{background:var(--rc)}
+html[data-skin="6"] .tab:not([aria-current]) .bm{background:var(--sf2)}
+html[data-skin="6"] .tab:not([aria-current]) .bm[data-b=daqi]{color:var(--c-daqi)}html[data-skin="6"] .tab:not([aria-current]) .bm[data-b=jiji]{color:var(--c-jiji)}
+html[data-skin="6"] .tab:not([aria-current]) .bm[data-b=tata]{color:var(--c-tata)}html[data-skin="6"] .tab:not([aria-current]) .bm[data-b=peng]{color:var(--c-peng)}
+html[data-skin="6"] .badge{background:var(--alert);color:#000}
+/* 抽屜跟著是誰的事換主色 */
+html[data-skin="6"] .sheet[data-b=daqi]{--pri:var(--c-daqi)}html[data-skin="6"] .sheet[data-b=jiji]{--pri:var(--c-jiji)}
+html[data-skin="6"] .sheet[data-b=tata]{--pri:var(--c-tata)}html[data-skin="6"] .sheet[data-b=peng]{--pri:var(--c-peng)}
+html[data-skin="6"] .shead h2{font:900 21px/1.35 var(--zh)}
+/* 清單裡只有急的那張卡，主鈕才上房間色；其他卡的主鈕退成線框 */
+html[data-skin="6"] article.card:not(:has(.chip.urg)) .btn.pri,html[data-skin="6"] article.card:not(:has(.chip.urg)) .btn[data-act=cmd]{background:transparent;color:var(--ink);border-color:var(--line2);font-weight:500}
+/* 抽屜標題很長時，關閉鈕不被擠成直排（v2 也有這個問題，這裡一起修） */
+.shead .btn{flex:none;white-space:nowrap}
 
-/* 直向手機：看板底部留出膠囊高度，捲動區不會讓按鈕躲到膠囊下面 */
-@media (max-width:959px){
-  /* 籃子一路鋪到螢幕底，待決區只剩右下浮動按鈕，底下不再切出一條 */
-  .board{padding-bottom:0}
-  .lane{border-radius:20px 20px 0 0}
-  .lbody{padding-bottom:calc(env(safe-area-inset-bottom) + 84px)}
-  .board-msg{padding-bottom:calc(env(safe-area-inset-bottom) + 84px);margin-bottom:0;border-radius:20px 20px 0 0}
-  .lane.sw-l{animation:swl .22s ease-out}.lane.sw-r{animation:swr .22s ease-out}
+/* ========== v3 追加：頭像 ==========
+   大器：黑豹頭像（素材/大器頭像_256.jpg，內嵌）。Bot：照 Grok Bot 的頭像形狀畫（塔塔 blob 球、集集 square 圓角方、朋朋 blob 球），
+   兩隻直立膠囊眼偏右上、沒有嘴；顏色用各自房間色。 */
+.bm[data-b=daqi]{background-image:url(data:image/jpeg;base64,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)!important;background-size:cover!important;background-position:center!important;background-color:#000;color:transparent!important;font-size:0!important;border-color:rgba(255,255,255,.35)!important;border-radius:50%!important;overflow:hidden}
+html[data-skin="6"] .bm[data-b=daqi]{border:1.5px solid var(--c-daqi)!important}
+html[data-skin="6"] .room:not([data-hot="off"]) .bm[data-b=daqi],html[data-skin="6"] .zh .bm[data-b=daqi]{border-color:#000!important}
+.bm.av{background:none!important;border:0!important;border-radius:0!important;overflow:visible}
+.bm.av svg{width:100%;height:100%;display:block}
+.bm.av .bd{fill:var(--avc,currentColor)}.bm.av .ey{fill:var(--ave,#000)}.bm.av .hl{fill:#fff;opacity:.28}
+.bm.av[data-b=jiji]{--avc:var(--c-jiji);--ave:var(--i-jiji,#000)}.bm.av[data-b=tata]{--avc:var(--c-tata);--ave:var(--i-tata,#000)}.bm.av[data-b=peng]{--avc:var(--c-peng);--ave:var(--i-peng,#000)}
+html[data-skin="1"] .bm.av{--avc:#c4c5c9;--ave:#0f0f10}
+html[data-skin="4"] .room .bm.av,html[data-skin="4"] .zh .bm.av{--avc:var(--zi);--ave:var(--zc)}
+html[data-skin="6"] .room:not([data-hot="off"]) .bm.av{--avc:#000;--ave:var(--zc)}
+html[data-skin="6"] .room .bm{width:40px;height:40px}
+html[data-skin="6"] .owner .bm{width:36px;height:36px}
+html[data-skin="6"] .tab .bm{width:28px;height:28px}
+html[data-skin="6"] .tab:not([aria-current]) .bm{opacity:.72}
+html[data-skin="6"] .talkbtn{border-color:var(--c-daqi)}
+/* ========== v3 追加：光場呼應房間色 ==========
+   總覽：四個房間色各一團光，疊在暮光的深藍夜上（左上橘紅、右上藍、中間偏左黃、中間偏右綠）。
+   進房間：四色那層退掉，換上該房間色的一層光。各動一次 0.4 秒，之後靜止，不循環。 */
+html[data-skin="6"] .field{background:#07060d}
+html[data-skin="6"] .field i{left:0;top:0;width:100%;height:100%;background:
+  radial-gradient(56% 24% at 0 17%,rgba(163,122,255,.62) 0,transparent 72%),
+  radial-gradient(56% 24% at 100% 17%,rgba(77,134,255,.64) 0,transparent 72%),
+  radial-gradient(34% 13% at 37% 15%,rgba(255,103,0,.4) 0,transparent 74%),
+  radial-gradient(34% 13% at 65% 16%,rgba(0,179,81,.46) 0,transparent 74%),
+  radial-gradient(140% 52% at 50% 0,#29285e 0,#00052e 52%,transparent 100%)}
+html[data-skin="6"][data-tab] .field i{transform:translateY(-8%);opacity:0;transition:transform .4s var(--e-std),opacity .4s var(--e-std)}
+html[data-skin="6"][data-tab=today] .field i{transform:none;opacity:1}
+html[data-skin="6"][data-tab=today][data-calm] .field i{transform:translateY(-4%);opacity:.6}
+html[data-skin="6"] .zh[data-z=today] .lbl{color:#f4f4f7}
+html[data-skin="6"] .field::after{opacity:.34}
+html[data-skin="6"][data-tab=today] .field::after{opacity:0}
+/* 原型切換列會蓋住固定在頂端的整頁與桌機側欄：讓它們從切換列下緣開始（正式版沒有這一列，--ph 就是 0） */
+.page{top:var(--ph,0px)}
+.app.over .toast{top:calc(var(--ph,0px) + 12px)}
+@media (min-width:1000px){.sheet{top:var(--ph,0px)}}
+
+/* ========== v3 追加：會動的頭像（bot_face.js，2026-11-22；頭像修正版） ==========
+   塔塔 sphere、集集 square、朋朋 tablet、大器 daqi（紫身體、黑眼、黑豹耳）。
+   老大 2026-11-22：「如果他已經是色塊底的顏色，那他們頭像反黑沒關係，等到正常底色他們才顯露自己的頭像顏色」
+   做法：整塊房間色的面宣告 --bf-tone:ink，faceSync 讀到就把頭像切成反黑（黑剪影、眼睛與耳內透出房間色）；
+   其他底色（暮光深底、奶油白拍板卡、黑膠囊、抽屜）顯示自己的房間色。不再墊黑圓底。 */
+html body .bm.bf[data-b]{background:none!important;border:0!important;border-radius:50%!important;overflow:visible;display:inline-block;line-height:0;font-size:0;box-sizing:border-box;opacity:1}
+html body .bm.bf[data-b]>.bot-face{width:100%;height:100%;display:block}
+html[data-skin="6"] body .room:not([data-hot="off"]){--bf-tone:ink;--bot-ink:#000;--bot-ink-in:var(--zc)}
+html[data-skin="4"] body .room,html[data-skin="4"] body .zh[data-z]:not([data-z=today]){--bf-tone:ink;--bot-ink:var(--zi);--bot-ink-in:var(--zc)}
+.bandtop .lbl.who{display:inline-flex;align-items:center;gap:6px}
+.bandtop .bm,.meta .bm.sm{width:24px;height:24px}
+/* 底部分頁：首頁圖示與頭像佔同樣 28px 高，字才會對齊；沒選中的頭像靜止、壓淡，選中的才動；數字徽章移到頭像右上角外側 */
+html[data-layout="2"] .tab>svg{margin:3px}
+html body .tab .bm.bf[data-b]{width:28px;height:28px;transition:opacity .2s ease}
+html body .tab:not([aria-current]) .bm.bf[data-b]{opacity:.62}
+html[data-layout="2"] .tab .badge{left:calc(50% + 10px);top:5px}
+@media (min-width:1000px){html[data-layout="2"] .tab{grid-template-columns:28px 1fr auto}html[data-layout="2"] .tab .badge{position:static}}
+
+/* ========== v3 追加：浮動對話視窗、浮動頭像、房間主人、購物清單、付款鈕、案子詳情（2026-11-22） ==========
+   老大 2026-11-22：「對話的部分希望是浮動對話視窗，對應的頭像會跳動這樣，不是像現在這樣死板的跳出一塊」
+   浮窗：四邊留空、整塊圓角，從你點的那個頭像位置長出來（0.32 秒），收起時縮回去（0.2 秒）；左上角掛著那隻會動的頭像。
+   浮動頭像：右下角常駐，是「這間房的主人」；可以拖到左右邊緣停靠。減少動態時全部改成淡入淡出。 */
+html{--c-din:#f3efe0;--c-mon:#ff9800;--c-kim:#ff6700;--kb:0px}
+.bm.bf.sm{width:22px;height:22px}
+html body .bm.bf[data-b=din]{background:#f3efe0!important;padding:2px}
+.btn .bm.sm{margin-left:-4px}
+.cscrim{position:fixed;inset:0;z-index:59;background:rgba(0,0,0,.36);opacity:0;transition:opacity .2s var(--e-out)}
+.cscrim.in{opacity:1;transition:opacity .26s var(--e-std)}
+.chat{--cc:var(--c-daqi);--cb:calc(max(var(--kb),var(--tabh) + var(--dock) + env(safe-area-inset-bottom)) + 10px);
+  position:fixed;z-index:60;left:10px;right:10px;bottom:var(--cb);max-width:460px;margin:0 auto;
+  max-height:min(600px,calc(100vh - var(--cb) - var(--ph,0px) - 40px));
+  display:flex;flex-direction:column;background:var(--solid);color:var(--ink);border:1.5px solid var(--cc);border-radius:26px;box-shadow:0 18px 60px rgba(0,0,0,.55);
+  opacity:0;transform:translate(var(--dx,0px),var(--dy,60px)) scale(.08);transition:transform .2s var(--e-out),opacity .16s var(--e-out)}
+@supports (height:100dvh){.chat{max-height:min(600px,calc(100dvh - var(--cb) - var(--ph,0px) - 40px))}}
+.chat.in{opacity:1;transform:none;transition:transform .32s var(--e-in),opacity .14s linear}
+.chat.meas{transform:none!important;transition:none!important}
+html[data-skin="6"] .chat{--pri:var(--cc)}
+html[data-skin="2"] .chat,html[data-skin="5"] .chat{border-radius:0}
+.cav{position:absolute;left:14px;top:-24px;z-index:1;width:58px;height:58px;border-radius:50%;background:var(--solid);border:1.5px solid var(--cc);display:grid;place-items:center}
+.cav .bm{width:44px;height:44px}
+.chd{display:flex;align-items:flex-start;gap:2px;padding:8px 6px 4px 82px;min-height:56px}
+.chd,.cinfo,.cctx,.cq,.cin,.cfoot,.chat>.err{flex:none}
+.cwho{flex:1;min-width:0;padding-top:4px}
+.cwho h2{font:900 19px/1.3 var(--zh)}
+.cwho small{display:block;color:var(--ink2);font-size:12px;line-height:1.4}
+.chd .btn{flex:none;min-height:44px;padding:6px 9px;white-space:nowrap;font-size:14px}
+.cinfo{margin:2px 14px 4px;padding:10px 12px;border-radius:14px;background:var(--sf2);font-size:13.5px}
+.cctx{margin:2px 14px 0;display:flex;gap:6px;flex-wrap:wrap}
+.clog{flex:1;min-height:92px;overflow-y:auto;padding:10px 14px 6px;display:flex;flex-direction:column;gap:8px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.clog:focus-visible{outline-offset:-2px}
+.cm{max-width:86%;padding:9px 13px;border-radius:18px;overflow-wrap:anywhere;line-height:1.5}
+.cm.me{align-self:flex-end;background:var(--sf2);border-bottom-right-radius:6px}
+.cm.bot{align-self:flex-start;border:1px solid var(--line);border-bottom-left-radius:6px}
+.cm small{display:block;font-size:11.5px;color:var(--ink2);margin-top:2px}
+.cm.card{max-width:100%;width:100%;padding:12px;background:var(--sf2);border-color:transparent}
+.cm.sys{align-self:center;max-width:100%;color:var(--ink2);font-size:13px;text-align:center;padding:6px 8px}
+.dots{display:inline-flex;gap:4px;vertical-align:middle;margin-right:6px}
+.dots i{width:6px;height:6px;border-radius:50%;background:var(--cc,var(--ink));opacity:.7}
+.cq{display:flex;gap:6px;overflow-x:auto;padding:4px 14px 6px;scrollbar-width:none}
+.cq::-webkit-scrollbar{display:none}
+.cq button{flex:none;min-height:44px;padding:0 13px;border-radius:999px;border:1px solid var(--line2);white-space:nowrap;font-size:13.5px;color:var(--ink)}
+.chat .err{margin:0 14px 4px}
+.cin{display:flex;gap:8px;align-items:flex-end;padding:8px 10px 6px;border-top:1px solid var(--line)}
+.cin textarea{flex:1;min-width:0;min-height:44px;max-height:96px;border-radius:22px;padding:10px 14px;resize:none;font-size:16px;line-height:1.4}
+.cin .btn{flex:none;min-height:44px;padding:8px 14px}
+.cfoot{font-size:11px;color:var(--ink2);text-align:center;padding:0 10px 8px}
+.chead{--cc:var(--c-daqi);position:fixed;z-index:45;right:14px;bottom:calc(var(--tabh) + var(--dock) + 14px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;background:var(--solid);border:1.5px solid var(--cc);box-shadow:0 8px 26px rgba(0,0,0,.5);display:grid;place-items:center;touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .22s var(--e-in),opacity .18s linear,left .22s var(--e-in)}
+.chead .bm{width:44px;height:44px;pointer-events:none}
+.chead.off{opacity:0;transform:scale(.5);pointer-events:none}
+.chead.drag{transition:none}
+.chead .dot{position:absolute;right:-2px;top:-2px;min-width:20px;height:20px;border-radius:10px;background:var(--alert,var(--urg-bg));color:var(--alert-ink,var(--urg-ink));font:700 11px/20px var(--zh);text-align:center;padding:0 5px}
+.toast{z-index:65}
+.toast.in~.chead:not(.moved):not(.off){transform:translateY(-66px)}
+.app.over .toast.in~.chead:not(.off){transform:none}
+@keyframes hop{0%,100%{translate:0 0}30%{translate:0 -12px}55%{translate:0 0}76%{translate:0 -5px}}
+@keyframes pop{from{scale:.4}60%{scale:1.1}to{scale:1}}
+@keyframes dot{0%,60%,100%{opacity:.35;transform:none}30%{opacity:1;transform:translateY(-3px)}}
+@keyframes drain{to{transform:scaleX(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:no-preference){
+  .hop{animation:hop .38s var(--e-std)}
+  .chat.in .cav{animation:pop .34s var(--e-in) .06s both}
+  .chat.in .cav.hop{animation:hop .38s var(--e-std)}
+  .cm.new{animation:rise .22s var(--e-in) both}
+  .dots i{animation:dot 1s ease-in-out infinite}.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+  .pbar2 i{animation:drain 5s linear both}
+  .spin{animation:spin .8s linear infinite}
 }
-@keyframes swl{from{transform:translateX(36px);opacity:.4}to{transform:none;opacity:1}}
-@keyframes swr{from{transform:translateX(-36px);opacity:.4}to{transform:none;opacity:1}}
-
-/* 矮視窗（手機橫向）：待決區改放頂列，避免右下膠囊蓋住「深入了解」 */
-@media (max-width:959px) and (max-height:520px){
-  .hpill{display:none}
-  .holdbtn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 6px 0 12px;border-radius:12px;background:var(--card);border:1.5px dashed var(--dash);font-weight:800;font-size:14px}
-  .holdbtn b{min-width:28px;height:28px;font-size:14px}
-  .top{padding:calc(env(safe-area-inset-top) + 6px) 12px 4px;gap:8px}
-  .top h1{font-size:17px}
-  .top-r{gap:8px}
-  .sum{font-size:12.5px}
-  .tabs{padding:0 8px 4px;gap:4px}
-  .tab{min-height:44px;font-size:12px}
-  .tab b{font-size:16px}
-  .lh p{display:none}
-  .lh{padding:8px 12px 4px}
-  .board{padding-bottom:0}
-  .lbody{padding-bottom:16px}
-  .board-msg{padding-bottom:20px}
-  .notice{padding:4px 8px 4px 12px;font-size:13px;margin:0 10px 4px;gap:8px}
-  .notice span.txt{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
-  #toast{bottom:calc(env(safe-area-inset-bottom) + 16px)}
+@media (prefers-reduced-motion:reduce){
+  .chat,.chat.in,.cscrim,.cscrim.in,.chead{transition:opacity .2s linear!important}
+  .chat{transform:none!important}.chead.off{transform:none!important}
+}
+@media (min-width:1000px){
+  .chat{left:auto;right:24px;width:400px;margin:0;--cb:calc(var(--kb) + 24px)}
+  .chead{right:24px;bottom:24px}
+  html[data-layout="1"] .chead{bottom:96px}
 }
 
-/* 後端接上後新增 */
-.ok-ic.bad{background:var(--danger)}
-.dt-text .att{margin-top:10px}
-.dt-text .att summary{font-size:14px;color:var(--mut);font-weight:700;line-height:44px;cursor:pointer}
-.dt-text .att a{display:inline-flex;align-items:center;min-height:44px;color:var(--link);font-weight:700;text-decoration:underline;text-underline-offset:3px;overflow-wrap:anywhere}
-.dt-cd{white-space:nowrap}
-@media (max-width:380px){
-  .dt-stat{padding:12px 12px}
-  .dt-cd{font-size:20px}
-  .dt-stat .amt b{font-size:28px}
-  .dt-stat small{font-size:12.5px}
-}
+/* 房間主人 */
+.zown{font-size:13.5px;font-weight:700;margin-top:6px}
+.owner.sub{min-height:48px;margin-top:8px}
+html[data-skin="6"] .owner.sub{background:transparent;border:1.5px solid #000;color:#000}
+html[data-skin="6"] .owner.sub small{color:#000}html[data-skin="6"] .owner.sub .chev{color:#000}
+html[data-skin="6"] .owner.sub .bm{width:30px;height:30px}
 
-/* 欄變窄時（含 960 五欄），主按鈕改獨立一列，避免「深入了解」被切字。放在檔尾，才能蓋過桌機媒體查詢。 */
-@container (max-width:200px){
-  .ca{grid-template-columns:1fr 1fr;gap:6px}
-  .ca .go{grid-column:1/-1;padding:0 10px}
-  .ca button{min-width:0;font-size:13.5px;padding:0 6px}
-  .card{padding-left:10px;padding-right:8px}
-  .demo-badge{font-size:11px;height:22px;padding:0 6px}
-}
+/* 付款鈕：按鈕上寫金額與對象；按下後 5 秒可取消 */
+.payc{margin-top:12px}
+.payc .btn.pri{min-height:52px;font-size:16px}
+.pcount{display:grid;gap:8px}
+.pbar2{height:8px;border-radius:9px;background:var(--line);overflow:hidden}
+.pbar2 i{display:block;height:100%;background:var(--alert,var(--urg));transform-origin:left;border-radius:inherit}
+.pst{font-weight:700;min-height:44px;display:flex;align-items:center;gap:2px;flex-wrap:wrap}
+.pst.ok{color:var(--ok)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line2);border-top-color:var(--ink);border-radius:50%;margin-right:8px;flex:none}
+.kvs{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px;margin-top:8px}
+.kvs dt{color:var(--ink2);white-space:nowrap}.kvs dd{overflow-wrap:anywhere;min-width:0}
 
-/* 左右滑切籃子：關掉瀏覽器左右滑回上一頁，看板只交給我們處理橫向手勢 */
-html,body{overscroll-behavior-x:none}
+/* 生活：購物清單與訂單 */
+.wadd{display:flex;gap:8px;margin-top:14px;align-items:stretch}
+.wadd input{flex:1;min-width:0;font-size:16px;border-radius:var(--rb);padding-left:16px}
+.wadd .btn{flex:none}
+.wtop{display:flex;gap:12px;align-items:flex-start}
+.wimg{flex:none;width:64px;height:64px;border-radius:14px;background:var(--sf2);display:grid;place-items:center;align-content:center;gap:2px;font:900 24px/1 var(--zh);color:#fff;overflow:hidden}
+.wimg small{font:400 10px/1 var(--zh);opacity:.85}
+.wtx{flex:1;min-width:0}
+.fin{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:2px 10px 2px 3px;border-radius:999px;font-size:12.5px;border:1px solid var(--line2);color:var(--ink)}
+.fin.no{border-color:var(--alert,var(--urg));font-weight:700}
+.wnow{display:flex;align-items:center;gap:6px;margin-top:12px;font-size:14px;color:var(--ink)!important}
+.wnow .bm{width:26px;height:26px}
+.wnote{display:flex;gap:8px;align-items:flex-start;font-size:14px;color:var(--ink)!important;margin-top:0!important}
+.flow,.stp{list-style:none;padding:0;margin-top:10px;display:grid;gap:2px}
+.flow li,.stp li{display:flex;align-items:center;gap:8px;min-height:32px;font-size:14px;color:var(--ink2)}
+.flow li .who{display:inline-flex;gap:2px;min-width:48px}
+.flow li[data-s=cur],.stp li[data-s=c]{color:var(--ink);font-weight:700}
+.flow .mk,.stp .mk{flex:none;width:16px;text-align:center}
+.cmp{margin-top:10px;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.cmp .cr{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px solid var(--line)}
+.cmp .cr:first-child{border-top:0}
+.cmp .cr[data-rec]{background:var(--sf2)}
+.cmp .cr>div:first-child{flex:1;min-width:0}
+.cmp small{display:block;color:var(--ink2);font-size:12.5px;line-height:1.45}
+.cmp .crr{flex:none;display:grid;justify-items:end;gap:4px}
+.kcard{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:14px;background:var(--sf2);font-size:14px}
+.kcard p{margin-top:2px}
+.trk{display:flex;gap:4px;margin-top:12px}
+.trk span{flex:1;text-align:center;font-size:12.5px;color:var(--ink2);padding-top:8px;border-top:4px solid var(--line)}
+.trk span[data-on]{border-color:var(--ink);color:var(--ink);font-weight:700}
 
-/* v8：領標付款與檔案連結 */
-.pc .pa .pp{flex:1 0 100%;display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:12px;background:var(--card);border:1.5px solid var(--delc);color:var(--delc);font-weight:700;font-size:15px;text-decoration:none;text-align:center;padding:4px 10px}
-.paybox,.files{margin-top:18px;display:flex;flex-direction:column;gap:8px}
-.paybox h3,.files h3{font-size:14px;color:var(--mut)}
-.paybox p{font-size:14px;color:var(--mut);line-height:1.6}
-.files .fl{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
-.files .fl b{font-size:15px}
-/* v9：結案與封存區 */
-.closebox{margin-top:18px;display:flex;flex-direction:column;gap:8px}
-.closebox h3{font-size:14px;color:var(--mut)}
-.closebox p{font-size:14px;color:var(--mut);line-height:1.6}
-.closebox .cb{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.closebox .cb .btn{min-height:46px;font-size:14.5px;padding:4px 8px}
-.closebox .cb .del{grid-column:1/-1;color:var(--delc)}
-.arch-in{width:100%;min-height:46px;margin-top:14px}
-.arch-f{display:flex;gap:8px;margin-bottom:6px}
-.arch-f input{flex:1;min-width:0;min-height:44px;border:1.5px solid var(--line);border-radius:12px;padding:0 12px;font:inherit;font-size:16px;background:var(--card);color:var(--ink)}
-.arch-f select{min-height:44px;border:1.5px solid var(--line);border-radius:12px;padding:0 8px;font:inherit;font-size:15px;background:var(--card);color:var(--ink)}
-.arow{cursor:default}
-.arow .files{margin-top:8px}
-.rbadge{display:inline-flex;align-items:center;font-size:12.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--stat);color:var(--mut)}
-.rbadge.r-won{background:var(--ok-bg);color:var(--ok-ink)}
-.rbadge.r-void{color:var(--delc)}
-.dh .back{margin-right:4px;font-size:26px}
-/* v11：立即掃描（留單給集集） */
-.scanl{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;margin-top:6px;font-size:13px;color:var(--mut)}
-.scanl.wait{color:var(--accent);font-weight:700}
-.scanb{min-height:36px;padding:0 12px;border-radius:99px;border:1.5px solid var(--accent);color:var(--accent);background:var(--card);font-weight:700;font-size:13.5px}
-.scanb:disabled{opacity:.5}
-.closebox .cb .purge{grid-column:1/-1;font-size:13.5px;min-height:44px;border-style:dashed}
-/* v15：卡片動作紀錄 */
-.hist ul{list-style:none;padding:0;margin:4px 0 0;display:flex;flex-direction:column;gap:6px}
-.hist li{display:grid;grid-template-columns:auto 1fr;gap:10px;font-size:14px;line-height:1.5}
-.hist time{color:var(--mut);white-space:nowrap}
-.hist b{margin-right:6px}
-/* 案務區（v17）：沿用 closebox／arch-f 的樣子 */
-.work{margin-top:18px;display:flex;flex-direction:column;gap:10px}
-.work h3{font-size:14px;color:var(--mut)}
-.work .earn .dt-stat b{font-size:22px;line-height:1.3;overflow-wrap:anywhere}
-.work .earn .dt-meta{margin-top:6px}
-.wg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.wf{display:flex;flex-direction:column;gap:4px;min-width:0}
-.wf.w{grid-column:1/-1}
-.wf span{font-size:13px;color:var(--mut);font-weight:500}
-.wf input,.wf select,.wf textarea,.dnote textarea{width:100%;min-width:0;min-height:44px;border:1.5px solid var(--line);border-radius:12px;padding:0 10px;font:inherit;font-size:16px;background:var(--card);color:var(--ink)}
-.wf textarea,.dnote textarea{padding:10px;line-height:1.5;resize:vertical}
-.wf .bad,.dnote .bad{border-color:var(--delc);background:#fdf1f0}
-.wc{border-top:1px solid var(--line);padding-top:8px}
-.wc summary{font-size:15px;font-weight:700;min-height:44px;display:flex;align-items:center;cursor:pointer}
-.wc .wg{margin-top:4px}
-.wb{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.wb .btn{min-height:46px;font-size:15px;padding:4px 8px}
-.wb .back{grid-column:1/-1;color:var(--mut)}
-.dnote{display:flex;flex-direction:column;gap:6px;margin-top:8px}
-.dnote .btn{min-height:42px;font-size:14.5px;align-self:flex-start}
-/* v17：資料夾抽屜按鈕縮小，讓內容看得到（Borry 2026-11-16：按鈕太大，佔用太多位置） */
-.fold{gap:10px}
-.fold-t{font-size:17px}
-.fold p{font-size:14px}
-.fold .path{font-size:13.5px;padding:8px 10px;font-weight:600}
-.fold .acts .btn{min-height:36px;font-size:13.5px;padding:0 12px;flex:0 0 auto}
-.files .fl{display:grid;grid-template-columns:1fr auto;align-items:center;gap:4px 8px;padding:8px 0}
-.files .fl b{grid-column:1/-1;font-size:14px}
-.files .fl .path{grid-column:1;font-size:13px;padding:6px 8px;font-weight:600}
-.files .fl .btn{grid-column:2;min-height:34px;font-size:13px;padding:0 10px;white-space:nowrap}
-.paybox .btn{min-height:40px;font-size:14.5px}
-.closebox .cb .btn{min-height:38px;font-size:13.5px}
-.closebox .cb .purge{min-height:36px;font-size:13px}
-/* v19：Pool／內審在手機上並排 */
-.files .flrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
-.files .flrow .fl{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:12px;border-top:1px solid var(--line);min-width:0}
-.files .flrow .fl b{font-size:14px}
-.files .flrow .fl .btn{min-height:36px;font-size:13.5px;padding:0 10px;width:100%}
-.files .flrow .fp{font-size:11.5px;color:var(--mut);line-height:1.4;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
-/* v20：有快截止的進行中案子，待決區按鈕變黃 */
-.holdbtn.urgent,.hpill.urgent{background:#fff1b8;border-color:#e0b400;color:#5a4400}
-.holdbtn.urgent b,.hpill.urgent b{background:#e0b400;color:#fff}
-/* v21：立即掃描縮成小字一列；封存欄 */
-.scanl{gap:4px 10px;font-size:12.5px}
-.scanb{min-height:28px;padding:0 4px;border:0;background:none;color:var(--accent);font-weight:700;font-size:12.5px;display:inline-flex;align-items:center;gap:3px}
-.scanb span{font-size:15px;line-height:1}
-.scanl.wait{font-weight:600}
-.lane.b-archive .arch-f{margin-top:6px}
-.lane.b-archive .arow{margin-bottom:10px}
-.tab.b-archive{opacity:.85}
-/* v21：六個分頁（多了封存）一列排完，封存窄一點 */
-.tabs{grid-template-columns:repeat(5,1fr) .72fr;gap:4px}
-.tab{font-size:12.5px}
-.tab.b-archive{font-size:11.5px}
-/* v23：右上角急件那行太長時截斷，不准把左邊標題擠成直排（公司版 2026-11-16 真資料跑版） */
-.top-l{flex:0 0 auto;min-width:0}
-.top h1,.live{white-space:nowrap}
-.top-r{flex:1 1 auto;min-width:0;justify-content:flex-end}
-.sum{min-width:0;overflow:hidden}
-.sum .hotn{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 案子詳情頁：第一層只放下一步、卡在哪、剩幾天 */
+.pk{margin-top:14px;border-radius:var(--r);background:var(--sf);border:var(--bw) solid var(--line);overflow:hidden}
+.pk>div{display:grid;grid-template-columns:64px 1fr;gap:10px;padding:12px 14px;border-top:1px solid var(--line)}
+.pk>div:first-child{border-top:0}
+.pk dt{color:var(--ink2);font-size:13px;padding-top:2px}
+.pk dd{font-weight:700;overflow-wrap:anywhere}
+.pk dd .num{font-size:20px}
+.fl{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+.fl:first-child{border-top:0;padding-top:0}
+.fl>div{flex:1;min-width:0}
+.fl small{display:block;color:var(--ink2);font-size:12.5px;overflow-wrap:anywhere}
+/* 詳情頁裡等你拍板的那張卡，推薦鈕維持實心（清單裡不急的卡才退成線框） */
+html[data-skin="6"] #page article.card .btn.pri.big{background:var(--pri);color:#000;border-color:var(--pri);font-weight:700}
+/* ---------- 1122-F 追加（2026-11-22）：頭像當入口、小字掃描、該繳的、行事曆、同步 ---------- */
+/* 拿掉「跟大器說」文字鈕與底部輸入列；入口改成右上角的頭像 */
+.talkbtn,.dock{display:none!important}
+html[data-layout="1"]{--dock:0px}
+.hav{position:relative;flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:transparent;border:0;padding:0;color:inherit;-webkit-tap-highlight-color:transparent}
+.hav .bm{width:36px;height:36px;pointer-events:none}
+.top .hav{margin-left:auto}
+.phead .hav{margin-left:auto;margin-right:6px}
+.hav .dot{position:absolute;right:-3px;top:-1px;min-width:18px;height:18px;border-radius:9px;background:var(--alert,var(--urg-bg));color:var(--alert-ink,var(--urg-ink));font:700 11px/18px var(--zh);text-align:center;padding:0 4px;pointer-events:none}
+.hav:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){.hav.hop{animation:hop .38s var(--e-std,ease)}}
+.havtip{position:fixed;z-index:60;top:calc(var(--ph,0px) + 60px);right:10px;max-width:230px;padding:9px 12px;border-radius:12px;background:var(--ink);color:var(--bg);font-size:13px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:opacity .3s ease;pointer-events:none}
+.havtip::before{content:'';position:absolute;top:-6px;right:20px;border:6px solid transparent;border-top:0;border-bottom-color:var(--ink)}
+.havtip.out{opacity:0}
+.chead.gone{display:none!important}
+.zown{font-size:13px;margin-top:4px}
+html[data-skin="6"] .zh[data-z]:not([data-z=today]) .zown{color:#000}
+.zadv{align-items:center;margin-top:10px}
+.advb{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px 0 5px;border-radius:999px;border:1px solid var(--line2);background:transparent;color:inherit;font-size:13.5px;font-weight:500}
+.advb .bm{width:30px;height:30px}
+.band .advb{border-color:var(--band-ink);color:var(--band-ink)}
+html[data-skin="6"] .zh[data-z]:not([data-z=today]) .advb{border-color:#000;color:#000}
+html[data-skin="6"] .zh[data-z]:not([data-z=today]) .zadv .lbl{color:#000}
+html body .bm.bf[data-b=din]{background:none!important;padding:0}
 
-/* v24（2026-11-17）：拿掉公司案；多了「進行中」「待辦」兩欄、跟大器說、進度步驟 */
-.b-doing{--bf:#b86e00;--bb:#fff1d6}.b-todo{--bf:#1f6f8b;--bb:#dcf0f6}
-.tabs{display:flex;overflow-x:auto;scrollbar-width:none;gap:4px}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:1 0 auto;min-width:62px;padding:0 8px;font-size:12.5px}
-.tab.b-doing,.tab.b-todo{font-weight:800}
-.daqibtn{flex:none;min-height:40px;padding:0 12px;border-radius:12px;border:1.5px solid var(--accent);background:var(--card);color:var(--accent-dk);font-weight:800;font-size:14px;white-space:nowrap}
-.addf{display:flex;gap:6px;margin-top:8px}
-.addf input{flex:1;min-width:0;min-height:44px;padding:0 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-size:15px}
-.addf .btn{flex:none;min-height:44px;padding:0 14px}
-.pc.wk,.pc.td{margin-bottom:10px}
-.pmini{display:flex;flex-direction:column;gap:4px;margin-top:8px}
-.pmini small{font-size:12.5px;color:var(--mut);line-height:1.4}
-.pmini .blk{color:var(--delc);font-weight:700}
-.pbar{height:6px;border-radius:99px;background:var(--line);overflow:hidden}
-.pbar i{display:block;height:100%;background:var(--bf,var(--accent));border-radius:99px}
-.run{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--accent-dk)}
-.run.r-done{color:#1f7a4d}.run.r-failed{color:var(--delc)}
-.run .spin{width:13px;height:13px}
-.prog{display:flex;flex-direction:column;gap:8px;margin:12px 0}
-.prog h3,.chat h3{font-size:15px;font-weight:800;margin:0}
-.steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.steps li{display:flex;gap:8px;align-items:flex-start;font-size:14.5px;line-height:1.5}
-.steps li i{flex:none;width:22px;height:22px;border-radius:99px;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:900;border:1.5px solid var(--line);color:var(--mut)}
-.steps li small{display:block;color:var(--mut);font-size:12.5px}
-.steps .s-done i{background:#1f7a4d;border-color:#1f7a4d;color:#fff}
-.steps .s-current i{background:var(--accent);border-color:var(--accent);color:#fff}.steps .s-current span{font-weight:800}
-.steps .s-blocked i{background:var(--delc);border-color:var(--delc);color:#fff}
-.steps .s-skipped{opacity:.55}
-.pnote{font-size:14.5px;line-height:1.6;margin:0}
-.pblk{font-size:14px;line-height:1.6;margin:0;padding:8px 10px;border-radius:10px;background:var(--danger-bg);color:var(--warn-ink)}
-.chat{display:flex;flex-direction:column;gap:8px;margin:14px 0;padding:12px;border-radius:14px;background:var(--sheet,#f4f7f6)}
-.msgs{display:flex;flex-direction:column;gap:8px;max-height:46vh;overflow-y:auto;overscroll-behavior:contain}
-.msg{max-width:88%;padding:8px 11px;border-radius:14px;background:var(--card);font-size:14.5px;line-height:1.55;box-shadow:0 1px 2px rgba(29,51,49,.06)}
-.msg p{margin:0;white-space:pre-wrap}
-.msg time{display:block;margin-top:3px;font-size:11.5px;color:var(--mut)}
-.msg.m-user{align-self:flex-end;background:#e2f2ec}
-.msg.m-daqi{align-self:flex-start}
-.msg.m-run,.msg.m-system{align-self:center;background:transparent;box-shadow:none;color:var(--mut);font-size:13px;text-align:center}
-.msgs .wait{display:flex;align-items:center;gap:6px}
-.cin{display:flex;gap:6px;align-items:flex-end}
-.cin textarea{flex:1;min-width:0;min-height:48px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font:inherit;font-size:15px;resize:vertical}
-.cin .btn{flex:none;min-height:48px;padding:0 14px}
-.sheet-note .btn{margin-left:6px;min-height:36px;padding:0 12px}
-@media (min-width:960px){
-  .lanes{grid-template-columns:repeat(7,minmax(250px,1fr))}
-  .daqibtn{min-height:48px;padding:0 16px;font-size:15px}
-}
-@media (max-width:420px){ .daqibtn{padding:0 9px;font-size:13px} .sum{font-size:12px} }
+/* 小字的立即掃描：跟「上次幾點掃描」同一列、同一級字 */
+.scanrow{display:flex;align-items:center;gap:2px 8px;flex-wrap:wrap;margin-top:6px}
+.scan{display:inline-flex;align-items:center;gap:4px;min-height:44px;margin:-10px 0;padding:0 6px;background:none;border:0;color:var(--ink2);font-size:12px;letter-spacing:.02em}
+.scan:not([aria-disabled]){text-decoration:underline;text-underline-offset:3px}
+.scan .ri{display:inline-block;font-size:13px;line-height:1}
+@media (prefers-reduced-motion:no-preference){.scan.turn .ri{animation:ri .8s var(--e-out,ease-out) 1}}
+@keyframes ri{to{transform:rotate(360deg)}}
 
-/* ---- 今天頁（通告板，2026-11-19） ---- */
-.b-today{--bf:#a4470b;--bb:#f6e6da}
-.tab.b-today{font-weight:800}
-.hh{font-size:14px;font-weight:800;color:var(--mut);margin:14px 2px 8px;letter-spacing:.04em}
-.lbody>.hh:first-child{margin-top:2px}
-.hc{background:var(--card);border-radius:16px;padding:14px 14px 12px;margin-bottom:10px;box-shadow:0 1px 2px rgba(29,51,49,.06);border-left:5px solid var(--bf)}
-.hc h3{font-size:16px;line-height:1.5;margin:6px 0 4px;font-weight:700}
-.hproj{display:inline-block;font-size:12.5px;font-weight:700;color:var(--bf);background:var(--bb);padding:2px 10px;border-radius:99px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hmeta{font-size:13px;color:var(--mut);line-height:1.6;margin:2px 0}
-.hd{font-size:14px;margin:4px 0}.hd summary{color:var(--accent-dk,var(--accent));font-weight:700;cursor:pointer;min-height:32px;display:flex;align-items:center}
-.hd p{color:var(--ink);line-height:1.65;margin:4px 0 6px;overflow-wrap:anywhere}
-.hopts{display:flex;flex-direction:column;gap:8px;margin-top:10px}
-.hopts button{min-height:48px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-weight:700;font-size:15px;text-align:left;padding:8px 12px;display:flex;flex-direction:column;gap:2px;color:var(--ink)}
-.hopts button.rec{background:var(--accent);border-color:var(--accent);color:#fff}
-.hopts button small{font-size:11.5px;font-weight:800;opacity:.9}
-.hopts button em{font-style:normal;font-weight:500;font-size:13px;opacity:.9}
-.hopts button:disabled{opacity:.5}
-.hnote{display:flex;gap:6px;margin-top:8px;align-items:stretch}
-.hnote textarea{flex:1;min-width:0;min-height:46px;padding:10px 12px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-size:15px;font-family:inherit;line-height:1.5;resize:vertical}
-.hnote .btn{flex:none;min-height:46px;padding:0 12px;font-size:14px}
-.hbeat{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;background:none;border:0;padding:0;font:inherit;cursor:pointer;text-align:left;max-width:100%}
-.hbeat .go{background:none;color:var(--mut);padding-left:2px}
-.hbeat span{font-size:12.5px;font-weight:700;padding:3px 10px;border-radius:99px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.hbeat .k{background:rgba(255,255,255,.7);color:var(--mut)}.hbeat .l{background:#fde2df;color:#a3352a}
-.hl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.hl li{background:rgba(255,255,255,.7);border-radius:12px;padding:9px 12px;font-size:14px;line-height:1.55;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:baseline;overflow-wrap:anywhere}
-.hl li b{font-weight:700}.hl li small{color:var(--mut);font-size:12.5px}.hl li span{flex:1 0 100%}
-.hl li em{font-style:normal;font-weight:700;font-size:12.5px;padding:1px 9px;border-radius:99px;background:var(--bb);color:var(--bf)}
-.hl li.none{color:var(--mut)}
-.hans{margin:4px 0 2px;font-size:14px}.hans summary{min-height:40px;display:flex;align-items:center;font-weight:700;color:var(--mut);cursor:pointer}
-.ha{background:rgba(255,255,255,.7);border-radius:12px;padding:10px 12px;margin-bottom:6px}.ha .btn{min-height:40px;margin-top:6px;font-size:14px}
+/* 同步到行事曆的小標記 */
+.sync{display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);font-size:12.5px;color:var(--ink2)}
+.sync .st{display:inline-flex;align-items:center;gap:6px;flex:1;min-width:0}
+.sync .st.ok{color:var(--ink2)}
+.sync .sbtn{display:flex;gap:6px;width:100%}
+.sync .sbtn .btn{min-height:44px;padding:6px 14px;font-size:13.5px}
+.swi{position:relative;flex:none;width:40px;height:24px;border-radius:12px;border:1px solid var(--line2);background:var(--sf2);padding:0;margin-left:auto}
+.swi::before{content:'';position:absolute;inset:-11px -3px}
+.swi::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:var(--ink2);transition:transform .2s var(--e-out,ease)}
+.swi[aria-checked=true]{background:var(--pri);border-color:var(--pri)}
+.swi[aria-checked=true]::after{transform:translateX(16px);background:var(--pri-ink)}
+.swi:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.band .sync{border-color:rgba(0,0,0,.18);color:var(--band-ink)}
+.gcn{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-top:10px;padding:4px 4px 4px 12px;border-radius:14px;background:var(--sf2);font-size:13px;color:var(--ink)}
+.gcn .btn{min-height:44px;flex:none}
+.dt{padding:10px 0;border-top:1px solid var(--line)}.dt:first-child{border-top:0;padding-top:0}
+.dt .li>div{display:flex;flex-direction:column}
+.dt small{color:var(--ink2);font-size:12.5px}
+.dti{min-height:44px;font-size:16px;border-radius:var(--rb);padding:0 12px}
 
-/* 系統燈號（v30） */
-.lsum{display:flex;align-items:center;gap:8px;font-size:17px;font-weight:800;margin:4px 0 14px}
-.lsum i,.lrow>i{width:12px;height:12px;border-radius:50%;flex:none;background:#9aa6a3}
-.lsum.ok i,.lrow.k>i{background:#2f9a5a}.lsum.bad i,.lrow.l>i{background:#d0453a}
-.lsum.bad{color:#a3352a}
-.lrow{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid rgba(0,0,0,.08)}
-.lrow>i{margin-top:6px}.lrow>div{min-width:0}
-.lrow h3{font-size:15px;margin:0;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
-.lrow h3 em{font-style:normal;font-size:12px;font-weight:700;padding:1px 8px;border-radius:99px;background:#e3f2e8;color:#2a7a48}
-.lrow.l h3 em{background:#fde2df;color:#a3352a}
-.lrow p{margin:2px 0 0;font-size:13.5px;color:var(--mut);overflow-wrap:anywhere}
-.ltodo{margin:6px 0 0;padding-left:1.2em;font-size:14px;color:var(--mut)}
+/* 錢：該繳的 */
+.due .dr .meta{margin-bottom:6px}
+.due .dr h3{font-size:15.5px}
+.due .dr .note .chip{margin-right:4px}
 
-/* 機會卡 iOS 外觀（v31，面板工坊 Q8 選 C）：沒有框線的淡色填色按鈕、較小圓角、細等級條；顏色沿用逐流霧青 */
-.card{border-radius:14px;border-left-width:4px}
-.ca button{border:0;border-radius:10px;background:var(--stat);color:var(--accent);font-weight:600}
-.ca .del{background:var(--danger-bg);color:var(--delc)}
-.ca .go{background:var(--accent);color:#fff;font-weight:700}
-.ca button:active{opacity:.7;transform:none}
+/* 行事曆 */
+.tday .hs .evc{flex:0 0 68%;max-width:250px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:left;padding:12px 14px;margin:0;color:var(--ink)}
+.tday .hs .evc b{font-weight:700;line-height:1.35}
+.tday .hs .evc small{color:var(--ink2);font-size:12.5px}
+.tm{font:600 14px/1.2 var(--fn,inherit);font-variant-numeric:tabular-nums}
+.src{display:inline-flex;align-items:center;gap:5px;min-height:22px;padding:1px 9px 1px 7px;border-radius:999px;background:var(--sf2);color:var(--ink);font-size:11.5px;white-space:nowrap}
+.src i{width:8px;height:8px;border-radius:50%;background:var(--cc,var(--ink2))}
+.src[data-s=co] i{background:#F6BF26}
+.evc .src{margin-top:4px}
+.evr{display:grid!important;grid-template-columns:52px 1fr auto;gap:10px;align-items:center;text-align:left}
+.evr .tx small{display:block}
+.rowi.gone .evr b{text-decoration:line-through;opacity:.6}
+.est{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:12px;color:var(--ink2)}
+.est.ok{color:var(--ok)}
+.cday{margin-top:18px}
+.cday h3{font-size:13px;font-weight:700;color:var(--ink2);margin:0 2px 8px}
+.cdnav{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:14px}
+.two{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
+.two .f{min-width:0}
+.pred{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--sf2);color:var(--ink)}
+.pred b{display:block;line-height:1.45}
+.pred .ttl{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.5}
+.chk{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.chk label{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border:1px solid var(--line2);border-radius:999px;font-size:14px}
+.chk select{min-height:32px;border-radius:8px;font-size:14px;padding:0 6px}
+.chk input[type=checkbox]{width:18px;height:18px}
+.rl{padding-left:20px;margin-top:10px}
+.rl li{padding:8px 0;border-top:1px solid var(--line)}
+.rl li p{display:inline;margin-right:6px}
+.rl textarea{width:100%;margin-top:6px}
 
-/* 專案頁（v32） */
-.pgh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:14px 2px 6px;font-size:14px;font-weight:800;color:var(--mut);letter-spacing:.02em}
-.pgh:first-child{margin-top:4px}
-.pgh em{font-style:normal;font-weight:700;color:var(--ink)}
-.pgh small{font-weight:500;font-size:12.5px}
-.pc .nx{font-size:14.5px;line-height:1.6;margin:6px 0 0}
-.pc .nx b{display:inline-block;margin-right:8px;padding:1px 8px;border-radius:8px;background:var(--stat);font-size:12.5px;color:var(--mut)}
+/* ---------- 1122-G 細修（2026-11-22）：兩種控制、無框頭像、房間色卡大臉 ---------- */
+/* AI 小臉：只有本體形狀，沒有框；點擊區是透明的 44px */
+.aif{position:relative;z-index:1;display:inline-flex;align-items:center;gap:3px;min-width:44px;min-height:44px;padding:0 4px;margin:0;background:none;border:0;color:inherit;font:500 12px/1.2 var(--zh);-webkit-tap-highlight-color:transparent;flex:none}
+.aif .bm{width:28px;height:28px;pointer-events:none}
+.aif .ast{color:var(--ink2);white-space:nowrap}
+.band .aif .ast{color:var(--band-ink)}
+.aif:focus-visible{outline:2px solid var(--ink);outline-offset:-2px;border-radius:12px}
+.aifs{display:flex;justify-content:flex-end;align-items:center;flex-wrap:wrap;gap:0 2px;margin:4px -8px -10px 0}
+.meta .aif,.bandtop .aif{margin:-10px -4px -10px -8px}
+.meta .aif .bm,.bandtop .aif .bm{width:24px;height:24px}
+.rowb>.aif{margin:-6px 0 -6px -8px;align-self:center}
+.rowb>.aif .bm{width:30px;height:30px}
+/* 我自己動手：卡片右上的「⋯」與低調小字鈕，同一種樣子 */
+.cardx{position:relative}
+.cardx>h3,.cardx>h2,.cardx>.meta,.cardx>.wtop,.cardx>.li,.cardx>.bandtop{padding-right:38px}
+.mine{position:absolute;z-index:2;top:2px;right:2px;width:44px;height:44px;display:grid;place-items:center;padding:0;background:none;border:0;border-radius:14px;color:var(--ink2);font:700 20px/1 var(--zh);letter-spacing:1px}
+.band .mine{color:var(--band-ink)}
+.mine:focus-visible,.mb:focus-visible,.mi:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.mb{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 10px;margin:0 -2px;background:none;border:0;border-radius:12px;color:var(--ink2);font:500 13px/1.2 var(--zh);white-space:nowrap}
+.mb[disabled]{opacity:.4}
+.mrow{display:flex;flex-wrap:wrap;align-items:center;gap:0 6px;margin:6px 0 0 -8px}
+.rt .mb{margin-right:-8px}
+.mlist{margin-top:10px;border-top:1px solid var(--line)}
+.mi{display:flex;align-items:center;gap:12px;width:100%;min-height:52px;padding:0 4px;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);font-size:15px;text-align:left}
+.mi[disabled]{opacity:.4}
+.mic{width:24px;text-align:center;color:var(--ink2)}
+.mi.msw{display:block;padding:4px}
+.mi.msw .sync{margin:0;border:0;padding:6px 0}
+/* 整張卡點下去：標題是按鈕，透明地蓋滿整張卡；⋯、小臉、開關浮在上面 */
+.cgo{font:inherit;color:inherit;text-align:left;background:none;border:0;padding:0;margin:0;letter-spacing:inherit}
+.cgo::after{content:'';position:absolute;inset:0;z-index:0;border-radius:inherit}
+.cgo:focus-visible{outline:none}.cgo:focus-visible::after{outline:2px solid var(--ink);outline-offset:-2px}
+.cardx .sync,.cardx .btns,.cardx .cmp,.cardx .gcn{position:relative;z-index:1}
+.wk{margin-top:8px;font-size:13px;color:var(--ink2)}
 
-/* v33（2026-11-22）：底部五分頁外殼、錢頁、生活頁 */
-.app{grid-template-rows:auto auto auto minmax(0,1fr) auto}
-.bnav{grid-row:5;display:grid;grid-template-columns:repeat(5,1fr);gap:2px;padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 18px -12px rgba(29,51,49,.35)}
-.bnav[hidden]{display:none}
-.bn{position:relative;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:14px;font-size:12.5px;font-weight:700;color:var(--mut)}
-.bn svg{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.bn[aria-current=page]{color:var(--accent-dk);background:var(--lane)}
-.bn[aria-current=page] span{font-weight:800}
-.bn b{position:absolute;top:3px;left:calc(50% + 6px);min-width:18px;height:18px;padding:0 5px;border-radius:99px;background:var(--accent-dk);color:#fff;font-size:11.5px;line-height:18px;text-align:center}
-.hpill{bottom:calc(env(safe-area-inset-bottom) + 78px)}
-.lbody{padding-bottom:calc(env(safe-area-inset-bottom) + 24px)}
-@media (max-width:959px){.lbody{padding-bottom:calc(env(safe-area-inset-bottom) + 84px)}.board-msg{padding-bottom:36px}}
-.b-money{--bf:#7a5aa8;--bb:#ece4f6}.b-life{--bf:#4a8a4a;--bb:#e2f1e2}
-.msum{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:4px 0 12px}
-.msum>div{padding:10px 12px;border-radius:14px;background:var(--card);border:1.5px solid var(--line)}
-.msum small{display:block;font-size:12.5px;color:var(--mut)}.msum b{font-family:var(--num);font-size:18px;font-weight:900}
-.mrow{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:12px;margin-bottom:8px;border-radius:14px;background:var(--card);border:1.5px solid var(--line)}
-.mrow.soon{border-color:#e0b400;background:#fffaf0}
-.mrt{min-width:0;flex:1}.mrt h3{font-size:15.5px;font-weight:800;line-height:1.4;overflow-wrap:anywhere}
-.mrt p{font-size:13.5px;color:var(--mut);line-height:1.5}.mrt .mch{color:var(--ink)}
-.mam{flex:none;font-family:var(--num);font-size:16px;font-weight:900;white-space:nowrap}
-@media (min-width:960px){
-  .tabs,.hpill{display:none}
-  .lane,.lane.cur{display:none}
-  .lane.ing{display:flex}
-  .bnav{margin:0 16px 14px;border-radius:18px;border:1px solid var(--line)}
-}
-.msum b{white-space:nowrap;font-size:16px}.msum>div{padding:10px}
-@media (min-width:960px){.lanes.one{grid-template-columns:minmax(0,760px)}}
+/* 浮動頭像（右下）、浮窗角落、右上入口：拿掉圓框、圓底與光圈，只剩本體形狀；亮底暗底都靠很淡的陰影看清楚 */
+.chead{background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;width:60px;height:60px}
+.chead .bm{width:52px;height:52px}
+.chead .dot{right:0;top:0}
+.cav{background:transparent!important;border:0!important;border-radius:0!important;width:60px;height:60px;top:-30px;left:12px}
+.cav .bm{width:56px;height:56px}
+.chead .bm.bf,.cav .bm.bf,.hav .bm.bf{filter:drop-shadow(0 0 1px rgba(0,0,0,.55)) drop-shadow(0 3px 6px rgba(0,0,0,.32))}
+.chead .bot-face circle[fill^="url"],.cav .bot-face circle[fill^="url"],.hav .bot-face circle[fill^="url"]{display:none}
+.hav .dot{right:-2px;top:0}
+.chd{padding-left:84px}
+.chd #cClose{min-width:44px;font-size:18px}
+.cm.sys:empty{display:none}
 
-/* ==========================================================================
-   v34（2026-11-22）四個房間 × 暮光色塊（面板工坊 1122 設計 v3，版面 2 × 外觀 6）
-   底取暮光：深夜底、玻璃面板、銀白字。顏色取遊樂色塊：每間房一個主色，只給房間身分與主要動作。
-   急迫只用奶油白（▲＋字），不和房間色撞。只有深色。
-   ========================================================================== */
-:root{color-scheme:dark;
-  --bg:#07060d;--lane:transparent;--ink:#f4f4f7;--mut:#b9bbc6;--line:rgba(255,255,255,.14);--card:#16151f;
-  --rc:#f3efe0;--accent:var(--rc);--accent-ink:#000;--accent-dk:var(--rc);--first:rgba(255,255,255,.08);--stat:#262531;--sheet:#110f19;--dash:rgba(255,255,255,.38);
-  --scrim:rgba(0,0,0,.58);--danger:#ff8a7a;--danger-bg:rgba(255,110,90,.14);--hot:#f3efe0;--warm:#ffd27a;--calm:#b9bbc6;
-  --delc:#ffa597;--delb:rgba(255,165,151,.4);--link:#a9c6ff;--first-h:#f4f4f7;--warn-h:#ffb4a3;--warn-ink:#ffd6cf;
-  --demo-b:#fdcb40;--demo-i:#fdcb40;--demo-bg:rgba(253,203,64,.12);--ringbg:#262531;--ok:#8fd9b0;--ok-bg:rgba(143,217,176,.14);--ok-ink:#8fd9b0;
-  --alert:#f3efe0;--r:22px;--shadow:none;
-  --ff:'Noto Sans TC','PingFang TC','Noto Sans CJK TC','Microsoft JhengHei','Heiti TC',system-ui,-apple-system,sans-serif;
-  --num:'Barlow Condensed','Noto Sans TC','PingFang TC',system-ui,sans-serif;
-  --bot-ink:#0b0a10}
-html[data-g=project]{--rc:#a37aff}html[data-g=opp]{--rc:#4d86ff}html[data-g=money]{--rc:#ff6700}html[data-g=life]{--rc:#00b351}
-body{background:var(--bg)}
-/* 籃子標籤：深底上淡色 */
-.b-personal{--bf:#c9b0ff;--bb:rgba(163,122,255,.18)}.b-funding{--bf:#7fe0a8;--bb:rgba(0,179,81,.18)}.b-achievement{--bf:#ffc489;--bb:rgba(255,103,0,.18)}
-.b-other{--bf:#cfd1da;--bb:rgba(255,255,255,.1)}.b-company{--bf:#a9c6ff;--bb:rgba(77,134,255,.18)}.b-todo{--bf:#c9b0ff;--bb:rgba(163,122,255,.18)}
-.b-doing,.b-archive{--bf:#c9b0ff;--bb:rgba(163,122,255,.18)}.b-money{--bf:#ffb27a;--bb:rgba(255,103,0,.18)}.b-life{--bf:#7fe0a8;--bb:rgba(0,179,81,.18)}.b-today{--bf:#f3efe0;--bb:rgba(243,239,224,.14)}
+/* 首頁四張房間色卡：頭像（大臉）、房間名、數字、一兩行摘要；整張卡點下去進房間，點臉是戳它 */
+.room{position:relative;overflow:hidden;padding:0;min-height:224px;display:block;gap:0}
+.room .rgo{position:relative;z-index:1;display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;min-height:224px;padding:14px;background:none;border:0;color:inherit;text-align:left;font:inherit}
+.room .rgo:focus-visible{outline:2px solid currentColor;outline-offset:-4px;border-radius:inherit}
+.room .rh{font-weight:700;font-size:15px}
+.room .rn{margin-top:2px}
+.room .rs{max-width:58%;font-size:12.5px;line-height:1.4;margin-top:2px}
+.room:active{transform:none}.room .rgo:active{transform:scale(.97)}
+.bigf{position:absolute;z-index:2;padding:0;margin:0;background:none;border:0;line-height:0;-webkit-tap-highlight-color:transparent}
+.bigf .bm{width:100%!important;height:100%!important;pointer-events:none}
+.bigf:focus-visible{outline:2px solid currentColor;outline-offset:-6px;border-radius:50%}
+.room .bigf{width:168px;height:168px;right:-56px;bottom:-50px}
+@media (min-width:1000px){.room,.room .rgo{min-height:236px}.room .bigf{width:184px;height:184px;right:-56px;bottom:-56px}.room .rs{max-width:56%}}
+/* 房間最上面那張房間色大卡：臉約卡高 1.5 倍，偏右下，被卡片邊緣裁掉一截；文字在左上不被蓋到 */
+.zhx{position:relative}
+.zhx .bigf{display:none}
+html[data-skin="6"] .zhx[data-z]:not([data-z=today]),html[data-skin="4"] .zhx[data-z]:not([data-z=today]){overflow:hidden;min-height:150px;--bf-tone:ink;--bot-ink:#000;--bot-ink-in:var(--zc)}
+html[data-skin="4"] .zhx[data-z]:not([data-z=today]){--bot-ink:var(--zi)}
+html[data-skin="6"] .zhx .bigf,html[data-skin="4"] .zhx .bigf{display:block;width:224px;height:224px;right:-44px;bottom:-78px}
+html[data-skin="6"] .zhx .zht,html[data-skin="4"] .zhx .zht{position:relative;z-index:1;max-width:54%}
+@media (min-width:1000px){html[data-skin="6"] .zhx .bigf,html[data-skin="4"] .zhx .bigf{width:250px;height:250px;right:24px;bottom:-90px}html[data-skin="6"] .zhx .zht,html[data-skin="4"] .zhx .zht{max-width:62%}}
+html[data-skin="6"] .zhx .zht .sum,html[data-skin="6"] .zhx .zown{color:#000}
+/* 大臉的點擊區只有臉中間那一圈，不吃掉卡片其他地方 */
+.bigf{pointer-events:none}
+.bigf::before{content:'';position:absolute;left:20%;top:20%;width:60%;height:60%;border-radius:50%;pointer-events:auto}
 
-/* 光場：首頁四色光疊在深藍夜上；進房間換成房間色一層。各動一次 0.4 秒就靜止 */
-.field{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:#07060d}
-.field i{position:absolute;left:-20vmax;right:-20vmax;top:-30vmax;height:110vmax;opacity:1;transition:opacity .4s ease,transform .4s ease;
-  background:radial-gradient(38vmax 30vmax at 22% 46%,rgba(255,103,0,.38),transparent 70%),radial-gradient(40vmax 30vmax at 80% 44%,rgba(77,134,255,.42),transparent 70%),
-    radial-gradient(30vmax 24vmax at 46% 30%,rgba(253,203,64,.2),transparent 70%),radial-gradient(34vmax 24vmax at 58% 58%,rgba(0,179,81,.2),transparent 70%),
-    radial-gradient(60vmax 40vmax at 10% 40%,rgba(120,70,200,.4),transparent 70%)}
-.field::after{content:"";position:absolute;inset:0;background:var(--rc);opacity:0;-webkit-mask-image:radial-gradient(130% 40% at 50% 0,#000 0,transparent 72%);mask-image:radial-gradient(130% 40% at 50% 0,#000 0,transparent 72%);transition:opacity .4s ease,background-color .4s ease}
-html[data-g]:not([data-g=today]) .field i{opacity:0;transform:translateY(-12vmax)}
-html[data-g]:not([data-g=today]) .field::after{opacity:.28}
-.app{position:relative;z-index:1;grid-template-rows:auto auto auto auto minmax(0,1fr) auto}
-.top{grid-row:1}.notice{grid-row:2}.hero{grid-row:3}.tabs{grid-row:4}.board{grid-row:5}.bnav{grid-row:6}
+.scan{min-width:44px;justify-content:center}
+/* ---------- 1122-H 聲音開關：低調圖示，沒有框 ---------- */
+.snd{flex:none;width:44px;height:44px;display:grid;place-items:center;margin-left:auto;background:transparent;border:0;padding:0;color:var(--ink2);border-radius:12px;-webkit-tap-highlight-color:transparent}
+.snd[aria-pressed="false"]{opacity:.7}
+.snd:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
+.top .snd+.hav{margin-left:0}
+/* ---------- 1122-I 目標（2026-11-22）：首頁一條、目標整頁、單一目標、房間露一小條 ---------- */
+.chip.gstall{border:1.5px dashed var(--line2);background:transparent;color:var(--ink)}
+.gbar{position:relative;height:8px;border-radius:4px;background:var(--sf2);margin:12px 0 8px}
+.gbar u{position:absolute;left:0;top:0;bottom:0;border-radius:4px;background:var(--ink)}
+.gbar s{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1px;background:var(--alert,#f3efe0);border-radius:2px}
+.gbar.sm{display:block;height:4px;margin:6px 0 0}
+.gpips{display:flex;gap:6px;margin:12px 0 8px}
+.gpips i{width:24px;height:8px;border-radius:4px;background:var(--sf2)}
+.gpips i.d{background:var(--ink)}
+.gnum{display:flex;justify-content:space-between;gap:10px;color:var(--ink)!important;font-size:14px}
+.gnum span:last-child{color:var(--ink2);white-space:nowrap}
+.gcard h3{margin-top:2px}
+/* 首頁一條 */
+.gstrip{padding:14px 14px 10px}
+.gsgo{position:static;display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%;min-height:44px;padding-right:44px;text-align:left}
+.gminis{display:grid;grid-template-columns:repeat(var(--gn,6),1fr);gap:6px;width:100%}
+.gminis i{display:block;height:6px;border-radius:3px;background:var(--sf2);overflow:hidden}
+.gminis i u{display:block;height:100%;background:var(--ink);border-radius:3px}
+.gline{flex:1;min-width:0;font-size:15px;color:var(--ink)}
+.gsgo .chev{color:var(--ink2);font-size:20px;line-height:1}
+.gstrip .aifs{position:absolute;right:6px;top:50%;transform:translateY(-50%);margin:0}
+/* 目標整頁 */
+.gpick .meta{flex-wrap:wrap;gap:8px;align-items:center}
+.gsumn{font:800 30px/1 var(--fx)}
+.gsay{display:flex;align-items:flex-start;gap:4px;margin-top:10px}
+.gsay .aif{margin:-8px 0 -8px -8px}
+.gsay p{flex:1;color:var(--ink)!important;margin:2px 0 0;font-size:15px}
+.gpick .btn[aria-pressed=true]{background:var(--ink);color:#000;border-color:var(--ink)}
+.glist{margin-top:4px}
+/* 單一目標 */
+.gwhy{margin-top:10px;font-size:17px;line-height:1.6;padding:2px 0 2px 14px;border-left:3px solid var(--line2)}
+.gbig{display:flex;align-items:baseline;gap:8px;padding-right:38px}
+.gbig b{font:800 46px/1 var(--fx)}
+.gbig span{color:var(--ink2);font-size:15px}
+.gsteps{list-style:none;padding:0;margin:14px 0 0;display:grid;gap:10px}
+.gsteps li{display:flex;gap:10px;align-items:center;font-size:15px}
+.gsteps li>span{flex:1}
+.gsteps i{flex:none;width:18px;height:18px;border-radius:50%;border:2px solid var(--line2);font-style:normal;display:grid;place-items:center;font-size:11px;line-height:1;color:#000}
+.gsteps li.d i{background:var(--ink);border-color:var(--ink)}
+.gsteps li.n i{border-color:var(--ink);box-shadow:inset 0 0 0 3px var(--solid,#13121b),inset 0 0 0 9px var(--ink)}
+.gsteps small{color:var(--ink2);font-size:13px;white-space:nowrap}
+.gweek{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:14px;text-align:center;font-size:12px;color:var(--ink2)}
+.gweek i{display:grid;place-items:center;height:36px;border-radius:12px;border:1.5px solid var(--line);font-style:normal;color:var(--ink);font-size:14px}
+.gweek i.d{background:var(--ink);color:#000;border-color:var(--ink);font-weight:800}
+.gweek i.t{border-color:var(--ink);border-style:dashed}
+.groom .rowb .tx{min-width:0}
+/* ---------- 1122-J 錢房間（2026-11-22）：大卡左右滑換 A／B／C，三個小圓點，第二層跟著換 ---------- */
+.mz{position:relative}
+.mz .zht{max-width:none!important}
+.mz .zown .mzk{font-weight:700}
+html[data-skin="6"] .zhx.mz .bigf,html[data-skin="4"] .zhx.mz .bigf{width:140px;height:140px;top:-8px;right:-22px;bottom:auto}
+.mzv{position:relative;margin:4px -16px 0;overflow:hidden;touch-action:pan-y;transition:height .28s cubic-bezier(.4,0,.2,1)}
+.mztr{display:flex;align-items:flex-start;transition:transform .28s cubic-bezier(.4,0,.2,1);will-change:transform}
+.mzv.drag .mztr{transition:none}
+.mzs{flex:0 0 100%;min-width:0;padding:0 16px 2px;user-select:none;-webkit-user-select:none}
+.mzs button,.mzs .aif{user-select:auto}
+.mzhl{font-weight:700;font-size:16px;margin-top:10px;max-width:calc(100% - 120px);position:relative;z-index:1}
+.mzbig{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;max-width:calc(100% - 96px);position:relative;z-index:1}
+.mzbig b{font:800 76px/.95 var(--fx,var(--fn));font-variant-numeric:tabular-nums}
+.mzbig span{font:900 22px/1 var(--zh)}
+.mzbig em{font-style:normal;font-weight:700;font-size:15px;border:2px solid currentColor;border-radius:999px;padding:3px 11px;white-space:nowrap}
+.mzsay{font:900 22px/1.38 var(--zh);margin-top:6px;max-width:calc(100% - 70px);position:relative;z-index:1}
+.mzkw{display:flex;align-items:center;gap:6px;margin-top:6px}
+.mzkw .aif{margin-left:-8px}
+.mzrw{margin-top:12px;display:grid;gap:8px;position:relative;z-index:1}
+.mzrr{display:grid;grid-template-columns:5.6em 1fr 2.4em;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.mzrr b{font:800 22px/1 var(--fx,var(--fn));text-align:right}
+.mztk{position:relative;height:14px;border-radius:7px;background:color-mix(in srgb,currentColor 18%,transparent)}
+.mztk i{position:absolute;inset:0 auto 0 0;border-radius:7px;background:currentColor;transition:width .4s cubic-bezier(.4,0,.2,1)}
+.mztk u{position:absolute;top:-5px;bottom:-5px;width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px #000;border-radius:2px}
+.mzrr.cap{font-size:12px}
+.mzrr.cap div{position:relative;height:16px}
+.mzrr.cap div span{position:absolute;transform:translateX(-50%);white-space:nowrap}
+.mzmini{position:relative;height:96px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px;z-index:1}
+.mzmc{display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;gap:6px}
+.mzmc i{display:block;border-radius:8px 8px 3px 3px;background:currentColor}
+.mzmc.low i{background:repeating-linear-gradient(135deg,currentColor 0 5px,transparent 5px 9px);border:2px solid currentColor}
+.mzmc span{font-size:12.5px;font-weight:700;text-align:center;height:16px;line-height:16px}
+.mzmini u{position:absolute;left:-4px;right:-4px;height:0;border-top:2px dashed currentColor}
+.mzcmp{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14.5px;margin-top:8px;min-height:44px;position:relative;z-index:1}
+.mzcmp span{flex:1;min-width:0}
+.mine.mzed{position:static;flex:none;color:inherit;margin-right:-10px}
+.mzdots{display:flex;justify-content:center;gap:0;margin:0 -8px -10px;position:relative;z-index:3}
+.mzdot{width:44px;height:44px;display:grid;place-items:center;padding:0;background:none;border:0;border-radius:50%;color:inherit;-webkit-tap-highlight-color:transparent}
+.mzdot i{display:block;width:8px;height:8px;border-radius:50%;border:2px solid currentColor;transition:background-color .2s,transform .2s}
+.mzdot[aria-current="true"] i{background:currentColor;transform:scale(1.15)}
+.mzdot:focus-visible{outline:2px solid currentColor;outline-offset:-8px}
+/* 第二層換的時候：≤300ms 橫移淡入 */
+#mz2.mzin{animation:mzIn .26s cubic-bezier(.4,0,.2,1)}
+#mz2.mzin.mzr{animation-name:mzInR}
+@keyframes mzIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+@keyframes mzInR{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+/* 第二層與共用區塊 */
+.mzfirst{margin-top:12px}
+.mzcalc .rowb{min-height:48px}
+.mzdl{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:2px 14px 14px;font-size:14px}
+.mzdl dt{color:var(--ink2)}.mzdl dt small{display:block;font-size:12px}
+.mzdl dd{font:800 18px/1.3 var(--fx,var(--fn));text-align:right;color:var(--ink);margin:0}
+.mzkq{display:flex;gap:6px;align-items:flex-start}
+.mzkq .aif{margin:-8px 0 0 -8px;flex:none}
+.mzkq p{font:700 16.5px/1.45 var(--zh);color:var(--ink);margin:0}
+.mzwhy{padding-left:1.2em;color:var(--ink2);font-size:14px;display:grid;gap:4px;margin:6px 0}
+.mzmo .rowb{align-items:flex-start}
+.mzmh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.mzmh b{font:900 17px/1.2 var(--zh)}
+.mzme{margin-left:auto;font-size:13px;color:var(--ink2)}
+.mzme b{font:800 22px/1 var(--fx,var(--fn));color:var(--ink);margin-left:4px}
+.mzfl{display:grid!important;grid-template-columns:1.4em 1fr 4.2em;align-items:center;gap:8px;font-size:13px;margin-top:6px;color:var(--ink2)}
+.mzfl b{font:800 17px/1 var(--fx,var(--fn));text-align:right;color:var(--ink)}
+.mzt2{display:block;height:10px;border-radius:5px;background:var(--sf2);overflow:hidden}
+.mzt2 i{display:block;height:100%;border-radius:5px}
+.mzt2 i.in{background:var(--ink)}
+.mzt2 i.out{background:repeating-linear-gradient(135deg,var(--ink2) 0 5px,transparent 5px 8px)}
+.mzli{list-style:none;padding:0 14px 12px;margin:0;display:grid;gap:6px;font-size:14px}
+.mzli li{display:flex;gap:8px;color:var(--ink2)}
+.mzli li span:first-child{width:3.2em;flex:none}
+.mzli li b{margin-left:auto;font:800 16px/1.4 var(--fx,var(--fn));white-space:nowrap;color:var(--ink)}
+.mzfoot{margin-top:8px;padding:0 4px}
+.mzdec h3{margin-top:2px}
+.mzdone{display:flex;align-items:center;gap:8px;padding-top:6px;padding-bottom:6px}
+.mzdone p{flex:1;margin:0;color:var(--ink)}
+.mzr .rowb{align-items:center}
+.mzr .tx{text-align:left;min-height:56px;background:none;border:0;padding:0;color:inherit}
+.mzr .rt{display:flex;align-items:center;gap:2px}
+.mzr .amt,.mzbigc .amt{font:800 20px/1 var(--fx,var(--fn));white-space:nowrap;color:var(--ink)}
+.mzchase{background:var(--alert,#f3efe0);color:#000;border-radius:6px;padding:0 6px;font-weight:700}
+.mzrx{padding:0 14px 10px;color:var(--ink2);font-size:14px;display:grid;gap:4px}
+.mzrx b{color:var(--ink)}
+.mzq{display:flex;align-items:center;gap:8px;margin-top:10px;border-style:dashed;background:transparent}
+.mzq p{flex:1;margin:0;font-size:14px}
+.mzq p b{color:var(--ink)}
+.mzbigc{padding:0}
+.mzbigc .mzflat{border:0;background:none;box-shadow:none;margin:0}
+.mzbigc .mzflat .rowi:first-child .rowb{padding-right:52px}
+.mztata{margin-top:22px}
+.mztata a.rowb{text-decoration:none;color:inherit}
+.mzopts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.mzopts label{position:relative;min-height:52px;border:1px solid var(--line2);border-radius:14px;display:grid;place-items:center;font-weight:700;cursor:pointer}
+.mzopts input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
+.mzopts label:has(input:checked){background:var(--alert,var(--ink));color:#000;border-color:transparent}
+.mzopts label:has(input:focus-visible){outline:3px solid var(--ink);outline-offset:2px}
+.mzf input{display:block;width:100%;margin-top:6px}
+.mzf.bad input{border-color:var(--alert,#f3efe0);border-width:2px}
+@media (min-width:1000px){.mzbig b{font-size:88px}}
+@media (prefers-reduced-motion:reduce){.mzv,.mztr,.mztk i,.mzdot i{transition:none!important}#mz2.mzin{animation:none!important}}
+.mztata .tx small{white-space:normal}
+/* ---------- 1122-K 每個房間的色卡加「目標」（2026-11-22）：共用錢房間的滑卡樣式 ---------- */
+.cvh .zown{max-width:calc(100% - 112px)}
+.cvsum{margin-top:6px!important;max-width:calc(100% - 112px);position:relative;z-index:1;min-height:52px}
+.cvhl{margin-top:4px!important}
+.cvgn{background:none;border:0;padding:6px 0;margin:0;color:inherit;font:900 21px/1.3 var(--zh);text-align:left;min-height:44px;cursor:pointer}
+.cvgn:focus-visible,.cvgr:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:8px}
+.cvbig b{font-size:64px}
+.cvbar{position:relative;height:12px;border-radius:6px;background:color-mix(in srgb,currentColor 18%,transparent);margin:12px 0 4px;z-index:1}
+.cvbar i{position:absolute;inset:0 auto 0 0;border-radius:6px;background:currentColor}
+.cvbar u{position:absolute;top:-5px;bottom:-5px;width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px #000;border-radius:2px}
+.cvpip{display:flex;gap:6px;margin:12px 0 4px;position:relative;z-index:1}
+.cvpip i{width:30px;height:12px;border-radius:6px;border:2px solid currentColor;box-sizing:border-box}
+.cvpip i.d{background:currentColor}
+.cvline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;font-size:14.5px;font-weight:700;margin-top:10px;position:relative;z-index:1}
+.cvst{border:2px solid currentColor;border-radius:999px;padding:1px 10px;white-space:nowrap;font-size:13.5px}
+.cvst.bad{background:var(--alert,#f3efe0);color:#000;border-color:transparent}
+.cvst.stall{border-style:dashed}
+.cvnx{flex:1 1 100%}
+.cvact{margin-top:2px}
+.cvact .aif{margin-left:-8px}
+.cvgl{display:grid;gap:6px;margin-top:8px;position:relative;z-index:1}
+.cvgr{display:block;width:100%;text-align:left;background:color-mix(in srgb,currentColor 9%,transparent);border:0;border-radius:14px;padding:10px 12px;color:inherit;min-height:56px;cursor:pointer;font:inherit}
+.cvgt{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cvgt b{font:900 16px/1.3 var(--zh)}
+.cvgr .cvbar,.cvgr .cvpip{margin:7px 0 4px}
+.cvgr .cvbar{height:8px}.cvgr .cvbar u{display:none}
+.cvgr .cvpip i{height:8px;width:24px}
+.cvgr small{font-size:13px;font-weight:700}
+.cvall{color:inherit;min-height:44px;margin-left:auto}
+@media (prefers-reduced-motion:reduce){.cvbar i{transition:none!important}}
+.mz .zown .mzk{white-space:nowrap}
 
-/* 頂列：逐流、更新時間、合併提示小字；右邊喇叭與大器的臉 */
-.top{align-items:flex-start;padding:calc(env(safe-area-inset-top) + 10px) 12px 6px 16px}
-.top h1{font-size:24px;font-weight:900;letter-spacing:.02em}
-.top-l{min-width:0;flex:1}
-.live{color:var(--mut)}
-.sum{text-align:left;white-space:normal;color:var(--mut);font-size:12.5px;line-height:1.45;margin-top:1px}
-.sum b{color:var(--ink)}.sum .hotn{color:var(--alert);font-weight:800}.sum .hotn::before{content:"▲ "}
-.top-r{gap:4px;flex:none;align-items:center}
-.sndbtn,.facebtn{position:relative;display:inline-grid;place-items:center;min-width:48px;min-height:48px;border-radius:50%}
-.sndbtn svg{width:24px;height:24px;stroke:var(--mut);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.facebtn .tf{display:block;width:40px;height:40px}
-.facebtn i{position:absolute;top:6px;right:5px;width:12px;height:12px;border-radius:50%;background:#ff5b4a;border:2px solid var(--bg);display:none}
-.facebtn.un i{display:block}
-.daqibtn{display:none}
+/* 1122-L 交辦狀態：低調小字，不是按鈕 */
+.ghand{color:var(--ink2);font-size:13px;font-weight:400}
+.ghand.gdone{display:block;margin:10px 0 2px}
+.ghand.gline2{display:block;margin-top:2px}
 
-/* 房間大色卡 */
-.hero{position:relative;margin:2px 12px 8px;min-height:118px;border-radius:24px;background:var(--rc);color:#000;overflow:hidden;display:flex}
-.hero[hidden]{display:none}
-.hero-t{position:relative;z-index:1;padding:14px 18px 14px;max-width:64%;min-width:0}
-.hero h2{font-size:40px;font-weight:900;line-height:1.05;letter-spacing:.02em}
-.hero-who{font-size:14px;font-weight:800;margin-top:6px}
-.hero-l{font-size:14.5px;font-weight:500;line-height:1.45;margin-top:4px;overflow-wrap:anywhere}
-.hero-face{position:absolute;right:-26px;bottom:-40px;width:180px;height:180px;display:block;--bot-ink:#0b0a10}
-.hero-face span{display:block;width:180px;height:180px}
-.hero-face:focus-visible{outline:3px solid #000;outline-offset:-6px;border-radius:24px}
+/* 1122-M 拍板帶：透明玻璃 */
+html[data-skin] .band.dglass{--band:rgba(14,10,26,.42);--band-ink:#fff;--band-btn:#fff;--band-btn-ink:#000;background:var(--band);color:#fff;border:1px solid rgba(255,255,255,.24);box-shadow:none;backdrop-filter:blur(18px) saturate(1.15);-webkit-backdrop-filter:blur(18px) saturate(1.15);padding:16px 16px 2px;position:relative}
+html[data-skin] .band.dglass .btn:not(.pri){color:#fff;border-color:rgba(255,255,255,.7)}
+.band.dglass .mine{color:#fff}
+.band.dglass .mzv{margin-top:0}
+.dslide{position:relative;padding-bottom:2px}
+.dslide .mine{top:-8px;right:-10px}
+.dslide .bandtop{padding-right:34px}
+.band.dglass .mzdots,.band.dglass .cvcnt{color:#fff}
+.cvcnt{display:flex;justify-content:center;align-items:center;gap:2px;margin:0 -8px -4px;position:relative;z-index:3;font-size:14px}
+.cvar{width:44px;height:44px;display:grid;place-items:center;padding:0;background:none;border:0;border-radius:50%;color:inherit;font:700 22px/1 var(--zh)}
+.cvar:disabled{opacity:.35}
+.cvar:focus-visible{outline:2px solid currentColor;outline-offset:-6px}
+.cvn{min-width:48px;text-align:center;font-variant-numeric:tabular-nums}
+@keyframes cvin{from{transform:translateX(32px);opacity:0}to{transform:none;opacity:1}}
+.mzv.cvin .mzs:not([inert]){animation:cvin .32s cubic-bezier(.2,.7,.2,1)}
+@media (prefers-reduced-motion:reduce){.mzv.cvin .mzs{animation:none!important}}
 
-/* 小分頁：膠囊 */
-.tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 12px 10px;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tab{flex:none;flex-direction:row;gap:6px;min-height:44px;padding:0 16px;border-radius:999px;background:transparent;border:1.5px solid var(--line);font-size:15px;color:var(--ink)}
-.tab b{font-family:var(--num);font-size:19px;font-weight:800;order:2;color:var(--mut)}
-.tab[aria-selected=true]{background:var(--rc);border-color:var(--rc);color:#000;box-shadow:none}
-.tab[aria-selected=true] b{color:#000}
+/* 1122-M 目標卡：白（定定色），整列寬，比房間色卡矮 */
+/* 1122-N 目標卡壓窄（老大 2026-11-22：「高度也許可以窄窄的」）：一行名字＋細進度條＋狀態，不放下一步與數字 */
+.groomh{padding:10px 14px 0!important;margin-top:10px!important}
+.groomh .gtopb{min-height:36px!important;margin:-4px 0 -8px!important}
+.groomh .ggo{flex-direction:row!important;flex-wrap:wrap;align-items:center!important;gap:4px 10px!important;max-width:70%!important;padding:0 0 2px!important}
+.groomh .ggn{font-size:16px!important;line-height:1.3!important}
+html[data-skin="6"] .groomh .ggn{font-size:16px!important}
+.groomh .ggn .gk{width:20px!important;height:20px!important}
+.groomh .cvbar{order:3;flex:1 1 100%;height:6px}
+.groomh .cvpip{order:3;flex:1 1 100%}
+.groomh .ggx,.groomh .ggnx{display:none!important}
+.groomh .ggs{font-size:12px!important}
+.groomh .bigf{width:104px!important;height:104px!important;right:-26px!important;bottom:-38px!important}
+.groomh .mzdots,.groomh .cvcnt{margin:-6px 0 0 -14px!important;transform:scale(.85);transform-origin:left center}
 
-/* 欄與卡片 */
-.lane{background:transparent;border-top:0;border-radius:0}
-.lh{padding:4px 16px 6px}
-.lh h2{font-family:var(--ff);font-size:18px;font-weight:900}
-.lh h2 .ld{background:var(--rc)}
-.lh h2 em{background:transparent;color:var(--mut);border:1px solid var(--line);font-weight:700}
-.lh p{color:var(--mut)}
-.card,.pc,.hc,.mrow,.msum>div{background:rgba(22,21,31,.9);border:1px solid var(--line);border-radius:22px;box-shadow:none}
-.card{border-left:1px solid var(--line);padding:14px 16px 12px}
-.card[data-lvl=hot]{border-color:rgba(243,239,224,.5)}
-.card[data-lvl=hot] .tm{background:var(--alert);color:#000;border-radius:8px;padding:2px 8px}.card[data-lvl=hot] .tm b{color:#000}
-.card[data-lvl=hot] .tm::before{content:"▲";font-size:13px;margin-right:2px}
-.tm b{font-family:var(--num);font-weight:800}
-.amt b{font-family:var(--num);font-weight:800}
-.ca button{background:var(--stat);color:var(--ink);border-radius:999px}
-.ca .del{background:var(--danger-bg);color:var(--delc)}
-.ca .go,.pc .pa .pg,.hopts button.rec,.btn-primary,.steps .s-current i{background:var(--rc);border-color:var(--rc);color:#000}
-.btn{border-radius:999px}
-.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
-.btn-primary:hover{background:var(--rc);filter:brightness(1.08)}
-.zero{background:rgba(22,21,31,.75);border:1px solid var(--line);color:var(--mut)}
-.zero b{color:var(--ink)}
-.zero svg{stroke:var(--mut)}
-.card.skel{border-left-color:var(--line)}
-.sk{background:rgba(255,255,255,.08)!important}
-.notice{background:rgba(255,255,255,.08);color:var(--ink)}.notice.off{background:var(--demo-bg);color:#ffe7a6}
-.hpill,.holdbtn{background:#16151f;color:var(--ink);border-color:var(--dash)}
-.hpill b,.holdbtn b,.bn b{background:var(--alert);color:#000}
-.holdbtn.urgent,.hpill.urgent{background:var(--alert);border-color:var(--alert);color:#000}
-.holdbtn.urgent b,.hpill.urgent b{background:#000;color:var(--alert)}
-.wf .bad,.dnote .bad{background:rgba(255,110,90,.12)}
-.run.r-done{color:#8fd9b0}.steps .s-done i{background:#2f9a5a;border-color:#2f9a5a}
-.dt-crawl.fail b{color:#ffd27a}.dt-crawl.fail small{color:#e8d3a0}
-.pc .nx b{background:var(--stat);color:var(--mut)}
-input,select,textarea{color:var(--ink);background:#0f0e16;border-color:var(--line)}
-input::placeholder,textarea::placeholder{color:#8d8f9b}
-.mrow.soon{border-color:rgba(243,239,224,.5);background:rgba(243,239,224,.06)}
-.msum b,.mam{font-family:var(--num);font-weight:800}
+.room[data-z=goal],.zh[data-z=goal]{--zc:color-mix(in srgb,var(--c-din) 45%,#fff);--zi:#000}
+.groomh{grid-column:1/-1;width:100%;min-height:0;margin-top:14px;padding:14px 14px 0}
+html[data-skin="6"] .groomh{color:#000}
+.groomh .gtopb{position:relative;z-index:1;display:flex;align-items:baseline;gap:8px;width:calc(100% - 40px);min-height:44px;margin:-6px 0 -6px;padding:0;background:none;border:0;color:inherit;font:inherit;text-align:left;align-items:center}
+.groomh .gsm{font-size:12.5px;opacity:.85}
+html[data-skin="6"] .groomh .gsm{opacity:1;color:#2b2b2b}
+.groomh .mzv{margin:2px -14px 0;position:relative;z-index:1}
+.groomh .mzs{padding:0 14px 2px}
+.groomh .ggo{display:flex;flex-direction:column;align-items:flex-start;gap:4px;width:100%;max-width:64%;min-height:0;padding:2px 0 4px;background:none;border:0;color:inherit;font:inherit;text-align:left}
+.groomh .ggo:focus-visible,.groomh .gtopb:focus-visible{outline:2px solid currentColor;outline-offset:2px;border-radius:8px}
+.groomh .ggn{display:flex;align-items:center;gap:6px;font:var(--wd) 20px/1.25 var(--fd)}
+html[data-skin="6"] .groomh .ggn{font:900 20px/1.25 var(--zh)}
+.groomh .ggn .gk{width:26px;height:26px;flex:none}
+.groomh .cvbar,.groomh .cvpip{width:100%;display:block}
+.groomh .cvpip{display:flex}
+.groomh .ggx{font-size:13px}
+.groomh .ggs{display:flex;gap:6px;flex-wrap:wrap;font-size:13px}
+.groomh .ggnx{font-size:13px;line-height:1.4}
+.groomh .bigf{width:150px;height:150px;right:-40px;bottom:-44px}
+.groomh .mzdots,.groomh .cvcnt{color:#000;justify-content:flex-start;margin:-4px 0 0 -14px;position:relative;z-index:3}
+html:not([data-skin="6"]):not([data-skin="4"]) .groomh .mzdots,html:not([data-skin="6"]):not([data-skin="4"]) .groomh .cvcnt{color:var(--ink)}
+@media (min-width:1000px){.groomh .ggo{max-width:70%}.groomh .bigf{width:170px;height:170px;right:-30px;bottom:-50px}}
+.groomh .cvbar,.groomh .cvpip{margin:6px 0 2px;height:10px}
+.groomh .cvpip i{height:10px;width:24px}
+.groomh .cvst{font-size:12.5px;padding:0 8px}
+.groomh .cvst.bad{background:#000;color:#fff}
+.groomh .rh{width:auto;flex:none}
+.groomh .gsm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.groomh .ggo{gap:3px}
+.groomh .ggs{align-items:center;gap:4px 8px}
+.groomh .ggn .gk{width:22px;height:22px}
+#page .zh[data-z=goal]{margin-bottom:14px}
+@media (prefers-color-scheme:light){html[data-skin="4"] .band.dglass{--band:rgba(14,10,26,.74)}}
+.dslide .bandtop{align-items:flex-start}
+.dslide .bandtop .lbl.who{display:block;flex:1;min-width:0;line-height:24px}
+.dslide .bandtop .lbl.who .aif,.dslide .bandtop .lbl.who .bm{vertical-align:middle;margin-right:6px}
+.dslide .bandtop>.lbl:last-child{white-space:nowrap;line-height:24px}
+/* ---------- 1122-N 新增行程一句話輸入 ---------- */
+.nlhead{align-items:center}
+.nlhead h2{flex:1}
+.nlface{display:flex;align-items:center;gap:4px;flex:none;min-height:44px}
+.nlface .bm{width:36px;height:36px}
+.nlface small{font-size:12px;color:var(--ink2);min-width:3em}
+.nlbox{display:flex;gap:8px;align-items:stretch;margin-top:12px}
+.nlbox textarea{flex:1;min-width:0;font:600 18px/1.45 var(--zh);padding:14px 14px;border-radius:16px;border:2px solid var(--line,var(--ink2));background:var(--sf2);color:var(--ink);resize:none;min-height:84px}
+.nlbox textarea:focus{outline:3px solid var(--focus,#4c8dff);outline-offset:1px}
+.nlbox textarea::placeholder{color:var(--ink2);opacity:.6;font-weight:500}
+.nlgo{flex:none;min-width:64px;min-height:44px;align-self:stretch}
+.nlex{font-size:12.5px;color:var(--ink2);margin-top:6px}
+.nlpred .nlmiss{display:block;margin-top:8px;min-height:44px;padding:0 2px;background:none;border:0;color:var(--urg);font:700 13.5px/44px var(--zh);text-align:left;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.nldet{margin-top:14px;border-top:1px solid var(--line,rgba(127,127,127,.3))}
+.nldet>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:48px;cursor:pointer;font-weight:700;color:var(--ink)}
+.nldet>summary::-webkit-details-marker{display:none}
+.nldet>summary::after{content:'⌄';margin-left:auto;font-size:18px;color:var(--ink2)}
+.nldet[open]>summary::after{content:'⌃'}
+.nldet>summary small{font-weight:500;font-size:12.5px;color:var(--ink2)}
+.nlm{display:block;color:var(--urg);font-weight:700;font-size:12px;line-height:1.35}
+.nldet .two{align-items:end}
+.nlall{display:flex;align-items:center;gap:8px;min-height:44px;margin-top:6px;font-size:13px;color:var(--ink2)}
+.nlall input{width:20px;height:20px}
+.tdnew{margin-top:4px}
 
-/* 疊層：深色玻璃 */
-.panel{background:#110f19;border:1px solid var(--line)}
-.df{background:#16151f}
-.chat{background:rgba(255,255,255,.04)}
-.msg{background:#201e2b;box-shadow:none}
-.msg.m-user{background:rgba(163,122,255,.22)}
-#toast{background:#f3efe0;color:#000}
-#toast button{background:#000;color:#f3efe0}
-#toast.bad{background:#ffb4a3;color:#000}#toast.bad button{background:#000;color:#ffb4a3}
-
-/* 浮動對話：右下浮起的玻璃窗，大器的臉在標題列 */
-.panel.float{left:auto;right:12px;top:auto;bottom:calc(env(safe-area-inset-bottom) + 84px);width:min(440px,calc(100vw - 24px));height:min(72dvh,600px);border-radius:24px;
-  background:rgba(17,15,25,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 24px 60px -18px rgba(0,0,0,.8);transform:translateY(24px) scale(.96);opacity:0;transform-origin:100% 100%}
-.panel.float.show{transform:none;opacity:1;transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s,visibility 0s}
-.panel.float .dh{gap:10px;justify-content:flex-start;padding:8px 8px 8px 14px}
-.panel.float .dh .chf{display:block;width:34px;height:34px;flex:none}
-.panel.float .dh span:not(.chf){font-size:16px;color:var(--ink);font-weight:800;flex:1}
-.panel.float .db{padding:6px 12px 12px}
-.panel.float .chat{margin:0;background:transparent;padding:0}
-.panel.float .chat h3{display:none}
-.panel.float .msgs{max-height:none;flex:1}
-.panel.float .dt{height:100%}
-.panel.float .chat{height:100%}
-
-/* 首頁：問候、拍板玻璃卡 */
-.hello{padding:8px 4px 6px}
-.hello p{font-size:15px;font-weight:700;color:var(--ink)}
-.hello h2{font-size:44px;font-weight:900;line-height:1.15;letter-spacing:.01em}
-.deck-w{position:relative;border-radius:26px;background:rgba(14,10,26,.42);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.22);padding:12px 0 6px;overflow:hidden}
-.deck-h{padding:0 18px 2px;font-size:14px;color:#fff;font-weight:700}
-.deck{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
-.deck::-webkit-scrollbar{display:none}
-.deck>.hc{flex:0 0 100%;scroll-snap-align:start;background:transparent;border:0;border-radius:0;margin:0;padding:6px 18px 10px}
-.deck .hc h3{font-size:22px;font-weight:900;line-height:1.4;color:#fff}
-.deck .hproj{background:rgba(255,255,255,.12);color:#fff}
-.deck .hopts button{background:transparent;border-color:rgba(255,255,255,.3);color:#fff;border-radius:22px}
-.deck .hopts button.rec{background:#fff;border-color:#fff;color:#000;text-align:center;align-items:center;padding:10px 14px}
-.deck .hopts button.rec span{font-size:18px;font-weight:900}
-.deck .hmeta,.deck .hd summary{color:#d9dae2}
-.deck .hd p{color:#fff}
-.deck textarea{background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.25);color:#fff}
-.dots{display:flex;justify-content:center;gap:0;padding:2px 0 0}
-.dots button{min-width:44px;min-height:44px;display:grid;place-items:center}
-.dots button i{width:8px;height:8px;border-radius:50%;border:2px solid #fff;display:block}
-.dots button[aria-current=true] i{background:#fff}
-.dots.cnt{align-items:center;gap:6px;color:#fff;font-size:14px}
-.dots.cnt button{font-size:24px;color:#fff;border-radius:50%}
-.dots.cnt button:disabled{opacity:.3}
-.zero.glass{background:rgba(14,10,26,.42);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-color:rgba(255,255,255,.22)}
-.hh{color:var(--mut)}
-.hl li,.ha{background:rgba(22,21,31,.85);border:1px solid var(--line)}
-.hl li em{background:rgba(255,255,255,.1);color:var(--ink)}
-.hbeat{margin:12px 0 0}
-.hbeat .k{background:rgba(255,255,255,.08);color:var(--mut)}.hbeat .l{background:var(--alert);color:#000}
-.hbeat .l::before{content:"▲ "}
-.lrow{border-top-color:var(--line)}
-.lrow h3 em{background:rgba(143,217,176,.16);color:#8fd9b0}.lrow.l h3 em{background:var(--alert);color:#000}
-.lsum.bad{color:var(--alert)}
-.hc{border-left:1px solid var(--line)}
-
-/* 底部分頁：深色、頭像，現在這間的指示條用房間色 */
-.bnav{background:rgba(7,6,13,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);box-shadow:none}
-.bn{color:var(--mut);background:transparent}
-.bn .bnf{display:block;width:30px;height:30px;filter:brightness(.72)}
-.bn svg{stroke:var(--mut)}
-.bn[aria-current=page]{color:var(--ink);background:transparent}
-.bn[aria-current=page]::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--rc)}
-.bn[aria-current=page] .bnf{filter:none}
-.bn[aria-current=page] svg{stroke:var(--ink)}
-.bn b{left:calc(50% + 8px)}
-
-@media (min-width:960px){
-  .tabs{display:none}
-  .hero{margin:0 16px 10px;min-height:128px}
-  .bnav{background:rgba(16,15,24,.94)}
-  .board::after,.board::before{background:none}
-  .panel.float{bottom:96px;right:24px;border-radius:24px}
-}
-@media (max-width:959px) and (max-height:520px){ .hero{min-height:0}.hero h2{font-size:24px}.hero-who,.hero-l{display:none}.hero-face{width:110px;height:110px;bottom:-40px}.hero-face span{width:110px;height:110px}.hello h2{font-size:28px} }
-@media (max-width:380px){ .hero h2{font-size:34px}.hello h2{font-size:36px}.hero-t{max-width:70%} }
-@media (prefers-reduced-motion:reduce){ .field i,.field::after{transition:none} }
-/* v34 觸控目標補到 44px */
-.ha .btn,.sheet-note .btn,.dnote .btn{min-height:44px}
-.hd summary,.hans summary{min-height:44px}
-.hmeta a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;color:var(--link)}
+/* ---------- v35 正式版補充（2026-11-22）：還沒接上的空狀態、金鑰提示 ---------- */
+.lcard p{font-weight:700;color:var(--ink)}
+.lcard small{display:block;margin-top:4px;color:var(--ink2);font-size:13px}
+.lnone{margin-top:6px}
+.lfull{margin-top:8px;font-size:14.5px;line-height:1.7;color:var(--ink);white-space:normal;word-break:break-word}
+.lgoal .rgo{cursor:default}
+.offline .kbtn{margin-left:auto;flex:none;min-height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--ink,#f4f4f7);color:#07060d;font:700 13px/36px var(--zh,sans-serif);cursor:pointer}
+.offline{align-items:center}
+.lgoal{min-height:112px!important}
+.lgoal .rgo{min-height:0!important;padding-bottom:12px}
+.dslide>h2{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}

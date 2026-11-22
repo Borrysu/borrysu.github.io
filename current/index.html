@@ -1,8 +1,8 @@
 <!doctype html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" data-layout="2" data-skin="6" data-tab="today">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>逐流 Current</title>
 <meta name="description" content="老大的總控台：等你拍板的事、案子、機會、錢、生活">
 <meta name="robots" content="noindex,nofollow">
@@ -16,41 +16,35 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=20261116f">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=20261116f">
-<link rel="stylesheet" href="css/app.css?v34">
-<!-- 網路字型只當加分：不擋畫面，載入完用 swap 換上；沒網路時走 css 裡的系統字型。 -->
+<link rel="stylesheet" href="css/app.css?v35">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" media="print" onload="this.media='all'" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Barlow+Condensed:wght@800&display=swap">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Barlow+Condensed:wght@800&display=swap"></noscript>
+<link rel="stylesheet" id="fontlink" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=Inter:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
 </head>
 <body>
-<div class="field" aria-hidden="true"><i></i></div>
 <div class="app" id="app">
-  <header class="top">
-    <div class="top-l">
-      <h1>逐流</h1>
-      <p class="live" id="live" role="status"></p>
-      <p class="sum" id="sum"></p>
-    </div>
-    <div class="top-r">
-      <button class="holdbtn" id="holdbtn" type="button" aria-haspopup="dialog"></button>
-      <button class="sndbtn" id="sndbtn" data-act="snd" type="button" hidden></button>
-      <button class="facebtn" id="facebtn" data-act="chat-open" type="button" aria-haspopup="dialog" aria-label="跟大器說話"><span class="tf"></span><i aria-hidden="true"></i></button>
-    </div>
+  <div class="field" aria-hidden="true"><i></i></div>
+  <header class="top" id="top">
+    <div class="brand"><b>逐流</b><small id="stamp">讀取中</small></div>
+    <button class="hav" id="hav" data-act="havtalk" data-id="daqi|" aria-label="跟大器說話"><span class="bm bf" data-b="daqi" aria-hidden="true"></span><span class="dot" hidden></span></button>
   </header>
-  <div class="notice" id="notice" hidden role="status"></div>
-  <section class="hero" id="hero" hidden></section>
-  <nav class="tabs" id="tabs" role="tablist" aria-label="分類"></nav>
-  <main class="board" id="board"><div class="lanes" id="lanes"></div></main>
-  <nav class="bnav" id="bnav" aria-label="主要分頁"></nav>
+  <div id="offline" class="offline" role="status" hidden><b aria-hidden="true">▲</b><span>離線中。</span></div>
+  <main>
+    <div id="view"></div>
+    <section class="page" id="page" role="dialog" aria-modal="true" aria-label="詳情頁" hidden></section>
+    <div class="scrim" id="scrim" data-act="close" hidden></div>
+    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle" hidden></section>
+    <div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastUndo" data-act="undo">復原</button></div>
+    <div class="cscrim" id="cscrim" data-act="chatclose" hidden></div>
+    <section class="chat" id="chat" role="dialog" aria-modal="true" aria-labelledby="cTitle" hidden></section>
+    <button class="chead" id="chead" data-act="chathead" aria-label="跟大器說"></button>
+  </main>
+  <div class="dock" id="dock" hidden></div>
+  <nav class="tabs" aria-label="主要分頁"><div class="tabs-in" id="tabs"></div></nav>
 </div>
-<button class="hpill" id="hpill" type="button" aria-haspopup="dialog"></button>
-<div class="scrim" id="scrim"></div>
-<aside class="panel sheet" id="sheet" role="dialog" aria-modal="true" aria-label="待決區"></aside>
-<aside class="panel drawer" id="drawer" role="dialog" aria-modal="true" aria-label="機會詳細資料"></aside>
-<div id="toast" role="status" aria-live="polite"></div>
-<script defer src="js/bot_face.js?v34"></script>
-<script defer src="js/bot_voice.js?v34"></script>
-<script type="module" src="js/app.js?v34"></script>
+
+<script defer src="js/bot_face.js?v35"></script>
+<script defer src="js/bot_voice.js?v35"></script>
+<script defer src="js/app.js?v35"></script>
 </body>
 </html>
