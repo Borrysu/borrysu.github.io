@@ -1860,7 +1860,7 @@ function applyData(){const it=LV.items;applyExtra();
  DB.dec=h.open.map(mapDec);Object.keys(PD).forEach(k=>{delete PD[k]});DB.dec.forEach(d=>{const p=DB.proj.find(x=>x.title===d.proj||x.short===d.proj);if(p)PD[d.id]=p.id});DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
  DB.subs=LV.money?LV.money.items.filter(s=>s.status!=='cancel'||s.cancelBy).map(mapSub).sort((a,b)=>a.in-b.in):[];
  const t=LV.at?LHM(LV.at):'';FRESH.daqi=LV.forced?'示範資料':t?t+' 更新':'讀取中';
- const ls=lastScan();FRESH.jiji=ls?LHM(ls.at)+' 整理':'還沒掃描過';FRESH.tata=LV.money?'訂閱 '+t+' 讀取':'還沒接上帳戶';FRESH.peng='還沒接上';
+ const ls=lastScan();FRESH.jiji=ls?LHM(ls.at)+' 整理':'還沒掃描過';FRESH.tata=LV.mo?t+' 讀取':LV.money?'訂閱 '+t+' 讀取':'看不到帳戶';FRESH.peng='還沒接上';
  const sp=$('#stamp');if(sp)sp.textContent=LV.forced||LV.nokey?'示範資料':t?t+' 更新':'讀取中'}
 function lastScan(){let b=null;Object.values(LV.scan||{}).forEach(v=>{if(v&&v.last&&v.last.at&&(!b||v.last.at>b.at))b=v.last});return b}
 const scanOpen=()=>Object.values(LV.scan||{}).some(v=>v&&v.open&&v.open.status!=='done');
@@ -1909,7 +1909,7 @@ gcNote=()=>'';projSync=()=>'';   // v41：目標接上 hub_goals（見檔尾「�
 monthSelf=()=>subs().filter(s=>s.payer==='自付').reduce((a,s)=>a+(s.mo||0),0);
 {const _z=zsum;zsum=function(z){const s=_z(z);
  if(z==='opp'){s.b='';const a=opps('all');s.s=a.length?`最急：${a[0].org||a[0].title}，${a[0].due}`:'現在沒有新機會'}
- if(z==='money'){s.b='';if(!LV.money){s.n='—';s.sm=0;s.u=LV.moneyErr?'看不到錢的資料':'帳戶還沒接上';s.s='';s.none=false;s.hot=false}else{const d=due7();s.n=nt(monthSelf());s.sm=1;s.u='每月固定支出（自付）';s.s=d.length?`7 天內扣 ${d.length} 筆`:'7 天內沒有要扣的';s.none=false;s.hot=subs().some(x=>x.cancel&&x.in<=3)}}
+ if(z==='money'&&!LV.mo){s.b='';if(!LV.money){s.n='—';s.sm=0;s.u=LV.moneyErr?'看不到錢的資料':'帳戶還沒接上';s.s='';s.none=false;s.hot=false}else{const d=due7();s.n=nt(monthSelf());s.sm=1;s.u='每月固定支出（自付）';s.s=d.length?`7 天內扣 ${d.length} 筆`:'7 天內沒有要扣的';s.none=false;s.hot=subs().some(x=>x.cancel&&x.in<=3)}}
  if(z==='life'){s.n=0;s.u='生活還沒接上';s.s='';s.none=false;s.hot=false}
  if(z==='proj'){const u=urgentProj();s.s=u?`${u.short}${u.due}`:(projs().length?`進行中 ${projs('doing').length} 件`:'沒有急件')}
  return s}}
@@ -2013,22 +2013,23 @@ ACT.ppurge=id=>{const t=DB.arch.find(q=>q.id===id);if(!t)return;let v=null;try{v
  closeThen(async()=>{try{await LV.api.act(id,'purge',{confirm:v.trim()});toast('徹底刪除了');const a=await LV.api.archive('',null);LV.arch=a.items||[];reload()}catch(e){toast('沒有刪：'+LERR(e))}})};
 ACT.nc=msg=>toast(msg||'這個動作還沒接上');
 
+const DZ={mzHero,mz2HTML,mzIn,mzOut};   // v43：先存設計稿原版，接上錢總覽時用原版，讀不到時退回下面的訂閱版
 /* ---------- 錢：設計稿的大卡三頁；有後端的只有訂閱 ---------- */
 mzHero=function(){const st=FRESH.tata,ss=subs(),d=due7();
  const s1=LV.money?`<p class="mzhl">${aiF('tata','money')}<span>塔塔・每月訂閱</span></p><p class="mzsay">每月固定支出 ${nt(monthSelf())}，${d.length?`7 天內要扣 ${d.length} 筆`:'7 天內沒有要扣的'}。</p><p class="mzcmp"><span>自付 ${ss.filter(s=>s.payer==='自付').length} 筆・公司付 ${ss.filter(s=>s.payer!=='自付').length} 筆${ss.some(s=>s.cancel)?'・▲ 有想取消的':''}</span></p>`
   :`<p class="mzhl">${aiF('tata','money')}<span>塔塔・每月訂閱</span></p><p class="mzsay">${esc(LV.moneyErr||'訂閱資料還沒讀到')}</p>`;
- const sl=[{id:'S',name:'訂閱',html:s1},{id:'A',name:'撐多久',html:`<p class="mzhl"><span>撐多久</span></p><p class="mzsay">帳戶還沒接上</p><p class="mzcmp"><span>接上塔塔記帳的帳戶後，這裡算現金撐幾個月。</span></p>`},{id:'B',name:'這三個月',html:`<p class="mzhl"><span>這三個月</span></p><p class="mzsay">收支還沒接上</p><p class="mzcmp"><span>接上之後，這裡排出三個月的進出。</span></p>`}];
+ const sl=[{id:'S',name:'訂閱',html:s1},{id:'A',name:'撐多久',html:`<p class="mzhl"><span>撐多久</span></p><p class="mzsay">${esc(LV.moErr||'帳戶讀不到')}</p>`},{id:'B',name:'這三個月',html:`<p class="mzhl"><span>這三個月</span></p><p class="mzsay">${esc(LV.moErr||'收支讀不到')}</p>`}];
  const car=cvHTML('money',sl,'錢的看法',mzOn);
  return `<div class="zh zhx mz" data-z="money"><div class="zht"><h1>錢</h1><p class="zown">塔塔 ${esc(st)}・<span class="mzk">${CV.money.names[S.cv.money]}</span></p></div>${bigF('tata','money')}${car}</div>`};
-mz2HTML=function(){const id=cvCur('money')||'S';if(id!=='S')return `<section class="sec">${sh('',id==='A'?'撐多久':'這三個月')}<div class="card lcard"><p>${id==='A'?'帳戶還沒接上':'收支還沒接上'}</p><small>要接塔塔記帳的帳戶與帳單（只讀）才算得出來。</small></div></section>`;
+mz2HTML=function(){const id=cvCur('money')||'S';if(id!=='S')return `<section class="sec">${sh('',id==='A'?'撐多久':'這三個月')}<div class="card lcard"><p>${esc(LV.moErr||'讀不到')}</p></div></section>`;
  const ss=subs(),d=due7();if(!LV.money)return `<section class="sec">${sh('','訂閱')}<div class="card lcard"><p>${esc(LV.moneyErr||'訂閱還沒讀到')}</p></div></section>`;
  if(!ss.length)return `<section class="sec">${sh('','訂閱','0 筆')}<div class="card lcard"><p>還沒有訂閱資料</p></div></section>`;
  let h=`<section class="sec">${sh('','7 天內要扣',d.length+' 筆')}${d.length?`<div class="hs">${d.map(s=>`<div class="card"><div class="meta">${chip(s.in<=0?'今天扣':s.in+' 天後扣',s.in<=2)}</div><h3>${esc(s.name)}</h3><p class="amt" style="color:var(--ink)">${nt(s.amt)}</p>${aifs([aiF('tata','sub:'+s.id)])}</div>`).join('')}</div>`:`<div class="card"><p>7 天內沒有要扣的。</p></div>`}</section>`;
  const op=S.open.subs!==false;
  h+=`<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="subs" aria-expanded="${op}"><span class="tx"><b>全部訂閱 ${ss.length} 筆</b><small>自付 ${ss.filter(s=>s.payer==='自付').length}・公司付 ${ss.filter(s=>s.payer!=='自付').length}</small></span><span class="rt"><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></span></button></div>${op?ss.map(s=>`<div class="rowi"><button class="rowb" data-act="sheet" data-id="sub:${esc(s.id)}"><span class="tx"><b>${esc(s.name)}</b><small>${s.cancel?'▲ '+esc(s.cancel)+'・':''}${esc(s.cyc)}・${s.payer}・${s.in} 天後扣</small></span><span class="rt"><span class="amt">${nt(s.amt)}</span></span></button></div>`).join(''):''}</div></section>`;
  return h};
-mzIn=function(){return `<section class="sec">${sh('','會進來的')}<div class="card lcard"><p>待收款還沒接上</p><small>已交件的案子在「案子」房間的「已交件，等收款」。</small></div></section>`};
-mzOut=function(){return `<section class="sec">${sh('','要出去的大筆')}<div class="card lcard"><p>帳單還沒接上</p></div></section>`};
+mzIn=function(){return `<section class="sec">${sh('','會進來的')}<div class="card lcard"><p>${esc(LV.moErr||'待收款讀不到')}</p><small>已交件的案子在「案子」房間的「已交件，等收款」。</small></div></section>`};
+mzOut=function(){return `<section class="sec">${sh('','要出去的大筆')}<div class="card lcard"><p>${esc(LV.moErr||'帳單讀不到')}</p></div></section>`};
 {const _s=sheetHTML;sheetHTML=function(){const a=S.sheet.split(':');if(a[0]!=='sub')return _s();const s=DB.subs.find(x=>x.id===a[1]);if(!s)return shHead('這筆不在了');
  return shHead(esc(s.name))+`<dl class="kv"><div><dt>金額</dt><dd>${nt(s.amt)}</dd></div><div><dt>週期</dt><dd>${esc(s.cyc)}</dd></div><div><dt>下次扣款</dt><dd>${esc(s.next||s.in+' 天後')}</dd></div><div><dt>誰付</dt><dd>${s.payer}</dd></div>${s.acct?`<div><dt>帳戶</dt><dd>${esc(s.acct)}</dd></div>`:''}</dl>${s.cancel?`<p class="err">▲ ${esc(s.cancel)}</p>`:''}${aifs([aiF('tata','sub:'+s.id)])}`}}
 
@@ -2175,11 +2176,57 @@ ACT.evcancel=id=>{const e=CAL.find(x=>x.id===id);if(!e)return;closeThen(()=>calA
 ACT.evundo=id=>{const e=CAL.find(x=>x.id===id);if(!e)return;calAsk(`剛剛取消「${e.n}」的請求作廢，請保留這筆`,'跟大器說保留了')};
 ACT.rlsave=id=>{const t=$('#rlT'),v=t?t.value.trim():'';S.ruleEd=null;render('keep');if(!v)return;calAsk(`行事曆規則第 ${+id+1} 條想改成：「${v}」。請先照 00_核心第 3 節判斷，改準則正本 14 號後回報`,'規則改寫交給大器了')};
 WRITE.push('calmk','evsave','evcancel','evundo','rlsave');
+
+/* ---------- v43（2026-11-22）：錢接上 hub_money_overview，塔塔記帳最常用的事搬進來 ----------
+   讀：hub_money_overview（只讀；老大本人或管理員金鑰，AI協作金鑰看不到，照舊寫明）。撐多久、這三個月、金金說、會進來的、90 天大筆、該繳的、要你按的都用真資料，照設計稿原版畫。
+   寫：逐流的金鑰沒有 kakeibo 的寫入權限（kakeibo 用 bot_keys），不放大權限：記一筆、標已繳、撤回都經塔塔對話（v40 轉送到塔塔的「記帳面板呼叫」webhook）請塔塔照記帳規則記。
+   付款鈕：沒有付款後端，按了寫「還沒接上付款」。 */
+KIND.other='固定支出';
+const SAFEK='zl_mzsafe';
+function mzArr(iso){const a=String(iso).slice(0,10).split('-').map(Number);return [a[0],a[1]-1,a[2]]}
+function applyMoney(){const m=LV.mo;if(!m){return}
+ const t=new Date();t.setHours(0,0,0,0);MZT.setTime(t.getTime());
+ MZ.cash=+m.cash||0;MZ.monthly=(+m.burn>0?+m.burn:0)||monthSelf()||1;try{const v=+localStorage.getItem(SAFEK);if(v>0)MZ.safe=v}catch(e){}
+ MZ.cashAt=(LV.at?LHM(LV.at):'')+' 讀取塔塔記帳';MZ.fixedIn={name:'沒有設定',amt:0,day:0};MZ.quote={proj:'',amt:0,wait:0};   // 報價中那張卡沒有資料來源，mzIn 會拿掉
+ MZ.dec=[];MZ.chased={};MZ.decided={};
+ MZ.recv=(m.recv||[]).map((r,i)=>{const est=!r.date,dd=r.date?mzArr(r.date):mzArr(ISOD(new Date(Date.now()+30*864e5)));
+  return {id:'r'+i,p:r.id,proj:CLN(r.title),what:r.status==='delivered'?'尾款':'款項',amt:+r.amount||0,date:dd,st:r.status==='delivered'?'done':'signed',stT:r.status==='delivered'?'已交件，等付款':'進行中',total:+r.amount||0,got:0,term:est?'沒寫付款日，先估 30 天後':(r.terms||''),next:''}});
+ MZ.big=(m.big||[]).filter(b=>b.date).map((b,i)=>({id:'b'+i,name:CLN(b.name),amt:+b.amount||0,date:mzArr(b.date),how:b.how==='分期'?'分期':'要自己付'}));
+ const kv=((LV.hub&&LV.hub.events)||[]).filter(e=>/金金|Kim/i.test(e.actor||'')).sort((a,b)=>b.at-a.at)[0];
+ MZ.kim=kv?{at:LAGO(kv.at),say:esc(kv.summary||''),why:[],todo:'有問題點我的臉直接問。'}:{at:'還沒有週報',say:'金金還沒寫這週的週報。點我的臉可以直接問。',why:[],todo:'週報寫好會出現在這裡。'};
+ const kd=n=>/房租/.test(n)?'rent':/房貸|貸款|分期/.test(n)?'loan':/保險|壽險/.test(n)?'ins':/稅/.test(n)?'tax':/電|水|瓦斯|電信|網路/.test(n)?'util':'other';
+ DB.due=(m.bills||[]).map(b=>{const id='b'+b.id,paid=b.paid?(b.paid_at?LMD(Date.parse(b.paid_at))+' 已繳':'這期已繳'):(LV.duePaid&&LV.duePaid[id]?LV.duePaid[id]:'');
+  const d={id,bid:b.id,kind:b.kind==='card_payment'?'card':kd(b.name||''),name:b.name,amt:+b.amount||0,due:String(b.due_date).slice(5).replace('-','/').replace(/^0/,''),in:+b.days||0,auto:b.auto?1:0,from:b.account||'沒寫帳戶',to:b.account||'對方',paid,self:LV.duePaid&&LV.duePaid[id]?1:0};
+  if(!d.auto&&!PAY['d_'+id])payReg('d_'+id,{amt:nt(d.amt),to:d.to,by:'tata',done(){}});return d})}
+{const f=mzHero;mzHero=function(){return LV.mo?DZ.mzHero().replace('・今天都決定了',''):f()}}
+{const f=mzDecs;mzDecs=function(){return MZ.dec.length?f():''}}   // 錢的「等你決定」沒有資料來源（設計稿是示意），沒有就不顯示
+{const f=mz2HTML;mz2HTML=function(){return LV.mo?DZ.mz2HTML():f()}}
+{const f=mzIn;mzIn=function(){if(!LV.mo)return f();return DZ.mzIn().replace(/<div class="card mzq">[\s\S]*?<\/div>/,'').replace(/<p class="note mzfoot">[\s\S]*?<\/p>/,'')}}
+{const f=mzOut;mzOut=function(){return LV.mo?DZ.mzOut():f()}}
+// 錢房間多四塊（塔塔記帳搬進來）：記一筆放在大卡下面；帳戶餘額、最近幾筆、訂閱放在最後
+function kkQuick(){return `<section class="sec">${sh('tata','記一筆')}<div class="wadd"><label class="vh" for="kkIn">記一筆，一句話就好</label><input id="kkIn" type="text" placeholder="例：午餐 180 中信" enterkeyhint="send" autocomplete="off"><button class="btn pri" data-act="kkadd">交給塔塔</button></div>${S.err==='kk'?'<p class="err" role="alert">▲ 還沒寫字。寫金額和買了什麼就好。</p>':''}<p class="note">塔塔會整理成金額、分類、帳戶記進塔塔記帳，記好回在塔塔的對話。</p></section>`}
+function kkAccts(){const a=(LV.mo.accounts||[]).filter(x=>x.kind!=='stock'||x.balance),op=!!S.open.kkacct;if(!a.length)return '';
+ return `<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="kkacct" aria-expanded="${op}"><span class="tx"><b>帳戶餘額 ${a.length} 個</b><small>能花的現金 ${nt(MZ.cash)}</small></span><span class="rt"><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></span></button></div>${op?a.map(x=>`<div class="rowi"><div class="rowb"><span class="tx"><b style="font-weight:500">${esc(x.name)}${x.suffix?'（'+esc(x.suffix)+'）':''}</b><small>${esc({bank:'銀行',cash:'現金',credit_card:'信用卡',e_money:'電子錢包',stock:'股票',investment:'投資',loan_in:'借來的',loan_out:'借出去的',other:'其他'}[x.kind]||x.kind)}${x.spendable?'・能花':''}</small></span><span class="rt"><span class="amt">${nt(+x.balance||0)}</span></span></div></div>`).join(''):''}</div></section>`}
+function kkRecent(){const a=LV.mo.recent||[],op=S.open.kkrec!==false;if(!a.length)return '';
+ return `<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="kkrec" aria-expanded="${op}"><span class="tx"><b>最近 ${a.length} 筆</b><small>完整報表在塔塔記帳</small></span><span class="rt"><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></span></button></div>${op?a.map(x=>{const sg=x.type==='income'?'＋':x.type==='expense'?'－':'⇄';return `<div class="rowi"><div class="rowb"><span class="tx"><b style="font-weight:500">${esc(x.merchant||x.category||({income:'收入',expense:'支出',transfer:'轉帳'}[x.type]||'一筆'))}</b><small>${LMD(Date.parse(x.at))}・${esc(x.category||({transfer:'轉帳',income:'收入'}[x.type]||''))}${x.account?'・'+esc(x.account):''}${x.status&&x.status!=='posted'?'・待確認':''}</small></span><span class="rt"><span class="amt">${sg} ${nt(+x.amount||0)}</span></span></div></div>`}).join(''):''}</div></section>`}
+function kkSubs(){const ss=subs(),d=due7();if(!LV.money||!ss.length)return '';const op=!!S.open.subs;
+ return `<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="subs" aria-expanded="${op}"><span class="tx"><b>每月訂閱 ${ss.length} 筆</b><small>自付每月 ${nt(monthSelf())}${d.length?`・7 天內扣 ${d.length} 筆`:''}</small></span><span class="rt"><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></span></button></div>${op?ss.map(s=>`<div class="rowi"><button class="rowb" data-act="sheet" data-id="sub:${esc(s.id)}"><span class="tx"><b>${esc(s.name)}</b><small>${s.cancel?'▲ '+esc(s.cancel)+'・':''}${esc(s.cyc)}・${s.payer}・${s.in} 天後扣</small></span><span class="rt"><span class="amt">${nt(s.amt)}</span></span></button></div>`).join(''):''}</div></section>`}
+{const f=zoneMoney;zoneMoney=function(){const h=f();if(!LV.mo||S.st!=='ok'&&S.st!=='offline')return h;const i=h.indexOf('<div id="mz2">');return (i<0?h:h.slice(0,i)+kkQuick()+h.slice(i))+kkAccts()+kkRecent()+kkSubs()}}
+function tataSay(text,ok){return LV.api.say(null,text,'tata').then(()=>{WAITB.tata=1;waitFaces();toast(ok);setTimeout(pollInbox,1500)}).catch(e=>{toast('沒送出：'+LERR(e));throw e})}
+ACT.kkadd=()=>{const t=$('#kkIn'),v=t?t.value.trim():'';if(!v){S.err='kk';render('keep');const x=$('#kkIn');if(x)x.focus();return}S.err='';
+ tataSay(`【記一筆】${v}（老大在逐流錢房間寫的，今天 ${LMD(Date.now())}。請照塔塔記帳規則記進去，看不出分類或帳戶就問老大，記好回一句）`,'交給塔塔了，記好會回在塔塔的對話').then(()=>{const x=$('#kkIn');if(x)x.value=''}).catch(()=>{})};
+LV.duePaid={};
+ACT.duepaid=id=>{const d=DB.due.find(q=>q.id===id);if(!d)return;closeThen(()=>tataSay(`【標已繳】${d.name} ${nt(d.amt)}，老大說 ${LMD(Date.now())} 自己繳了（從 ${d.from}）。請在塔塔記帳標成這期已繳（mark_bill_paid），記好回一句`,'交給塔塔標已繳了').then(()=>{LV.duePaid[id]='今天 你說繳了，塔塔記帳中';LV.sig='';paint()}).catch(()=>{}))};
+ACT.dueundo=id=>{const d=DB.due.find(q=>q.id===id);if(!d)return;closeThen(()=>tataSay(`【撤回已繳】${d.name} 這期剛剛標已繳是誤按，請改回沒繳（如果已經記了交易一起作廢），處理好回一句`,'跟塔塔說改回沒繳了').then(()=>{delete LV.duePaid[id];LV.sig='';paint()}).catch(()=>{}))};
+ACT.pay=id=>toast('還沒接上付款，這筆沒有扣款。自己付好後按「⋯ 我自己繳了」，塔塔會記');
+document.addEventListener('change',e=>{if(e.target&&e.target.name==='mzsafe'){try{localStorage.setItem(SAFEK,e.target.value)}catch(x){}}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='kkIn'){e.preventDefault();ACT.kkadd()}});
+WRITE.push('kkadd','duepaid','dueundo');
 WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v42');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v43');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();

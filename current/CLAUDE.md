@@ -120,3 +120,8 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
 28. **今天行程與行事曆接上（2026-11-22，v42）**：Mac launchd `com.borry.current-cal-sync`（每 30 分鐘，`~/Claude-Projects/Tools/current-cal-sync/sync.mjs`）照 `~/.claude.json` 啟動 gdrive-borrysu MCP，只呼叫唯讀的 `getCalendarEvents` 讀 borrysu 個人（primary）與公司「好咖文創」未來 14 天，公司只留標題有 Borry／寶瑞 的，用 AI協作金鑰呼叫 `hub_cal_sync` 寫進 `hub_cal_events`。前端照設計稿的今天行程與行事曆頁顯示，個人照分類碼（S/E/W/C/L）上色，沒分類碼的標「沒分類」。
    - 面板不寫行事曆：新增行程、改時間、取消、改規則都經 `opp_msg_add` 寫成「【行事曆】…」交給大器（附老大原話，面板整理的欄位只當參考），大器照 14 號準則建立。案子日期同步到行事曆的開關仍寫「還沒接上」。
    - 退回：`launchctl bootout gui/$(id -u)/com.borry.current-cal-sync`；`git revert` v42 的 commit。
+29. **錢接上、塔塔記帳搬進逐流（2026-11-22，v43）**：老大原話「我一個一個用很痛苦 塔塔記帳 也是用排程網址金鑰溝通 很難嗎」。
+   - 讀 `hub_money_overview`（只讀，老大本人或管理員金鑰；AI協作金鑰顯示「這把金鑰不能看錢的資料」，不清金鑰）：能花的現金（spendable 帳戶加總）、近 90 天平均每月支出、帳戶餘額、固定帳單與這期繳了沒（bill_payments）、待收款（opp_items 進行中與已交件的未收金額）、90 天內大筆（年繳訂閱、分期，五千以上）、最近 12 筆。設計稿的撐多久、這三個月、金金說、會進來的、要出去的大筆、要你按的照原版畫；錢的「等你決定」與「報價中」沒有資料來源，不顯示。安全線存在這支手機（localStorage `zl_mzsafe`）。
+   - 塔塔記帳最常用的搬進來：大卡下面「記一筆」（一句話交給塔塔）、帳戶餘額、最近幾筆、每月訂閱、角落「打開塔塔記帳」看完整報表。帳單「⋯ 我自己繳了」與「改回沒繳」也交給塔塔。逐流的金鑰沒有 kakeibo 寫入權（kakeibo 用 `bot_keys`），所以寫入一律經 v40 塔塔對話（`opp_msg_add(p_bot:'tata')`，Mac 轉送到塔塔的「記帳面板呼叫」webhook），沒有發新鑰匙、沒有放大權限。
+   - 付款鈕照設計稿留著，按了只寫「還沒接上付款，這筆沒有扣款」。金金週報讀 `hub_today` 裡 actor 是金金的最新一則，沒有就寫還沒有週報。
+   - 退回：`git revert` v43 的 commit（`hub_money_overview` 留著不影響舊版）。
