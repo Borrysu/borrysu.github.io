@@ -509,18 +509,18 @@ function fin(w){const p=w.pick!=null&&Array.isArray(w.cmp)?w.cmp[w.pick].total:w
 function wstep(w){
  if(w.st==='bought')return{n:7,who:['peng'],t:w.ord?'已買，到貨進度在「訂單」':'已買'};
  if(w.ord)return{n:6,who:['peng'],t:'朋朋備好訂單了，等你按付款',act:B('看訂單與付款','wishbuy',w.id,'pri')};
- if(w.cmp==='run')return{n:2,who:['peng','mon'],t:'朋朋請萌萌比價中',run:1};
- if(Array.isArray(w.cmp)&&w.pick==null)return{n:2,who:['peng','mon'],t:'萌萌比好了，選一家'};
- if(!w.cmp)return{n:2,who:['peng','mon'],t:'還沒比價',act:B('請朋朋找萌萌比價','wishcmp',w.id,'pri')+B('不比了，直接請朋朋買','wishbuy',w.id,'ghost')};
+ if(w.cmp==='run')return{n:2,who:['mon'],t:'朋朋請萌萌比價中',run:1};
+ if(Array.isArray(w.cmp)&&w.pick==null)return{n:2,who:['mon'],t:'萌萌比好了，選一家'};
+ if(!w.cmp)return{n:2,who:['mon'],t:'還沒比價',act:B(bm('mon')+'請朋朋找萌萌比價','wishcmp',w.id,'pri')+B('不比了，直接請朋朋買','wishbuy',w.id,'ghost')};
  if(w.kim==='run')return{n:4,who:['kim'],t:'金金在看值不值',run:1};
  if(isBig(w)&&!w.kim)return{n:4,who:['kim'],t:`超過 ${nt(BIG)}，可以先問金金值不值`,act:B('請金金看值不值','wishkim',w.id,'pri')+B('先不問，直接請朋朋買','wishbuy',w.id,'ghost')};
  return{n:5,who:w.kim?['kim','peng']:['peng'],t:w.kim?`金金：${w.kim.v}。要買就請朋朋`:'可以請朋朋買了',act:B('請朋朋買','wishbuy',w.id,'pri')}}
-function cmpHTML(w){return `<div class="cmp" role="group" aria-label="萌萌的比價對照">${w.cmp.map((c,i)=>`<div class="cr"${c.rec?' data-rec':''}><div><b>${esc(c.shop)}</b>${c.rec?' <span class="chip urg">萌萌推薦</span>':''}<small>商品 ${nt(c.price)}・${c.ship?'運費 '+nt(c.ship):'免運'}・${c.eta}到</small>${c.rec?`<small>理由：${esc(c.why)}</small>`:''}</div><div class="crr"><span class="amt">${nt(c.total)}</span>${w.pick===i?'<span class="lbl">已選這家</span>':w.st==='bought'||w.ord?'':B('選這家','wishpick',w.id+':'+i,c.rec?'pri':'')}</div></div>`).join('')}</div>`}
+function cmpHTML(w){return `<div class="cmp" role="group" aria-label="萌萌的比價對照">${w.cmp.map((c,i)=>`<div class="cr"${c.rec?' data-rec':''}><div><b>${esc(c.shop)}</b>${c.rec?' <span class="chip urg">'+bm('mon','','sm')+'萌萌推薦</span>':''}<small>商品 ${nt(c.price)}・${c.ship?'運費 '+nt(c.ship):'免運'}・${c.eta}到</small>${c.rec?`<small>理由：${esc(c.why)}</small>`:''}</div><div class="crr"><span class="amt">${nt(c.total)}</span>${w.pick===i?'<span class="lbl">已選這家</span>':w.st==='bought'||w.ord?'':B('選這家','wishpick',w.id+':'+i,c.rec?'pri':'')}</div></div>`).join('')}</div>`}
 function wishMore(w,i,n,f){const big=isBig(w),bought=w.st==='bought',st=wstep(w).n;
- const L=[[1,['peng'],'想買：朋朋補齊資料'],[2,['peng','mon'],'比價：朋朋轉給萌萌'],[3,['tata'],'金流：塔塔看買不買得起'],[4,['kim'],'值不值：金金看該不該花'],[5,['peng'],'下訂單：請朋朋買'],[6,[],'付款：你按付款鈕才付']].filter(x=>x[0]!==4||big);
+ const L=[[1,['peng'],'想買：朋朋補齊資料'],[2,['mon'],'比價：朋朋轉給萌萌'],[3,['tata'],'金流：塔塔看買不買得起'],[4,['kim'],'值不值：金金看該不該花'],[5,['peng'],'下訂單：請朋朋買'],[6,[],'付款：你按付款鈕才付']].filter(x=>x[0]!==4||big);
  return `<div class="fadein"><ol class="flow" aria-label="這件的流程">${L.map(x=>{const dn=x[0]<st||x[0]===3,cu=x[0]===st;return `<li data-s="${cu?'cur':dn?'done':''}"><span class="mk" aria-hidden="true">${cu?'▸':dn?'✓':'○'}</span><span class="who">${x[1].map(b=>bm(b,'','sm')).join('')}</span><span>${x[2]}<span class="vh">${cu?'（現在）':dn?'（做完）':'（還沒）'}</span></span></li>`}).join('')}</ol>
  ${bought?'':`<p class="h4">塔塔怎麼看（只是建議，付不付你決定）</p><p class="wnote">${bm('tata','','sm')}<span>${f.why}</span></p>`}
- ${Array.isArray(w.cmp)&&w.pick!=null?`<p class="h4">萌萌的比價</p>${cmpHTML(w)}`:''}
+ ${Array.isArray(w.cmp)&&w.pick!=null?`<p class="h4">${bm('mon','','sm')}萌萌的比價</p>${cmpHTML(w)}`:''}
  ${w.kim&&w.kim!=='run'?`<p class="h4">金金怎麼看（只是建議）</p><div class="kcard">${bm('kim','','sm')}<div><b>${esc(w.kim.v)}</b><p>${esc(w.kim.why)}</p><p>建議：${esc(w.kim.todo)}</p></div></div>`:''}
  <p class="h4">這一項</p><p class="note" style="margin-top:0">來源：${esc(w.url)}・${esc(w.spec)}</p>
  <div class="btns">${B('↑ 往上排','wishup',w.id,'',i?'':' disabled')}${B('↓ 往下排','wishdn',w.id,'',i<n-1?'':' disabled')}${B(bought?'改回想買':'標成已買','wishmark',w.id)}${B('從清單刪掉','wishdel',w.id,'ghost')}</div></div>`}
@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v66');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v67');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2552,7 +2552,7 @@ function loadMon(){if(!LV.api||!LV.api.msgs)return Promise.resolve();return LV.a
  if(real)return h.slice(0,a)+seg+todoHTML();
  h=h.slice(0,a)+seg+h.slice(e);
  if(s==='sup'&&LV.life)tobuy().forEach(u=>{const st=supCmp(u),old=`<small>${u.cat}・上次買 ${u.last}</small></span><span class="rt">${mb('✓ 買好了','bought',u.id)}</span>`;
-  h=h.replace(old,()=>`<small>${u.cat}・上次買 ${u.last}${st?`<br><span class="cmpst${st.run?' run':''}">${esc(st.t)}</span>`:''}</small></span><span class="rt supbt">${mb(st?(st.run?'看比價進度':'看萌萌比價'):'請萌萌比價','supcmp',u.id)}${mb('✓ 買好了','bought',u.id)}</span>`)});
+  h=h.replace(old,()=>`<small>${u.cat}・上次買 ${u.last}${st?`<br><span class="cmpst${st.run?' run':''}">${bm('mon',st.run?'thinking':'','sm')}${esc(st.t)}</span>`:''}</small></span><span class="rt supbt">${mb(bm('mon')+(st?(st.run?'看比價進度':'看萌萌比價'):'請萌萌比價'),'supcmp',u.id)}${mb('✓ 買好了','bought',u.id)}</span>`)});
  return h}}
 // 資料庫還不收 todo 時（v50 遷移沒套）記在這支手機一天，免得每次新增都先撞一次錯
 const LTK='zl_todo_legacy';function ltLegacy(){try{return Date.now()-(+localStorage.getItem(LTK)||0)<864e5}catch(e){return false}}

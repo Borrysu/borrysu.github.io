@@ -1182,3 +1182,7 @@ html[data-skin="2"] .kfoot,html[data-skin="5"] .kfoot{margin-right:0}
 .bm[data-b=rouka]{background:#5a3a2c;color:#fff;font-weight:700}
 .colines{margin:0 0 6px;padding-left:1.1em}.colines li{margin:2px 0;line-height:1.5}
 .card.login .f input{width:100%;font-size:17px}
+/* 2026-11-22 萌萌比價的入口與狀態都帶萌萌的臉（老大：「萌萌比價 應該要是萌萌的臉」） */
+.chip .bm{width:16px;height:16px;flex:none;pointer-events:none}
+.cmpst .bm,.h4 .bm{display:inline-block;width:18px;height:18px;vertical-align:-4px;margin-right:4px;pointer-events:none}
+.cmpst.run::before{display:none}
