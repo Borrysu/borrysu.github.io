@@ -31,7 +31,7 @@ export const CONFIG = {
          close: 'opp_close', reopen: 'opp_reopen', archive: 'opp_archive', purge: 'opp_purge',
          scanRequest: 'opp_scan_request', scanStatus: 'opp_scan_status',
          workUpdate: 'opp_work_update', setStatus: 'opp_set_status', workAdd: 'opp_work_add',
-         msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
+         msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', botInbox: 'opp_bot_inbox', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
          hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer' },   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
 
@@ -68,7 +68,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v39');
+  const { mockAdapter } = await import('./mock.js?v40');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -79,7 +79,11 @@ const arr = v => Array.isArray(v) ? v.map(x => String(x)).filter(Boolean) : (typ
 const str = v => (v == null ? '' : String(v));
 const web = v => { v = str(v).trim(); return /^https?:\/\//i.test(v) ? v : ''; };   // 連結只收 http(s)，擋 javascript: 等
 
-export const normMsgs = d => (Array.isArray(d) ? d : []).map(m => ({ id: +m.id || 0, kind: ['user', 'daqi', 'system', 'run'].includes(m.kind) ? m.kind : 'user', author: nick(str(m.author)), body: str(m.body), at: ts(m.created_at) })).filter(m => m.body && m.at);
+const BOTS_OK = ['daqi', 'jiji', 'tata', 'peng', 'mon', 'din', 'kim'];
+// v40：各 Bot 的回覆與還在等的話（opp_bot_inbox）
+export const normInbox = d => ({ replies: (d && Array.isArray(d.replies) ? d.replies : []).filter(r => BOTS_OK.includes(r.bot)).map(r => ({ id: +r.id || 0, bot: r.bot, item: r.item_id ? str(r.item_id) : null, body: str(r.body), at: ts(r.created_at) })),
+  waiting: (d && Array.isArray(d.waiting) ? d.waiting : []).filter(w => BOTS_OK.includes(w.bot)).map(w => ({ id: +w.id || 0, bot: w.bot })) });
+export const normMsgs = d => (Array.isArray(d) ? d : []).map(m => ({ id: +m.id || 0, kind: ['user', 'daqi', 'system', 'run', 'bot'].includes(m.kind) ? m.kind : 'user', bot: BOTS_OK.includes(m.bot) ? m.bot : 'daqi', author: nick(str(m.author)), body: str(m.body), at: ts(m.created_at) })).filter(m => m.body && m.at);
 export const normHistory = h => (Array.isArray(h) ? h : []).map(e => ({ at: ts(e && e.at), actor: nick(str(e && e.actor)), action: str(e && e.action) })).filter(e => e.at && e.action);
 // 掃描請求單：後端籃名 → 前端籃名
 const BACK_BASKET = { company: 'company', personal: 'personal', other: 'other', funding: 'fund', achievement: 'honor' };
@@ -199,8 +203,9 @@ function liveAdapter() {
       const d = await rpc(R.get, { p_id: id }); const r = Array.isArray(d) ? d[0] : d;
       return normHistory(r && r.history);
     },
-    async msgs(id) { return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80 })); },
-    async say(id, body) { return rpc(R.msgAdd, { p_item_id: id || null, p_body: body }); },
+    async msgs(id, bot) { return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80, p_bot: bot || 'daqi' })); },
+    async say(id, body, bot) { return rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); },
+    async botInbox() { return normInbox(await rpc(R.botInbox, {})); },
     async hubToday() { return normHub(await rpc(R.hubToday, {})); },
     async moneySubs() { return normMoney(await rpc(R.moneySubs, {}, 0, W)); },   // v35：403＝這把金鑰不能看錢（AI協作金鑰），不是金鑰失效，不清金鑰
     async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰

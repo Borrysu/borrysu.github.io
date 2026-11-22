@@ -106,3 +106,9 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 右上角回到設計稿＝這一頁的主人（機會集集、錢塔塔、生活朋朋）；只有大器有對話後端，其他隻的浮窗照設計稿開得起來，送出時寫「還沒接上，這句沒有送出」。集集浮窗的「立即掃描新機會」「只找創作資金」接真的掃描。燈號抽屜大器的臉照設計稿直接交辦「查沒報到的那支」（真的會傳給大器）。
    - 生活照設計稿顯示「朋朋還沒綁定」與空狀態按鈕；今天行程留「看全部」「＋ 新增行程」，行事曆頁只有外框。這些寫入動作都只跳「還沒接上」。
    - 拍板卡維持 v36 到 v38 老大要的減字與「其他做法・看細節」（設計稿之後的指示，優先）。資料庫沒動。退回：`git revert` v39 那個 commit 推上去即可。
+26. **各 Bot 浮動對話接通（2026-11-22，v40）**：老大原話「哈囉裡面對話都沒接好嗎 還有機器人」「哎 他們都有排程跟網址可以打過去溝通 不要鬧我了」。塔塔、集集、朋朋、萌萌、定定、金金的浮窗都能真的送話、收回覆。
+   - 資料庫只加不刪：`opp_msgs` 加 `bot`（daqi／jiji／tata／peng／mon／din／kim，預設 daqi）、`forwarded_at`、`fwd_tries`、`fwd_note`；`opp_msg_add`、`opp_msg_list` 加可選 `p_bot`（不帶＝大器，原行為不變）；`opp_msg_pending` 與觸發器 `_opp_msg_to_counter` 只看 bot=daqi，給其他隻的話不會叫大器櫃台。新函式：`opp_bot_inbox`（回覆與還在等的）、`opp_bot_take`／`opp_bot_fwd_result`（Mac 轉送取單）、`opp_bot_reply(p_ticket, p_body)`（各 Bot 回覆，用轉送時附的 `rt_` 回覆票，48 小時、最多 5 次、只能回那段對話，不需要金鑰）、`opp_bot_fire_jiji`／`opp_bot_http_status`（資料庫代打集集 webhook）。新表 `opp_bot_tickets`（只存雜湊，RLS 關門）。
+   - 轉送：Mac launchd `com.borry.current-bot-relay` 每 30 秒跑 `~/Claude-Projects/Tools/current-bot-relay/relay.py`：塔塔打「記帳面板呼叫」webhook（讀朋朋的 `pompom-spend/hook.json`）；集集由資料庫用 Vault 的 `opp_scan_webhook_*` 代打（body `kind:chat`、`scan:false`）；朋朋、萌萌、定定、金金經霸霸 webhook（`~/.config/grokbot/baba-webhook.env`）請它轉。網址金鑰都不進 repo。Mac 關機時給 Bot 的話會等到 Mac 開機才轉（24 小時內的）。
+   - Gig Gig、Kim Kim 自己的金鑰也能用 `opp_msg_add(p_bot:'jiji'／'kim')` 直接回。
+   - 前端：檔尾「對話（v40）」段；送出後頭像轉「思考中」、浮窗顯示「○○處理中」並每 8 秒看一次，回覆到了臉跳一下；沒開浮窗時未讀紅點標在右上角或浮動頭像（已讀位置存 localStorage `opp_bot_seen`）。集集的「要做建資料夾」「立即掃描」「讀完整公告」仍是直接動作。
+   - 退回：`launchctl bootout gui/$(id -u)/com.borry.current-bot-relay`；重跑 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_Bot對話接通前.sql`（先 `drop function public.opp_msg_add(text,uuid,text,text), public.opp_msg_list(text,uuid,integer,text)`，再 drop 新的 `opp_bot_*` 函式與 `opp_bot_tickets`）；前端 `git revert` v40 的 commit。新欄位留著不影響舊版。

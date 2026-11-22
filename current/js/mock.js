@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normHub, normMoney } from './adapter.js?v39';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v40';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -152,7 +152,7 @@ export function mockAdapter(modeStr) {
   const listeners = new Set();
   const msgs = [{ id: 1, item_id: 'work-doing', kind: 'user', author: 'Borry', body: '客戶說片長要縮到 60 秒', created_at: new Date(Date.now() - 3 * H).toISOString() },
     { id: 2, item_id: 'work-doing', kind: 'daqi', author: '大器', body: '收到，分鏡第二版照 60 秒改，第 4、7 顆合併。', created_at: new Date(Date.now() - 2 * H).toISOString() }];
-  if (flags.has('xss')) msgs.push({ id: 3, item_id: null, kind: 'daqi', author: '大器', body: '<img src=x onerror="window.__xss=6">', created_at: new Date().toISOString() });
+  if (flags.has('xss')) msgs.push({ id: 3, item_id: null, kind: 'daqi', author: '大器', body: '<img src=x onerror="window.__xss=6">', created_at: new Date().toISOString() }, { id: 4, item_id: null, kind: 'bot', bot: 'tata', author: '塔塔', body: '<img src=x onerror="window.__xss=7">', created_at: new Date().toISOString() });
   // 今天頁的示範資料
   const badH = '<img src=x onerror="window.__xss=7">';
   const hub = { open: [
@@ -200,9 +200,11 @@ export function mockAdapter(modeStr) {
       if (k === null) { Object.assign(d, { status: 'open', answer_key: null, answer_label: null, answer_note: null, answered_at: null, picked_up_at: null }); hub.open.unshift(d); }
       else { const o = (d.options || []).find(x => x.key === k); Object.assign(d, { status: 'answered', answer_key: k, answer_label: o ? o.label : '其他', answer_note: note || '', answered_at: new Date().toISOString(), picked_up_at: null }); hub.answered.unshift(d); }
       return d; },
-    async msgs(id) { await wait(120); return normMsgs(msgs.filter(m => (m.item_id || null) === (id || null))); },
-    async say(id, body) { await wait(250); sorry(); const m = { id: msgs.length + 1, item_id: id || null, kind: 'user', author: 'Borry', body, created_at: new Date().toISOString() }; msgs.push(m);
-      setTimeout(() => { msgs.push({ id: msgs.length + 1, item_id: id || null, kind: 'daqi', author: '大器', body: '（示範）收到：「' + body.slice(0, 30) + '」。真的版本會由 Mac 上的大器回覆。', created_at: new Date().toISOString() }); ping(); }, 2500); return m; },
+    async msgs(id, bot) { await wait(120); return normMsgs(msgs.filter(m => (m.item_id || null) === (id || null) && (m.bot || 'daqi') === (bot || 'daqi'))); },
+    async botInbox() { await wait(60); return normInbox({ replies: msgs.filter(m => m.kind === 'bot'), waiting: msgs.filter(m => m.kind === 'user' && m.bot && m.bot !== 'daqi' && !msgs.some(x => x.kind === 'bot' && x.bot === m.bot && x.id > m.id)) }); },
+    async say(id, body, bot) { await wait(250); sorry(); bot = bot || 'daqi'; const NM = { daqi: '大器', jiji: '集集', tata: '塔塔', peng: '朋朋', mon: '萌萌', din: '定定', kim: '金金' };
+      const m = { id: msgs.length + 1, item_id: id || null, kind: 'user', bot, author: 'Borry', body, created_at: new Date().toISOString() }; msgs.push(m);
+      setTimeout(() => { msgs.push({ id: msgs.length + 1, item_id: id || null, kind: bot === 'daqi' ? 'daqi' : 'bot', bot, author: NM[bot], body: '（示範）收到：「' + body.slice(0, 30) + '」。真的版本會由' + (bot === 'daqi' ? ' Mac 上的大器' : NM[bot]) + '回覆。', created_at: new Date().toISOString() }); ping(); }, 2500); return m; },
     async todoAdd(title) { await wait(250); sorry(); const r = Object.assign(workRows()[0], { id: 'todo-n' + (++nextN), basket: 'todo', status: 'new', title, source_site: '待辦', folder_status: 'none', folder_path: null, quote_amount: null, signed: null, deposit_amount: null, final_amount: null, payment_terms: '', career: {}, progress_steps: [], run_status: null, progress_note: '', created_at: new Date().toISOString() }); rows.push(r); return normalize(view(r)); },
     async workAdd(title) { await wait(250); sorry(); const r = Object.assign(workRows()[0], { id: 'work-n' + (++nextN), title, quote_amount: null, signed: null, deposit_amount: null, final_amount: null, payment_terms: '', career: {}, progress_steps: [], run_status: null, progress_note: '', is_demo: false, decided_at: new Date().toISOString() }); rows.push(r); return normalize(view(r)); },
     async scanRequest(basket) { await wait(300); sorry(); const b = { funding: 'fund', achievement: 'honor' }[basket] || basket; if (scans[b] && Date.now() - Date.parse(scans[b].requested_at) < 60e3) return { ok: true, throttled: true }; scans[b] = { status: 'sent', requested_at: new Date().toISOString() }; setTimeout(ping, 50); return { ok: true }; },

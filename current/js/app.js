@@ -1875,7 +1875,7 @@ async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
   if(first&&api.archive){api.archive('',null).then(r=>{LV.arch=r.items||[];paint()}).catch(()=>{})}
   if(LV.mode==='live')snapSave();
   S.st='ok';S.scan=scanOpen()?1:0;paint(first?'stgroot':'');
-  if(first&&S.chat&&S.chat.b==='daqi')loadMsgs();
+  if(first&&S.chat)loadMsgs();pollInbox();
  }catch(e){
   if(e&&e.kind==='auth'){LV.net='auth';S.st='error';paint();}
   else if(first&&!LV.retried){LV.retried=1;LBUSY=false;setTimeout(()=>loadAll(true),1500);return}
@@ -1890,8 +1890,8 @@ function paint(dir){applyData();const s=sigOf();if(!dir&&s===LV.sig&&!LV.dirty)r
 document.addEventListener('focusout',()=>{if(LV.dirty)setTimeout(()=>{if(LV.dirty)paint()},50)});
 function snapSave(){try{localStorage.setItem(LV.A.CONFIG.SNAPSHOT_KEY+':'+LV.A.keyTag(),JSON.stringify({at:LV.at,items:LV.items,hub:LV.hub}))}catch(e){}}
 function snapLoad(){try{const s=JSON.parse(localStorage.getItem(LV.A.CONFIG.SNAPSHOT_KEY+':'+LV.A.keyTag())||'null');if(!s||!Array.isArray(s.items))return false;LV.items=s.items;LV.hub=s.hub;LV.at=s.at;return true}catch(e){return false}}
-function schedule(){clearTimeout(LPOLL);if(LV.net==='auth')return;LPOLL=setTimeout(async()=>{if(!document.hidden){await loadAll();if(S.chat&&S.chat.b==='daqi')loadMsgs()}schedule()},S.scan?LV.A.CONFIG.FAST_POLL_MS:LV.A.CONFIG.POLL_MS)}
-const reload=()=>loadAll().then(()=>{if(S.chat&&S.chat.b==='daqi')loadMsgs()});
+function schedule(){clearTimeout(LPOLL);if(LV.net==='auth')return;LPOLL=setTimeout(async()=>{if(!document.hidden){await loadAll();if(S.chat)loadMsgs();pollInbox()}schedule()},S.scan?LV.A.CONFIG.FAST_POLL_MS:LV.A.CONFIG.POLL_MS)}
+const reload=()=>loadAll().then(()=>{if(S.chat)loadMsgs();pollInbox()});
 
 /* 金鑰提示列：沒金鑰（示範）或金鑰失效時才出現，放在離線條的位置 */
 function keybar(){const o=$('#offline');if(!o)return;
@@ -2045,39 +2045,59 @@ mzOut=function(){return `<section class="sec">${sh('','要出去的大筆')}<div
 /* 行事曆：建立、改時間、取消、改規則沒有後端 */
 ['calmk','evsave','evcancel','evundo','rlsave','synctog','syncyes','syncno','dtedit'].forEach(k=>{ACT[k]=()=>toast('行事曆還沒接上，這個動作還沒接上')});
 
-/* ---------- 對話：只有大器有後端；其他 Bot 照設計稿開得起來，但說明還沒接上 ---------- */
-// v39：右上頭像照設計稿＝這一頁的主人（havSync、headBot 用設計稿原本的）
+/* ---------- 對話（v40，2026-11-22）：每隻都接上了。給大器的走櫃台；給其他隻的由 Mac 轉送程式 com.borry.current-bot-relay
+   打到那隻的 webhook（集集經資料庫、塔塔直打、朋朋萌萌定定金金經霸霸），回覆用回覆票寫回 opp_msgs（bot 欄）。 ---------- */
 const NAMES={daqi:'大器',jiji:'集集',tata:'塔塔',peng:'朋朋',din:'定定',kim:'金金',mon:'萌萌'};
 const ctxItem=ctx=>{const a=(ctx||'').split(':');return (a[0]==='proj'||a[0]==='opp')&&LV.items.some(c=>c.id===a[1])?a[1]:null};
-async function loadMsgs(){const on=S.chat;if(!on||on.b!=='daqi'||!LV.api)return;const id=ctxItem(on.ctx);
- try{const ms=await LV.api.msgs(id);if(!S.chat||S.chat.b!=='daqi')return;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread;LV.thread=key;
-  const pend=CH.daqi.filter(m=>m.wait);CH.daqi=ms.map(m=>({w:m.kind==='user'?'me':'bot',t:m.body,b:'daqi'})).concat(pend);
-  if(!ms.length&&!pend.length)CH.daqi=[{w:'bot',t:'寫一句，或點下面的指令。只有大器本人回，回覆會出現在這裡。',b:'daqi'}];
-  if(fresh)logSync()}catch(e){CH.daqi=[{w:'bot',t:'對話讀不到：'+LERR(e),b:'daqi'}];logSync()}}
-{const _o=openChat;openChat=function(b,ctx,el,auto){if(!CH[b])CH[b]=[];
- if(b==='daqi'){LV.thread='';CH.daqi=[{w:'bot',t:'讀取中…',b:'daqi'}];setTimeout(loadMsgs,0)}
- else CH[b]=[{w:'bot',t:`${NAMES[b]||'這隻'}的對話還沒接上。要交代事情，點首頁右上角跟大器說。`,b}];
+const HI=b=>b==='daqi'?'寫一句，或點下面的指令。只有大器本人回，回覆會出現在這裡。':`寫一句，${NAMES[b]||'它'}收到會回在這裡，通常幾分鐘。`;
+const SEENK='opp_bot_seen';let SEEN=null,CPOLL=0,WAITB={};
+function seenLoad(){if(SEEN)return SEEN;try{SEEN=JSON.parse(localStorage.getItem(SEENK)||'null')}catch(e){SEEN=null}return SEEN}
+function seenSave(){try{localStorage.setItem(SEENK,JSON.stringify(SEEN))}catch(e){}}
+function seenMark(b,id){seenLoad();if(!SEEN)SEEN={};if(id>(SEEN[b]||0)){SEEN[b]=id;seenSave()}delete UNREAD[b]}
+// 未讀與「處理中」：每次輪詢讀 opp_bot_inbox（各隻的回覆與還在等的話）
+async function pollInbox(){if(!LV.api||!LV.api.botInbox)return;let d;try{d=await LV.api.botInbox()}catch(e){return}
+ const first=!seenLoad();if(first){SEEN={};d.replies.forEach(r=>{SEEN[r.bot]=Math.max(SEEN[r.bot]||0,r.id)});seenSave()}
+ const was=Object.assign({},UNREAD),neu={};
+ d.replies.forEach(r=>{if(r.id>(SEEN[r.bot]||0)&&!(S.chat&&S.chat.b===r.bot))neu[r.bot]=(neu[r.bot]||0)+1});
+ Object.keys(NAMES).forEach(b=>{if(b==='daqi')return;if(neu[b])UNREAD[b]=neu[b];else delete UNREAD[b]});
+ WAITB={};d.waiting.forEach(w=>{WAITB[w.bot]=1});
+ Object.keys(neu).forEach(b=>{if(neu[b]>(was[b]||0))arrive2(b)});headSync();waitFaces()}
+function arrive2(b){headSync();document.querySelectorAll('.hav,#chead').forEach(e=>{const k=e.dataset.b||(e.dataset.id||'').split('|')[0];if(k!==b)return;hop(e);const f=FACES.get(e.querySelector('.bm'));if(f&&!RM)f.poke()})}
+// 等回覆的那隻，頭像改「思考中」
+function waitFaces(){document.querySelectorAll('.hav,#chead').forEach(e=>{const k=e.dataset.b||(e.dataset.id||'').split('|')[0],m=e.querySelector('.bm');if(!m||!k)return;const want=WAITB[k]?'thinking':'idle';if(m.dataset.m!==want&&(m.dataset.m==='idle'||m.dataset.m==='thinking')){m.dataset.m=want;faceSync()}})}
+async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id=ctxItem(on.ctx);
+ try{const ms=await LV.api.msgs(id,b);if(!S.chat||S.chat.b!==b)return;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
+  const last=ms[ms.length-1],waiting=b!=='daqi'&&last&&last.kind==='user';
+  const pend=CH[b].filter(m=>m.local);
+  CH[b]=ms.map(m=>({w:m.kind==='user'?'me':'bot',t:m.body,b})).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
+  if(!ms.length&&!pend.length)CH[b]=[{w:'bot',t:HI(b),b}];
+  const lb=ms.filter(m=>m.kind==='bot').pop();if(lb)seenMark(b,lb.id);
+  if(fresh){logSync();if(had&&last&&last.kind!=='user'){mood(b,'speaking');hop($('#cAv'));setTimeout(()=>{if(S.chat&&S.chat.b===b)mood(b,'idle')},2200)}else mood(b,waiting?'thinking':'idle')}
+  clearTimeout(CPOLL);if(waiting&&!document.hidden)CPOLL=setTimeout(loadMsgs,8000)}
+ catch(e){CH[b]=[{w:'bot',t:'對話讀不到：'+LERR(e),b}];logSync()}}
+{const _o=openChat;openChat=function(b,ctx,el,auto){if(!CH[b])CH[b]=[];clearTimeout(CPOLL);
+ LV.thread='';CH[b]=[{w:'bot',t:'讀取中…',b}];delete UNREAD[b];setTimeout(loadMsgs,0);
  return _o(b,ctx,el,auto)}}
-// v39：快捷照設計稿（設計稿的 quick 原樣保留，不再覆寫）
+// 朋朋的對話不用先綁定（綁定是生活房間購物用的，還沒接上）
+{const _l=logSync;logSync=function(){const sb=S.bound;if(S.chat&&S.chat.b==='peng')S.bound=true;try{_l()}finally{S.bound=sb}}}
+function sendTo(b,text,ctx){const a=(ctx||'').split(':'),id=ctxItem(ctx),d=a[0]==='dec'?DB.dec.find(x=>x.id===a[1]):null,body=d?`關於「${d.proj}：${d.q}」：${text}`:text;
+ const w={w:'bot',wait:1,local:1,b,fresh:1};CH[b]=CH[b].filter(m=>m.t!==HI(b)&&m.t!=='讀取中…');CH[b].push({w:'me',t:text,fresh:1,local:1},w);mood(b,'thinking');hop($('#cAv'));logSync();
+ LV.api.say(id,body,b).then(()=>{CH[b]=CH[b].filter(m=>!m.local);if(b!=='daqi'){WAITB[b]=1;waitFaces()}setTimeout(loadMsgs,800)})
+  .catch(e=>{const i=CH[b].indexOf(w);if(i>-1)CH[b].splice(i,1,{w:'bot',t:'沒送出：'+LERR(e)+'。這句還在上面，可以再傳一次。',b,fresh:1});CH[b].forEach(m=>{delete m.local});mood(b,'idle');logSync()})}
 say=function(b,text,ctx){
- if(b==='jiji'){const id=(ctx||'').split(':')[1];CH.jiji.push({w:'me',t:text,fresh:1});
-  if(id&&/建/.test(text)){oppDo(id,'build','要做了，Mac 的程式會建案子資料夾');CH.jiji.push({w:'bot',t:'已送出「要做，建資料夾」，進度看這張卡。（這是直接動作，不是集集回話）',fresh:1})}
-  else if(/掃描|創作資金/.test(text)&&!/截止/.test(text)){const fund=/創作資金/.test(text);CH.jiji.push({w:'bot',t:fund?'已送出「只掃創作資金」，新卡片會直接放進清單。（這是直接動作，不是集集回話）':'已送出「立即掃描」，新卡片會直接放進清單。（這是直接動作，不是集集回話）',fresh:1});logSync();if(fund){LV.api.scanRequest('funding').then(()=>{S.scan=1;S.scanAt=Date.now();render('keep');schedule()}).catch(e=>toast('沒叫到集集：'+LERR(e)))}else ACT.scan();return}
-  else if(id&&/公告/.test(text)){oppDo(id,'dive','已請集集讀完整公告');CH.jiji.push({w:'bot',t:'已送出「讀完整公告」，讀完放在卡片的「完整公告」。（這是直接動作，不是集集回話）',fresh:1})}
-  else CH.jiji.push({w:'bot',t:'集集的對話還沒接上，這句沒有送出。要交代事情，點首頁右上角跟大器說。',fresh:1});logSync();return}
- if(b!=='daqi'){CH[b].push({w:'me',t:text,fresh:1},{w:'bot',t:`${NAMES[b]||'這隻'}的對話還沒接上，這句沒有送出。要交代事情，點首頁右上角跟大器說。`,fresh:1});logSync();return}
- const a=(ctx||'').split(':'),id=ctxItem(ctx),d=a[0]==='dec'?DB.dec.find(x=>x.id===a[1]):null,body=d?`關於「${d.proj}：${d.q}」：${text}`:text;
- const w={w:'bot',wait:1,b:'daqi',fresh:1};CH.daqi=CH.daqi.filter(m=>m.t!=='寫一句，或點下面的指令。只有大器本人回，回覆會出現在這裡。');CH.daqi.push({w:'me',t:text,fresh:1},w);mood('daqi','thinking');hop($('#cAv'));logSync();
- LV.api.say(id,body).then(()=>{const i=CH.daqi.indexOf(w);if(i>-1)CH.daqi.splice(i,1,{w:'bot',t:'傳給大器了，回覆會出現在這裡。',b:'daqi',fresh:1});logSync();setTimeout(loadMsgs,1500)})
-  .catch(e=>{const i=CH.daqi.indexOf(w);if(i>-1)CH.daqi.splice(i,1,{w:'bot',t:'沒送出：'+LERR(e)+'。這句還在上面，可以再傳一次。',b:'daqi',fresh:1});logSync()})};
+ if(b==='jiji'){const id=(ctx||'').split(':')[1];
+  if(id&&/建資料夾|要做/.test(text)&&/建/.test(text)){CH.jiji.push({w:'me',t:text,fresh:1});oppDo(id,'build','要做了，Mac 的程式會建案子資料夾');CH.jiji.push({w:'bot',t:'已送出「要做，建資料夾」，進度看這張卡。（這是直接動作，不是集集回話）',fresh:1});logSync();return}
+  if(/^(立即)?掃描|只掃創作資金/.test(text)){const fund=/創作資金/.test(text);CH.jiji.push({w:'me',t:text,fresh:1},{w:'bot',t:fund?'已送出「只掃創作資金」，新卡片會直接放進清單。（這是直接動作，不是集集回話）':'已送出「立即掃描」，新卡片會直接放進清單。（這是直接動作，不是集集回話）',fresh:1});logSync();if(fund){LV.api.scanRequest('funding').then(()=>{S.scan=1;S.scanAt=Date.now();render('keep');schedule()}).catch(e=>toast('沒叫到集集：'+LERR(e)))}else ACT.scan();return}
+  if(id&&/讀完整公告/.test(text)){CH.jiji.push({w:'me',t:text,fresh:1});oppDo(id,'dive','已請集集讀完整公告');CH.jiji.push({w:'bot',t:'已送出「讀完整公告」，讀完放在卡片的「完整公告」。（這是直接動作，不是集集回話）',fresh:1});logSync();return}}
+ sendTo(b,text,ctx)};
 ACT.askdin=(ctx,el)=>openChat('din',ctx,el);
-ACT.cmd=id=>{const i=id.indexOf(':'),b=id.slice(0,i),c=id.slice(i+1);if(b==='jiji'&&/掃描/.test(c))return ACT.scan();toast(`${NAMES[b]||'這隻'}還沒接上，這個動作還沒接上`)};
+ACT.cmd=id=>{const i=id.indexOf(':'),b=id.slice(0,i),c=id.slice(i+1);if(b==='jiji'&&/掃描/.test(c))return ACT.scan();if(!NAMES[b])return;openChat(b,'',null,()=>say(b,c,''))};
 
 WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v39');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v40');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
