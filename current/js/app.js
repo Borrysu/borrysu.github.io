@@ -1810,7 +1810,7 @@ const LHM=t=>{const d=new Date(t);return d.getHours()+':'+String(d.getMinutes())
 const LAGO=t=>{if(!t)return '';const m=Math.round((Date.now()-t)/60000);if(m<1)return '剛剛';if(m<60)return m+' 分鐘前';const h=Math.round(m/60);if(h<24)return h+' 小時前';const d=Math.round(h/24);return d<7?d+' 天前':LMD(t)};
 const LDAYS=t=>t?Math.ceil((t-Date.now())/864e5):null;
 const LWEB=u=>/^https?:\/\//i.test(String(u||''))?String(u):'';
-const LBOT=s=>/集集|Gig/i.test(s||'')?'jiji':/塔塔|Tal|金金|Kim/i.test(s||'')?'tata':/朋朋|Pom/i.test(s||'')?'peng':'daqi';
+const LBOT=s=>/集集|Gig/i.test(s||'')?'jiji':/金金|Kim/i.test(s||'')?'kim':/塔塔|Tal/i.test(s||'')?'tata':/朋朋|Pom/i.test(s||'')?'peng':'daqi';   // v50：金金有自己的臉，不再併到塔塔
 const LERR=e=>{const k=e&&e.kind;return {timeout:'連線逾時',network:'連不上伺服器',offline:'目前沒有網路',auth:'金鑰失效，請重新開專屬網址',forbidden:'這把金鑰不能做這件事，只有老大本人的網址可以',state:'狀態不對，重新整理再試'}[k]||(e&&e.message)||'發生錯誤'};
 const LNONE=t=>`<p class="note lnone">${esc(t)}</p>`;
 const dateTxt=()=>{const d=new Date();return `${d.getMonth()+1} 月 ${d.getDate()} 日　週${WK[d.getDay()]}`};
@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v49');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v50');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2510,6 +2510,105 @@ oppCard=function(o){const sn=o.st==='snoozed',w=oppWhat(o);
  h=h.replace(/<div class="mrow"><button class="mb" data-act="decopen" data-id="([^"]*)">其他做法・看細節<\/button><\/div>/,(m,id)=>`<div class="drow2"><button class="btn" data-act="decopen" data-id="${id}">其他做法</button><button class="btn" data-act="decopen" data-id="${id}">看細節</button>__DIN__</div>`);
  if(h.indexOf('__DIN__')>-1){const a=h.lastIndexOf('<div class="aifs');if(a>-1){const e=h.indexOf('</div>',a);const face=h.slice(a,e+6);h=h.slice(0,a)+h.slice(e+6);h=h.replace('__DIN__',face)}else h=h.replace('__DIN__','')}
  r.html=h;return r}}
+/* ---------- v50（2026-11-22）：生活待辦、備品請萌萌比價、錢房間改成金金的理財房間 ----------
+   老大原話：「生活也要多一個代辦」「待辦」「然後備品那邊加入清單也要可以讓萌萌去比價啊」
+   「另外我們設計的時候 錢夜不是要跟記帳面板做出差別嗎？怎麼現在都是塔塔在管？我印象中應該是要金金管吧？那一夜應該要放的是 整個理財的內容吧？」
+   待辦：hub_life_items kind='todo'。資料庫 v50 遷移套上前，資料庫不收 todo，先存成 kind='rout'、cat='_todo'（遷移會轉正），兩種都讀。
+   刪掉的 72 小時內可救回：讀 hub_life_gone（遷移後才有），沒有就用這支手機記的。
+   備品比價：排進「要買」的那一項可以請萌萌比價，走 v40 對話（Mac relay 轉送）；卡上的狀態從萌萌那段對話讀回來。
+   錢：房間主人、右上角、對話都是金金；記一筆、最近幾筆、帳戶明細、訂閱移到塔塔記帳，錢房間只留一列入口，塔塔小臉只在帳務那一段。 */
+const LGK='zl_life_gone';LV.supRun={};LV.monMsgs=null;LV.monKey='';LV.lifeGone=null;DB.ltodo=[];
+const isLT=x=>x.kind==='todo'||(x.kind==='rout'&&x.cat==='_todo');
+const clip=(s,n)=>{s=String(s||'').replace(/\s+/g,' ').trim();return s.length>n?s.slice(0,n-1)+'…':s};
+{const f=applyLife;applyLife=function(){f();const it=(LV.life&&LV.life.items)||[];
+ DB.rout=DB.rout.filter(r=>!(r.raw2&&isLT(r.raw2)));
+ DB.ltodo=it.filter(isLT).map(x=>({id:x.id,name:x.name,note:x.note||'',done:x.status==='done',at:x.created_at,by:x.created_by||'',raw2:x})).reverse()}}
+const ltodos=()=>E()?[]:(DB.ltodo||[]),LT=id=>(DB.ltodo||[]).find(x=>x.id===id);
+function goneLocal(){try{const a=JSON.parse(localStorage.getItem(LGK)||'[]'),t=Date.now()-72*36e5;return Array.isArray(a)?a.filter(x=>x&&x.id&&x.at>t):[]}catch(e){return []}}
+function goneSave(a){try{localStorage.setItem(LGK,JSON.stringify(a.slice(0,60)))}catch(e){}}
+function goneAdd(x){const a=goneLocal().filter(g=>g.id!==x.id);a.unshift({id:x.id,name:x.name,at:Date.now()});goneSave(a)}
+function goneDel(id){goneSave(goneLocal().filter(g=>g.id!==id))}
+function ltGone(){const m=new Map();(LV.lifeGone||[]).filter(g=>g.kind==='todo'||g.cat==='_todo').forEach(g=>m.set(g.id,{id:g.id,name:g.name}));
+ goneLocal().forEach(g=>{if(!m.has(g.id))m.set(g.id,g)});const live=new Set(((LV.life&&LV.life.items)||[]).map(x=>x.id));return [...m.values()].filter(g=>!live.has(g.id))}
+function todoRow(t){return `<div class="rowi" data-card="${esc(t.id)}"><div class="rowb" style="align-items:flex-start"><button class="tx" data-act="sheet" data-id="ltodo:${esc(t.id)}" style="min-height:44px"><b>${esc(t.name)}</b><small>${t.note?esc(clip(t.note,40))+'・':''}${t.by&&t.by!=='Borry'?esc(nickOf(t.by))+' 加的・':''}${t.at?LMD(Date.parse(t.at))+' 加入':''}</small></button><span class="rt">${mb('✓ 做完','ltdone',t.id)}</span></div></div>`}
+const nickOf=n=>({'AI協作':'大器','Borry':'你'}[n]||n);
+function todoHTML(){const a=ltodos(),open=a.filter(t=>!t.done),done=a.filter(t=>t.done),gone=E()?[]:ltGone(),od=!!S.open.ltdone,og=!!S.open.ltgone;
+ let h=`<div class="wadd"><label class="vh" for="ltIn">新增待辦</label><input id="ltIn" type="text" placeholder="要做的事，例：預約牙醫" enterkeyhint="done" autocomplete="off" maxlength="200"><button class="btn pri" data-act="ltadd">加進去</button></div>${S.err==='lt'?'<p class="err" role="alert">▲ 還沒寫字。寫要做的事就好。</p>':''}`;
+ h+=open.length?`<section class="sec" style="margin-top:14px"><h2 class="vh">待辦，新的在上面</h2><div class="rows stg">${open.map(todoRow).join('')}</div></section>`:emptyBox('沒有待辦','想到要做的事寫在上面，做完點一下打勾。');
+ if(done.length)h+=`<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="ltdone" aria-expanded="${od}"><span class="tx"><b>做完的 ${done.length} 項</b></span><span class="rt"><span class="chev" aria-hidden="true">${od?'⌃':'⌄'}</span></span></button></div>${od?done.map(t=>`<div class="rowi" data-card="${esc(t.id)}"><div class="rowb"><button class="tx" data-act="sheet" data-id="ltodo:${esc(t.id)}" style="min-height:44px"><b style="font-weight:500"><s>${esc(t.name)}</s></b></button><span class="rt">${mb('改回沒做','ltundo',t.id)}</span></div></div>`).join(''):''}</div></section>`;
+ if(gone.length)h+=`<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="ltgone" aria-expanded="${og}"><span class="tx"><b>最近刪掉的 ${gone.length} 項</b><small>72 小時內可以救回</small></span><span class="rt"><span class="chev" aria-hidden="true">${og?'⌃':'⌄'}</span></span></button></div>${og?gone.map(t=>`<div class="rowi"><div class="rowb"><span class="tx"><b style="font-weight:500">${esc(t.name)}</b></span><span class="rt">${mb('↺ 救回','ltrestore',t.id)}</span></div></div>`).join(''):''}</div></section>`;
+ return h}
+// 備品：排進「要買」的那一項請萌萌比價；狀態從萌萌那段對話讀（送出時句子裡帶備品編號）
+function supCmp(u){const ms=LV.monMsgs||[];let q=-1;ms.forEach((m,i)=>{if(m.kind==='user'&&m.body.indexOf('備品編號 '+u.id)>-1)q=i});
+ if(q<0)return LV.supRun[u.id]?{run:1,t:'萌萌比價中'}:null;
+ const later=ms.slice(q+1).filter(m=>m.kind!=='user'),r=later.find(m=>m.body.indexOf(u.name)>-1)||later[0];
+ return r?{t:'萌萌：'+clip(r.body,34)}:{run:1,t:'萌萌比價中・'+LHM(ms[q].at)+' 送出'}}
+function loadMon(){if(!LV.api||!LV.api.msgs)return Promise.resolve();return LV.api.msgs(null,'mon').then(ms=>{const k=JSON.stringify(ms.map(m=>m.id));if(k!==LV.monKey){LV.monKey=k;LV.monMsgs=ms;LV.sig='';if(S.tab==='life'&&!S.sheet)paint()}}).catch(()=>{})}
+{const f=zoneLife;zoneLife=function(){const s=S.sub.life,real=s==='todo';if(real)S.sub.life='rout';let h;try{h=f()}finally{if(real)S.sub.life='todo'}
+ const a=h.indexOf('<div class="seg" role="group" aria-label="生活分類">');if(a<0)return h;const e=h.indexOf('</div>',a)+6;let seg=h.slice(a,e);
+ if(real)seg=seg.replace('aria-pressed="true"','aria-pressed="false"');
+ seg=seg.replace(/(<button[^>]*data-id="life:sup"[^>]*>[^<]*<\/button>)/,(m)=>m+`<button aria-pressed="${real}" data-act="sub" data-id="life:todo">待辦 ${ltodos().filter(t=>!t.done).length}</button>`);
+ if(real)return h.slice(0,a)+seg+todoHTML();
+ h=h.slice(0,a)+seg+h.slice(e);
+ if(s==='sup'&&LV.life)tobuy().forEach(u=>{const st=supCmp(u),old=`<small>${u.cat}・上次買 ${u.last}</small></span><span class="rt">${mb('✓ 買好了','bought',u.id)}</span>`;
+  h=h.replace(old,()=>`<small>${u.cat}・上次買 ${u.last}${st?`<br><span class="cmpst${st.run?' run':''}">${esc(st.t)}</span>`:''}</small></span><span class="rt supbt">${mb(st?(st.run?'看比價進度':'看萌萌比價'):'請萌萌比價','supcmp',u.id)}${mb('✓ 買好了','bought',u.id)}</span>`)});
+ return h}}
+// 資料庫還不收 todo 時（v50 遷移沒套）記在這支手機一天，免得每次新增都先撞一次錯
+const LTK='zl_todo_legacy';function ltLegacy(){try{return Date.now()-(+localStorage.getItem(LTK)||0)<864e5}catch(e){return false}}
+async function ltNew(name){if(!ltLegacy()){try{return await LV.api.lifeSet(null,'todo',{name})}catch(e){if(!/kind and name required|check constraint/i.test(String(e&&e.message||'')))throw e;try{localStorage.setItem(LTK,String(Date.now()))}catch(x){}}}
+ return LV.api.lifeSet(null,'rout',{name,cat:'_todo'})}
+ACT.ltadd=()=>{const t=$('#ltIn'),v=t?t.value.trim():'';if(!v){S.err='lt';render('keep');const x=$('#ltIn');if(x)x.focus();return}S.err='';
+ ltNew(v.slice(0,200)).then(()=>{const x=$('#ltIn');if(x)x.value='';toast('加進待辦了：'+clip(v,24));return reloadLife()}).catch(e=>toast('沒存上：'+LERR(e)))};
+ACT.ltdone=id=>{const t=LT(id);if(!t)return;closeThen(()=>lw(id,null,{status:'done'},'做完了：'+clip(t.name,24),{patch:{status:'active'}}))};
+ACT.ltundo=id=>{const t=LT(id);if(!t)return;closeThen(()=>lw(id,null,{status:'active'},'改回沒做',{patch:{status:'done'}}))};
+ACT.ltdel=id=>{const t=LT(id);if(!t)return;closeThen(()=>{goneAdd(t);lw(id,null,{status:'dropped'},'刪掉了，72 小時內可救回',{patch:{status:t.done?'done':'active'}})})};
+ACT.ltrestore=id=>{LV.api.lifeSet(id,null,{status:'active'}).then(()=>{goneDel(id);if(LV.lifeGone)LV.lifeGone=LV.lifeGone.filter(g=>g.id!==id);toast('救回來了，放回待辦');return reloadLife()}).catch(e=>toast('沒救回：'+LERR(e)))};
+ACT.ltsave=id=>{const t=LT(id);if(!t)return;const v=(($('#ltName')||{}).value||'').trim(),n2=(($('#ltNote')||{}).value||'').trim();if(!v){toast('要寫做什麼');return}
+ closeThen(()=>lw(id,null,{name:v.slice(0,200),note:n2.slice(0,500)},'存好了',{patch:{name:t.name,note:t.note}}))};
+ACT.supcmp=(id,el)=>{const u=DB.sup.find(x=>x.id===id);if(!u)return;if(supCmp(u)){openChat('mon','sup:'+id,el,null);return}
+ LV.supRun[id]=1;LV.sig='';
+ botAsk('mon',`請比價備品「${u.name}」${u.raw2&&u.raw2.note?'（'+u.raw2.note+'）':''}（備品編號 ${id}），列三家含運總價與到貨時間，推薦一家`,'sup:'+id);setTimeout(loadMon,3000)};
+{const f=ACT.buy;ACT.buy=id=>{const u=DB.sup.find(x=>x.id===id);if(!u)return;lw(id,'sup',{need:true},`${u.name}排進要買，可以請萌萌比價`,{patch:{need:false}})}}
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='ltodo')return _s();const t=LT(a[1]);if(!t)return shHead('這項不在了');
+ return shHead(esc(clip(t.name,24)))+`<label class="f">要做什麼<input id="ltName" type="text" maxlength="200" autocomplete="off" value="${esc(t.name)}"></label><label class="f">備註<textarea id="ltNote" rows="3" maxlength="500">${esc(t.note)}</textarea></label><p class="note">${t.by&&t.by!=='Borry'?esc(nickOf(t.by))+' 加的・':''}${t.at?LMD(Date.parse(t.at))+' 加入':''}${t.done?'・已做完':''}</p><div class="btns">${B('存好這一項','ltsave',t.id,'pri wide')}</div><div class="mrow">${t.done?mb('改回沒做','ltundo',t.id):mb('✓ 做完','ltdone',t.id)}${mb('🗑 刪掉','ltdel',t.id)}</div>`}}
+{const _n=ctxName;ctxName=function(ctx){const a=(ctx||'').split(':');if(a[0]==='sup'){const u=DB.sup.find(x=>x.id===a[1]);return u?'備品：'+u.name:(a[1]==='cart'?'要買的備品':'')}
+ if(a[0]==='ltodo'){const t=LT(a[1]);return t?'待辦：'+clip(t.name,24):''}if(a[0]==='massets')return '資產與配置';return _n(ctx)}}
+{const _x=loadExtra;loadExtra=async function(){await _x();const api=LV.api,jobs=[];
+ if(api.lifeGone&&!LV.goneNo)jobs.push(api.lifeGone().then(d=>{LV.lifeGone=Array.isArray(d)?d:[]}).catch(e=>{if(NOFN(e))LV.goneNo=1}));
+ if(LV.life&&((LV.life.items||[]).some(x=>x.kind==='sup'&&x.need)||Object.keys(LV.supRun).length))jobs.push(loadMon());
+ await Promise.all(jobs)}}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='ltIn'){e.preventDefault();ACT.ltadd()}});
+WRITE.push('ltadd','ltdone','ltundo','ltdel','ltrestore','ltsave','supcmp');
+
+/* ---------- 錢房間＝金金的理財房間 ---------- */
+OWN.money='kim';ZONE.money.b='kim';ZOF.kim='money';FRESH.kim='';{const t=$('#tabs');if(t)delete t.dataset.k}   // 底部分頁的臉跟著換成金金
+ROLE.kim='錢房間主人・理財';ROLE.tata='記帳與帳單・明細在塔塔記帳';
+BOTS.kim.zone='錢';BOTS.kim.role='錢房間歸我：現金撐多久、資產配置、錢的目標、大筆該不該花。';BOTS.kim.can='看現金撐多久、資產怎麼配、錢的目標進度、一筆大錢該不該花';BOTS.kim.cant='付款、記帳、轉帳；每一筆明細是塔塔的事';
+BOTS.kim.cmds=['錢這週怎麼看','現金撐得住嗎','資產配置要調嗎'];
+BOTS.tata.zone='記帳';BOTS.tata.role='記帳、對帳、帳單歸我。每一筆在塔塔記帳。';
+{const _q=quick;quick=function(on){const k=(on.ctx||'').split(':')[0];if(on.b==='kim'&&k==='wish')return['值不值得','等一等可以嗎'];if(on.b==='kim'&&k==='massets')return['資產配置要調嗎','預備金夠不夠','投資比例會不會太高'];return _q(on)}}
+function kmNoData(){const car=cvHTML('money',[{id:'K',name:'理財',html:`<p class="mzhl mzkw">${aiF('kim','mkim')}<span>金金・理財</span></p><p class="mzsay">${esc(LV.moErr||'錢的資料還沒讀到')}</p>`}],'錢的看法',mzOn);
+ return `<div class="zh zhx mz" data-z="money"><div class="zht"><h1>錢</h1><p class="zown">金金的房間・<span class="mzk">理財</span></p></div>${bigF('kim','money')}${car}</div>`}
+{const f=mzHero;mzHero=function(){if(!LV.mo)return kmNoData();
+ return f().replace(/<p class="zown">塔塔 ([^<]*?)・/,(m,st)=>`<p class="zown">金金的房間・${st.replace(' 讀取塔塔記帳',' 更新')}・`).replace(bigF('tata','money'),()=>bigF('kim','money'))}}
+function kmAssets(){const ac=(LV.mo&&LV.mo.accounts)||[],bal=x=>+x.balance||0,sum=a=>a.reduce((s,x)=>s+bal(x),0);
+ const isInv=x=>x.kind==='stock'||x.kind==='investment'||/00\d{3}|證券|ETF|基金|股票|投資/i.test(x.name||''),isDebt=x=>x.kind==='credit_card'||x.kind==='loan_in';
+ const cash=ac.filter(x=>x.spendable&&!isDebt(x)&&!isInv(x)),inv=ac.filter(isInv),save=ac.filter(x=>!x.spendable&&!isDebt(x)&&!isInv(x)&&x.kind!=='loan_out'),debt=ac.filter(isDebt);
+ const vc=Math.max(0,MZ.cash||sum(cash)),vs=Math.max(0,sum(save)),vi=Math.max(0,sum(inv)),tot=vc+vs+vi,vd=Math.abs(sum(debt)),pc=v=>tot>0?Math.round(v/tot*100):0;
+ const row=(name,v,small,has)=>`<div class="rowi"><div class="rowb"><span class="tx"><b>${name}</b><small>${small}</small>${has?`<span class="gbar sm" aria-hidden="true"><u style="width:${pc(v)}%"></u></span>`:''}</span><span class="rt">${has?`<span class="amt">${nt(Math.round(v))}</span><span class="lbl">${pc(v)}%</span>`:'<span class="lbl">還沒接上</span>'}</span></div></div>`;
+ return `<section class="sec" id="secAsset">${sh('','資產與配置',tot?'合計 '+nt(Math.round(tot)):'')}<div class="rows kmas">
+ ${row('現金（能花的）',vc,`${cash.length} 個帳戶・算撐多久用這個數`,true)}
+ ${row('預備金與存款',vs,save.length?`${save.length} 個帳戶・不算進能花的`:'塔塔記帳裡還沒有獨立的預備金帳戶',save.length>0)}
+ ${row('投資',vi,inv.length?(vi>0?esc(clip(inv.map(x=>x.name).join('、'),30)):`有 ${inv.length} 個投資帳戶，市值還沒接上`):'例如 00692。塔塔記帳裡還沒有投資帳戶',inv.length>0&&vi>0)}
+ ${debt.length?`<div class="rowi"><div class="rowb"><span class="tx"><b>負債</b><small>信用卡未繳與借款，${debt.length} 個帳戶</small></span><span class="rt"><span class="amt">${nt(Math.round(vd))}</span></span></div></div>`:''}</div>
+ ${aifs([aiF('kim','massets')])}<p class="note mzfoot">只看大類和比例。每個帳戶的明細在塔塔記帳。</p></section>`}
+function kmBig(){const ws=(E()?[]:DB.wish).filter(w=>w.st!=='bought'&&!w.noPrice&&w.price>=BIG);
+ return `<section class="sec" id="secBig">${sh('','該不該花的大額',ws.length?`${ws.length} 筆・${nt(BIG)} 以上`:'')}${ws.length?`<div class="rows">${ws.map(w=>{const f=fin(w);return `<div class="rowi mzr" data-card="mw:${esc(w.id)}"><div class="rowb"><button class="tx" data-act="lifesub" data-id="wish"><b>${esc(w.name)}</b><small>${f.k==='ok'?'':'▲ '}${esc(f.t)}${w.shop?'・'+esc(w.shop):''}</small></button><span class="rt"><span class="amt">${nt(w.price)}</span>${aiF('kim','wish:'+w.id,w.kim==='run'?'看中':'')}</span></div></div>`}).join('')}</div><p class="note mzfoot">來自生活房間的「想買」。點金金的臉問值不值得，要買還是請朋朋。</p>`
+  :`<div class="card"><p>現在沒有 ${nt(BIG)} 以上想買的東西。</p><p class="note">大筆想買的加進生活房間的「想買」，會出現在這裡，金金看該不該花。</p></div>`}</section>`}
+function kmLedger(){return mzPay().replace('<div class="rows mztata">',()=>`<section class="sec" id="secLedger">${sh('tata','記帳與帳單','塔塔管')}<div class="rows mztata">`).replace('每一筆、帳單、訂閱、帳戶。','每一筆明細、帳戶、訂閱、帳單都在那裡記與改。')+'</section>'}
+zoneMoney=function(){if(!LV.mo)return mzHero()+kmLedger();
+ return mzHero()+`<div id="mz2">${mz2HTML()}</div>`+kmAssets()+mzGoals()+kmBig()+mzIn()+mzOut()+kmLedger()};
+window.__zl=Object.assign(window.__zl||{},{loadMon});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

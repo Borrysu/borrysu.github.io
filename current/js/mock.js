@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v49';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v50';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -183,9 +183,12 @@ export function mockAdapter(modeStr) {
     { id: 'l2', kind: 'rout', name: X || '洗冷氣濾網', cycle_days: 30, last_date: iso(-41), status: 'active' },
     { id: 'l3', kind: 'rout', name: '換床單', cycle_days: 14, last_date: iso(-9), status: 'active' },
     { id: 'l4', kind: 'sup', name: X || '防曬乳', cat: '保養', need: true, last_date: iso(-50), status: 'active' },
-    { id: 'l5', kind: 'sup', name: '洗面乳', cat: '保養', need: false, last_date: iso(-17), status: 'active' }];
+    { id: 'l5', kind: 'sup', name: '洗面乳', cat: '保養', need: false, last_date: iso(-17), status: 'active' },
+    { id: 'l6', kind: 'wish', name: '示意鏡頭 35mm', note: '拍長片用', price: 62000, shop: '示意相機店', status: 'active', created_at: new Date(Date.now() - 864e5).toISOString() },
+    { id: 'l7', kind: 'todo', name: X || '預約牙醫洗牙', note: '示意待辦', status: 'active', created_at: new Date().toISOString() },
+    { id: 'l8', kind: 'todo', name: '寄回保固卡', status: 'done', created_at: new Date(Date.now() - 2 * 864e5).toISOString() }];
   const mmoney = { today: iso(0), cash: 117666, burn: 42000, income: 30000,
-    accounts: [{ name: X || '示意銀行', kind: 'bank', balance: 88459, spendable: true, suffix: '0328' }, { name: '示意信用卡', kind: 'credit_card', balance: -12480, spendable: false }],
+    accounts: [{ name: X || '示意銀行', kind: 'bank', balance: 88459, spendable: true, suffix: '0328' }, { name: '示意預備金', kind: 'bank', balance: 60000, spendable: false }, { name: '示意證券 00692', kind: 'stock', balance: 52000, spendable: false }, { name: '示意信用卡', kind: 'credit_card', balance: -12480, spendable: false }],
     bills: [{ id: 1, name: X || '示意房租', amount: 17000, kind: 'expense', auto: false, account: '示意銀行', due_date: iso(3), days: 3, paid: false }, { id: 2, name: '示意電信費', amount: 699, kind: 'expense', auto: true, account: '示意銀行', due_date: iso(-2), days: -2, paid: true, paid_at: new Date().toISOString() }],
     recv: [{ id: 'work-delivered', title: X || '示意已交件案', status: 'delivered', amount: 30000, date: iso(8), terms: '交件後 30 天' }],
     big: [{ name: '示意壽險年繳', amount: 24600, date: iso(13), how: '年繳訂閱' }],
@@ -227,6 +230,7 @@ export function mockAdapter(modeStr) {
     async cal() { await wait(100); return { items: mcal, synced: { me: new Date().toISOString(), co: new Date().toISOString() } }; },
     async life() { await wait(100); return { items: mlife.filter(x => x.status !== 'dropped') }; },
     async lifeSet(id, kind, patch) { await wait(200); sorry(); let x = mlife.find(y => y.id === id); if (!x) { x = { id: 'ml' + (++nextN), kind, status: 'active', created_at: new Date().toISOString() }; mlife.push(x); } Object.assign(x, patch); return x; },
+    async lifeGone() { await wait(80); return mlife.filter(x => x.status === 'dropped').map(x => ({ id: x.id, kind: x.kind, name: x.name, cat: x.cat, at: new Date().toISOString() })); },
     async moneyOverview() { await wait(150); return mmoney; },
     // v46 示範：卡片編輯、封存、刪除（72 小時可救回）
     async hubEdit(kind, id, patch) { await wait(200); sorry(); const L = kind === 'decision' ? hub.open.concat(hub.answered) : kind === 'job' ? hub.jobs : hub.events; const x = L.find(r => String(r.id) === String(id)) || (hub.shelf || []).map(s => s.row).find(r => String(r.id) === String(id)); if (!x) throw new AdapterError('server', 'not found');

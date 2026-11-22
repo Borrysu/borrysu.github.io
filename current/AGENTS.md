@@ -63,3 +63,9 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 - 付款鈕按下＝老大授權那一隻 Bot 付（帳單塔塔、訂單朋朋、報名費集集），面板與大器不代付。函式：`hub_pay_authorize`、`hub_pay_cancel`、`hub_pay_list`、`hub_pay_take`／`hub_pay_notified`（Mac relay 用）、`hub_pay_report`（Bot 回報，用通知裡的付款票）。細節 `CLAUDE.md` 第 33 條。
 - 行事曆：Mac 每 120 秒同步；替老大改完 Google 行程後跑 `tools/rpc.sh hub_cal_refresh_request '{}'`，30 秒內進面板。
 - 資料庫 v48 遷移還沒套上時這些函式都找不到（`tools/rpc.sh hub_pay_list '{}'` 回 PGRST202＝還沒套），面板會寫「資料庫還沒更新」。
+
+## v50（2026-11-22）：生活待辦、機器人寫生活清單、錢房間歸金金
+
+- 生活清單（`hub_life_items`）多一種 `kind='todo'`（待辦）。大器替老大加：`tools/rpc.sh hub_life_set '{"p_id":null,"p_kind":"todo","p_patch":{"name":"預約牙醫","note":"…"}}'`；回 `kind and name required`＝資料庫 v50 遷移還沒套，先用 `"p_kind":"rout"`、patch 加 `"cat":"_todo"`（遷移會轉正）。
+- 朋朋、萌萌自己寫生活清單：用轉送訊息裡的回覆票呼叫 `opp_bot_life_add`（只能新增，用法寫在 relay 轉給它們的訊息裡）。`tools/rpc.sh opp_bot_life_add '{}'` 回 PGRST202＝還沒套遷移。
+- 錢房間的主人是金金（理財）；記帳、帳戶明細、訂閱在塔塔記帳，不要再往逐流錢房間加記帳類功能。細節 `CLAUDE.md` 第 34 條。

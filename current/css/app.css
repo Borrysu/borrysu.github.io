@@ -1114,3 +1114,10 @@ html:not([data-skin="6"]):not([data-skin="4"]) .groomh .mzdots,html:not([data-sk
 .dslide .drow2{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-top:8px}
 .dslide .drow2 .btn{width:100%;justify-content:center;min-height:44px}
 .dslide .drow2 .aifs{margin:0;position:static}
+/* v50：備品比價狀態、生活待辦、資產與配置 */
+.cmpst{color:var(--ink2);font-weight:500}
+.cmpst.run::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;vertical-align:middle;opacity:.7}
+.rowb .rt.supbt{flex-direction:column;align-items:flex-end;gap:0}
+.kmas .rt .lbl{min-width:34px;text-align:right}
+.kmas .gbar{margin-top:6px}
+label.f textarea{margin-top:6px;resize:vertical}
