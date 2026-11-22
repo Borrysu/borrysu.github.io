@@ -117,3 +117,6 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 目標：初始七個照設計稿（劇本、補助、劇組、預備金、器材基金、報稅預留、運動），`demo=true` 畫面寫「示意值，請老大改」；老大本人改過任一項就變 false。「⋯」多了改目前進度、改總數、改下一步。這週主推、往上下排、放掉與撿回、運動打勾（`week={mon,d[7]}`，換週自動歸零）、步驟往前一步都寫回資料庫，提示條可復原。
    - 目標頁「這週力氣放哪一個」原本寫死補助與劇本，改成照真資料列落後、沒動的目標。
    - 退回：`git revert` v41 的 commit；資料庫照退回 SQL drop 新函式（新表留著不影響舊版）。
+28. **今天行程與行事曆接上（2026-11-22，v42）**：Mac launchd `com.borry.current-cal-sync`（每 30 分鐘，`~/Claude-Projects/Tools/current-cal-sync/sync.mjs`）照 `~/.claude.json` 啟動 gdrive-borrysu MCP，只呼叫唯讀的 `getCalendarEvents` 讀 borrysu 個人（primary）與公司「好咖文創」未來 14 天，公司只留標題有 Borry／寶瑞 的，用 AI協作金鑰呼叫 `hub_cal_sync` 寫進 `hub_cal_events`。前端照設計稿的今天行程與行事曆頁顯示，個人照分類碼（S/E/W/C/L）上色，沒分類碼的標「沒分類」。
+   - 面板不寫行事曆：新增行程、改時間、取消、改規則都經 `opp_msg_add` 寫成「【行事曆】…」交給大器（附老大原話，面板整理的欄位只當參考），大器照 14 號準則建立。案子日期同步到行事曆的開關仍寫「還沒接上」。
+   - 退回：`launchctl bootout gui/$(id -u)/com.borry.current-cal-sync`；`git revert` v42 的 commit。

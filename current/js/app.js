@@ -838,7 +838,7 @@ function calPage(){const v=S.calv||'week',f=S.calf||'all',all=calAll().filter(e=
   h+=its.length?`<div class="rows">${its.map(evRow).join('')}</div>`:`<div class="card" style="margin-top:12px"><p>${dayName(n)}沒有${f==='me'?'個人的':f==='co'?'公司的':''}行程。</p></div>`}
  else{let any=0;for(let n=0;n<=13;n++){const its=all.filter(e=>e.d===n);if(!its.length)continue;any=1;h+=`<section class="cday"><h3>${dayName(n)}${n<3?'　'+dlw(n):''}</h3><div class="rows">${its.map(evRow).join('')}</div></section>`}
   if(!any)h+=`<div class="card" style="margin-top:12px"><p>往後 14 天沒有${f==='me'?'個人的':'公司的'}行程。</p></div>`}
- return h+`<p class="note" style="margin-top:18px">另有 3 筆公司行程跟你無關，沒列。</p></div>`}
+ return h+`<p class="note" style="margin-top:18px">公司行事曆只列標題有 @Borry 的（跟你有關的）。每 30 分鐘從 Google 行事曆同步一次。</p></div>`}
 ACT.calv=id=>{S.calv=id;render('keep')};ACT.calf=id=>{S.calf=id;render('keep')};ACT.cald=id=>{S.cald=+id;render('keep')};
 const shHead=t=>`<div class="grab" aria-hidden="true"></div><div class="shead"><h2 id="sTitle">${t}</h2>${B('關閉 ✕','close',null,'ghost',' id="sClose"')}</div>`;
 function calSheet(id){const e=calFind(id);if(!e)return shHead('這筆行程不在了')+'<p style="margin-top:8px">可能已經取消或改到 14 天以外。</p>';
@@ -1904,12 +1904,7 @@ ACT.pastekey=()=>{let v='';try{v=prompt('貼上金鑰或老大專屬網址')||''
 
 /* ---------- 首頁 ---------- */
 {const _h=homeL2;homeL2=function(){return _h().replace(/11 月 22 日　週日/g,esc(dateTxt())).replace(/午安，老大。/g,esc(greet()))}}
-todayStrip=function(){if(S.st==='loading'||S.st==='error')return '';   // v39：照設計稿留「看全部」與「＋ 新增行程」
- return `<section class="sec tday">${sh('','今天行程','',moreB('看全部','page','cal'))}<div class="card lcard"><p>行事曆還沒接上</p></div><div class="mrow tdnew">${mb('＋ 新增行程','sheet','calnew')}</div></section>`};
-calPage=function(){return `<div class="page-in"><div class="phead">${B('‹ 返回','back',null,'ghost',' id="pBack"')}</div><h1 class="pt">行事曆</h1>
- <div class="seg" role="group" aria-label="怎麼看">${[['day','日'],['week','週（往後 14 天）']].map(x=>`<button aria-pressed="${(S.calv||'week')===x[0]}" data-act="calv" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>
- <div class="seg" role="group" aria-label="看哪邊">${[['all','全部'],['me','只看個人'],['co','只看公司']].map(x=>`<button aria-pressed="${(S.calf||'all')===x[0]}" data-act="calf" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>
- <div class="btns">${B('＋ 新增行程','sheet','calnew','pri')}${mb('規則 ›','sheet','calrules')}</div><div class="card lcard" style="margin-top:12px"><p>行事曆還沒接上</p></div></div>`};
+// v42：行事曆接上 hub_cal_events（見檔尾「行事曆（v42）」），設計稿的 todayStrip、calPage 照原樣用
 gcNote=()=>'';projSync=()=>'';   // v41：目標接上 hub_goals（見檔尾「目標（v41）」），設計稿的 goalCard、goalSlides、roomGoals 照原樣用
 monthSelf=()=>subs().filter(s=>s.payer==='自付').reduce((a,s)=>a+(s.mo||0),0);
 {const _z=zsum;zsum=function(z){const s=_z(z);
@@ -2040,7 +2035,7 @@ mzOut=function(){return `<section class="sec">${sh('','要出去的大筆')}<div
 /* ---------- 生活：v39 用設計稿的 zoneLife（朋朋還沒綁定、各空狀態與按鈕），會寫的動作沒有後端，按了出現「還沒接上」 ---------- */
 ['bindok','unbind','add','done','saverout','buy','bought','wishadd','copy'].forEach(k=>{ACT[k]=()=>toast(k==='bindok'?'綁定朋朋還沒接上':'生活還沒接上，這個動作還沒接上')});
 /* 行事曆：建立、改時間、取消、改規則沒有後端 */
-['calmk','evsave','evcancel','evundo','rlsave','synctog','syncyes','syncno','dtedit'].forEach(k=>{ACT[k]=()=>toast('行事曆還沒接上，這個動作還沒接上')});
+['synctog','syncyes','syncno','dtedit'].forEach(k=>{ACT[k]=()=>toast('案子日期同步到行事曆還沒接上')});   // v42：建立、改時間、取消、改規則改成交給大器（見檔尾）
 
 /* ---------- 對話（v40，2026-11-22）：每隻都接上了。給大器的走櫃台；給其他隻的由 Mac 轉送程式 com.borry.current-bot-relay
    打到那隻的 webhook（集集經資料庫、塔塔直打、朋朋萌萌定定金金經霸霸），回覆用回覆票寫回 opp_msgs（bot 欄）。 ---------- */
@@ -2155,11 +2150,36 @@ ACT.gtotal=id=>{const g=gOf(id);if(!g)return;let v=null;try{v=prompt(`「${g.nam
 {const _d=ACT.dinapply;ACT.dinapply=function(mid){const before=GL.list.map(g=>[g.id,g.next]),pf=GL.focus;const r=_d.apply(this,arguments);
  setTimeout(()=>{if(GL.focus!==pf&&GL.focus)LV.api.goalSet(GL.focus,{focus:true}).then(reloadGoals).catch(()=>{});GL.list.forEach(g=>{const b=before.find(x=>x[0]===g.id);if(b&&b[1]!==g.next)LV.api.goalSet(g.id,{next_step:g.next}).catch(()=>{})})},50);return r}}
 WRITE.push('gsave','gfocus','gup','gdn','gdrop','grevive','gcheck','gstep','gnum','gtotal','gnext');
+
+/* ---------- v42（2026-11-22）：行事曆接上 hub_cal_events ----------
+   Mac 的 com.borry.current-cal-sync 每 30 分鐘用 borrysu 的 Google 行事曆唯讀同步未來 14 天（個人全部、公司只放標題有 Borry 的）。
+   面板不直接寫行事曆：新增、改時間、取消、改規則都寫成一句話交給大器，大器照 14 號行事曆準則在兩本行事曆上做。 */
+CAT['?']=['沒分類','#8a8a8a'];
+function mapCal(e){const loc=e.start?new Date(e.start):null,day=loc?new Date(loc):e.start_date?new Date(e.start_date+'T00:00:00'):null;if(!day)return null;day.setHours(0,0,0,0);
+ const t0=new Date();t0.setHours(0,0,0,0);let d=Math.round((day-t0)/864e5);if(d<0)d=0;
+ const hm=x=>x?String(new Date(x).getHours()).padStart(2,'0')+':'+String(new Date(x).getMinutes()).padStart(2,'0'):'';
+ const raw=String(e.title||''),o={id:e.id,d,t:e.all_day?'':hm(e.start),e:e.all_day?'':hm(e.end),all:e.all_day?1:0,place:e.location||'',src:e.cal==='co'?'co':'me',link:LWEB(e.link),real:1};
+ if(o.src==='co'){const m=raw.match(/^【([^】]+)】\s*(.*)$/);o.cs=m?m[1]:'好咖';o.n=(m?m[2]:raw).replace(/\s*@[^@]*$/,'').trim()||raw;o.why='標題有 @Borry'}
+ else{const m=raw.match(/^([SEWCL])[.．]\s*(.*)$/);o.cat=m?m[1]:'?';o.n=m?m[2]:raw}
+ return o}
+function applyCal(){CAL.length=0;if(LV.cal&&Array.isArray(LV.cal.items))LV.cal.items.map(mapCal).filter(Boolean).forEach(x=>CAL.push(x))}
+function calAsk(text,ok){LV.api.say(null,'【行事曆】'+text+'（照 14 號行事曆準則建立或修改，做完回報；逐流面板只讀，同步後會出現在行程）','daqi').then(()=>toast(ok)).catch(e=>toast('沒送出：'+LERR(e)))}
+ACT.calmk=()=>{const t=$('#nlT'),txt=t?t.value.trim():'',f=readForm(),c=ctlOf();
+ const title=f.title||txt;if(!title){const x=$('#cfErr');if(x)x.hidden=false;if(t)t.focus();return}
+ const when=f.n!=null&&f.n>=0?dl(f.n)+(f.s?' '+f.s+(f.e?'～'+f.e:''):'（全天）'):'';
+ const where=c.co||c.me?[c.co?'公司「好咖文創」':'',c.me?`個人${c.cat?' '+c.cat+'.'+(CAT[c.cat]||['',''])[0]:''}${c.lead?'（提前 '+c.lead+' 天）':''}`:''].filter(Boolean).join('＋'):'你判斷放哪本';
+ const body=`新增行程：${txt?'老大原話「'+txt+'」，以原話為準；面板初步整理：':''}標題「${title}」${when?'，'+when:''}${f.place?'，地點 '+f.place:''}${f.who?'，跟 '+f.who:''}${f.note?'，備註 '+f.note:''}，放 ${where}`;
+ closeThen(()=>calAsk(body,'交給大器建立了，同步後會出現在行程（約 30 分鐘內）'))};
+ACT.evsave=id=>{const e=CAL.find(x=>x.id===id),v=($('#evT')||{}).value;if(!e||!v)return;closeThen(()=>calAsk(`把「${e.n}」（${dl(e.d)}${e.t?' '+e.t:''}，${e.src==='co'?'公司':'個人'}）改到 ${v}`,'改時間交給大器了，改好會同步回來'))};
+ACT.evcancel=id=>{const e=CAL.find(x=>x.id===id);if(!e)return;closeThen(()=>calAsk(`取消「${e.n}」（${dl(e.d)}${e.t?' '+e.t:''}，${e.src==='co'?'公司':'個人'}）`,'取消交給大器了，拿掉後會同步回來'))};
+ACT.evundo=id=>{const e=CAL.find(x=>x.id===id);if(!e)return;calAsk(`剛剛取消「${e.n}」的請求作廢，請保留這筆`,'跟大器說保留了')};
+ACT.rlsave=id=>{const t=$('#rlT'),v=t?t.value.trim():'';S.ruleEd=null;render('keep');if(!v)return;calAsk(`行事曆規則第 ${+id+1} 條想改成：「${v}」。請先照 00_核心第 3 節判斷，改準則正本 14 號後回報`,'規則改寫交給大器了')};
+WRITE.push('calmk','evsave','evcancel','evundo','rlsave');
 WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v41');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v42');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
