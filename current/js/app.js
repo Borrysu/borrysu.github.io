@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v69');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v70');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3100,6 +3100,51 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   const hv=$('#hav');top.insertBefore(k,hv||null)}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',btn);else btn();
  window.__zlMK=MK}
+/* ---------- v70（2026-11-23）：老大 16 則面板意見第一批（排版、按鈕位置、新增鈕） ----------
+   意見 2、3、4、6：「我覺得會需要有大標題，然後簡述小字 點進去有詳情」「標題應該要可以趕快知道這是什麼任務」
+   → 列與拍板卡一律拆成「大標題（一眼看懂）＋小字簡述（最多兩行）」，點進去看全文。
+   意見 1：「只有我做好了 那我沒做好怎麼辦 想要編輯注記怎麼辦？然後想要詢問怎麼辦？…我不想做怎麼辦？」→ 要你做的卡多四顆：還沒好、加註記、問大器、不做了。
+   意見 10、11、12、13：掃描鈕對齊、卡片數字不超出、新增鈕放上面、備品加新增鈕。 */
+function TT(raw){let s=String(raw||'').replace(/\s+/g,' ').trim().replace(/^(做完|完成)[：:]\s*/,'').replace(/^照步驟做/,'');
+ const m=s.match(/^(.{3,18}?)[：:｜|，,（(]\s*(.+)$/);
+ if(m)return {h:m[1].trim(),d:m[2].replace(/^[）)]/,'').trim()};
+ if(s.length<=18)return {h:s,d:''};
+ return {h:s.slice(0,16)+'…',d:s}}
+const TTrow=(raw,meta)=>{const t=TT(raw);return `<b>${esc(t.h)}</b>${t.d?`<small class="d2">${esc(t.d)}</small>`:''}${meta?`<small>${esc(meta)}</small>`:''}`};
+decRow=function(d){return `<div class="rowi" data-card="${esc(d.id)}"><button class="rowb" data-act="decopen" data-id="${esc(d.id)}">${bm('daqi','thinking')}<span class="tx">${TTrow(d.q||d.ask,brief(d.proj,d.ago))}</span><span class="rt"><span class="chev" aria-hidden="true">›</span></span></button></div>`};
+jobList=function(){const j=jobs();if(!j.length)return `<div class="card"><p>現在沒有在跑的工作。</p></div>`;
+ return `<div class="rows">`+j.map(x=>`<div class="rowi" data-card="${esc(x.id)}"><div class="rowb">${aiF(x.bot,'job:'+x.id)}<button class="tx" data-act="sheet" data-id="hjob:${esc(x.id)}" style="min-height:44px;text-align:left">${TTrow(x.ask,brief(x.raw&&x.raw.project,x.ago))}</button><span class="rt">${chip(x.st,x.wait)}</span></div></div>`).join('')+`</div>`};
+evtList=function(n){const e=evts().slice(0,n);if(!e.length)return `<div class="card"><p>還沒有做完的紀錄。</p></div>`;
+ return `<div class="rows">`+e.map(x=>{const r=x.raw||{},sum=String(r.summary||'');const left=(sum.match(/還沒做[：:](.+)$/)||[])[1];
+  const head=r.ask||(left&&r.path?r.path:sum.replace(/｜?還沒做[：:].+$/,''))||x.ask;
+  return `<div class="rowi" data-card="${esc(x.id)}"><div class="rowb">${aiF(x.bot,'evt:'+DB.events.indexOf(x))}<button class="tx" data-act="sheet" data-id="hevt:${esc(x.id)}" style="min-height:44px;text-align:left">${TTrow(head,(left?'還差：'+left.trim()+'・':'')+brief(x.who,x.at))}</button></div></div>`}).join('')+`</div>`};
+ydSec=function(){const a=ydJobs();if(!a.length)return '';
+ return `<section class="sec" id="secYou">${sh('daqi','要你做',a.length+' 件')}<div class="rows">`+a.map(j=>
+  `<div class="rowi" data-card="${esc(j.id)}"><div class="rowb"><button class="tx" data-act="sheet" data-id="youdo:${esc(j.id)}" style="min-height:44px;text-align:left">${TTrow(ydFace(j),(j.project?j.project+'・':'')+LAGO(j.updatedAt))}</button><span class="rt">${ydMain(j)}</span></div></div>`).join('')+`</div></section>`};
+// 拍板卡：大標題＋簡述
+{const _s=decSlide;decSlide=function(d,n){const r=_s(d,n);r.html=r.html.replace(/<h2 class="dq dfull"([^>]*)>([\s\S]*?)<\/h2>(<p class="dwhy">[\s\S]*?<\/p>)?/,(m,at,q,why)=>{
+  const raw=q.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&').replace(/&quot;/g,'"').replace(/&#39;/g,"'");const t=TT(raw);
+  return `<h2 class="dq dfull dhead"${at}>${esc(t.h)}</h2>${t.d?`<p class="dwhy dsum">${esc(t.d)}</p>`:''}${why||''}`});return r}}
+// 要你做：還沒好、加註記、問大器、不做了（都先打開跟大器的對話並帶好這張卡，字由老大自己改了再送）
+function ydAsk(id,pre){const j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);const t=j?ydFace(j):'這件';
+ ACT.close&&ACT.close();setTimeout(()=>openChat('daqi','',null,()=>{const i=$('#cText');if(i&&pre){i.value=`關於「${t}」：${pre}`;i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}}}),250)}
+ACT.ydnot=id=>ydAsk(id,'我還沒做好，因為');
+ACT.ydnote=id=>ydAsk(id,'註記：');
+ACT.ydq=id=>ydAsk(id,'');
+ACT.ydskip=id=>ydAsk(id,'這件我不想做，原因：');
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();const a=(S.sheet||'').split(':');if(a[0]!=='youdo')return h;const id=a.slice(1).join(':');
+ const j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);if(!j||j.status!=='waiting_you')return h;
+ const more=`<p class="h4">還沒辦法做好？</p><div class="ydmore">${B('還沒好','ydnot',id)}${B('加註記','ydnote',id)}${B('問大器','ydq',id)}${B('不做了','ydskip',id)}</div>`;
+ return h.replace(/(<div class="btns"><button[^>]*data-act="yddone")/,more+'$1')}}
+// 怎麼做：一步一行，加編號（fullP 是 const，改在要你做的卡上後處理）
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();if(!/^youdo:/.test(S.sheet||''))return h;
+ return h.replace(/<p class="h4">怎麼做<\/p><p style="white-space:pre-wrap;word-break:break-word">([\s\S]*?)<\/p>/,(m,t)=>{const ls=t.split('\n').map(x=>x.replace(/^\s*(\d+[.、)）]|[\u2460-\u2469]|[-・•])\s*/,'').trim()).filter(Boolean);
+  return ls.length<2?m:`<p class="h4">怎麼做</p><ol class="ydsteps">${ls.map(x=>`<li>${x}</li>`).join('')}</ol>`})}}
+// 生活：新增鈕放上面；備品也有新增
+{const f=zoneLife;zoneLife=function(){let h=f();const s=S.sub.life;if(s!=='rout'&&s!=='sup')return h;
+ h=h.split(`<div class="mrow">${mb('＋ 新增','add')}</div>`).join('');
+ const top=`<div class="addtop">${B(s==='sup'?'＋ 新增備品':'＋ 新增例行','add',null,'pri')}</div>`;
+ const i=h.indexOf('<section class="sec"');return i<0?h+top:h.slice(0,i)+top+h.slice(i)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

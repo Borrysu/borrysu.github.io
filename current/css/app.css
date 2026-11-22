@@ -1207,3 +1207,15 @@ html.marking main,html.marking .tabs,html.marking .dock{cursor:crosshair}
 .mkl li{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)}
 .mkl li small{grid-column:1;color:var(--ink2);font-size:12px}
 .mkl li .btn{grid-column:2;grid-row:1/3;min-width:44px;min-height:44px}
+/* 2026-11-23 v70 老大面板意見第一批：大標題＋兩行簡述、要你做多四顆、新增鈕放上面、掃描鈕對齊、卡片字不超出 */
+.rowb .tx small.d2{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--ink);opacity:.78;font-size:13px;line-height:1.4;margin:2px 0 1px}
+.band .dslide h2.dq.dhead,html[data-skin] .band .dslide h2.dq.dhead{font-size:20px;line-height:1.35}
+.dslide .dsum{font-size:14px;line-height:1.5;opacity:.88;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.ydmore{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0 4px}
+.ydmore .btn{width:100%;min-height:44px}
+.ydsteps{padding-left:22px;margin:4px 0 8px;display:grid;gap:6px;line-height:1.5}
+.addtop{display:flex;justify-content:flex-end;margin:12px 0 0}
+.addtop .btn{min-height:44px}
+.scan{margin:0;align-self:center}
+.card p,.card .note,.card small,.card .lbl,.card h3{overflow-wrap:anywhere;word-break:break-word}
+.card .meta{flex-wrap:wrap;row-gap:4px}
