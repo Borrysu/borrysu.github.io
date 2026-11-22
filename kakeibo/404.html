@@ -1218,6 +1218,10 @@ details.rep .rep-t{font-size:12px;color:var(--muted);font-weight:500;flex:none}
 .updrow{display:flex;width:100%;min-height:44px;align-items:center;justify-content:space-between;gap:8px;padding:0 4px 0 52px;border:0;border-bottom:1px solid var(--line);background:none;font:inherit;font-size:12px;color:var(--muted);text-align:left}
 .updrow .updl{display:inline;font-size:12px}
 .updrow .updgo{flex:none;font-weight:600;color:var(--ink2)}
+/* v34.4 補單 4：iPhone 主畫面底部空白。外殼高度用 --kk-vh（主畫面模式短少狀態列時改用螢幕高度），底下若還有縫用分頁列同色 */
+html{background-color:var(--x-surface-solid,var(--surface))}
+body{bottom:auto;height:var(--kk-vh,100lvh)}
+.hd{border-bottom:1px solid var(--line)}
 </style>
 </head>
 <body>
@@ -2916,7 +2920,7 @@ function pager(k,step){const key=PK(k);deckMove(null,step>0?-60:60,()=>{S[key]+=
 const ACT={
  acctUpd(el){acctUpdSend(el.dataset.id)},
  debtAsk(el){const x=debtFind(D(),el.dataset.id);if(!x)return;thSendDirect('debt:'+x.key,x.name,'請塔塔處理「'+x.name+'」',debtText(x))},
- debtPaid(el){const x=debtFind(D(),el.dataset.id);if(!x)return;const v=askAmount('「'+x.name+'」這次還了多少？');if(!v)return;thSendDirect('debt:'+x.key,x.name,'我還了「'+x.name+'」NT$'+fmt(v),'[面板：老大還了一筆] 「'+x.name+'」還了 NT$'+fmt(v)+'，請記帳並更新還剩（帳上目前還剩 NT$'+fmt(x.rem)+'）。')},
+ debtPaid(el){const x=debtFind(D(),el.dataset.id);if(!x)return;const v=askAmount('「'+x.name+'」這次還了多少？');if(!v)return;thSendDirect('debt:'+x.key,x.name,'我還了「'+x.name+'」NT$'+fmt(v),'[面板：老大還了一筆] 「'+x.name+'」'+(x.per2?'（'+x.per2+'）':'')+'還了 NT$'+fmt(v)+'，請記帳並更新還剩（帳上目前還剩 NT$'+fmt(x.rem)+'）。')},
  cardPay(el){const a=acctBy(el.dataset.id);if(!a)return;const s=cardSegs(a).segs[+el.dataset.c];if(!s)return;thSendDirect('acct:'+a.id,'帳戶 '+a.n,'請塔塔繳「'+a.n+'」'+cpLabel(s,mdOf),cardSegText(a,s,'pay'))},
  cardPaid(el){const a=acctBy(el.dataset.id);if(!a)return;const s=cardSegs(a).segs[+el.dataset.c];if(!s)return;const v=askAmount('「'+a.n+'」'+cpLabel(s,mdOf)+'繳了多少？');if(!v)return;thSendDirect('acct:'+a.id,'帳戶 '+a.n,'我繳了「'+a.n+'」NT$'+fmt(v),cardSegText(a,s,'paid',v))},
  subAsk(el){const x=D().subs.find(y=>y.id===el.dataset.id);if(!x)return;const k=el.dataset.c;thSendDirect('fx:'+x.id,x.name,(k==='self'?'我自己處理了':'請塔塔'+SUBL[k])+'「'+x.name+'」',subAskText(x,k))},
@@ -3743,6 +3747,28 @@ function updAgo(iso) { var t = thMs(iso); return t ? (Date.now() - t) / 864e5 : 
 var UPD = {}; try { UPD = JSON.parse(localStorage.getItem('kk_upd') || '{}') || {}; } catch (e) { UPD = {}; }
 function updMark(id) { UPD[id] = Date.now(); try { localStorage.setItem('kk_upd', JSON.stringify(UPD)); } catch (e) {} }
 function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶] 請登入「' + name + '」的網銀或 App 實查目前真實餘額' + (isCard ? '（信用卡查未出帳與帳單）' : '') + '，查完回報並更新，附查到的時間。帳上目前 ' + bal + '，上次實查 ' + (asof || '沒有資料') + '。查不到就說查不到，不要用推算的。'; }
+/* ---------- v34.4 iPhone 主畫面外殼高度 ----------
+ iOS 主畫面模式（black-translucent）有時把可用高度少算一個狀態列，App 底下露出一條空白。
+ 主畫面模式、直向、寬度等於螢幕寬、短少在 100 以內（不是鍵盤）時，外殼高度改用螢幕高度；其他情況用視窗高度。 */
+function kkVH() {
+  try {
+    var de = document.documentElement, sa = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    var h = window.innerHeight, sh = window.screen ? screen.height : 0, sw = window.screen ? screen.width : 0;
+    if (sa && h > window.innerWidth && sh && Math.abs(sw - window.innerWidth) < 2 && sh > h && sh - h <= 100) h = sh;
+    de.style.setProperty('--kk-vh', h + 'px');
+  } catch (e) {}
+}
+kkVH(); window.addEventListener('resize', kkVH); window.addEventListener('orientationchange', function () { setTimeout(kkVH, 300); });
+/* ---------- v34.4 信用卡欠款拆兩筆：上期帳單未繳、本期未出帳 ----------
+ 上期未繳先用 debts 裡名稱對得上這張卡的那筆，沒有就讀帳戶備註「未繳 N」；都沒有就不拆。本期＝卡片欠款減上期未繳。 */
+function ccSplit(card, owe, debts) {
+  var names = [card.name].concat(card.aliases || []);
+  var d = (debts || []).filter(function (x) { var n = String(x.name || ''); return Number(x.remaining) > 0 && names.some(function (m) { return n === m || n.indexOf(m) >= 0 || m.indexOf(n) >= 0; }); })[0];
+  if (d) return { prev: Math.min(owe, Number(d.remaining)), src: '欠款「' + d.name + '」', debtName: d.name };
+  var m = String(card.note || '').match(/未繳\s*([\d,]+)/);
+  if (m) { var v = Number(m[1].replace(/,/g, '')); if (v > 0 && v <= owe) return { prev: v, src: '帳戶備註' }; }
+  return { prev: null, src: null };
+}
 
 /* ---------- v34 A/B/C 接線：回覆就地看見、帳戶跟塔塔說、減字 ---------- */
 function thEsc(s) { return esc(String(s == null ? '' : s)); }
@@ -3805,15 +3831,21 @@ function ccDues() {
 }
 function debtItems(d) {
   var L = [], cd = {}; (d.bills || []).forEach(function (b) { if (b.card) cd[b.acId] = b; });
-  S.accts.filter(function (a) { return (a.k === 'credit_card' || a.k === 'loan_in') && !a.arch && a.bal < 0; }).forEach(function (a) { var b = cd[a.id]; L.push({ key: 'acct:' + a.id, name: a.k === 'credit_card' ? a.n + ' 卡費' : a.n, rem: -a.bal, prin: null, paid: null, due: b ? b.due + '，' + rel(b.rel) : (a.ldue || '沒有日子'), sk: 'acct', sid: a.id, acc: a }); });
-  DEBTS.filter(function (x) { return x.rem > 0; }).forEach(function (x) { L.push({ key: 'debt:' + x.id, name: x.n, rem: x.rem, prin: x.prin, paid: x.paid, due: '沒有日子', sk: 'debt', sid: x.id }); });
+  var used = {}, odebts = (KD.o && KD.o.debts) || [];
+  S.accts.filter(function (a) { return (a.k === 'credit_card' || a.k === 'loan_in') && !a.arch && a.bal < 0; }).forEach(function (a) { var b = cd[a.id], owe = -a.bal, due = b ? b.due + '，' + rel(b.rel) : (a.ldue || '沒有日子');
+    if (a.k === 'credit_card') { var sp = ccSplit({ name: a.n, aliases: a.raw && a.raw.aliases, note: a.raw && a.raw.note }, owe, odebts);
+      if (sp.prev != null) { if (sp.debtName) used[sp.debtName] = 1;
+        L.push({ key: 'ccp:' + a.id, name: a.n + '｜上期帳單未繳', per2: '上期帳單', rem: sp.prev, prin: null, paid: null, due: '沒有日子', sub: '上期帳單（照' + sp.src + '）', sk: 'acct', sid: a.id, acc: a });
+        L.push({ key: 'acct:' + a.id, name: a.n + '｜本期未出帳', per2: '本期未出帳', rem: owe - sp.prev, prin: null, paid: null, due: due, sub: '本期未出帳（欠款 ' + fmt(owe) + ' 減上期未繳）', sk: 'acct', sid: a.id, acc: a }); return; } }
+    L.push({ key: 'acct:' + a.id, name: a.k === 'credit_card' ? a.n + ' 卡費' : a.n, rem: owe, prin: null, paid: null, due: due, sk: 'acct', sid: a.id, acc: a }); });
+  DEBTS.filter(function (x) { return x.rem > 0 && !used[x.n]; }).forEach(function (x) { L.push({ key: 'debt:' + x.id, name: x.n, rem: x.rem, prin: x.prin, paid: x.paid, due: '沒有日子', sk: 'debt', sid: x.id }); });
   INSTS.forEach(function (x) { L.push({ key: 'inst:' + x.id, name: x.n, rem: x.out, prin: null, paid: null, per: x.per, due: x.next || '沒有日子', sk: 'inst', sid: x.id }); });
   return L;
 }
 function debtCard(d) {
   var L = debtItems(d); if (!L.length) return '';
   return '<section class="card kk-debt" data-ctitle="欠款、卡費、分期"><h2 class="h3">欠款、卡費、分期</h2><div class="list">'
-    + L.map(function (x) { return '<button class="row" data-act="sheet" data-k="debtx" data-id="' + x.key + '"><span class="row-m"><b>' + esc(x.name) + '</b><small>' + (x.due === '沒有日子' ? '沒有日子' : '還款 ' + x.due) + '</small></span>' + amt(-x.rem, { c: 'neg' }) + CHEV + '</button>'; }).join('') + '</div></section>';
+    + L.map(function (x) { return '<button class="row" data-act="sheet" data-k="debtx" data-id="' + x.key + '"><span class="row-m"><b>' + esc(x.name) + '</b><small>' + (x.sub ? esc(x.sub) + '・' : '') + (x.due === '沒有日子' ? '沒有日子' : '還款 ' + x.due) + '</small></span>' + amt(-x.rem, { c: 'neg' }) + CHEV + '</button>'; }).join('') + '</div></section>';
 }
 /* 直接送一段話給塔塔（訂閱請求、卡片），回覆進同一串 */
 function thSendDirect(org, lab, q, text) {
@@ -3868,7 +3900,7 @@ function debtTxs(x) {
   return pool.filter(function (t) { if (t.v0) return false; if (names) return t.transfer && names.indexOf(t.to) >= 0; return tk.some(function (k) { return String(t.m || '').indexOf(k) >= 0 || String(t.note || '').indexOf(k) >= 0 || String(t.to || '').indexOf(k) >= 0; }); }).slice(0, 12);
 }
 function debtActs(key, sk, sid) { return '<div class="acts">' + B('debtAsk', '請塔塔處理', { cls: 'pri', id: key }) + B('debtPaid', '我還了一筆', { id: key }) + (sk ? B('sheet', '看明細', { k: sk, id: sid }) : '') + '</div>'; }
-function debtText(x) { return '[面板請塔塔處理負債] 「' + x.name + '」還剩 NT$' + fmt(x.rem) + '，還款日 ' + x.due + (x.prin != null ? '，本金 NT$' + fmt(x.prin) + '，已還 NT$' + fmt(x.paid || 0) : '') + (x.per ? '，每期 NT$' + fmt(x.per) : '') + '。請你看怎麼處理（還款、分期或繳費），處理完回報。'; }
+function debtText(x) { return '[面板請塔塔處理負債] 「' + x.name + '」' + (x.per2 ? '（' + x.per2 + '，' + (x.sub || '') + '）' : '') + '還剩 NT$' + fmt(x.rem) + '，還款日 ' + x.due + (x.prin != null ? '，本金 NT$' + fmt(x.prin) + '，已還 NT$' + fmt(x.paid || 0) : '') + (x.per ? '，每期 NT$' + fmt(x.per) : '') + '。請你看怎麼處理（還款、分期或繳費），處理完回報。'; }
 /* 信用卡帳單期 */
 function cardTxsOf(a) {
   var names = acctNamesOf(a), seen = {}, out = [];
@@ -3891,7 +3923,8 @@ function cardHtml(a) {
       + '<div class="acts">' + B('cardPay', '請塔塔繳這期', { id: a.id, c: String(i) }) + B('cardPaid', '我繳了', { id: a.id, c: String(i) }) + '</div>'
       + (s.txs.length ? '<details class="kk-more"><summary>看這期 ' + s.txs.length + ' 筆交易</summary><div class="list">' + s.txs.slice().sort(function (x, y) { return x.iso < y.iso ? 1 : -1; }).map(function (x) { return txRow(x.ref); }).join('') + '</div></details>' : '') + '</section>';
   };
-  var head = '<h3 class="h3">帳單期 <span class="sub">共 ' + total + ' 筆</span></h3><p class="sub">結帳日' + (a.stmt ? '每月 ' + a.stmt + ' 號' : '沒有資料') + '，繳款日' + (a.due ? '每月 ' + a.due + ' 號' : '沒有資料') + '</p>';
+  var split = debtItems(D()).filter(function (x) { return x.acc && x.acc.id === a.id; }), splitH = split.length > 1 ? '<h3 class="h3">欠款拆兩筆</h3><div class="list">' + split.map(function (x) { return '<button class="row" data-act="sheet" data-k="debtx" data-id="' + x.key + '"><span class="row-m"><b>' + esc(x.per2) + '</b><small>' + esc(x.sub || '') + '</small></span>' + amt(-x.rem, { c: 'neg' }) + CHEV + '</button>'; }).join('') + '</div>' : '';
+  var head = splitH + '<h3 class="h3">帳單期 <span class="sub">共 ' + total + ' 筆</span></h3><p class="sub">結帳日' + (a.stmt ? '每月 ' + a.stmt + ' 號' : '沒有資料') + '，繳款日' + (a.due ? '每月 ' + a.due + ' 號' : '沒有資料') + '</p>';
   var segs = res.segs, first = segs.slice(0, 2).map(seg).join(''), rest = segs.slice(2);
   return '<div class="cpers" data-total="' + total + '">' + head + first + (rest.length ? '<details class="kk-more"><summary>更早 ' + rest.length + ' 期</summary>' + rest.map(function (s, i) { return seg(s, i + 2); }).join('') + '</details>' : '') + (KD.cardHist ? '' : '<p class="gray-line">更早的交易讀取中</p>') + '</div>';
 }
