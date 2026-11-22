@@ -2271,11 +2271,24 @@ ACT.ordgot=ACT.ordback=()=>toast('訂單還沒有後端，朋朋下單後會跟�
  return shHead(esc(r.name))+`<p style="margin-top:8px">上次是 <b>${r.ago} 天前</b>，每 ${r.cyc} 天一次。</p><label class="f">上次做的日期<input id="rDate" type="date" value="${esc(r.last)}" max="${today()}"></label><label class="f">多久一次（天）<input id="rCyc" type="number" inputmode="numeric" min="1" value="${r.cyc}"></label><div class="btns">${B('存好這一項','saverout',r.id,'pri wide')}</div><div class="mrow">${mb('✓ 剛做完','done',r.id)}${mb('拿掉這一項','routdel',r.id)}</div>`}}
 {const f=wishCard;wishCard=function(){const h=f.apply(this,arguments);return LV.life?h.replace('<small>示意圖</small>',''):h}}   // 真資料的縮圖是品名首字，不是示意圖
 WRITE.push('add','done','saverout','routdel','buy','bought','wishadd','wishdel','wishmark');
+
+/* ---------- v45（2026-11-22）：案子「⋯ 改日期」真的能改 ----------
+   設計稿的日期編輯掛在示意案子（DT）上，真資料的案子只能看。這裡把交件日、預計付款日、尾款期限做成日期欄，
+   改了就經 opp_work_update（act 'work'）寫回，提示條可復原。截止日來自公告，不在這裡改。 */
+const PDF=[['delivery_date','交件日'],['expected_pay_date','預計付款日'],['final_due','尾款期限']],PDK={delivery_date:'deliveryDate',expected_pay_date:'expectedPayDate',final_due:'finalDue'};
+{const _d=dtBody;dtBody=function(pid){const h=_d(pid);if(h)return h;const p=DB.proj.find(x=>x.id===pid);if(!p||!p.raw||!p.raw.id)return '';const c=p.raw;
+ return (c.deadline?`<div class="dt"><div class="li"><div><b>截止</b><small>${LMD(c.deadline)}（公告的日期）</small></div></div></div>`:'')+PDF.map(([f,lab])=>{const v=c[PDK[f]]||'';
+  return `<div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>${lab}</b><small>${v?esc(String(v).slice(0,10)):'還沒寫'}</small></div><label class="vh" for="pd_${f}">改${lab}</label><input type="date" class="pdi" id="pd_${f}" data-pid="${esc(pid)}" data-f="${f}" value="${esc(String(v).slice(0,10))}" style="flex:0 0 auto;width:158px;max-width:48%"></div></div>`}).join('')+`<p class="note">改了直接存，案子日期同步到行事曆還沒接上。</p>`}}
+document.addEventListener('change',e=>{const t=e.target;if(!t.classList||!t.classList.contains('pdi'))return;if(S.st==='offline'){toast('離線中，這個動作連上線再做');return}
+ const id=t.dataset.pid,f=t.dataset.f,p=DB.proj.find(x=>x.id===id);if(!p)return;const old=p.raw[PDK[f]]||null,v=t.value||null,lab=(PDF.find(x=>x[0]===f)||[])[1];
+ LV.api.act(id,'work',{patch:{[f]:v}}).then(c=>{if(c){const i=LV.items.findIndex(x=>x.id===id);if(i>-1)LV.items[i]=c}LV.sig='';paint();
+  toast(`${lab}${v?'改成 '+v.slice(5).replace('-','/'):'清掉了'}`,()=>LV.api.act(id,'work',{patch:{[f]:old?String(old).slice(0,10):null}}).then(()=>{reload();toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))})
+  .catch(er=>{toast('沒存上：'+LERR(er));reload()})});
 WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v44');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v45');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
