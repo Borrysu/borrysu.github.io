@@ -359,6 +359,7 @@ html:not(.kbd) :focus-visible:not(input):not(textarea):not(select){outline:none}
 .grip svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
 .arow{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .sh-h{touch-action:none}
+label.field > .fl{font-size:13px;color:var(--muted)}
 @media (max-width:400px){.pbar .sp{display:none}}
 .field > input,.field > select,.field > textarea{flex:none}
 .swt[data-on] i{background:var(--ink);border-color:var(--ink)}
@@ -2087,7 +2088,7 @@ const SH={
 };
 
 /* ---------- 單 D：表單小工具、計算機、補齊的抽屜 ---------- */
-const FI=(id,label,o)=>{o=o||{};return '<div class="field"><label for="'+id+'">'+label+'</label><input id="'+id+'" type="'+(o.type||'text')+'"'+(o.im?' inputmode="'+o.im+'"':'')+' value="'+esc(o.v==null?'':o.v)+'"'+(o.ph?' placeholder="'+esc(o.ph)+'"':'')+(o.max?' maxlength="'+o.max+'"':'')+(o.min?' min="'+o.min+'"':'')+(o.mx?' max="'+o.mx+'"':'')+' autocomplete="off"></div>'};
+const FI=(id,label,o)=>{o=o||{};return '<label class="field"><span class="fl">'+label+'</span><input id="'+id+'" type="'+(o.type||'text')+'"'+(o.im?' inputmode="'+o.im+'"':'')+' value="'+esc(o.v==null?'':o.v)+'"'+(o.ph?' placeholder="'+esc(o.ph)+'"':'')+(o.max?' maxlength="'+o.max+'"':'')+(o.min?' min="'+o.min+'"':'')+(o.mx?' max="'+o.mx+'"':'')+' autocomplete="off"></label>'};
 const FS=(id,label,opts,v)=>'<div class="field"><label for="'+id+'">'+label+'</label><select id="'+id+'">'+opts.map(o=>'<option value="'+esc(o[0])+'"'+(o[0]===v?' selected':'')+'>'+esc(o[1])+'</option>').join('')+'</select></div>';
 const CK=(id,label,on)=>'<label class="check"><input type="checkbox" id="'+id+'"'+(on?' checked':'')+'>'+label+'</label>';
 const val=id=>{const e=$('#'+id);return e?e.value.trim():''};
@@ -2486,7 +2487,7 @@ function endDrag(){if(!drag)return;const g=drag;drag=null;if(!g.on)return;dragge
 main.addEventListener('pointerup',endDrag);main.addEventListener('pointercancel',endDrag);main.addEventListener('pointerleave',endDrag);
 
 /* ---------- 單 F1：鍵盤（Tab、方向鍵）才顯示焦點框；滑鼠、觸控一按就收掉 ---------- */
-document.addEventListener('keydown',e=>{if(e.key==='Tab'||/^Arrow/.test(e.key))root.classList.add('kbd')},true);
+document.addEventListener('keydown',e=>{const inp=/INPUT|TEXTAREA|SELECT/.test((e.target&&e.target.tagName)||'');if(e.key==='Tab'||(/^Arrow/.test(e.key)&&!inp))root.classList.add('kbd')},true);
 ['pointerdown','touchstart'].forEach(t=>document.addEventListener(t,()=>root.classList.remove('kbd'),{capture:true,passive:true}));
 
 /* ---------- 單 F1：帳戶拖曳排序。自訂模式按住 ≡ 直接拖；其他模式長按帳戶 0.45 秒後拖（原版的做法）。同功能的按鈕是 ↑ ↓。
