@@ -34,7 +34,8 @@ export const CONFIG = {
          msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', botInbox: 'opp_bot_inbox', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
          hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer',
          goals: 'hub_goals_list', goalSet: 'hub_goal_set', cal: 'hub_cal_list', life: 'hub_life_list', lifeSet: 'hub_life_set', money: 'hub_money_overview',
-         hubEdit: 'hub_card_edit', hubShelf: 'hub_card_shelf', shelf: 'hub_shelf_list', cardEdit: 'opp_card_edit' },   // v46：卡面一句 ask、hub 卡片編輯封存刪除、案子機會待辦改卡面一句   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
+         hubEdit: 'hub_card_edit', hubShelf: 'hub_card_shelf', shelf: 'hub_shelf_list', cardEdit: 'opp_card_edit',
+         payAuthorize: 'hub_pay_authorize', payCancel: 'hub_pay_cancel', payList: 'hub_pay_list', calRefresh: 'hub_cal_refresh_request' },   // v48：付款鈕＝授權單（交給塔塔／朋朋／集集付）、行事曆現在更新   // v46：卡面一句 ask、hub 卡片編輯封存刪除、案子機會待辦改卡面一句   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
 
 export class AdapterError extends Error {
@@ -70,7 +71,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v47');
+  const { mockAdapter } = await import('./mock.js?v48');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -221,6 +222,11 @@ function liveAdapter() {
     async hubEdit(kind, id, patch) { return rpc(R.hubEdit, { p_kind: kind, p_id: String(id), p_patch: patch || {} }, 0, W); },
     async hubShelf(kind, id, action) { return rpc(R.hubShelf, { p_kind: kind, p_id: String(id), p_action: action }, 0, W); },
     async shelf() { const d = await rpc(R.shelf, {}, 0, W); return Array.isArray(d) ? d : []; },
+    // v48：付款授權單。只有老大本人的金鑰能授權（AI協作金鑰回 403，不清金鑰）；面板不碰錢，實際付款由負責的 Bot 做完回報
+    async payAuthorize(o) { return rpc(R.payAuthorize, { p_src_kind: o.kind, p_src_id: o.id == null ? null : String(o.id), p_src_title: o.title || null, p_amount: o.amount == null ? null : +o.amount, p_amount_text: o.amountText, p_payee: o.payee, p_assignee: o.by || null, p_link: o.link || null }, 0, W); },
+    async payCancel(id) { return rpc(R.payCancel, { p_id: +id }, 0, W); },
+    async payList() { const d = await rpc(R.payList, { p_limit: 80 }, 0, W); return Array.isArray(d) ? d : []; },
+    async calRefresh() { return rpc(R.calRefresh, {}, 0, W); },
     async cardEdit(id, patch) { return card(await rpc(R.cardEdit, { p_id: id, p_patch: patch || {} }, 0, W)); },
     async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },

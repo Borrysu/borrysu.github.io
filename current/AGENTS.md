@@ -57,3 +57,9 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 - 寫卡片一定附「卡面一句」：動詞開頭、約 20 字、說要老大做什麼（例：`hub_decision_add` 帶 `"p_ask":"選要不要接木星加價 3 萬"`；`hub_job_set`、`hub_event_add`、`opp_todo_add` 同樣帶 `p_ask`；案子與機會用 `tools/rpc.sh opp_card_edit '{"p_id":"…","p_patch":{"ask":"確認 11/30 前寄發票"}}'`）。原文照舊放細節欄位。
 - **資料庫 v46 遷移套上之前不要帶 p_ask**，先把那一句寫成 question／title／summary 的第一句。套上沒有：`tools/rpc.sh hub_shelf_list '{}'` 回陣列＝已套上，回找不到函式＝還沒。
 - 編輯、封存、刪除（72 小時可救回）：`hub_card_edit`、`hub_card_shelf`、`hub_shelf_list`，規則細節看 `CLAUDE.md` 第 32 條。
+
+## v48（2026-11-22）：付款授權單、行事曆現在更新
+
+- 付款鈕按下＝老大授權那一隻 Bot 付（帳單塔塔、訂單朋朋、報名費集集），面板與大器不代付。函式：`hub_pay_authorize`、`hub_pay_cancel`、`hub_pay_list`、`hub_pay_take`／`hub_pay_notified`（Mac relay 用）、`hub_pay_report`（Bot 回報，用通知裡的付款票）。細節 `CLAUDE.md` 第 33 條。
+- 行事曆：Mac 每 120 秒同步；替老大改完 Google 行程後跑 `tools/rpc.sh hub_cal_refresh_request '{}'`，30 秒內進面板。
+- 資料庫 v48 遷移還沒套上時這些函式都找不到（`tools/rpc.sh hub_pay_list '{}'` 回 PGRST202＝還沒套），面板會寫「資料庫還沒更新」。

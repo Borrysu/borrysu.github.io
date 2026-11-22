@@ -2218,6 +2218,7 @@ ACT.kkadd=()=>{const t=$('#kkIn'),v=t?t.value.trim():'';if(!v){S.err='kk';render
 LV.duePaid={};
 ACT.duepaid=id=>{const d=DB.due.find(q=>q.id===id);if(!d)return;closeThen(()=>tataSay(`【標已繳】${d.name} ${nt(d.amt)}，老大說 ${LMD(Date.now())} 自己繳了（從 ${d.from}）。請在塔塔記帳標成這期已繳（mark_bill_paid），記好回一句`,'交給塔塔標已繳了').then(()=>{LV.duePaid[id]='今天 你說繳了，塔塔記帳中';LV.sig='';paint()}).catch(()=>{}))};
 ACT.dueundo=id=>{const d=DB.due.find(q=>q.id===id);if(!d)return;closeThen(()=>tataSay(`【撤回已繳】${d.name} 這期剛剛標已繳是誤按，請改回沒繳（如果已經記了交易一起作廢），處理好回一句`,'跟塔塔說改回沒繳了').then(()=>{delete LV.duePaid[id];LV.sig='';paint()}).catch(()=>{}))};
+LV.payDemo=ACT.pay;LV.payHTMLDemo=payHTML;
 ACT.pay=id=>toast('還沒接上付款，這筆沒有扣款。自己付好後按「⋯ 我自己繳了」，塔塔會記');
 document.addEventListener('change',e=>{if(e.target&&e.target.name==='mzsafe'){try{localStorage.setItem(SAFEK,e.target.value)}catch(x){}}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='kkIn'){e.preventDefault();ACT.kkadd()}});
@@ -2425,9 +2426,56 @@ WRITE.push('hshelf','hsave','csave','tdel','pkill');
 {const _pg=ACT.page;ACT.page=function(id){const r=_pg.apply(this,arguments);if(id==='shelf')loadShelf().then(()=>render('keep'));return r}}
 {const _h=homeL2;homeL2=function(){return _h().replace(/(<section class="sec">[^]*?最近做完[^]*?)(<\/section><\/div>)$/,`$1<div class="mrow">${mb('封存與刪掉的 ›','page','shelf')}</div>$2`)}}
 
+/* ---------- v48（2026-11-22）：付款鈕＝授權單、行事曆近即時 ----------
+   老大原話：「付款後端當然要接啊！通常按下去是授權讓朋朋或塔塔去付款啦所以他們要知道」
+   付款：倒數 5 秒（可取消）後呼叫 hub_pay_authorize 開一張授權單；Mac relay 通知負責的那隻（帳單→塔塔、訂單→朋朋、報名費→集集），
+   那隻付完用付款票 hub_pay_report 回報，面板從 hub_pay_list 讀狀態。面板與大器都不碰錢、不存卡號。
+   行事曆：打開今天頁、行事曆頁或按「現在更新」寫一筆刷新請求（hub_cal_refresh_request），Mac relay 30 秒內看到就跑一次同步。 */
+const PBY={tata:'塔塔',peng:'朋朋',jiji:'集集'};
+function paySrc(id){const p=PAY[id]||{};
+ if(id.indexOf('d_')===0){const d=DB.due.find(q=>q.id===id.slice(2));return d?{kind:'bill',id:d.bid!=null?d.bid:d.id,title:d.name,amount:d.amt,amountText:p.amt,payee:p.to,by:'tata'}:null}
+ if(id.indexOf('o_')===0)return {kind:'fee',id:id.slice(2),title:p.title||'報名費',amountText:p.amt,payee:p.to,by:'jiji'};
+ return {kind:p.by==='peng'?'order':'other',id:id,title:p.title||p.to,amountText:p.amt,payee:p.to,by:p.by||'peng'}}
+function payKeyOf(r){return r.src_kind==='bill'?'d_b'+r.src_id:r.src_kind==='fee'?'o_'+r.src_id:r.src_id}
+function payApplyRows(rows){if(!Array.isArray(rows))return;const seen={};
+ rows.filter(r=>!r.test).forEach(r=>{const k=payKeyOf(r),p=PAY[k];if(!p||seen[k])return;seen[k]=1;if(p.st==='count'||p.st==='sending')return;
+  if(r.status==='canceled'){if(p.auth&&p.auth.id===r.id){p.st='idle';p.auth=null}return}
+  p.auth=r;p.st=r.status==='authorized'?'auth':r.status;
+  if(r.status==='paid'&&r.src_kind==='bill'&&LV.duePaid)LV.duePaid['b'+r.src_id]=`${r.reported_at?LMD(Date.parse(r.reported_at)):'今天'} 你按付款鈕，${r.reported_by||'塔塔'}付了（授權單 #${r.id}）`})}
+const PSTAT=r=>r.status==='authorized'?(r.notify_ok===false?'通知沒送出，大器會再送':r.notified_at?`已通知${PBY[r.assignee]}，等它付`:'授權了，30 秒內通知'+PBY[r.assignee]):r.status==='paid'?`${r.reported_by||PBY[r.assignee]}付好了`:r.status==='failed'?'沒付成':'撤回了';
+function payLog(r){const t=x=>x?LMD(Date.parse(x))+' '+LHM(Date.parse(x)):'';return `<dl class="kvs"><dt>授權單</dt><dd>#${esc(r.id)}</dd><dt>你按下同意</dt><dd>${esc(t(r.authorized_at))}</dd><dt>交給</dt><dd>${esc(PBY[r.assignee]||r.assignee)}</dd><dt>付給</dt><dd>${esc(r.payee)}</dd><dt>金額</dt><dd>${esc(r.amount_text)}</dd><dt>狀態</dt><dd>${esc(PSTAT(r))}</dd>${r.notified_at?`<dt>通知送出</dt><dd>${esc(t(r.notified_at))}</dd>`:''}${r.reported_at?`<dt>回報</dt><dd>${esc(t(r.reported_at))}</dd>`:''}${r.receipt?`<dt>收據</dt><dd>${esc(r.receipt)}</dd>`:''}${r.note?`<dt>備註</dt><dd>${esc(r.note)}</dd>`:''}</dl>`}
+payHTML=function(id){if(LV.mode!=='live'||!LV.api||!LV.api.payAuthorize)return LV.payHTMLDemo(id);const p=PAY[id];if(!p)return '';const r=p.auth,by=PBY[p.by]||'負責的 Bot',lab=`付 ${p.amt} 給 ${p.to}`;let h;
+ if(p.st==='count')h=`<div class="pcount" role="status"><div class="pbar2" aria-hidden="true"><i style="animation-delay:-${5-p.n}s"></i></div><p><b><span class="pn">${p.n}</span> 秒後</b>授權${by}付：${esc(p.amt)} 給 ${esc(p.to)}</p><button class="btn wide" data-act="paycancel" data-id="${id}">取消付款</button></div>`;
+ else if(p.st==='sending')h=`<p class="pst" role="status"><span class="spin" aria-hidden="true"></span>送出授權中</p>`;
+ else if(p.st==='auth'&&r)h=`<p class="pst" role="status"><span class="spin" aria-hidden="true"></span>已授權，等${by}付 ${esc(p.amt)} 給 ${esc(p.to)}</p><p class="note">${esc(PSTAT(r))}</p><div class="mrow">${mb(p.rc?'收起紀錄':'看授權紀錄','payrc',id)}${mb('撤回授權','payundo',id)}</div>${p.rc?payLog(r):''}`;
+ else if(p.st==='paid'&&r)h=`<p class="pst ok" role="status">✓ ${esc(r.reported_by||by)}付好了：${esc(p.amt)} 給 ${esc(p.to)}</p>${r.receipt?`<p class="note">收據：${esc(r.receipt)}</p>`:''}<div class="mrow">${mb(p.rc?'收起紀錄':'看授權紀錄','payrc',id)}</div>${p.rc?payLog(r):''}`;
+ else if(p.st==='failed'&&r)h=`<p class="err" role="status">▲ ${esc(by)}沒付成${r.note?'：'+esc(r.note):''}</p><button class="btn pri wide" data-act="pay" data-id="${id}">再授權一次：${esc(lab)}</button><div class="mrow">${mb(p.rc?'收起紀錄':'看授權紀錄','payrc',id)}</div>${p.rc?payLog(r):''}`;
+ else h=`<button class="btn pri wide" data-act="pay" data-id="${id}">${esc(lab)}</button><p class="note">按下就是授權${by}付這一筆，5 秒內可取消；面板不碰錢。</p>`;
+ return `<div class="payc" data-pay="${id}">${h}</div>`};
+ACT.pay=id=>{if(LV.mode!=='live'||!LV.api||!LV.api.payAuthorize)return LV.payDemo(id);const p=PAY[id];if(!p||p.st==='count'||p.st==='sending'||p.st==='auth'||p.st==='paid'||p.bad)return;
+ const src=paySrc(id);if(!src)return toast('找不到這筆的資料，沒有授權');
+ p.prev=p.st;p.st='count';p.n=5;paySync(id);const c=document.querySelector(`[data-pay="${id}"] [data-act=paycancel]`);if(c)c.focus({preventScroll:true});
+ PT[id]=setInterval(async()=>{p.n--;if(p.n>0){document.querySelectorAll(`[data-pay="${id}"] .pn`).forEach(e=>{e.textContent=p.n});return}
+  clearInterval(PT[id]);delete PT[id];p.st='sending';paySync(id);
+  try{const r=await LV.api.payAuthorize(src);p.auth=r;p.st='auth';p.rc=0;paySync(id);toast(`授權了，${PBY[src.by]}會收到通知`);setTimeout(payPoll,35000)}
+  catch(e){p.st=p.prev==='failed'?'failed':'idle';paySync(id);toast(NOFN(e)?'資料庫還沒更新，付款授權還沒上線，這筆沒有扣款':e&&e.kind==='forbidden'?'只有老大本人的網址能按付款，這筆沒有授權':'沒送出授權：'+LERR(e))}},1000)};
+ACT.paycancel=id=>{const p=PAY[id];if(!p||p.st!=='count')return;clearInterval(PT[id]);delete PT[id];p.st=p.prev==='failed'?'failed':'idle';paySync(id);toast('付款取消了，沒有授權、沒有扣款')};
+ACT.payundo=id=>{const p=PAY[id];if(!p||!p.auth)return;if(!LV.api.payCancel)return toast('這個動作還沒接上');const aid=p.auth.id;LV.api.payCancel(aid).then(r=>{if(r&&r.ok===false)return toast(r.why||'撤不回');p.auth=null;p.st='idle';paySync(id);toast(`撤回了，請${PBY[p.by]}不要付`);LV.api.say(null,`【付款授權撤回】授權單 #${aid}（${p.amt} 給 ${p.to}）老大撤回了，還沒付就不要付；已經付了請回報`,p.by==='jiji'?'jiji':p.by).catch(()=>{})}).catch(e=>toast('沒撤回：'+LERR(e)))};
+async function payPoll(){if(LV.mode!=='live'||!LV.api||!LV.api.payList||LV.payNo)return;try{payApplyRows(await LV.api.payList());Object.keys(PAY).forEach(k=>{if(document.querySelector(`[data-pay="${k}"]`))paySync(k)})}catch(e){if(NOFN(e))LV.payNo=1}}
+WRITE.push('payundo');window.__zl=Object.assign(window.__zl||{},{payPoll});
+// 行事曆：更新於幾分鐘前、現在更新
+function calAgo(){const s=LV.cal&&LV.cal.synced;if(!s)return '';const t=Math.max(...Object.values(s).map(x=>Date.parse(x)||0));if(!t)return '';const m=Math.round((Date.now()-t)/6e4);return m<1?'剛剛':m<60?m+' 分鐘前':LMD(t)+' '+LHM(t)}
+function calKick(force){if(LV.mode!=='live'||!LV.api||!LV.api.calRefresh||LV.calNo)return Promise.resolve(false);if(!force&&Date.now()-(LV.calKickAt||0)<90000)return Promise.resolve(false);LV.calKickAt=Date.now();
+ return LV.api.calRefresh().then(()=>{[30000,60000].forEach(ms=>setTimeout(()=>LV.api.cal(14).then(d=>{LV.cal=d;applyCal();render('keep')}).catch(()=>{}),ms));return true}).catch(e=>{if(NOFN(e))LV.calNo=1;return false})}
+ACT.calnow=()=>{if(LV.calNo)return toast('資料庫還沒更新，現在更新還沒上線；Mac 每 2 分鐘會自己同步');calKick(true).then(ok=>toast(ok?'叫 Mac 現在同步了，約 30 秒到':'沒叫到，Mac 每 2 分鐘會自己同步'))};
+const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行事曆更新於 ${a}</small>${mb('↻ 現在更新','calnow')}</div>`:''};
+{const _p=pageHTML;pageHTML=function(){let h=_p();if(S.page==='cal'){calKick();h=h.replace('每 30 分鐘從 Google 行事曆同步一次。','Mac 每 2 分鐘從 Google 行事曆同步一次，Mac 關機時停在最後一次。').replace(/(<h1 class="pt">行事曆<\/h1>)/,'$1'+calUpd())}return h}}
+{const _t=todayStrip;todayStrip=function(){const h=_t();if(!h)return h;if(S.tab==='today')calKick();const i=h.lastIndexOf('</section>');return i<0?h:h.slice(0,i)+calUpd()+h.slice(i)}}
+{const _x=loadExtra;loadExtra=async function(){await _x();if(LV.mode==='live')await payPoll()}}
+
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v47');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v48');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
