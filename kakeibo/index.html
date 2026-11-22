@@ -476,6 +476,16 @@ label.field > .fl{font-size:13px;color:var(--muted)}
 .laymenu button{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;text-align:left}
 .laymenu button[aria-pressed="true"]{border-color:var(--ink);font-weight:700}
 .laymenu button[aria-pressed="true"]::after{content:"  ✓"}
+.swr{position:relative;overflow:hidden}
+.swr>.swc{position:relative;z-index:1;background:var(--surface);touch-action:pan-y;will-change:transform}
+.swact{position:absolute;top:0;right:0;bottom:0;width:84px;display:flex;visibility:hidden}
+.swr.drag .swact,.swr.open .swact{visibility:visible}
+.swbtn{flex:1;border:0;background:var(--bad);color:#fff;font-size:15px;font-weight:700}.swbtn.ok{background:var(--good)}.swbtn:active{filter:brightness(.88)}
+.g.emo{font-size:20px;background:none}
+.gate{padding:48px 20px;text-align:center;color:var(--muted);--tx:var(--ink)}.gate .em{font-size:44px;margin-bottom:10px}
+.gate .paste{display:flex;gap:8px;margin-top:18px}.gate .paste input{flex:1;min-width:0;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:16px}
+.gate .paste button{min-height:48px;padding:0 18px;border:0;border-radius:12px;background:var(--accent);color:var(--on-accent,#fff);font-weight:700;font-size:16px}.gate .gerr{color:var(--bad);margin-top:10px;font-size:14px}
+.phone.gated .tabbar,.phone.gated .pnav,.phone.gated .composer,.phone.gated #refBtn,.phone.gated #maskBtn,.phone.gated #layBtn,.phone.gated #liveBtn{display:none !important}
 [data-act="payAuto"],[data-act="rcvRem"],[data-act="unvoid"],[data-act="unpaid"],[data-act="payUnreq"],[data-act="payTataDone"],[data-act="kim"]{display:none !important}
 </style>
 <style id="themes">
@@ -1967,6 +1977,13 @@ function kkApply(){const o=KD.o;if(!o)return;
   if(KD.prefs&&Array.isArray(KD.prefs.stats_excluded))S.exc=new Set(KD.prefs.stats_excluded);
   const aid=n=>{const a=S.accts.find(x=>x.n===n);return a?a.id:''};
   HOLD=(o.holdings||[]).map(h=>({id:'h'+h.id,ac:aid(h.account_name),sym:h.symbol||'',name:h.name||'',sh:Number(h.shares)||0,px:h.close_price!=null?Number(h.close_price):(h.shares?Math.round(Number(h.market_value)/Number(h.shares)*100)/100:0),mv:Number(h.market_value)||0,cost:Number(h.cost_total)||0,date:h.price_date?mdOf(h.price_date):''}));
+  KD.T=Object.assign({},o.totals||{});
+  if(KD.Q){const T=KD.T,delta={};HOLD.forEach((h,i)=>{const r=(o.holdings||[])[i];if(!r)return;const q=KD.Q.quotes&&KD.Q.quotes.find(x=>x.symbol===r.symbol&&x.account_name===r.account_name);
+      if(!q){if(KD.Q.err)h.live={fallback:true};return}if(q.fallback){h.live={fallback:true};return}
+      const old=Number(r.market_value||0),mv=Number(q.market_value);h.mv=mv;h.px=Number(q.price);h.live={price:q.price,kind:q.price_kind,time:q.quote_time,stale:q.stale};delta[r.account_name]=(delta[r.account_name]||0)+(mv-old)});
+    S.accts.forEach(a=>{const dd=delta[a.n];if(!dd||a.arch)return;a.bal+=dd;a.live=1;const r=a.raw,asset=!LIAB.includes(a.k);
+      if(r.counts_in_assets){T.net_worth=Number(T.net_worth||0)+dd;if(INVK.includes(a.k))T.investments_value=Number(T.investments_value||0)+dd;else T.net_worth_excl_investments=Number(T.net_worth_excl_investments||0)+dd;if(asset)T.total_assets=Number(T.total_assets||0)+dd}
+      if(r.spendable&&asset)T.spendable_cash=Number(T.spendable_cash||0)+dd})}
   INSTS=(o.installments||[]).filter(x=>x.active!==false).map(x=>({id:'i'+x.id,n:x.name,per:x.per_period_amount==null?null:Number(x.per_period_amount),left:x.remaining_periods,total:x.total_periods,out:Number(x.outstanding_amount)||0,next:x.next_due_date?mdOf(x.next_due_date):'',ac:x.account_name||'',note:x.note||''}));
   DEBTS=(o.debts||[]).map(x=>({id:'d'+x.id,n:x.name,prin:Number(x.principal)||0,paid:Number(x.repaid)||0,rem:Number(x.remaining)||0}));
   PEND0=(o.pending||[]).map(p=>{const inc=p.type==='income';return {txid:p.id,m:p.merchant||p.project||p.note||'在途',due:p.occurred_at?mdOf(tpDay(p.occurred_at)):'',a:inc||p.type==='transfer'?Math.abs(Number(p.amount)||0):-(Math.abs(Number(p.amount)||0)),note:(inc?'待入帳收入，':p.type==='transfer'?'轉帳在途，':'待扣款，')+(p.account_name||''),inc:inc?1:0}});
@@ -1974,6 +1991,7 @@ function kkApply(){const o=KD.o;if(!o)return;
     return {id:'r:'+x.id,m:x.short_title||x.title,a:a==null?null:Number(a),due:x.expected_pay_date?mdOf(x.expected_pay_date):'',kind:x.status==='doing'?'doing':'wait',signed:x.signed?1:0}});
   TREND=(o.recent_periods||[]).filter(r=>r.period_start!==ps).sort((a,b)=>a.period_start<b.period_start?-1:1).slice(-5).map(r=>[mdShort(r.period_start),Number(r.income)||0,Number(r.expense)||0]);
   REPS=((Array.isArray(KD.reps)?KD.reps:(KD.reps&&KD.reps.items))||[]).slice(0,10).map(r=>[mdOf(tpDay(r.created_at))+' '+tpTime(r.created_at),r.kind==='refresh'?'對帳後':r.request_kind?'你問的':'訊息',String(r.text||'')]);
+  prevSameCalc();
   S.voided=new Set(TX.filter(x=>x.v0).map(x=>x.id));
   S.fix={};S.ok=new Set();S.added=[];S.payTx={};S.paidAc={};S.paid=new Set();S.pendDone=new Set();S.rcvGot=new Set();S.rcvRem=new Set();S.subFix={};S.subArch=new Set();S.subsAdded=[];S.billFix={};S.payReq={};
 }
@@ -1999,7 +2017,7 @@ async function kkLoad(opt){opt=opt||{};
   }catch(e){
     if(my!==kkSeq)return;S.loading=false;
     if(e instanceof NetErr){if(KD.loaded||KD.o){S.scn='offline';if(!KD.loaded){kkApply();KD.loaded=true}render();if(!opt.silent)toast(e.message);return}}
-    if(!KD.loaded){S.scn=/密鑰/.test(e.message)?'nokey':'error';KD.err=e.message;render('f')}
+    if(!KD.loaded){S.scn='nokey';KD.err=e.message;render('f')}
     if(!opt.silent)toast(e.message);
   }
 }
@@ -2009,6 +2027,7 @@ function kkSide(){/* 不擋首頁：訂閱、應收、回報、偏好、上一�
   rpc('opp_receivables',{}).then(r=>{KD.rcv=r;kkCacheSave();re()}).catch(()=>{});
   rpc('kk_reports_list',{p_limit:10}).then(r=>{KD.reps=r;kkCacheSave();re()}).catch(()=>{});
   rpc('kk_prefs_get',{}).then(p=>{KD.prefs=p||{};kkCacheSave();re()}).catch(()=>{});
+  if(KD.cur)rpc('list_transactions',{p_period_start:addMonths(KD.cur,-1),p_include_void:false}).then(l=>{KD.prevL=l;re()}).catch(()=>{});
   if(KD.cur)rpc('get_overview',{p_period_start:addMonths(KD.cur,-1)}).then(po=>{const m={};(po.category_share||[]).forEach(r=>{m[r.category]=Number(r.expense)||0});KD.prevCat=m;re()}).catch(()=>{});
 }
 async function kkReload(){SIG_reset();await kkLoad({});kkSide()}
@@ -2044,7 +2063,7 @@ function keyManifest(){
     const l=document.querySelector('link[rel=manifest]');if(l)l.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(m));
   }catch(e){}
 }
-function kkAfterFirst(){normalizeUrl();startRealtime();kkSide();
+function kkAfterFirst(){normalizeUrl();startRealtime();kkSide();quoteGo(false);
   const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
   if(ios&&!STANDALONE&&!LS.get('kk_hint')){S.a2hs=1;render()}}
 /* ---------- 版面切換：A 塔塔說、B 儀表板、C 一次一張在這頁；E 原版進化在 orig.html ---------- */
@@ -2056,7 +2075,18 @@ function setLayout(v){if(!LAYS.some(x=>x[0]===v))return;LS.set('kk_layout',v);cl
   S.v=v;prevNum={};S.cIdx=S.bIdx=S.fIdx=0;closeBub();closeSheet();syncSkin();remountHd();render('f');toast('版面換成「'+LAYS.find(x=>x[0]===v)[1]+'」，記住了')}
 function layBtns(){return LAYS.map(x=>'<button data-act="layGo" data-c="'+x[0]+'" aria-pressed="'+(S.v===x[0])+'">'+x[1]+'</button>').join('')}
 function closeLay(){const m=$('#layMenu');if(m&&!m.hidden){m.hidden=true;$('#layBtn').setAttribute('aria-expanded','false')}}
-function gateHtml(){return '<div class="empty" role="region" aria-label="貼上記帳連結"><h2>'+(KD.err?'打不開':'貼上你的記帳連結')+'</h2><p>'+(KD.err?esc(KD.err)+' 請用原本給你的完整連結再開一次，或在下面貼上連結。':'第一次從主畫面開啟，需要貼一次原本給你的完整連結，之後就不用了。')+'</p><label class="field"><span class="fl">記帳連結</span><input id="pasteIn" type="text" inputmode="url" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="貼上你的記帳連結"></label><p class="ferr" id="pasteErr" role="alert"></p>'+B('pasteGo','開啟',{cls:'pri wide'})+'</div>'}
+/* 金鑰閘門：原版 pasteBox／lockHtml／needLinkHtml 整段照搬 */
+const pasteBox='<div class="paste"><input id="paste_in" type="text" inputmode="url" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="貼上你的記帳連結"><button type="button" id="paste_go">開啟</button></div>';
+const lockHtml=()=>'<div class="em">🔒</div><div><b style="color:var(--tx);font-size:18px">打不開</b></div><div style="margin-top:6px;font-size:14px">請用原本給你的完整連結再開一次，或在下面貼上連結</div>'+pasteBox;
+const needLinkHtml=()=>'<div class="em">🔗</div><div><b style="color:var(--tx);font-size:18px">貼上你的記帳連結</b></div><div style="margin-top:6px;font-size:14px">第一次從主畫面開啟，需要貼一次原本給你的完整連結，之後就不用了</div>'+pasteBox;
+function gateHtml(){return '<div id="gate" class="gate" role="region" aria-label="記帳連結">'+(KEY.length<20?needLinkHtml():lockHtml())+'<p class="gerr" id="gateErr" role="alert">'+(KD.err&&KEY.length>=20?esc(KD.err):'')+'</p></div>'}
+document.addEventListener('click',ev=>{
+  if(!ev.target.closest('#paste_go'))return;
+  const t=tokenFrom($('#paste_in').value);
+  if(t.length<20){const e=$('#gateErr');if(e)e.textContent='看不出這是記帳連結，請把整條連結貼上。';return;}
+  KEY=t;LS.set('kk_key',t);KD.err=null;S.scn='normal';S.loading=true;render('f');kkLoad({dir:'f'});
+});
+document.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&ev.target&&ev.target.id==='paste_in'){ev.preventDefault();const b=$('#paste_go');b&&b.click()}});
 
 const fmt=n=>Math.abs(Math.round(n)).toLocaleString('en-US');
 const fmtD=n=>{const a=Math.abs(n),r=Math.round(a*100)/100;return Math.abs(r-a)<1e-9&&!Number.isInteger(r)?r.toLocaleString('en-US',{maximumFractionDigits:2}):fmt(n)};
@@ -2066,7 +2096,7 @@ function amt(n,o){o=o||{};const sign=(n<0&&!o.abs)?'−':(o.plus&&n>0?'+':'');re
 const rel=r=>r===0?'今天':r>0?r+' 天後':'逾期 '+(-r)+' 天';
 
 function pendList(){return PEND0.map((p,i)=>Object.assign({id:p.txid!=null?'x'+p.txid:'pd'+i},p)).concat(S.added.filter(t=>t.pending&&!S.voided.has(t.id)).map(t=>({id:t.id,tx:1,m:t.m,due:t.d,a:t.a<0&&!t.transfer?t.a:Math.abs(t.a),note:(t.a<0&&!t.transfer?'待扣款，':'待入帳，')+t.ac}))).filter(p=>!S.pendDone.has(p.id))}
-function totals(){const T=(KD.o&&KD.o.totals)||{},inv=S.inv,iv=Number(T.investments_value||0);
+function totals(){const T=KD.T||(KD.o&&KD.o.totals)||{},inv=S.inv,iv=Number(T.investments_value||0);
   return{cash:Number(T.spendable_cash||0),assets:Number(T.total_assets||0)-(inv?0:iv),liab:Number(T.total_liabilities||0),net:Number(inv?T.net_worth:T.net_worth_excl_investments)||0,pend:pendList().reduce((s,p)=>s+p.a,0),invest:iv}}
 const findTx=id=>TX.find(x=>x.id===id)||TXP.find(x=>x.id===id)||S.added.find(x=>x.id===id);
 function D(){
@@ -2286,10 +2316,10 @@ function acctExp(a){const hs=HOLD.filter(h=>h.ac===a.id),x=[acctSubLine(a)].conc
 function acctRow(a,i,n,plain){const cu=S.asort==='custom'&&!plain,op=!cu&&!plain&&S.aopen.has(a.id);
   return '<div class="row arow" data-flip="ac-'+a.id+'"'+(plain?'':' data-aid="'+a.id+'"')+'>'
     +(cu?'<button class="grip" data-grip="'+a.id+'" aria-label="按住拖動「'+esc(a.n)+'」調整順序。也可以用右邊的上移、下移" title="按住拖動調整順序">'+GRI+'</button>':'')
-    +'<button class="rowb" data-act="sheet" data-k="acct" data-id="'+a.id+'">'+(cu?'':'<span class="g" aria-hidden="true">'+KN(a.k)[2]+'</span>')+'<span class="row-m"><b>'+esc(a.n)+(a.arch?'<span class="tag">停用</span>':a.rec?'<span class="tag">待對帳</span>':'')+'</b><small>'+esc(acctSubLine(a))+'</small></span>'+amt(a.bal,{c:a.bal<0?'neg':''})+(cu?'':CHEV)+'</button>'
+    +'<button class="rowb" data-act="sheet" data-k="acct" data-id="'+a.id+'">'+(cu?'':'<span class="g'+(a.icon?' emo':'')+'" aria-hidden="true">'+(a.icon?esc(a.icon):KN(a.k)[2])+'</span>')+'<span class="row-m"><b>'+esc(a.n)+(a.arch?'<span class="tag">停用</span>':a.rec?'<span class="tag">待對帳</span>':'')+'</b><small>'+esc(acctSubLine(a))+'</small></span>'+amt(a.bal,{c:a.bal<0?'neg':''})+(cu?'':CHEV)+'</button>'
     +(cu?'<button class="mv" data-act="mv" data-id="'+a.id+'" data-c="-1" aria-label="把'+esc(a.n)+'往上移"'+(i===0?' disabled':'')+'>↑</button><button class="mv" data-act="mv" data-id="'+a.id+'" data-c="1" aria-label="把'+esc(a.n)+'往下移"'+(i===n-1?' disabled':'')+'>↓</button>'
       :plain?'':'<button class="xp" data-act="xp" data-id="'+a.id+'" aria-expanded="'+op+'" aria-label="「'+esc(a.n)+'」的開關與說明：計入資產、可動用">開關'+XPI+'</button>')+'</div>'+(op?acctExp(a):'')}
-const holdRow=h=>'<button class="row" data-act="sheet" data-k="holding" data-id="'+h.id+'"><span class="g" aria-hidden="true">股</span><span class="row-m"><b>'+h.sym+' '+h.name+'</b><small>'+fmt(h.sh)+' 股 · '+h.date+' 收盤 '+h.px+'</small></span>'+amt(h.mv)+CHEV+'</button>';
+const holdRow=h=>'<button class="row" data-act="sheet" data-k="holding" data-id="'+h.id+'"><span class="g" aria-hidden="true">股</span><span class="row-m"><b>'+h.sym+' '+h.name+'</b><small>'+fmt(h.sh)+' 股 · '+(h.live&&!h.live.fallback?qLine(h):h.date+' 收盤 '+h.px)+'</small></span>'+amt(h.mv)+CHEV+'</button>';
 function numBtn(k,label,v,o){o=o||{};return '<button class="card tile" data-act="sheet" data-k="comp" data-id="'+k+'"><span class="lab">'+label+' ›</span><span class="'+(o.cls||'mid')+'">'+amt(v,{c:o.neg?'neg':'',abs:o.neg})+'</span>'+(o.sub?'<span class="sub">'+o.sub+'</span>':'')+'</button>'}
 function acctPage(d){
   if(d.err)return errBlock();
@@ -2419,9 +2449,9 @@ function fixedC(d){
 const facts=rows=>'<dl class="facts">'+rows.filter(Boolean).map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl>';
 const SH={
  left(d){const mx=Math.max.apply(null,W7.map(x=>x[1])),avg=W7.reduce((a,x)=>a+x[1],0)/7;
-  return{t:d.left<0?'超支怎麼算的':'還能花怎麼算的',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>預算 '+fmt(BUDGET)+'，花了 '+fmt(d.spent)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還能花 '+fmt(d.left))+'。</p>'+facts([['這期預算',amt(BUDGET)],['已經花了',amt(d.spent)],[d.left<0?'超支':'還能花',amt(d.left,{abs:1})],['每天可以花',amt(d.perDay)+'（還有 '+d.dl+' 天）'],d.empty?null:['上期同一天',amt(28900)+'，這期多 '+fmt(Math.max(d.spent-28900,0))]])+leftBar(d,true)+(d.empty?'':'<h3 class="h3" style="margin-top:20px">近 7 天支出</h3><div class="bars" role="img" aria-label="近 7 天每天支出長條，平均 '+fmt(avg)+'"><span class="avg" style="--h:'+(avg/mx).toFixed(3)+'">平均 '+fmt(avg)+'</span>'+W7.map((x,i)=>'<span class="b'+(i===6?' now':'')+'"><i style="--h:'+(x[1]/mx).toFixed(3)+'"></i>'+x[0]+'</span>').join('')+'</div>')+B('toast','調整預算（即將推出）',{cls:'wide',dis:1})}},
- cat(d,k){const c=d.cats.find(x=>x.k===k),ts=d.txs.filter(t=>t.c===k),H=[.82,.64,.91,.7,.77],cur=c.s/c.b,mx=Math.max(1,cur);
-  return{t:k,h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>'+(c.s?'花了 '+fmt(c.s)+'，預算 '+fmt(c.b)+'，'+(c.s>c.b?'超過 '+fmt(c.s-c.b):'還剩 '+fmt(c.b-c.s))+'。':'這期還沒花。預算 '+fmt(c.b)+'。')+'</p>'+(c.s?bul(cur,d.pT,{big:true}):'')+'<h3 class="h3" style="margin-top:20px">近 6 期 <span class="sub">虛線框是這期，還沒結束</span></h3><div class="bars" role="img" aria-label="近 6 期這一類的支出，虛線是預算"><span class="avg" style="--h:'+(1/mx).toFixed(3)+'">預算 '+fmt(c.b)+'</span>'+H.map((h,i)=>'<span class="b"><i style="--h:'+(h/mx).toFixed(3)+'"></i>'+(['6月','7月','8月','9月','10月'][i])+'</span>').join('')+'<span class="b part"><i style="--h:'+(cur/mx).toFixed(3)+'"></i>這期</span></div><h3 class="h3">這期的 '+c.n+' 筆 <span class="sub">原型列出 '+ts.length+' 筆</span></h3>'+(ts.length?'<div class="list">'+ts.map(txRow).join('')+'</div>':'<p class="gray-line">'+(c.n?'樣本裡沒有放這一類的交易。':'沒有交易。')+'</p>')+B('toast','調整這類預算（即將推出）',{cls:'wide',dis:1})}},
+  return{t:d.left<0?'超支怎麼算的':'還能花怎麼算的',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>預算 '+fmt(BUDGET)+'，花了 '+fmt(d.spent)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還能花 '+fmt(d.left))+'。</p>'+facts([['這期預算',amt(BUDGET)],['已經花了',amt(d.spent)],[d.left<0?'超支':'還能花',amt(d.left,{abs:1})],['每天可以花',amt(d.perDay)+'（還有 '+d.dl+' 天）'],d.empty||!KD.ps||d.per!==0?null:['上期同一天（'+KD.ps.label+'）',amt(KD.ps.tot)+'，這期'+(d.spent>=KD.ps.tot?'多 ':'少 ')+fmt(Math.abs(d.spent-KD.ps.tot))]])+leftBar(d,true)+(d.empty?'':'<h3 class="h3" style="margin-top:20px">近 7 天支出</h3><div class="bars" role="img" aria-label="近 7 天每天支出長條，平均 '+fmt(avg)+'"><span class="avg" style="--h:'+(avg/mx).toFixed(3)+'">平均 '+fmt(avg)+'</span>'+W7.map((x,i)=>'<span class="b'+(i===6?' now':'')+'"><i style="--h:'+(x[1]/mx).toFixed(3)+'"></i>'+x[0]+'</span>').join('')+'</div>')+B('toast','調整預算（即將推出）',{cls:'wide',dis:1})}},
+ cat(d,k){const c=d.cats.find(x=>x.k===k),ts=d.txs.filter(t=>t.c===k),cur=c.s/c.b;
+  return{t:k,h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>'+(c.s?'花了 '+fmt(c.s)+'，預算 '+fmt(c.b)+'，'+(c.s>c.b?'超過 '+fmt(c.s-c.b):'還剩 '+fmt(c.b-c.s))+'。':'這期還沒花。預算 '+fmt(c.b)+'。')+'</p>'+(c.s?bul(cur,d.pT,{big:true}):'')+'<h3 class="h3" style="margin-top:20px">與上期比 <span class="sub">同天數</span></h3>'+(d.per===0&&KD.ps?cmpBlock(c.s,KD.ps.cat[k]||0,KD.ps.label):'<p class="sub">只有本期能跟上期同天數比。</p>')+'<h3 class="h3">這期的 '+c.n+' 筆 <span class="sub">列出 '+ts.length+' 筆</span></h3>'+(ts.length?'<div class="list">'+ts.map(txRow).join('')+'</div>':'<p class="gray-line">'+'沒有交易。'+'</p>')+B('toast','調整這類預算（即將推出）',{cls:'wide',dis:1})}},
  review(d){return{t:'確認塔塔記的帳',h:d.inbox.length?B('okAll',d.inbox.length+' 筆都對，全部確認',{cls:'pri wide'})+d.inbox.map(cfCard).join(''):'<div class="empty"><h2>都確認完了</h2><p>沒有等你看的帳。</p>'+B('close','回到今天',{cls:'pri'})+'</div>'}},
  cards(){const L=[['where','花在哪（前四類）'],['recent','最近 3 筆'],['subs','訂閱每月平均'],['acct','可動用現金與撐幾個月']];return{t:'調整卡片',h:'<p class="sub">今天一件事、還能花、收入、下一筆要繳固定顯示。下面的可以自己開關，之後有新卡片會出現在這裡，預設關閉。</p>'+L.map(x=>'<label class="check"><input type="checkbox" data-card="'+x[0]+'"'+(S.hide[x[0]]?'':' checked')+'>'+x[1]+'</label>').join('')+B('close','照這樣顯示',{cls:'pri wide'})}},
  recap(){return{t:'上期回顧 10/10～11/9',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>上期花了 49,300，在預算內。收入 96,000，達標。</p>'+facts([['花了',amt(49300)+'（預算內 2,700）'],['收入',amt(96000)+'（目標的 107%）'],['留下來',amt(46700)]])+'<h3 class="h3">跟前一期比</h3><div class="hbar"><span>吃</span><span class="t"><span style="--p:.86"></span></span><span class="num">多 1,900</span></div><div class="hbar"><span>訂閱</span><span class="t"><span style="--p:.4"></span></span><span class="num">多 330</span></div><div class="hbar"><span>交通</span><span class="t"><span style="--p:.22"></span></span><span class="num">少 480</span></div><p class="sub">每期結束我會整理一份，跟給金金的摘要是同一份資料。</p>'}},
@@ -2529,7 +2559,7 @@ Object.assign(SH,{
      :(x.paid||x.co?'':B('sheet',x.tata?'塔塔處理中':'去付款',{cls:x.rel<=3?'pri':'',k:'pay',id:x.id}))+B('sheet','改卡',{k:'subCard',id:x.id})+B('sheet','換方案',{k:'subPlan',id:x.id})+B('sheet','其他欄位',{k:'subOther',id:x.id})+(x.cancel?B('uncancel','不取消了',{id:x.id}):B('sheet','退訂',{k:'subCancel',id:x.id}))+B('subArch','封存',{id:x.id}))+B('askFx','問塔塔這筆',{id:x.id})+'</div>'}},
  subCard(d,id){const x=d.subs.find(y=>y.id===id),ns=acctNames();return{t:'改卡：'+x.name,h:'<p class="sub">「'+esc(x.name)+'」目前從「'+esc(x.ac)+'」扣款。</p>'+FS('sfAcct','扣款帳戶',ns.map(n=>[n,n]),x.ac)+B('subCardSave','存檔',{cls:'pri wide',id:id})}},
  subPlan(d,id){const x=d.subs.find(y=>y.id===id);return{t:'換方案：'+x.name,h:'<p class="sub">只改要換的欄位，其他資料原封不動。</p>'+FI('sfName','名稱',{v:x.name,max:60})+'<div class="frow">'+FI('sfAmt','金額（台幣）',{v:x.amt,im:'numeric'})+FS('sfCyc','週期',[['月','月繳'],['年','年繳']],x.cyc)+'</div>'+(x.cyc==='年'?FI('sfRenew','續訂日',{type:'date',v:toISO(x.due)}):FI('sfDay','每月扣款日',{v:String(+x.due.slice(3)),im:'numeric',ph:'1 到 31'}))+'<p class="ferr" id="sfErr" role="alert"></p>'+B('subPlanSave','存檔',{cls:'pri wide',id:id})}},
- subOther(d,id){const x=d.subs.find(y=>y.id===id);return{t:'其他欄位：'+x.name,h:FI('sfVia','經由',{v:x.via||'',ph:'例如 App Store',max:30})+FI('sfMatch','比對名稱',{v:x.match||x.name,ph:'用「、」分隔'})+FI('sfFx','原幣金額',{v:x.fx||'',ph:'例如 US$20.00'})+FI('sfNote','備註',{v:x.note||'',ph:'選填',max:200})+CK('sfCo','公司付（不算進我的預算）',x.co)+B('subOtherSave','存檔',{cls:'pri wide',id:id})}},
+ subOther(d,id){const x=d.subs.find(y=>y.id===id);return{t:'其他欄位：'+x.name,h:FI('sfVia','經由',{v:x.via||'',ph:'例如 App Store',max:30})+FI('sfMatch','比對名稱',{v:x.match||'',ph:'用「、」分隔'})+FI('sfFx','原幣金額',{v:x.fx||'',ph:'例如 US$20.00'})+FI('sfNote','備註',{v:x.note||'',ph:'選填',max:200})+CK('sfCo','公司付（不算進我的預算）',x.co)+B('subOtherSave','存檔',{cls:'pri wide',id:id})}},
  subCancel(d,id){const x=d.subs.find(y=>y.id===id);return{t:'退訂：'+x.name,h:'<p class="sub">把「'+esc(x.name)+'」標成要取消，並通知塔塔。取消期限可以不填，不填就用下次扣款日 '+x.due+'。</p>'+FI('sfBy','取消期限',{type:'date',v:toISO(x.due),min:todayISO()})+B('subCancelSave','標成要取消',{cls:'pri wide',id:id})}},
  subAdd(){const ns=acctNames();return{t:'新增訂閱',h:'<p class="sub">名稱不能和現有的訂閱重複。</p>'+FI('sfName','名稱',{ph:'必填',max:60})+'<div class="frow">'+FI('sfAmt','台幣金額',{im:'numeric',ph:'必填，整數'})+FS('sfCyc','週期',[['月','月繳'],['年','年繳']],'月')+'</div><div class="frow">'+FI('sfDay','每月扣款日',{im:'numeric',ph:'1 到 31'})+FS('sfAcct','扣款帳戶',ns.map(n=>[n,n]),'主力卡')+'</div>'+FI('sfVia','經由',{ph:'選填，例如 App Store',max:30})+CK('sfCo','公司付（不算進我的預算）',false)+'<p class="ferr" id="sfErr" role="alert"></p>'+B('subAddSave','新增這個訂閱',{cls:'pri wide'})}},
  report(d){return{t:'塔塔的回報',h:'<p class="sub">'+(REPS[0]?REPS[0][0]+' · '+REPS[0][1]:'還沒有回報')+'</p><p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>本期支出 '+fmt(d.spent)+'，預算還剩 '+fmt(Math.max(d.left,0))+'。收入 '+fmt(d.income)+'。</p>'+facts([['補記',d.inbox.length+' 筆，等你確認'],['未分類',d.un.n+' 筆'],['下一筆要繳',d.nb?d.nb.name+' '+fmt(d.nb.amt)+'，'+rel(d.nb.rel):'沒有']])+'<details><summary>看全文</summary><p>本期（'+P.label+'）支出 '+fmt(d.spent)+'，預算 '+fmt(BUDGET)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還剩 '+fmt(d.left))+'；收入 '+fmt(d.income)+'，離目標 '+fmt(TARGET)+' 還差 '+fmt(Math.max(TARGET-d.income,0))+'。<br>補記（主力卡，銀行 LINE 通知）：'+d.inbox.map(t=>'<br>・'+t.d+' '+t.t+' '+esc(t.m)+' '+fmt(t.a)+'，'+catName(t)+'（塔塔判斷，推定）').join('')+'<br>以上推定的分類請確認。未分類 '+d.un.n+' 筆我分不出來，要你給。</p></details>'
@@ -2551,7 +2581,7 @@ Object.assign(SH,{
    +'<h3 class="h3" style="margin-top:8px">餘額走勢 <span class="sub">最近 3 期</span></h3>'+balLine(a)
    +'<div class="acts">'+B('sheet','編輯帳戶',{k:'acctEdit',id:a.id})+B('sheet','設定餘額',{k:'acctBal',id:a.id})+(a.arch?B('acctOn','重新啟用',{id:a.id}):B('acctArch','停用這個帳戶',{id:a.id}))+B('sheet','刪除',{cls:'warn',k:'acctDel',id:a.id})+'</div>'
    +'<h3 class="h3">交易明細 <span class="sub">這期 '+ts.length+' 筆</span></h3>'+(ts.length?'<div class="list">'+ts.map(txRow).join('')+'</div>':'<p class="gray-line">最近 3 期沒有這個帳戶的交易。</p>')}},
- acctEdit(d,id){const a=id?S.accts.find(x=>x.id===id):null;if(!S.ae||S.ae.id!==(id||'new'))S.ae={id:id||'new',k:a?a.k:'bank',n:a?a.n:'',cur:'TWD',open:'',limit:a&&a.limit||'',stmt:a&&a.stmt||'',due:a&&a.due||'',cpty:a&&a.cpty||'',ldue:a?toISO(a.ldue):'',as:a?!!a.as:true,sp:a?!!a.sp:true,note:a&&a.note||'',icon:''};const e=S.ae,card=e.k==='credit_card',loan=e.k==='loan_in'||e.k==='loan_out';
+ acctEdit(d,id){const a=id?S.accts.find(x=>x.id===id):null;if(!S.ae||S.ae.id!==(id||'new'))S.ae={id:id||'new',k:a?a.k:'bank',n:a?a.n:'',cur:a&&a.cur||'TWD',open:'',limit:a&&a.limit||'',stmt:a&&a.stmt||'',due:a&&a.due||'',cpty:a&&a.cpty||'',ldue:a?toISO(a.ldue):'',as:a?!!a.as:true,sp:a?!!a.sp:true,note:a&&a.note||'',icon:a&&a.icon||''};const e=S.ae,card=e.k==='credit_card',loan=e.k==='loan_in'||e.k==='loan_out';
   return{t:a?'編輯帳戶：'+a.n:'新增帳戶',h:'<span class="flab" id="aek">帳戶類型</span><div class="cgrid" role="group" aria-labelledby="aek">'+KINDS.map(k=>'<button class="cbtn" data-act="aeK" data-c="'+k[0]+'" aria-pressed="'+(e.k===k[0])+'"><b aria-hidden="true">'+k[2]+'</b>'+k[1].slice(0,4)+'</button>').join('')+'</div>'
    +FI('aeN','名稱',{v:e.n,ph:'例如：數位帳戶',max:30})+'<div class="frow">'+FI('aeIcon','圖示',{v:e.icon,ph:'一個字（選填）',max:2})+FI('aeCur','幣別',{v:e.cur,max:3})+'</div>'
    +(a?'':FI('aeOpen',LIAB.includes(e.k)?'目前欠多少':'初始餘額',{v:e.open,im:'decimal',ph:'0'}))
@@ -2560,7 +2590,7 @@ Object.assign(SH,{
    +CK('aeAs','計入資產',e.as)+CK('aeSp','可動用（算進「可動用現金」）',e.sp)+FI('aeNote','備註',{v:e.note,ph:'選填',max:120})+'<p class="ferr" id="aeErr" role="alert"></p>'+B('aeSave',a?'存好這個帳戶':'新增這個帳戶',{cls:'pri wide',id:id||''})}},
  acctBal(d,id){const a=S.accts.find(x=>x.id===id);return{t:'設定餘額：'+a.n,h:'<p class="sub">照網銀或 App 上的數字填。帳上現在是 '+sgn(a.bal)+'，有差的話我會記一筆調整，不會動你的交易。</p>'+FI('abV',LIAB.includes(a.k)?'實際欠款':'銀行實際餘額',{v:Math.abs(a.bal),im:'decimal'})+'<p class="ferr" id="abErr" role="alert"></p>'+B('abSave','存成這個餘額',{cls:'pri wide',id:id})}},
  acctDel(d,id){const a=S.accts.find(x=>x.id===id),hold=HOLD.some(h=>h.ac===a.id),has=a.used>0||hold;return{t:'刪除帳戶',h:'<p class="lead">'+(has?'「'+esc(a.n)+'」有'+(a.used>0?'交易紀錄':'持股')+'，不能刪除。':'要刪除「'+esc(a.n)+'」嗎？')+'</p><p class="sub">'+(has?'有交易的帳戶只能停用：舊交易都留著，不再算進總資產，也不出現在記帳選單，之後可以重新啟用。':'這個帳戶沒有任何交易。正式版刪除後無法復原。')+'</p><div class="acts">'+B('back','先不要')+(has?B('acctArch','改成停用',{cls:'pri',id:id}):B('acctDelGo','刪除「'+esc(a.n)+'」',{cls:'warn',id:id}))+'</div>'}},
- holding(d,id){const h=HOLD.find(x=>x.id===id),pnl=h.mv-h.cost;return{t:h.sym+' '+h.name,h:'<div style="text-align:center"><span class="amtbox">'+amt(h.mv)+'</span><p class="sub">市值 · '+h.date+' 收盤</p></div>'+facts([['股數',fmt(h.sh)+' 股'],['收盤價',String(h.px)],['市值',amt(h.mv)],['成本',amt(h.cost)],['損益',amt(pnl,{plus:1,c:pnl<0?'neg':'pos'})+'（'+(pnl>=0?'+':'−')+(Math.abs(pnl)/h.cost*100).toFixed(1)+'%）']])+'<p class="sub">報價：'+(h.date?h.date+' 收盤':'上次記錄值')+'。</p>'+B('sheet','看證券戶',{cls:'wide',k:'acct',id:h.ac})}},
+ holding(d,id){const h=HOLD.find(x=>x.id===id),pnl=h.mv-h.cost;return{t:h.sym+' '+h.name,h:'<div style="text-align:center"><span class="amtbox">'+amt(h.mv)+'</span><p class="sub">市值 · '+(h.live&&!h.live.fallback?qLine(h):h.date+' 收盤')+'</p></div>'+facts([['股數',fmt(h.sh)+' 股'],['收盤價',String(h.px)],['市值',amt(h.mv)],['成本',amt(h.cost)],['損益',amt(pnl,{plus:1,c:pnl<0?'neg':'pos'})+'（'+(pnl>=0?'+':'−')+(Math.abs(pnl)/h.cost*100).toFixed(1)+'%）']])+'<p class="sub">報價：'+(h.date?h.date+' 收盤':'上次記錄值')+'。</p>'+B('sheet','看證券戶',{cls:'wide',k:'acct',id:h.ac})}},
  inst(d,id){const x=INSTS.find(y=>y.id===id)||INSTS[0];if(!x)return{t:'分期',h:'<p class="gray-line">沒有分期。</p>'};return{t:x.n,h:'<div style="text-align:center"><span class="amtbox">'+amt(-x.out,{c:'neg'})+'</span><p class="sub">還沒出帳的分期，已算進負債</p></div>'+facts([['期數',x.total!=null?'共 '+x.total+' 期，還有 '+x.left+' 期':'未填'],['每期',x.per!=null?amt(x.per):'未填'],['下一期',x.next||'未填'],['掛在',esc(x.ac||'未填')]])+(x.total&&x.left!=null?bul((x.total-x.left)/x.total,null,{big:true,lab:'已經繳了'}):'')+(x.note?'<p class="sub">'+esc(x.note)+'</p>':'')}},
  debt(d,id){const x=DEBTS.find(y=>y.id===id)||DEBTS[0];if(!x)return{t:'欠款',h:'<p class="gray-line">沒有欠款。</p>'};return{t:x.n,h:'<div style="text-align:center"><span class="amtbox">'+amt(-x.rem,{c:'neg'})+'</span><p class="sub">欠款剩下的</p></div>'+facts([['本金',amt(x.prin)],['已還',amt(x.paid)],['還剩',amt(x.rem)]])+(x.prin?bul(x.paid/x.prin,null,{big:true,lab:'已經還了'}):'')+'<p class="sub">還款時跟塔塔說一聲，或記一筆「代收代付」，她會更新進度。</p>'}},
  period(d,i){const td=trendData(d),r=td[+i],n=r[1]-r[2];return{t:r[0]+' 那一期'+(r[3]?'（這期，還沒結束）':''),h:facts([['收入',amt(r[1])],['支出',amt(r[2])],['結餘',amt(n,{plus:1,c:n<0?'neg':'pos'})]])+(+i===td.length-1?B('perGo','回到這一期',{cls:'pri wide',c:'0'}):B('perGo','切到這一期看每一筆',{cls:'pri wide',c:String(+i-(td.length-1))}))}},
@@ -2700,7 +2730,7 @@ function render(dir){
   $('#pgTitle').textContent=TITLES[S.tab];$('#tataLine').innerHTML=lk?'6 種外觀，淺色、深色、跟系統':acc?'可動用、淨資產、每個帳戶':S.loading?'核對中，等塔塔回報':tt.line;
   const off=d.scn==='offline'||d.err,lv=$('#live'),lb=$('#liveBtn');lv.classList.toggle('off',off);lb.title=off?'沒有連線':'即時連線中';lb.setAttribute('aria-label',lb.title+'。點一下看記號說明');
   $('#pgBack').hidden=!acc;$('#refBtn').hidden=acc;$('#lookBtn').hidden=S.tab!=='accounts';
-  $('#pnav').hidden=acc;$('#pLab').textContent=PLf(S.per)[0];$('#pTag').textContent=PLf(S.per)[1];$('#pPrev').disabled=S.per<=-60;$('#pNext').disabled=S.per>=0;
+  $('#pnav').hidden=acc;$('#pLab').textContent=PLf(S.per)[0];$('#pTag').textContent=PLf(S.per)[1];$('#pPrev').disabled=S.per<=-5;$('#pNext').disabled=S.per>=0;
   if(!moodT)setMood(tt.mood);
   const bn=$('#banner');bn.innerHTML=d.scn==='offline'?BN('連不上資料庫。看到的是 '+(KD.atTxt||'上次')+' 的資料，連上後會自動更新。',B('retry','再試一次'))
     :S.a2hs&&!d.err?BN('像 App 一樣用：點瀏覽器的「分享」，再選「加入主畫面」。',B('scnOff','知道了'))
@@ -2720,7 +2750,7 @@ function render(dir){
   $$('.tab').forEach(b=>{const on=b.dataset.tab===S.tab;if(on)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
   const bd=$('#bdgHome');bd.hidden=!d.inbox.length;bd.textContent=d.inbox.length;bd.setAttribute('aria-label',d.inbox.length+' 筆待確認');
   const cmp=S.v==='A'&&S.tab==='home'&&!d.err&&d.per===0;$('#composer').classList.toggle('on',cmp);phone.classList.toggle('cmp',cmp);
-  rollNums();rollOn=false;if(lk)fitThumbs();
+  rollNums();rollOn=false;swWrap();phone.classList.toggle('gated',d.scn==='nokey');if(lk)fitThumbs();
 }
 function go(tab){closeLay();if(tab===S.tab){main.scrollTo({top:0,behavior:rm?'auto':'smooth'});return}S.scroll[S.tab+S.v]=main.scrollTop;const dir=ORDER.indexOf(tab)>ORDER.indexOf(S.tab)?'r':'l';S.tab=tab;render(dir)}
 function leaveAcct(){if(S.tab==='looks'){S.tab=S.from2||'accounts';render('l');const g=$('#lookBtn');g&&!g.hidden&&g.focus({preventScroll:true});return}if(S.tab!=='accounts')return;S.tab=S.from||'home';render('l');const e=$('#acctEntry');e&&e.focus({preventScroll:true})}
@@ -2898,14 +2928,14 @@ const ACT={
 const acctBy=id=>S.accts.find(x=>x.id===id);
 const txRaw=id=>{const t=TX.find(x=>x.id===id);return t&&t.raw};
 Object.assign(ACT,{
- per(el){const n=S.per+(+el.dataset.c);if(n>0)return;S.per=n;prevNum={};S.cIdx=S.bIdx=S.fIdx=0;S.lf='all';S.loading=true;render('f');kkLoad({dir:'f'}).then(()=>toast(PLf(n)[1]+' '+PLf(n)[0]))},
+ per(el){const n=S.per+(+el.dataset.c);if(n>0||n<-5)return;S.per=n;prevNum={};S.cIdx=S.bIdx=S.fIdx=0;S.lf='all';S.loading=true;render('f');kkLoad({dir:'f'}).then(()=>toast(PLf(n)[1]+' '+PLf(n)[0]))},
  per0(){S.per=0;prevNum={};S.loading=true;render('f');kkLoad({dir:'f'})},
  perGo(el){closeSheet();S.per=Math.min(0,+el.dataset.c);prevNum={};S.tab='ledger';S.loading=true;render('f');kkLoad({dir:'f'})},
  retry(){S.loading=true;render('f');kkLoad({dir:'f'})},
  scnOff(){S.a2hs=0;LS.set('kk_hint','1');render()},
  refresh(){const now=Date.now(),hot=S.refAt&&now-S.refAt<120000;S.loading=true;render('f');
   const wake=hot?Promise.resolve(null):kkRefresh({}).then(j=>{S.refAt=Date.now();return j}).catch(()=>null);
-  Promise.all([wake,kkReload()]).then(([j])=>{S.loading=false;render('f');toast(hot?'資料更新了。剛叫過塔塔，2 分鐘內不重複叫':j&&j.ok?'資料更新了，也叫醒塔塔了，她對完帳會回報':'資料更新了。叫醒塔塔沒成功：'+kkReason(j))})},
+  quoteGo(true);Promise.all([wake,kkReload()]).then(([j])=>{S.loading=false;render('f');toast(hot?'資料更新了。剛叫過塔塔，2 分鐘內不重複叫':j&&j.ok?'資料更新了，也叫醒塔塔了，她對完帳會回報':'資料更新了。叫醒塔塔沒成功：'+kkReason(j))})},
  pasteGo(){const t=tokenFrom(val('pasteIn'));if(t.length<20){ferr('pasteErr','看不出這是記帳連結，請把整條連結貼上。');return}KEY=t;LS.set('kk_key',t);KD.err=null;S.scn='normal';S.loading=true;render('f');kkLoad({dir:'f'})},
  layMenu(el){const m=$('#layMenu');const on=m.hidden;m.innerHTML='<p class="lay-h">換版面</p>'+layBtns();m.hidden=!on;el.setAttribute('aria-expanded',String(on));if(on){const b=$('[aria-pressed="true"]',m);b&&b.focus({preventScroll:true})}},
  layGo(el){setLayout(el.dataset.c)},
@@ -3008,7 +3038,7 @@ Object.assign(ACT,{
   kkDo(async()=>{await rpc('kk_sub_upsert',subPayload(x.raw,o));if(renamed)await rpc('kk_sub_archive',{p_name:x.name})},'方案改好了',{err:'sfErr'})},
  subOtherSave(el){const x=D().subs.find(s=>s.id===el.dataset.id);if(!x)return;const fx=val('sfFx').trim(),m=fx.match(/^([A-Za-z]{3})\s*([\d.]+)$/);
   if(fx&&!m){ferr('sfErr','原幣請寫成「USD 20」這樣');return}
-  const o={via:val('sfVia'),note:val('sfNote'),match:val('sfMatch').split(/\n|,|，/).map(s=>s.trim()).filter(Boolean),payer:chk('sfCo')?'company':'self'};
+  const o={via:val('sfVia'),note:val('sfNote'),match:val('sfMatch').split(/\n|,|，|、/).map(s=>s.trim()).filter(Boolean),payer:chk('sfCo')?'company':'self'};
   if(m){o.cur=m[1].toUpperCase();o.oamt=Number(m[2])}else o.cur='';
   kkDo(()=>rpc('kk_sub_upsert',subPayload(x.raw,o)),'存好了',{err:'sfErr'})},
  subAddSave(){const n=val('sfName'),a=parseInt(val('sfAmt'),10),cyc=val('sfCyc')==='年'?'yearly':'monthly',day=parseInt(val('sfDay'),10);
@@ -3022,6 +3052,7 @@ Object.assign(ACT,{
   kkDo(()=>rpc('update_transaction',{p_id:t.rid,p_status:'posted'}),'標好了，從在途移走').then(ok=>{if(ok&&t.a>0)faceLog(t.a,true)})},
  rcvGot(el){const x=rcvAll().find(y=>y.id===el.dataset.id);if(!x)return;closeSheet();S.add={type:'income',ex:x.a!=null?String(x.a):'',c:'未分類',ac:defAcct('income'),to:'',date:'今天',again:false,pend:false,m:x.m,note:'待收款入帳',fee:'',cur:'',oamt:'',cp:'',more:true,dup:null,dupOk:false};openSheet('add',null,false)},
  exc(el){const k=el.dataset.c;if(S.exc.has(k))S.exc.delete(k);else S.exc.add(k);saveExc();render();if(sheet.classList.contains('on'))renderSheetBody();toast(S.exc.has(k)?'統計先不算「'+k+'」':'「'+k+'」加回統計')},
+ ordReset(){const o=S.aorder,oa=S.asort;S.aorder=null;S.asort='used';LS.set('kkD2_order',JSON.stringify({asort:S.asort,aorder:null}));render();rpc('set_account_order',{p_groups:[],p_accounts:[]}).then(p=>{if(p)KD.prefs=p;toast('還原成常用在前')}).catch(e=>{S.aorder=o;S.asort=oa;render();toast('順序沒存成功：'+e.message)})},
  excAll(){S.exc.clear();saveExc();render();if(sheet.classList.contains('on'))renderSheetBody()},
  q(el){const q=el.textContent,d=D();S.bchat.push({me:1,t:q,n:++S.seq});S.bchat.push({t:reply(q,d),n:++S.seq});renderBub()},
 });
@@ -3050,6 +3081,83 @@ function ask(q,into){q=q.trim();if(!q)return;const log=into==='feed'?S.chat:S.bc
 /* 帳戶順序：自訂排序存進 kk_prefs（set_account_order），換手機也跟著 */
 function saveOrdRemote(){if(S.asort!=='custom'||!S.aorder)return;const ids=S.aorder.map(id=>{const a=acctBy(id);return a?a.rid:null}).filter(x=>x!=null);
   rpc('set_account_order',{p_groups:[],p_accounts:ids}).then(p=>{if(p)KD.prefs=p}).catch(e=>toast('順序沒存到雲端：'+e.message))}
+
+/* ================= v31 補 6 項：照 kk-v30.3 原版搬 ================= */
+/* --- 1. 左滑作廢（交易）、左滑停用／啟用（帳戶）：原版 swSet／swClose／swEnd／swAct，套到 A／B／C 的列上 --- */
+const SWW=84;let swOpen=null,swS=null,swBlock=0;
+function swWrap(){
+  $$('#main button.row[data-k="tx"]').forEach(b=>{if(b.closest('.swr')||b.closest('.dcard')||b.classList.contains('void'))return;const t=TX.find(x=>x.id===b.dataset.id);if(!t||t.v0)return;
+    const r=document.createElement('div');r.className='swr';r.dataset.kind='tx';r.dataset.id=b.dataset.id;r.innerHTML='<div class="swact"><button type="button" class="swbtn" data-swact="del">作廢</button></div><div class="swc"></div>';b.replaceWith(r);r.querySelector('.swc').appendChild(b)});
+  $$('#main .arow[data-aid]').forEach(row=>{if(row.closest('.swr'))return;const a=acctBy(row.dataset.aid);if(!a||a.sys)return;
+    const r=document.createElement('div');r.className='swr';r.dataset.kind='acct';r.dataset.id=a.id;r.innerHTML='<div class="swact"><button type="button" class="swbtn'+(a.arch?' ok':'')+'" data-swact="'+(a.arch?'ok':'del')+'">'+(a.arch?'啟用':'停用')+'</button></div><div class="swc"></div>';row.replaceWith(r);r.querySelector('.swc').appendChild(row)});
+}
+function swSet(r,x,anim){const c=r.querySelector('.swc');c.style.transition=anim?'transform .2s ease':'none';c.style.transform=x?'translateX('+x+'px)':'';if(x<0)r.classList.add('drag');}
+function swClose(r){r=r||swOpen;if(!r)return;r.classList.remove('open');swSet(r,0,true);setTimeout(()=>{if(!r.classList.contains('open'))r.classList.remove('drag');},230);if(swOpen===r)swOpen=null;}
+document.addEventListener('touchstart',ev=>{
+  const t=ev.touches[0],tg=ev.target,r=tg.closest?tg.closest('.swr'):null;
+  if(swOpen&&!document.body.contains(swOpen))swOpen=null;
+  const onAct=!!(tg.closest&&tg.closest('.swact'));
+  if(swOpen&&swOpen!==r&&!onAct){swClose();swBlock=Date.now()+450;}
+  if(!r||onAct||ev.touches.length>1||(tg.closest&&tg.closest('.grip'))){swS=null;return;}
+  swS={r,x:t.clientX,y:t.clientY,base:swOpen===r?-SWW:0,lock:null,cur:null};
+},{passive:true});
+document.addEventListener('touchmove',ev=>{
+  const s=swS;if(!s)return;const t=ev.touches[0],dx=t.clientX-s.x,dy=t.clientY-s.y;
+  if(!s.lock){
+    if(Math.abs(dx)<8&&Math.abs(dy)<8)return;
+    s.lock=Math.abs(dx)>Math.abs(dy)*1.5?'h':'v';
+    if(s.lock==='v'){if(swOpen)swClose();swS=null;return;}
+  }
+  let x=Math.max(-SWW-30,Math.min(0,s.base+dx));if(x<-SWW)x=-SWW+(x+SWW)/3;
+  s.cur=x;swSet(s.r,x,false);if(ev.cancelable)ev.preventDefault();
+},{passive:false});
+function swEnd(){
+  const s=swS;swS=null;if(!s||s.lock!=='h')return;
+  const x=s.cur==null?s.base:s.cur,open=s.base===0?x<-SWW*0.4:x<-SWW*0.6;
+  swBlock=Date.now()+400;
+  if(open){if(swOpen&&swOpen!==s.r)swClose();swOpen=s.r;s.r.classList.add('open');swSet(s.r,-SWW,true);}
+  else{s.r.classList.remove('open');if(swOpen===s.r)swOpen=null;swSet(s.r,0,true);setTimeout(()=>{if(!s.r.classList.contains('open'))s.r.classList.remove('drag');},230);}
+}
+document.addEventListener('touchend',swEnd);document.addEventListener('touchcancel',swEnd);
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest&&ev.target.closest('.swbtn');
+  if(b){ev.stopPropagation();ev.preventDefault();const r=b.closest('.swr');swClose(r);swAct(r,b.dataset.swact);return}
+  if(Date.now()<swBlock){ev.stopPropagation();ev.preventDefault();return;}
+  if(swOpen&&document.body.contains(swOpen)){swClose();ev.stopPropagation();ev.preventDefault();}
+},true);
+main.addEventListener('scroll',()=>{if(swOpen)swClose();},{passive:true});
+async function swAct(r,act){
+  const kind=r.dataset.kind,id=r.dataset.id;
+  if(kind==='tx'){const t=TX.find(x=>x.id===id);if(!t||t.v0)return;
+    if(!window.confirm('作廢這筆交易？\n\n'+t.m+'　'+fmt(Math.abs(t.a))+' 元\n'+t.d+' '+t.t+'\n\n不會真的刪除，只是標成作廢，不再計入餘額與統計。之後可在帳本「顯示作廢」找到這一筆。'))return;
+    kkDo(()=>rpc('void_transaction',{p_id:t.rid,p_reason:'網頁左滑作廢'}),'已作廢「'+t.m+'」。可在帳本「顯示作廢」查看',{close:false});return}
+  const a=acctBy(id);if(!a)return;
+  if(act==='ok'){kkDo(()=>rpc('update_account',{p_account_name:a.n,p_archived:false}),'已啟用「'+a.n+'」',{close:false});return}
+  if(!window.confirm('停用帳戶「'+a.n+'」？\n\n不會刪除任何資料，這個帳戶的舊交易都還在，只是不再算進總資產，也不出現在記帳選單。之後可在帳戶頁的停用群組，左滑按「啟用」找回。'))return;
+  kkDo(()=>rpc('update_account',{p_account_name:a.n,p_archived:true}),r=>'已停用「'+a.n+'」'+(r&&r.warning?'（注意：這個帳戶還有餘額）':''),{close:false});
+}
+/* --- 5. 即時報價：原版 quoteGo（kk-quote，證交所公開報價，後端快取 5 分鐘） --- */
+let quoteBusy=false,quoteAt=0;
+async function quoteGo(force){
+  if(KEY.length<20||quoteBusy)return;quoteBusy=true;
+  try{
+    const r=await fetch(URL_+'/functions/v1/kk-quote',{method:'POST',headers:{'Content-Type':'application/json','x-kk-key':KEY},body:JSON.stringify({force:!!force}),cache:'no-store'});
+    const j=await r.json().catch(()=>null);
+    if(!r.ok||!j||!j.ok)throw new Error((j&&j.error)||'HTTP '+r.status);
+    KD.Q={quotes:j.quotes||[],err:false};quoteAt=Date.now();
+  }catch(e){KD.Q=KD.Q&&KD.Q.quotes?Object.assign({},KD.Q,{err:false,stale:true}):{quotes:[],err:true};}
+  finally{quoteBusy=false;}
+  if(KD.loaded){kkApply();if(sheet.classList.contains('on'))renderSheetBody();else render()}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-quoteAt>300000)quoteGo(false);});
+const qLine=h=>{const lv=h.live;if(!lv)return '';if(lv.fallback)return '即時報價抓不到，用記錄值';return '現價 '+Number(lv.price).toFixed(2)+'（'+(lv.kind==='last'?'成交價':lv.kind==='mid'?'買賣中間價':'昨收')+'）'+(lv.time?'・'+(tpDay(lv.time)===todayISO()?'今天 '+tpTime(lv.time):mdOf(tpDay(lv.time))):'')+(lv.stale?'・舊報價':'')};
+/* --- 3. 與上期比：同天數（上一期從第 1 天到同一天）各類支出 --- */
+function prevSameCalc(){const o=KD.o,L=KD.prevL;if(!o||!L){KD.ps=null;return}
+  const ps0=addMonths(o.period_start,-1),n=P.day,cat={};let tot=0;
+  L.forEach(t=>{if(t.voided_at||t.type!=='expense')return;if(dayDiff(tpDay(t.occurred_at),ps0)>=n)return;const a=Number(t.amount)||0;tot+=a;cat[t.category||'其他']=(cat[t.category||'其他']||0)+a});
+  KD.ps={tot:tot,cat:cat,n:n,label:mdShort(ps0)+'～'+mdShort(addDays(ps0,n-1))}}
+function cmpBlock(cur,prev,lab){if(prev==null)return '<p class="sub">上一期的資料還沒讀到。</p>';const df=cur-prev,p=prev?Math.round(df/prev*100):null;
+  return facts([['這期到今天',amt(cur)],['上期同一段（'+lab+'）',amt(prev)],['差',(df>0?'▲ 多 ':df<0?'▼ 少 ':'一樣 ')+(df?fmt(df):'')+(p!=null&&df?'（'+(df>0?'+':'−')+Math.abs(p)+'%）':'')]])}
 
 function keepAdd(){const a=S.add;if(!a)return;const c=$('#adAgain');if(c)a.again=c.checked;[['m','adM'],['note','adNote'],['fee','adFee'],['cur','adCur'],['oamt','adOamt'],['cp','adCp']].forEach(p=>{const x=$('#'+p[1]);if(x)a[p[0]]=x.value.trim()})}
 function keepEd(){const e=S.ed;if(!e)return;[['a','edAmt'],['d','edDate'],['m','edM'],['note','edNote'],['fee','edFee']].forEach(p=>{const x=$('#'+p[1]);if(x)e[p[0]]=x.value.trim()});const l=$('#edLearn');if(l)e.learn=l.checked;const to=$('#edTo');if(to)e.to=to.value;const pn=$('#edPend');if(pn)e.pend=pn.checked}
@@ -3128,7 +3236,7 @@ if('serviceWorker' in navigator&&window.isSecureContext){
   {const had=!!navigator.serviceWorker.controller;let done=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had||done)return;done=true;if(sheet.classList.contains('on'))return;location.reload()})}
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{try{r.update().catch(()=>{})}catch(e){}}).catch(()=>{})}
 window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
-window.__kk={S:S,D:D,KD:KD,reload:kkReload,totals:totals,setLayout:setLayout,go:t=>{closeBub();closeSheet();closeLay();if(S.tab===t)render();else go(t)},closeAll:()=>{closeBub();closeSheet();closeLay()}};
+window.__kk={S:S,D:D,KD:KD,reload:kkReload,totals:totals,setLayout:setLayout,go:t=>{closeBub();closeSheet();closeLay();if(S.tab===t)render();else go(t)},closeAll:()=>{closeBub();closeSheet();closeLay()},openSheet:(k,id)=>openSheet(k,id,false),render:()=>render()};
 })();
 </script>
 </body>
