@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v55');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v56');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2775,6 +2775,22 @@ function kmTrend(){if(!LV.mo)return '';
 zoneMoney=function(){if(!LV.mo)return mzHero()+kmLedger2();
  return mzHero()+`<div id="mz2">${mz2HTML()}</div>`+kmTrend()+kmAssets()+kmBig()+mzIn()+mzOut()+kmLedger2()};
 window.__zl=Object.assign(window.__zl||{},{loadMon});
+/* ---------- v56（2026-11-22）：案子卡、機會卡底部同一排 ----------
+   老大原話：「然後專案面板卡片跟機會卡片的排版再調整一下」「我覺得按鈕跟小臉圖示要同一排，現在好壅塞」
+   底部一排：左邊卡面鈕，右邊負責 Bot 的小臉，「⋯」在最右。放不下時從最後一顆往前收起（第一顆一定留著），收起的動作都在「⋯」裡。卡面字不變。 */
+const kfoot=(acts,faces,mine)=>`<div class="kfoot"><div class="cf-l">${acts||''}</div><div class="cf-r">${(faces||[]).filter(Boolean).join('')}${mine}</div></div>`;
+projCard=function(p){return `<article class="card cardx" data-card="${esc(p.id)}" data-act="copen" data-id="page|proj:${esc(p.id)}"><div class="meta">${chip(p.due,p.urg)}<span class="lbl">${esc(askCut(p.short||p.title,16))}</span></div><h3>${cgo(esc(p.ask),'page','proj:'+p.id)}</h3><div class="steps" role="img" aria-label="${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步">${p.steps.map((s,i)=>`<i class="${i<p.cur?'d':i===p.cur?'c':''}"></i>`).join('')}</div><p class="note">${esc(p.money)}</p>${kfoot('',[aiF(WHO[p.id]||'daqi','proj:'+p.id),p.g==='need'||p.g==='doing'?dinB('proj:'+p.id):''],mineB('proj:'+p.id,p.title))}</article>`};
+oppCard=function(o){const sn=o.st==='snoozed',w=oppWhat(o);
+ return `<article class="card cardx ocard" data-card="${esc(o.id)}"><div class="meta">${chip(sn?o.snz:o.due,!sn&&o.days<=4)}<span class="lbl">${esc(brief(BASK[o.b],o.org))}</span></div><h3>${cgo(esc(o.title),'sheet','opp:'+o.id)}</h3>${w?`<p class="owhat">${esc(w)}</p>`:''}<p class="amt" style="color:var(--ink)">${esc(oppAmt(o))}</p>`
+ +kfoot(B('深入了解','sheet','opp:'+o.id,'pri sm')+(sn?mb('放回清單','unsnooze',o.id):mb('暫存到明天','snooze',o.id))+(sn?'':mb('不要了','del',o.id)),[aiF('jiji','opp:'+o.id,o.took?'建好了':'')],mineB('opp:'+o.id,o.title))+`</article>`};
+// 案子房間的待辦、封存卡：「⋯」與去執行也收到底部同一排
+{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj;if(s!=='todo'&&s!=='arch')return _zp();
+ return _zp().replace(/<article class="card cardx" data-card="([^"]*)" data-act="copen" data-id="sheet\|cview:[^"]*">(<button class="mine"[\s\S]*?<\/button>)([\s\S]*?)(?:<div class="mrow">([\s\S]*?)<\/div>)?<\/article>/g,(m,id,mine,body,acts)=>m.slice(0,m.indexOf('>')+1)+body+kfoot(acts||'',[],mine)+'</article>')}}
+// 放不下時從最後一顆往前收（不換成兩排）
+function fitFoots(){document.querySelectorAll('.kfoot .cf-l').forEach(l=>{const bs=[...l.children];bs.forEach(b=>b.classList.remove('cfx'));
+ for(let i=bs.length-1;i>0&&l.scrollWidth>l.clientWidth+1;i--)bs[i].classList.add('cfx')})}
+{const _r=render;render=function(d){_r(d);fitFoots()}}
+addEventListener('resize',fitFoots);try{document.fonts&&document.fonts.ready.then(fitFoots)}catch(e){}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

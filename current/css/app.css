@@ -1165,3 +1165,15 @@ label.f textarea{margin-top:6px;resize:vertical}
 .mtTr .mtNoC{color:var(--ink2);grid-column:2/5;text-align:left!important}
 .mtNet b{font-weight:700}
 .mtNet .amt{font-weight:700}
+/* v56：案子卡、機會卡底部同一排（左：卡面鈕；右：負責 Bot 小臉＋「⋯」），垂直置中、不換行 */
+.kfoot{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:6px;min-height:44px;margin:6px -8px -8px 0}
+.cf-l{display:flex;align-items:center;gap:4px;flex:1 1 auto;min-width:0;overflow:hidden;flex-wrap:nowrap}
+.cf-l>*{flex:none}
+.cf-l>.mb:first-child{margin-left:-10px}
+.cf-l .cfx{display:none!important}
+.cf-r{display:flex;align-items:center;flex:none;gap:0}
+.cf-r .aif{margin:0}
+.kfoot .mine{position:static;flex:none}
+.btn.sm{min-height:44px;padding:0 12px;font-size:14px;white-space:nowrap}
+html[data-skin="2"] .kfoot,html[data-skin="5"] .kfoot{margin-right:0}
+.cf-l .mb{padding:0 8px}
