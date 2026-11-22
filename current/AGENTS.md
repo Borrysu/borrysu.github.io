@@ -69,3 +69,9 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 - 生活清單（`hub_life_items`）多一種 `kind='todo'`（待辦）。大器替老大加：`tools/rpc.sh hub_life_set '{"p_id":null,"p_kind":"todo","p_patch":{"name":"預約牙醫","note":"…"}}'`；回 `kind and name required`＝資料庫 v50 遷移還沒套，先用 `"p_kind":"rout"`、patch 加 `"cat":"_todo"`（遷移會轉正）。
 - 朋朋、萌萌自己寫生活清單：用轉送訊息裡的回覆票呼叫 `opp_bot_life_add`（只能新增，用法寫在 relay 轉給它們的訊息裡）。`tools/rpc.sh opp_bot_life_add '{}'` 回 PGRST202＝還沒套遷移。
 - 錢房間的主人是金金（理財）；記帳、帳戶明細、訂閱在塔塔記帳，不要再往逐流錢房間加記帳類功能。細節 `CLAUDE.md` 第 34 條。
+
+## v52（2026-11-22）：生活條目左滑編輯刪除、請朋朋買、錢房間只留入口
+
+- 生活每一項（例行、備品、待辦、想買）左滑出現「編輯」「刪除」，「⋯」也有同樣兩項。刪除＝`status:'dropped'`，各分頁底下「最近刪掉的」72 小時內救回（`hub_life_gone`、`hub_life_set status=active`）。v50 遷移已套，`kind='todo'` 直接收，不用再走 `rout＋_todo`。
+- 備品「要買」的按鈕是「請朋朋買」：整份清單經 `opp_msg_add(p_bot:'peng')` 交朋朋找、比價、下單；付款仍走付款授權單。
+- 錢房間：目標只在大色卡左右滑的「目標」頁，下面不開目標區；不放記帳功能，只留「要你按的」付款鈕與一列「打開塔塔記帳」。細節 `CLAUDE.md` 第 35 條。

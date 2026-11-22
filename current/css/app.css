@@ -1121,3 +1121,17 @@ html:not([data-skin="6"]):not([data-skin="4"]) .groomh .mzdots,html:not([data-sk
 .kmas .rt .lbl{min-width:34px;text-align:right}
 .kmas .gbar{margin-top:6px}
 label.f textarea{margin-top:6px;resize:vertical}
+
+/* v52：生活條目左滑出現編輯、刪除 */
+.sw{position:relative;overflow:hidden;touch-action:pan-y}
+.swrap{border-radius:var(--r)}
+.sw>.swf{position:relative;z-index:1;transition:transform .2s ease;will-change:transform}
+.rowi.sw>.swf{background:var(--solid)}
+.swa{position:absolute;top:0;right:0;bottom:0;width:144px;display:flex;visibility:hidden}
+.sw.swon>.swa{visibility:visible}
+.swa button{flex:1;display:flex;align-items:center;justify-content:center;min-height:44px;padding:0;border:0;font:600 14px/1.2 var(--zh);color:#fff}
+.swa .swe{background:#4d6a8f}.swa .swd{background:#b3402e}
+.swa button:focus-visible{outline:2px solid #fff;outline-offset:-4px}
+.swm{min-width:36px;justify-content:center;font-weight:700;letter-spacing:1px;padding:0 6px}
+.cartst{display:flex;gap:8px;align-items:center;margin-top:8px}
+@media (prefers-reduced-motion:reduce){.sw>.swf{transition:none}}

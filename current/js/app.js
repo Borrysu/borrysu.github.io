@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v51');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v52');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2608,6 +2608,107 @@ function kmBig(){const ws=(E()?[]:DB.wish).filter(w=>w.st!=='bought'&&!w.noPrice
 function kmLedger(){return mzPay().replace('<div class="rows mztata">',()=>`<section class="sec" id="secLedger">${sh('tata','記帳與帳單','塔塔管')}<div class="rows mztata">`).replace('每一筆、帳單、訂閱、帳戶。','每一筆明細、帳戶、訂閱、帳單都在那裡記與改。')+'</section>'}
 zoneMoney=function(){if(!LV.mo)return mzHero()+kmLedger();
  return mzHero()+`<div id="mz2">${mz2HTML()}</div>`+kmAssets()+mzGoals()+kmBig()+mzIn()+mzOut()+kmLedger()};
+/* ---------- v52（2026-11-22）：生活條目左滑編輯刪除、請朋朋買、錢房間不放目標區與記帳 ----------
+   老大原話：「然後生活那邊的條目也都要可以編輯跟刪除啊 左滑出現XX可以刪除之類或編輯」
+   「要買東西不用按複製購買清單，就是按下去讓朋朋去幫找幫買的意思」
+   「錢的目標不是用在上面大色卡移動嗎？」「記帳我不會在這邊記」
+   生活：例行、備品、待辦、想買每一項往左滑（手指或滑鼠拖，pointer 事件）出現「編輯」「刪除」；「⋯」裡也有同樣兩項。
+   刪除＝status dropped，72 小時內在各分頁底下「最近刪掉的」救回（hub_life_gone）。編輯經 hub_life_set 寫回，提示條可復原。
+   備品「要買」的「複製購物清單」換成「請朋朋買」：清單送給朋朋（v40 對話，Mac relay 轉送），朋朋找、比價、下單；付款仍走付款授權單。
+   錢：錢的目標只在大色卡左右滑的「目標」頁，下面不再另開目標區；記帳、帳戶、最近幾筆、訂閱、標已繳都不放，只留一列「打開塔塔記帳」與要你按的付款鈕。 */
+const LKN={rout:'例行',sup:'備品',todo:'待辦',wish:'想買'};
+function LI(id){const it=((LV.life&&LV.life.items)||[]).find(x=>x.id===id);if(it)return {k:isLT(it)?'todo':it.kind,x:it};
+ const f=(a,k)=>{const x=(a||[]).find(q=>q.id===id);return x?{k,x:x.raw2||x}:null};
+ return f(DB.ltodo,'todo')||f(DB.rout,'rout')||f(DB.sup,'sup')||f(DB.wish,'wish')}
+const swa=id=>`<div class="swa" aria-hidden="true"><button class="swe" tabindex="-1" data-act="ledit" data-id="${esc(id)}">編輯</button><button class="swd" tabindex="-1" data-act="ldel" data-id="${esc(id)}">刪除</button></div>`;
+// 刪掉的：資料庫 hub_life_gone 為主，這支手機記的補上（離線或剛刪還沒讀回）
+function lgoneAdd(id,k,name){const a=goneLocal().filter(g=>g.id!==id);a.unshift({id,kind:k,name,at:Date.now()});goneSave(a)}
+function lgone(k){const m=new Map(),ok=g=>k==='todo'?(g.kind==='todo'||g.cat==='_todo'):(g.kind===k&&g.cat!=='_todo');
+ (LV.lifeGone||[]).filter(ok).forEach(g=>m.set(g.id,{id:g.id,name:g.name}));goneLocal().filter(g=>(g.kind||'todo')===k).forEach(g=>{if(!m.has(g.id))m.set(g.id,g)});
+ const live=new Set(((LV.life&&LV.life.items)||[]).map(x=>x.id));return [...m.values()].filter(g=>!live.has(g.id))}
+ltGone=()=>lgone('todo');
+function goneSec(k){if(E()||k==='todo')return '';const g=lgone(k),op=!!S.open['lg'+k];if(!g.length)return '';
+ return `<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="lg${k}" aria-expanded="${op}"><span class="tx"><b>最近刪掉的${LKN[k]} ${g.length} 項</b><small>72 小時內可以救回</small></span><span class="rt"><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></span></button></div>${op?g.map(t=>`<div class="rowi"><div class="rowb"><span class="tx"><b style="font-weight:500">${esc(t.name)}</b></span><span class="rt">${mb('↺ 救回','lrestore',t.id)}</span></div></div>`).join(''):''}</div></section>`}
+// 每一列、每張想買卡加上左滑的兩顆與「⋯」
+function swDecorate(h){const t=document.createElement('template');t.innerHTML=h;
+ t.content.querySelectorAll('.rowi[data-card]').forEach(r=>{const id=r.getAttribute('data-card'),li=LI(id);if(!li)return;const f=r.querySelector(':scope>.rowb');if(!f)return;
+  r.classList.add('sw');r.setAttribute('data-sw',id);f.classList.add('swf');r.insertAdjacentHTML('afterbegin',swa(id));
+  let rt=f.querySelector(':scope>.rt');if(!rt){f.insertAdjacentHTML('beforeend','<span class="rt"></span>');rt=f.querySelector(':scope>.rt')}
+  rt.insertAdjacentHTML('beforeend',`<button class="mb swm" data-act="mine" data-id="life:${esc(id)}" aria-label="編輯或刪除：${esc(li.x.name||'')}"><span aria-hidden="true">⋯</span></button>`)});
+ t.content.querySelectorAll('.stack>.card[data-card]').forEach(c=>{const id=c.getAttribute('data-card'),li=LI(id);if(!li||li.k!=='wish')return;
+  const w=document.createElement('div');w.className='swrap sw';w.setAttribute('data-sw',id);c.classList.add('swf');c.parentNode.insertBefore(w,c);w.insertAdjacentHTML('afterbegin',swa(id));w.appendChild(c)});
+ return t.innerHTML}
+{const f=zoneLife;zoneLife=function(){const s=S.sub.life;let h=f();
+ if(s==='sup')h=h.replace('<button class="more" data-act="copy">複製購物清單</button>',()=>`<button class="more" data-act="cartbuy">請朋朋買</button>`);
+ if(s==='sup'){const c=cartNote();if(c)h=h.replace(/(<section class="sec" style="margin-top:14px">[\s\S]*?<\/section>)/,(m)=>m.replace(/<\/section>$/,c+'</section>'))}
+ if(LV.life||!E())h=swDecorate(h);
+ return h+(['rout','sup','wish'].includes(s)?goneSec(s):'')}}
+// 「⋯」：生活列＝編輯、刪除；想買卡原本的清單加「編輯」
+{const f=mineSheet;mineSheet=function(id){const i=id.indexOf(':'),k=id.slice(0,i),x=id.slice(i+1);
+ if(k==='life'){const li=LI(x);if(!li)return shHead('這項不在了');return shHead(esc(clip(li.x.name,24)))+`<div class="mlist">${mi('✎','編輯','ledit',x)}${mi('🗑','刪除（72 小時內可救回）','ldel',x)}</div>`}
+ const h=f(id);return k==='wish'&&LI(x)?h.replace('<div class="mlist">',()=>'<div class="mlist">'+mi('✎','編輯','ledit',x)):h}}
+// 編輯抽屜：照種類給欄位
+const LF={rout:[['name','名稱','text'],['last_date','上次做的日期','date'],['cycle_days','多久一次（天）','number']],
+ sup:[['name','名稱','text'],['cat','分類','text'],['note','備註','area']],
+ wish:[['name','品名','text'],['price','價格（NT$）','number'],['shop','店家','text'],['url','網址','url'],['note','規格或備註','area']]};
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='ledit')return _s();const li=LI(a.slice(1).join(':'));if(!li)return shHead('這項不在了');
+ if(li.k==='todo'){S.sheet='ltodo:'+li.x.id;return sheetHTML()}
+ const x=li.x,fs=LF[li.k]||LF.sup;
+ return shHead('編輯'+LKN[li.k]+'：'+esc(clip(x.name,16)))+fs.map(([k,l,ty])=>{const v=x[k]==null?'':String(x[k]);
+  return ty==='area'?`<label class="f">${l}<textarea id="le_${k}" rows="3" maxlength="500">${esc(v)}</textarea></label>`
+   :`<label class="f">${l}<input id="le_${k}" type="${ty}"${ty==='number'?' inputmode="numeric" min="0"':''}${ty==='date'?` max="${today()}"`:''} maxlength="${k==='url'?500:200}" autocomplete="off" value="${esc(ty==='date'?v.slice(0,10):v)}"></label>`}).join('')
+  +`${S.err==='le'?'<p class="err" role="alert">▲ 名稱不能空白。</p>':''}<div class="btns">${B('存好這一項','lsave',x.id,'pri wide')}</div><div class="mrow">${mb('🗑 刪除','ldel',x.id)}</div>`}}
+ACT.ledit=id=>{swCloseAll(true);S.err='';ACT.sheet('ledit:'+id)};
+ACT.lsave=id=>{const li=LI(id);if(!li)return;const fs=LF[li.k]||LF.sup,p={},old={};
+ for(const [k,,ty] of fs){const el=$('#le_'+k);if(!el)continue;let v=el.value.trim();
+  if(k==='name'&&!v){S.err='le';render('keep');return}
+  if(ty==='number'){if(v===''){if(k==='cycle_days')continue;v=null}else{v=Math.max(0,+v);if(!isFinite(v))continue;if(k==='cycle_days')v=Math.max(1,Math.round(v))}}
+  if(k==='url'&&v&&!/^https?:\/\//i.test(v)){toast('網址要 http 或 https 開頭');return}
+  const o=li.x[k]==null?(ty==='number'?null:''):li.x[k];if(String(v==null?'':v)===String(o==null?'':ty==='date'?String(o).slice(0,10):o))continue;p[k]=v;old[k]=o}
+ S.err='';if(!Object.keys(p).length){closeThen(()=>toast('沒有改到東西'));return}
+ closeThen(()=>lw(id,null,p,'存好了：'+clip(p.name||li.x.name,20),{patch:old}))};
+ACT.ldel=id=>{const li=LI(id);if(!li)return;swCloseAll(true);const st=li.x.status==='done'?'done':'active';
+ closeThen(()=>{lgoneAdd(id,li.k,li.x.name);lw(id,null,{status:'dropped'},`刪掉了：${clip(li.x.name,16)}，72 小時內可救回`,{patch:{status:st}}).then(()=>{if(LV.api.lifeGone)LV.api.lifeGone().then(d=>{LV.lifeGone=Array.isArray(d)?d:LV.lifeGone;LV.sig='';paint()}).catch(()=>{})})})};
+ACT.lrestore=id=>{LV.api.lifeSet(id,null,{status:'active'}).then(()=>{goneDel(id);if(LV.lifeGone)LV.lifeGone=LV.lifeGone.filter(g=>g.id!==id);toast('救回來了');return reloadLife()}).catch(e=>toast('沒救回：'+LERR(e)))};
+ACT.ltrestore=ACT.lrestore;
+{const f=ACT.mine;ACT.mine=id=>{swCloseAll(true);return f(id)}}
+// 請朋朋買：要買的備品整份交給朋朋找、比價、下單；付款仍要老大按付款鈕
+const CARTK='zl_cart_ask';
+function cartNote(){let c=null;try{c=JSON.parse(localStorage.getItem(CARTK)||'null')}catch(e){}if(!c||Date.now()-c.at>3*864e5)return '';
+ const left=tobuy().filter(u=>c.ids.includes(u.id)).length;if(!left)return '';
+ return `<p class="note cartst">${bm('peng','','sm')}<span>${LMD(c.at)} ${LHM(c.at)} 請朋朋買了 ${c.ids.length} 樣，還有 ${left} 樣沒標買好。付款時朋朋會開授權單給你按。</span></p>`}
+ACT.cartbuy=(id,el)=>{const a=tobuy();if(!a.length){toast('沒有要買的備品');return}
+ const lines=a.map(u=>`・${u.name}（${u.cat}${u.raw2&&u.raw2.note?'，'+u.raw2.note:''}，備品編號 ${u.id}）`).join('\n');
+ try{localStorage.setItem(CARTK,JSON.stringify({at:Date.now(),ids:a.map(u=>u.id)}))}catch(e){}
+ LV.sig='';botAsk('peng',`【請朋朋買】老大要買這 ${a.length} 樣備品，請幫忙找、比價後下單：\n${lines}\n付款請開付款授權單，等老大在逐流按付款鈕，不要自己付。買好跟我說是哪幾樣`,'sup:cart')};
+WRITE.push('ledit','lsave','ldel','lrestore','cartbuy');
+// 左滑：手指或滑鼠拖都行（pointer 事件，拾穗 #42）。只開一列；點別處或捲動就收回
+const SWW=144;let SWD=null,swNoClick=0;
+const swFront=el=>el.querySelector(':scope>.swf');
+function swSet(el,x,anim){const f=swFront(el);if(!f)return;f.style.transition=anim?'':'none';f.style.transform=x?`translateX(${x}px)`:''}
+function swOpen(el,on){if(!el)return;const a=el.querySelector(':scope>.swa');
+ if(on){swCloseAll(false,el);el.classList.add('swon','open');swSet(el,-SWW,true);if(a){a.removeAttribute('aria-hidden');a.querySelectorAll('button').forEach(b=>b.removeAttribute('tabindex'))}}
+ else{el.classList.remove('open');swSet(el,0,true);if(a){a.setAttribute('aria-hidden','true');a.querySelectorAll('button').forEach(b=>b.setAttribute('tabindex','-1'))}setTimeout(()=>{if(!el.classList.contains('open'))el.classList.remove('swon')},RM?0:220)}}
+function swCloseAll(now,keep){document.querySelectorAll('.sw.open').forEach(el=>{if(el!==keep)swOpen(el,false)})}
+document.addEventListener('pointerdown',e=>{const el=e.target.closest&&e.target.closest('[data-sw]');
+ if(!el){if(!(e.target.closest&&e.target.closest('.swa')))swCloseAll();return}
+ if(e.button>0||e.target.closest('.swa'))return;SWD={el,x:e.clientX,y:e.clientY,t:performance.now(),id:e.pointerId,on:0,base:el.classList.contains('open')?-SWW:0,dx:0}},{passive:true});
+document.addEventListener('pointermove',e=>{if(!SWD||e.pointerId!==SWD.id)return;const dx=e.clientX-SWD.x,dy=e.clientY-SWD.y;
+ if(!SWD.on){if(Math.abs(dx)>10&&Math.abs(dx)>Math.abs(dy)*1.2){SWD.on=1;swCloseAll(false,SWD.el);SWD.el.classList.add('swon');try{SWD.el.setPointerCapture(e.pointerId)}catch(_){}}else{if(Math.abs(dy)>10)SWD=null;return}}
+ let x=SWD.base+dx;if(x>0)x*=.25;if(x<-SWW)x=-SWW+(x+SWW)*.3;SWD.dx=dx;swSet(SWD.el,x,false)},{passive:true});
+function swEnd(e){if(!SWD||e.pointerId!==SWD.id)return;const m=SWD;SWD=null;if(!m.on)return;swNoClick=performance.now();
+ const vel=m.dx/Math.max(1,performance.now()-m.t),x=m.base+m.dx;swOpen(m.el,vel<-.4||(vel<=.4&&x<-SWW/2))}
+document.addEventListener('pointerup',swEnd);document.addEventListener('pointercancel',swEnd);
+document.addEventListener('click',e=>{if(performance.now()-swNoClick<350&&e.target.closest&&e.target.closest('[data-sw]')&&!e.target.closest('.swa')){e.stopPropagation();e.preventDefault()}},true);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')swCloseAll()});
+addEventListener('scroll',()=>{if(!SWD&&document.querySelector('.sw.open'))swCloseAll()},{passive:true,capture:true});
+
+/* ---------- 錢：目標只在大色卡；記帳只留一列入口 ---------- */
+function kmLedger2(){const all=E()?[]:DB.due.filter(d=>!d.paid),hand=all.filter(d=>!d.auto&&d.in<=7);
+ return `${hand.length?`<section class="sec" id="secDue">${sh('tata','要你按的',`7 天內 ${hand.length} 筆`)}<div class="stack">${hand.map(d=>`<div class="card dr" data-card="${esc(d.id)}"><div class="meta">${chip(`${d.due} 截止・剩 ${d.in} 天`,d.in<=3)}<span class="lbl">要手動繳</span></div><div class="li"><div><h3>${esc(d.name)}</h3></div><span class="amt">${nt(d.amt)}</span></div>${payHTML('d_'+d.id)}</div>`).join('')}</div></section>`:''}
+ <section class="sec" id="secLedger"><div class="rows mztata"><div class="rowi"><a class="rowb" href="https://borrysu.github.io/kakeibo/" target="_blank" rel="noopener"><span class="tx"><b>打開塔塔記帳</b><small>記帳、帳單、訂閱在那裡</small></span><span class="rt"><span class="chev" aria-hidden="true">↗</span></span></a></div></div></section>`}
+zoneMoney=function(){if(!LV.mo)return mzHero()+kmLedger2();
+ return mzHero()+`<div id="mz2">${mz2HTML()}</div>`+kmAssets()+kmBig()+mzIn()+mzOut()+kmLedger2()};
 window.__zl=Object.assign(window.__zl||{},{loadMon});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
