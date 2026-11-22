@@ -1031,7 +1031,8 @@ decActs=function(d){
  return `<div data-dec="${esc(d.id)}">${h}</div>`};
 decCard=function(d){return `<article class="card cardx" data-card="${esc(d.id)}">${mineB('dec:'+d.id,'這件拍板')}<div class="meta">${aiF('daqi','dec:'+d.id)}${chip(d.proj)}<span class="lbl">${esc(d.ago)}</span></div><h3>${esc(d.q)}</h3>${d.detail?`<p>${esc(d.detail)}</p>`:''}${decActs(d)}${aifs([dinB('dec:'+d.id)])}</article>`};
 // 拍板卡的「⋯」直接打開那件的抽屜（其他做法、來龍去脈）
-{const _m=ACT.mine;ACT.mine=id=>id.indexOf('dec:')===0?ACT.sheet(id):_m(id)}
+{const _m=ACT.mine;ACT.mine=id=>{if(id.indexOf('dec:')===0){S.more[id.slice(4)]=true;return ACT.sheet(id)}return _m(id)}}
+ACT.decopen=id=>{S.more[id]=true;ACT.sheet('dec:'+id)};
 jobList=function(){const j=jobs();if(!j.length)return `<div class="card"><p>現在沒有在跑的工作。</p></div>`;
  return `<div class="rows">`+j.map(x=>`<div class="rowi"><div class="rowb">${aiF(x.bot,'job:'+x.id)}<span class="tx"><b>${esc(x.title)}</b><small>${esc(x.who)}・${esc(x.ago)}</small></span><span class="rt">${chip(x.st,x.wait)}</span></div></div>`).join('')+`</div>`};
 // v37：最近做完只留一句話（老大 2026-11-22：「最近做完那些文字也太亂」），全文在「看全部」頁點開
@@ -1627,7 +1628,7 @@ ACT.cvstep=id=>{const j=id.lastIndexOf(':'),z=id.slice(0,j);cvGo(z,(S.cv[z]||0)+
 
 /* 拍板：一件一頁 */
 function decSlide(d,n){const rec=d.kind==='talk'?null:(d.opts.find(o=>o.rec)||d.opts[0]);
- return {id:d.id,name:d.proj,html:`<div class="dslide" data-card="${esc(d.id)}">${mineB('dec:'+d.id,'這件拍板')}<div class="bandtop"><span class="lbl who">${aiF('daqi','dec:'+d.id)}<span class="dproj">${esc(d.proj)}</span></span><span class="lbl">${esc(d.ago)}</span></div><h2 class="dq" data-act="decmore" data-id="${esc(d.id)}">${esc(String(d.q||'').replace(/\s*([\u2460-\u2469])/g,'\n$1').trim())}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div>`:decActs(d)}${aifs([dinB('dec:'+d.id)])}</div>`}}
+ return {id:d.id,name:d.proj,html:`<div class="dslide" data-card="${esc(d.id)}">${mineB('dec:'+d.id,'這件拍板')}<div class="bandtop"><span class="lbl who">${aiF('daqi','dec:'+d.id)}<span class="dproj">${esc(d.proj)}</span></span><span class="lbl">${esc(d.ago)}</span></div><h2 class="dq" data-act="decopen" data-id="${esc(d.id)}">${esc(String(d.q||'').replace(/\s*([\u2460-\u2469])/g,'\n$1').trim())}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div><div class="mrow"><button class="mb" data-act="decopen" data-id="${esc(d.id)}">其他做法・看細節</button></div>`:decActs(d)}${aifs([dinB('dec:'+d.id)])}</div>`}}
 ACT.decmore=id=>{const e=document.querySelector(`.dslide[data-card="${CSS.escape(id)}"] .dq`);if(e){e.classList.toggle('open');const v=e.closest('.mzv');if(v)try{cvFit(v)}catch(_){}}};
 function decBand(){const d=decs();if(!d.length)return null;const prev=CV.dec&&CV.dec.ids,gone=prev&&prev.length>d.length;
  const car=cvWrap('dec',d.map(x=>decSlide(x,d.length)),'等你拍板的事');
@@ -2051,7 +2052,7 @@ WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v37');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v38');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
