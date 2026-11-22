@@ -3762,7 +3762,11 @@ function kkVH() {
 kkVH(); window.addEventListener('resize', kkVH); window.addEventListener('orientationchange', function () { setTimeout(kkVH, 300); });
 /* ---------- v34.4 信用卡欠款拆兩筆：上期帳單未繳、本期未出帳 ----------
  上期未繳先用 debts 裡名稱對得上這張卡的那筆，沒有就讀帳戶備註「未繳 N」；都沒有就不拆。本期＝卡片欠款減上期未繳。 */
-function ccSplit(card, owe, debts) {
+/* v34.6：上期未繳先讀 get_overview.card_debts（debts 原表 linked_account_id 有值的那幾筆，已含在卡片餘額裡，只拆列不加總）；沒有才照舊讀 debts 名稱、帳戶備註 */
+function ccSplit(card, owe, debts, cardDebts) {
+  var cds = (cardDebts || []).filter(function (x) { return card.id != null && String(x.linked_account_id) === String(card.id); }), cd = cds.filter(function (x) { return Number(x.remaining) > 0; })[0];
+  if (cd) return { prev: Math.min(owe, Number(cd.remaining)), src: '欠款「' + cd.name + '」', debtName: cd.name };
+  if (cds.length) return { prev: null, src: null }; /* 原表有連到這張卡但已還清：不拆，也不再讀舊備註 */
   var names = [card.name].concat(card.aliases || []);
   var d = (debts || []).filter(function (x) { var n = String(x.name || ''); return Number(x.remaining) > 0 && names.some(function (m) { return n === m || n.indexOf(m) >= 0 || m.indexOf(n) >= 0; }); })[0];
   if (d) return { prev: Math.min(owe, Number(d.remaining)), src: '欠款「' + d.name + '」', debtName: d.name };
@@ -3834,7 +3838,7 @@ function debtItems(d) {
   var L = [], cd = {}; (d.bills || []).forEach(function (b) { if (b.card) cd[b.acId] = b; });
   var used = {}, odebts = (KD.o && KD.o.debts) || [];
   S.accts.filter(function (a) { return (a.k === 'credit_card' || a.k === 'loan_in') && !a.arch && a.bal < 0; }).forEach(function (a) { var b = cd[a.id], owe = -a.bal, due = b ? b.due + '，' + rel(b.rel) : (a.ldue || '沒有日子');
-    if (a.k === 'credit_card') { var sp = ccSplit({ name: a.n, aliases: a.raw && a.raw.aliases, note: a.raw && a.raw.note }, owe, odebts);
+    if (a.k === 'credit_card') { var sp = ccSplit({ id: a.rid, name: a.n, aliases: a.raw && a.raw.aliases, note: a.raw && a.raw.note }, owe, odebts, KD.o && KD.o.card_debts);
       if (sp.prev != null) { if (sp.debtName) used[sp.debtName] = 1;
         L.push({ key: 'ccp:' + a.id, name: a.n + '｜上期帳單未繳', per2: '上期帳單', rem: sp.prev, prin: null, paid: null, due: '沒有日子', sub: '上期帳單（照' + sp.src + '）', sk: 'acct', sid: a.id, acc: a });
         L.push({ key: 'acct:' + a.id, name: a.n + '｜本期未出帳', per2: '本期未出帳', rem: owe - sp.prev, prin: null, paid: null, due: due, sub: '本期未出帳（欠款 ' + fmt(owe) + ' 減上期未繳）', sk: 'acct', sid: a.id, acc: a }); return; } }
