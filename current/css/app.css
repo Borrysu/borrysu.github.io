@@ -755,6 +755,7 @@ html body .bm.bf[data-b=din]{background:none!important;padding:0}
 .cgo::after{content:'';position:absolute;inset:0;z-index:0;border-radius:inherit}
 .cgo:focus-visible{outline:none}.cgo:focus-visible::after{outline:2px solid var(--ink);outline-offset:-2px}
 .cardx .sync,.cardx .btns,.cardx .cmp,.cardx .gcn{position:relative;z-index:1}
+.cardx .mrow{position:relative;z-index:1}   /* v46：卡面基本操作鈕要在撐滿的標題按鈕上面 */
 .wk{margin-top:8px;font-size:13px;color:var(--ink2)}
 
 /* 浮動頭像（右下）、浮窗角落、右上入口：拿掉圓框、圓底與光圈，只剩本體形狀；亮底暗底都靠很淡的陰影看清楚 */

@@ -2427,7 +2427,7 @@ WRITE.push('hshelf','hsave','csave','tdel','pkill');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v46');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v47');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
