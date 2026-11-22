@@ -2486,7 +2486,8 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 /* ---------- 開機 ---------- */
 (async()=>{try{
  const A=await import('./adapter.js?v59');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
- LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
+ LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
+ if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
  if(LV.api.subscribe)LV.api.subscribe(()=>reload(),()=>{});
@@ -2812,6 +2813,120 @@ function decFollowSec(){const a=decFollow();if(!a.length)return '';const live=a.
  const d=((LV.hub&&LV.hub.answered)||[]).find(x=>x.id===id),j=d&&decJob(id);if(!d||!j)return shHead('這件不在了');const s=(JST[j.status]||['進行中'])[0];
  const note=String(j.note||'').replace(/^決定 [^｜]+｜(老大選「[^」]*」｜)?/,'');
  return shHead(esc(askCut(d.question,40)))+kvs([['你選',d.answerLabel],['誰在做',j.agent],['狀態',s],['案子',d.project],['更新',tstr(j.updatedAt)]])+fullP('問題',d.question)+fullP('做到哪',note)+(j.resultPath?`<p class="h4">成果</p><p class="note" style="word-break:break-all">${esc(j.resultPath)}</p>`:'')}}
+/* ---------- v60（2026-11-22）：正式登入＋公司卡 ----------
+   老大原話：「我希望能直接打因為只會有我用」「大不了金鑰 跟正式登入處理 反正公司卡也要弄」
+   「公司卡片可以同步到我面板來嗎 可以的話上面要能派肉咖工作也能派大器」
+   登入：沒有網址金鑰也沒登入時，顯示登入頁（email 收登入碼，或點信裡的連結）。網址金鑰照舊能用，兩種並存。
+   公司卡：案子房間多一個「公司」分頁。肉咖從皮條客同步要你決定的、你負責的、進行中的；每張卡兩張臉：肉咖（派公司電腦做）、大器（開對話，帶這張卡）。 */
+BOTS.rouka={name:'肉咖',mono:'肉',zone:'公司',role:'公司電腦上的大器同事，做好咖的事。',beat:'',cmds:[],can:'整理皮條客的卡、在公司電腦做公司案子的事，做完回報到這張卡',cant:'不從逐流對公司群組發訊（照肉咖自己的規則）、不付款'};
+ROLE.rouka='公司電腦・做好咖的事';
+// ---- 登入頁 ----
+const LG={step:'email',email:'',err:'',busy:0};
+try{LG.email=localStorage.getItem('opp_lg_email')||''}catch(e){}
+function loginHTML(){const e=esc(LG.email),err=LG.err?`<p class="err" role="alert">▲ ${esc(LG.err)}</p>`:'',bz=LG.busy?' disabled':'';
+ const body=LG.step==='code'
+  ?`<p class="note">登入碼寄到 <b>${e}</b> 了。打信裡那串數字，或直接點信裡的連結（在主畫面 App 裡請打數字）。</p>
+    <label class="f">登入碼<input id="lgCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="信裡的數字"></label>${err}
+    <div class="btns">${B(LG.busy?'登入中…':'登入','lgverify',null,'pri wide',bz)}</div>
+    <div class="mrow">${mb('再寄一次','lgsend',null,bz)}${mb('換一個 email','lgback')}</div>`
+  :`<label class="f">你的 email<input id="lgEmail" type="email" inputmode="email" autocomplete="email" value="${e}" placeholder="登入用的 email"></label>${err}
+    <div class="btns">${B(LG.busy?'寄送中…':'寄登入碼給我','lgsend',null,'pri wide',bz)}</div>`;
+ return `<div class="zh" data-z="today"><h1>逐流</h1><p class="sum">只有老大能登入。登入一次，這台會記住。</p></div>
+ <section class="card login" style="margin-top:14px">${body}</section>
+ <div class="mrow" style="margin-top:12px">${mb('我有專屬網址','pastekey')}${mb('先看示範','lgdemo')}</div>`}
+function loginShow(msg){LV.login=1;if(msg)LG.err=msg;
+ const v=$('#view');if(!v)return;v.innerHTML=loginHTML();
+ [document.querySelector('.tabs'),$('#dock'),$('#hav'),$('#chead'),$('#offline')].forEach(x=>{if(x)x.hidden=true});
+ const st=$('#stamp');if(st)st.textContent='請先登入';
+ const f=$(LG.step==='code'?'#lgCode':'#lgEmail');if(f&&!LG.busy)try{f.focus({preventScroll:true})}catch(e){}}
+ACT.lgsend=async()=>{if(LG.busy)return;const i=$('#lgEmail');if(i)LG.email=i.value.trim();
+ if(!LG.email){LG.err='先填 email';return loginShow()}
+ LG.busy=1;LG.err='';loginShow();
+ try{await LV.A.authSendCode(LG.email);try{localStorage.setItem('opp_lg_email',LG.email)}catch(e){}LG.step='code';toast('登入碼寄出了，去收信')}
+ catch(e){LG.err=e&&e.kind==='rate'?'寄太多次了，等一分鐘再試':e&&e.kind==='auth'?'這個 email 不能登入（只有老大的帳號可以）':LERR(e)}
+ LG.busy=0;loginShow()};
+ACT.lgverify=async()=>{if(LG.busy)return;const c=$('#lgCode'),v=c?c.value:'';
+ LG.busy=1;LG.err='';loginShow();
+ try{await LV.A.authVerify(LG.email,v);location.reload();return}
+ catch(e){LG.err=e&&e.kind==='state'?e.message:e&&e.kind==='rate'?'試太多次了，等一分鐘':'登入碼不對或過期了，再寄一次'}
+ LG.busy=0;loginShow()};
+ACT.lgback=()=>{LG.step='email';LG.err='';loginShow()};
+ACT.lgdemo=()=>{location.href=location.pathname+'?mock=1'};
+ACT.lgout=async()=>{if(!confirm('登出這台？之後要再收一次登入碼。'))return;await LV.A.signOut();location.reload()};
+document.addEventListener('keydown',e=>{if(!LV.login||e.key!=='Enter')return;const t=e.target;if(t&&t.id==='lgEmail'){e.preventDefault();ACT.lgsend()}else if(t&&t.id==='lgCode'){e.preventDefault();ACT.lgverify()}});
+// 登入中途過期：回登入頁（網址金鑰失效照舊顯示「金鑰失效」）
+{const _p=paint;paint=function(d){if(LV.net==='auth'&&LV.A&&!LV.A.hasKey()&&!LV.forced){LG.step='email';return loginShow('登入過期了，再登入一次')}return _p(d)}}
+// 大器對話的「能做什麼」底下：這台的登入狀態與登出
+{const _c=chatShell;chatShell=function(on){const h=_c(on);if(on.b!=='daqi'||!LV.A||!LV.A.hasSession()||LV.A.hasKey())return h;
+ return h.replace(/(<div class="cinfo" id="cInfo" hidden><div class="can" style="margin:0">[\s\S]*?)(<\/div><\/div>)/,(m,a,c)=>a+'<div><b>這台</b><span>用 email 登入（'+esc(LV.A.sessionEmail())+'）・<button class="mb" data-act="lgout">登出這台</button></span></div>'+c)}}
+// ---- 公司卡 ----
+const CO_DEMO=()=>{const x=/xss/.test(location.search)?'<img src=x onerror="window.__xss.push(1)">':'';
+ return {meta:{lines:['這週要你決定 2 件：示意品牌短片報價、示意活動場地'+x,'進行中 3 件，最急的是示意形象片 12/5 交初剪'],decide_n:2,case_n:5,written_at:new Date(Date.now()-35*60000).toISOString()},
+  cards:[{id:'c1',source_id:'d1',title:'示意品牌短片：報價要不要降到 8 萬'+x,ask:'選要不要降價接示意品牌短片',status:'等老大決定',owner:'老大',project:'示意品牌',due:new Date(Date.now()+2*864e5).toISOString().slice(0,10),need_you:true,detail:'客戶回價 8 萬，原報 10 萬。降價的話剪接天數要從 5 天縮成 4 天。（示意資料）',link:'https://example.com/'},
+   {id:'c2',source_id:'d2',title:'示意活動場地二選一',ask:'選示意活動要用 A 棚還是 B 棚',status:'等老大決定',owner:'老大',project:'示意活動',need_you:true,detail:'A 棚便宜 3 千但要自己搬燈。（示意資料）'},
+   {id:'c3',source_id:'d3',title:'示意形象片初剪',ask:'',status:'剪接中',owner:'示意同事',project:'示意形象片',due:new Date(Date.now()+12*864e5).toISOString().slice(0,10),need_you:false,detail:'初剪 12/5 交。（示意資料）'}],
+  tasks:[{id:1,card_id:'c3',assignee:'rouka',body:'整理進度給我',status:'running',created_at:new Date(Date.now()-6e5).toISOString()}]}};
+const coDays=d=>{if(!d)return null;const t=new Date(d+'T00:00:00+08:00');return Math.ceil((t-Date.now())/864e5)};
+const coDue=c=>{const n=coDays(c.due);return n==null?(c.status||'公司'):n<0?`過期 ${-n} 天`:n===0?'今天截止':`${n} 天後`};
+function coData(){return LV.mode==='live'?LV.co:(LV.coDemo||(LV.coDemo=CO_DEMO()))}
+function coTaskOf(id,who){const d=coData();return d&&Array.isArray(d.tasks)?d.tasks.find(t=>t.card_id===id&&t.assignee===who):null}
+function coSt(t){if(!t)return '';const s=t.assignee==='daqi'?(t.job_status||t.status):t.status;return {queued:'排隊中',taken:'進行中',running:'進行中',waiting_mac:'等 Mac 開機',waiting_you:'等你',done:'做完了',failed:'沒做成',cancelled:''}[s]||''}
+function coCard(c){const id='co:'+c.id,n=coDays(c.due),rt=coTaskOf(c.id,'rouka'),dt=coTaskOf(c.id,'daqi');
+ return `<article class="card cardx" data-card="${esc(id)}"><div class="meta">${chip(coDue(c),n!=null&&n<=3)}<span class="lbl">${esc(brief(c.project||'公司',c.owner||''))}</span></div><h3>${cgo(esc(c.ask||c.title),'sheet',id)}</h3>${c.ask?`<p class="owhat">${esc(c.title)}</p>`:''}${c.status?`<p class="note">皮條客：${esc(c.status)}</p>`:''}`
+ +kfoot(mb('看細節','sheet',id),[aiF('rouka',id,coSt(rt),{do:'coRouka',arg:c.id}),aiF('daqi',id,coSt(dt))],'')+`</article>`}
+const coEmpty=(big,p)=>`<div class="card empty"><div class="big">${big}</div><p class="note">${p}</p></div>`;
+function coSection(){const d=coData();
+ if(LV.coNo==='nofn')return coEmpty('資料庫還沒更新','公司卡要等這次的資料庫更新套上才會出現。');
+ if(LV.coNo==='forbidden')return coEmpty('這把金鑰看不到公司卡','只有老大本人（專屬網址或登入）看得到。');
+ if(LV.coErr&&!d)return coEmpty('公司卡沒讀到',esc(LV.coErr));
+ const m=d&&d.meta,cs=d&&Array.isArray(d.cards)?d.cards:[];
+ if(!m&&!cs.length)return `<section class="sec">${sh('','公司')}<div class="card empty"><div class="big">肉咖還沒寫</div><p class="note">公司電腦的肉咖同步過來後，要你決定的事、你負責的案子會出現在這裡。</p><div class="btns">${aifs([aiF('rouka','co:')])}</div></div></section>`;
+ const ago=m&&m.written_at?LHM(new Date(m.written_at).getTime()):'',need=cs.filter(c=>c.need_you),rest=cs.filter(c=>!c.need_you);
+ let h=`<section class="sec">${sh('','公司重點',ago?`肉咖 ${esc(ago)} 寫的`:'')}<div class="card">${m&&Array.isArray(m.lines)&&m.lines.length?`<ul class="colines">${m.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:'<p class="note">肉咖還沒寫重點。</p>'}<p class="note">要你決定 <b class="num">${m&&m.decide_n!=null?+m.decide_n:need.length}</b> 件・公司案子 <b class="num">${m&&m.case_n!=null?+m.case_n:cs.length}</b> 件</p></div></section>`;
+ if(need.length)h+=`<section class="sec">${sh('','要你決定',need.length+' 件')}<div class="stack stg grid2">${need.map(coCard).join('')}</div></section>`;
+ if(rest.length)h+=`<section class="sec">${sh('','進行中',rest.length+' 件')}<div class="stack stg grid2">${rest.map(coCard).join('')}</div></section>`;
+ return h}
+{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj,d=coData(),n=d&&Array.isArray(d.cards)?d.cards.length:0,btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:co">公司 ${n}</button>`;
+ if(s!=='co')return _zp().replace(/(<div class="seg" role="group" aria-label="案子分類">[\s\S]*?)(<\/div>)/,(x,a,b)=>a+btn(false)+b);
+ S.sub.proj='proj';let h;try{h=_zp()}finally{S.sub.proj='co'}
+ const i=h.indexOf('<div class="seg" role="group" aria-label="案子分類">'),j=i<0?-1:h.indexOf('</div>',i);
+ if(j<0)return h+coSection();
+ return h.slice(0,j).replace(/aria-pressed="true"/g,'aria-pressed="false"')+btn(true)+'</div>'+coSection()}}
+// 詳情與派肉咖
+const coFind=id=>{const d=coData();return d&&Array.isArray(d.cards)?d.cards.find(c=>c.id===id):null};
+function coSheet(id){const c=coFind(id);if(!c)return shHead('這張公司卡不在了');const d=coData(),ts=(d.tasks||[]).filter(t=>t.card_id===id),link=/^https:\/\//i.test(String(c.link||''))?c.link:'';
+ return shHead(esc(c.ask||c.title))+`<div class="meta" style="margin-top:8px">${chip(coDue(c),(coDays(c.due)??9)<=3)}<span class="lbl">${esc(brief(c.project||'公司',c.owner||''))}</span></div>
+ ${c.ask?`<p class="h4">${esc(c.title)}</p>`:''}<dl class="kv">${c.status?`<div><dt>皮條客狀態</dt><dd>${esc(c.status)}</dd></div>`:''}${c.owner?`<div><dt>誰負責</dt><dd>${esc(c.owner)}</dd></div>`:''}${c.due?`<div><dt>期限</dt><dd>${esc(c.due)}</dd></div>`:''}</dl>
+ ${c.detail?`<p style="white-space:pre-wrap">${esc(c.detail)}</p>`:''}
+ <div class="btns">${B('派肉咖做','coRouka',id,'pri')}${B('跟大器說','coDaqi',id)}${link?`<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener noreferrer">在皮條客打開</a>`:''}</div>
+ ${ts.length?`<p class="h4">派過的工作</p><div class="rows">${ts.map(t=>`<div class="rowi"><div class="rowb">${bm(t.assignee==='daqi'?'daqi':'rouka','z')}<span class="tx"><b>${esc(t.body)}</b><small>${esc(BOTS[t.assignee==='daqi'?'daqi':'rouka'].name)}・${esc(coSt(t)||'')}${t.result?'・'+esc(t.result):t.job_note?'・'+esc(t.job_note):''}</small></span></div></div>`).join('')}</div>`:''}
+ <p class="note">公司資料只在這裡給你看；對公司群組發訊照肉咖自己的規則，不從這裡直接發。</p>`}
+const CO_Q=['整理這張的最新進度給我','把要我決定的事列清楚，附建議','提醒負責的人下一步'];
+function coRoukaSheet(id){const c=coFind(id);if(!c)return shHead('這張公司卡不在了');
+ return shHead('派肉咖做')+`<div class="meta" style="margin-top:8px">${bm('rouka','z')}<span class="lbl">肉咖・公司電腦</span></div><div class="meta" style="margin-top:8px">${chip('關於：'+(c.ask||c.title))}</div>
+ <label class="f">要肉咖做什麼<textarea id="coText" rows="3" placeholder="例：整理這張的最新進度給我"></textarea></label>${S.err==='co'?'<p class="err" role="alert">▲ 還沒寫字。先寫一句再傳。</p>':''}
+ <div class="btns">${CO_Q.map(q=>`<button class="btn" data-act="cofill" data-id="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+ <div class="btns">${B('交給肉咖','cosend',id,'pri wide')}</div><p class="note">肉咖拿到單會改成「進行中」，做完回報在這張卡。今天頁的「正在跑」也看得到。</p>`}
+{const _s=sheetHTML;sheetHTML=function(){const t=S.sheet||'';if(t.indexOf('co:')===0)return coSheet(t.slice(3));if(t.indexOf('cor:')===0)return coRoukaSheet(t.slice(4));return _s()}}
+ACT.coRouka=id=>{S.err='';ACT.sheet('cor:'+String(id).replace(/^co:/,''))};
+ACT.coDaqi=(id,el)=>{const f=()=>openChat('daqi','co:'+id,el);if(S.sheet)closeThen(f);else f()};
+ACT.cofill=v=>{const t=$('#coText');if(t){t.value=v;t.focus()}};
+ACT.cosend=async id=>{const t=$('#coText'),v=t?t.value.trim():'';if(!v){S.err='co';render('keep');return}S.err='';
+ if(LV.mode!=='live'){const d=coData();d.tasks.unshift({id:Date.now(),card_id:id,assignee:'rouka',body:v,status:'queued',created_at:new Date().toISOString()});back();toast('示範：交給肉咖了');render('keep');return}
+ try{await LV.api.coTask(id,'rouka',v);back();toast('交給肉咖了，公司電腦拿到就會開始');await coLoad();render('keep')}
+ catch(e){toast(NOFN(e)?'資料庫還沒更新，派工還沒接上':'沒送出：'+LERR(e))}};
+// 叫大器：開對話帶這張卡；送出時另記一筆派工（hub_jobs），面板追蹤得到
+{const _n=ctxName;ctxName=function(ctx){const a=(ctx||'').split(':');if(a[0]==='co'){const c=coFind(a[1]);return c?(c.ask||c.title):'公司卡'}return _n(ctx)}}
+{const _t=ctxTag;ctxTag=function(b,ctx){const a=(ctx||'').split(':');if(a[0]!=='co')return _t(b,ctx);const c=coFind(a[1]);if(!c)return '［老大在逐流的案子房間・公司］\n';
+ return `［老大在逐流的案子房間・公司，正在看公司卡「${c.title}」${c.ask?`，卡面：${c.ask}`:''}${c.status?`，皮條客狀態：${c.status}`:''}${c.owner?`，負責：${c.owner}`:''}${c.due?`，期限 ${c.due}`:''}${/^https:\/\//i.test(String(c.link||''))?`，皮條客連結 ${c.link}`:''}。這是好咖公司的事，做完回報在逐流這張卡（hub_jobs source_key 會是 cotask:編號）］\n`}}
+{const _st=sendTo;sendTo=function(b,text,ctx){_st(b,text,ctx);const a=(ctx||'').split(':');
+ if(b==='daqi'&&a[0]==='co'&&a[1]&&LV.mode==='live'&&LV.api.coTask)LV.api.coTask(a[1],'daqi',text).then(()=>coLoad()).catch(()=>{})}}
+{const _q=quick;quick=function(on){if((on.ctx||'').indexOf('co:')===0&&on.b==='daqi')return['這張現在卡在哪','幫我想怎麼回','整理成我能直接回的一句'];return _q(on)}}
+async function coLoad(){const api=LV.api;if(LV.mode!=='live'||!api||!api.company||LV.coNo)return;
+ await api.company().then(d=>{LV.co=d&&typeof d==='object'?{meta:d.meta||null,cards:Array.isArray(d.cards)?d.cards:[],tasks:Array.isArray(d.tasks)?d.tasks:[]}:null;LV.coErr=''})
+  .catch(e=>{if(NOFN(e))LV.coNo='nofn';else if(e&&e.kind==='forbidden')LV.coNo='forbidden';else LV.coErr=LERR(e)})}
+{const _x=loadExtra;loadExtra=async function(){await _x();await coLoad()}}
+{const _sg=sigOf;sigOf=function(){let s=_sg();try{const d=LV.co;if(d)s+='|co'+d.cards.length+':'+(d.meta&&d.meta.written_at||'')+':'+d.tasks.map(t=>t.id+(t.job_status||t.status)).join(',')}catch(e){}return s}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

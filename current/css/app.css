@@ -1177,3 +1177,7 @@ label.f textarea{margin-top:6px;resize:vertical}
 .btn.sm{min-height:44px;padding:0 12px;font-size:14px;white-space:nowrap}
 html[data-skin="2"] .kfoot,html[data-skin="5"] .kfoot{margin-right:0}
 .cf-l .mb{padding:0 8px}
+/* v60：肉咖的臉、公司重點、登入頁 */
+.bm[data-b=rouka]{background:#5a3a2c;color:#fff;font-weight:700}
+.colines{margin:0 0 6px;padding-left:1.1em}.colines li{margin:2px 0;line-height:1.5}
+.card.login .f input{width:100%;font-size:17px}

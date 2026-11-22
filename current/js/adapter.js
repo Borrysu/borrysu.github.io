@@ -37,7 +37,7 @@ export const CONFIG = {
          hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer',
          goals: 'hub_goals_list', goalSet: 'hub_goal_set', cal: 'hub_cal_list', life: 'hub_life_list', lifeSet: 'hub_life_set', lifeGone: 'hub_life_gone', money: 'hub_money_overview', moneyTrend: 'hub_money_trend',
          hubEdit: 'hub_card_edit', hubShelf: 'hub_card_shelf', shelf: 'hub_shelf_list', cardEdit: 'opp_card_edit',
-         payAuthorize: 'hub_pay_authorize', payCancel: 'hub_pay_cancel', payList: 'hub_pay_list', calRefresh: 'hub_cal_refresh_request' },   // v48：付款鈕＝授權單（交給塔塔／朋朋／集集付）、行事曆現在更新   // v46：卡面一句 ask、hub 卡片編輯封存刪除、案子機會待辦改卡面一句   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
+         payAuthorize: 'hub_pay_authorize', payCancel: 'hub_pay_cancel', payList: 'hub_pay_list', calRefresh: 'hub_cal_refresh_request', company: 'hub_company_summary', coTask: 'hub_company_task_add' },   // v48：付款鈕＝授權單（交給塔塔／朋朋／集集付）、行事曆現在更新   // v46：卡面一句 ask、hub 卡片編輯封存刪除、案子機會待辦改卡面一句   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
 
 export class AdapterError extends Error {
@@ -66,13 +66,75 @@ let KEY = '';
   }
 })();
 export const hasKey = () => KEY.length >= 20;
+
+// ---------- v60 正式登入（Supabase Auth，只有老大一個帳號；註冊關閉）。跟網址金鑰並存：有金鑰先用金鑰，沒有才用登入 ----------
+// session 存 localStorage opp_sess：{ a: access_token, r: refresh_token, x: 到期秒數(epoch), e: email }。金鑰與 session 都不寫進 repo。
+const SESS_KEY = 'opp_sess';
+let SESS = null;
+try { SESS = JSON.parse(LS.get(SESS_KEY) || 'null'); if (!SESS || !SESS.a || !SESS.r) SESS = null; } catch (e) { SESS = null; }
+function setSess(d, email) {
+  if (!d || !d.access_token || !d.refresh_token) return false;
+  const x = +d.expires_at || (Math.floor(Date.now() / 1000) + (+d.expires_in || 3600));
+  SESS = { a: d.access_token, r: d.refresh_token, x, e: email || (d.user && d.user.email) || (SESS && SESS.e) || '' };
+  LS.set(SESS_KEY, JSON.stringify(SESS)); return true;
+}
+function dropSess() { SESS = null; LS.del(SESS_KEY); }
+(function magicLinkHash() {   // 信裡的登入連結回來時網址是 #access_token=…&refresh_token=…
+  if (!/access_token=/.test(location.hash)) return;
+  try { const h = new URLSearchParams(location.hash.slice(1));
+    setSess({ access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_at: h.get('expires_at'), expires_in: h.get('expires_in') });
+    history.replaceState(null, '', location.pathname + location.search); } catch (e) {}
+})();
+export const hasSession = () => !!SESS;
+export const sessionEmail = () => (SESS && SESS.e) || '';
+const AUTH = () => CONFIG.SUPABASE_URL.replace(/\/+$/, '') + '/auth/v1';
+async function authPost(path, body, bearer) {
+  const ac = new AbortController(), t = setTimeout(() => ac.abort(), CONFIG.TIMEOUT_MS);
+  let res;
+  try { res = await fetch(AUTH() + path, { method: 'POST', headers: { 'content-type': 'application/json', apikey: CONFIG.SUPABASE_ANON_KEY, ...(bearer ? { authorization: 'Bearer ' + bearer } : {}) }, body: JSON.stringify(body || {}), signal: ac.signal, cache: 'no-store', credentials: 'omit' }); }
+  catch (e) { throw new AdapterError(ac.signal.aborted ? 'timeout' : 'network', ac.signal.aborted ? '連線逾時' : '連不上伺服器'); }
+  finally { clearTimeout(t); }
+  let d = null; try { d = await res.json(); } catch (e) {}
+  if (!res.ok) throw new AdapterError(res.status === 429 ? 'rate' : 'auth', String((d && (d.msg || d.error_description || d.message || d.error)) || ('HTTP ' + res.status)), res.status);
+  return d;
+}
+// 寄登入碼（信裡同時有連結）；create_user:false＝不會幫陌生 email 開帳號
+export async function authSendCode(email) {
+  email = String(email || '').trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new AdapterError('state', 'email 格式不對');
+  const to = location.origin + location.pathname;
+  await authPost('/otp?redirect_to=' + encodeURIComponent(to), { email, create_user: false });
+  return true;
+}
+export async function authVerify(email, code) {
+  email = String(email || '').trim().toLowerCase(); code = String(code || '').replace(/\D/g, '');
+  if (code.length < 6) throw new AdapterError('state', '登入碼是信裡那串數字');
+  const d = await authPost('/verify', { type: 'email', email, token: code });
+  if (!setSess(d, email)) throw new AdapterError('auth', '沒拿到登入狀態');
+  return true;
+}
+let refreshing = null;
+async function freshToken(force) {
+  if (!SESS) return '';
+  if (!force && SESS.x - 90 > Date.now() / 1000) return SESS.a;
+  if (!refreshing) refreshing = authPost('/token?grant_type=refresh_token', { refresh_token: SESS.r })
+    .then(d => { setSess(d); return SESS.a; })
+    .catch(e => { if (e.kind === 'auth') dropSess(); throw e; })
+    .finally(() => { refreshing = null; });
+  return refreshing;
+}
+export async function signOut() {
+  const a = SESS && SESS.a; dropSess();
+  LS.del(CONFIG.SNAPSHOT_KEY + ':sess');
+  if (a) { try { await authPost('/logout', {}, a); } catch (e) {} }
+}
 export function saveKey(k) { KEY = k; LS.set(CONFIG.KEY_STORAGE, k); try { const u = new URL(location.href); u.hash = ''; u.searchParams.set('k', k); history.replaceState(null, '', u.pathname + u.search); } catch (e) {} }  // 網址也一起換，不然重新整理會讀回舊的 ?k=
-export const keyTag = () => KEY.slice(0, 6);        // 快照用，不是完整金鑰
+export const keyTag = () => KEY ? KEY.slice(0, 6) : (SESS ? 'sess' : '');        // 快照用，不是完整金鑰
 
 export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
-  if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
+  if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
   const { mockAdapter } = await import('./mock.js?v59');
   return mockAdapter(forceMock ? mockFlag : '');
 }
@@ -177,10 +239,13 @@ function liveAdapter() {
   const base = CONFIG.SUPABASE_URL.replace(/\/+$/, '');
   const headers = { 'content-type': 'application/json', apikey: CONFIG.SUPABASE_ANON_KEY };
   async function rpc(name, body, timeout, opt) {
+    // v60：有網址金鑰照舊帶 p_key；沒有金鑰就用登入的 token（p_key 送 null，資料庫 _opp_cap 認 auth.uid()）
+    let tok = '';
+    if (!(KEY.length >= 20) && SESS) { try { tok = await freshToken(opt && opt.retried); } catch (e) { if (e.kind === 'auth') throw new AdapterError('auth', '登入過期，請重新登入', 401); throw e; } }
     const ac = new AbortController();
     const t = setTimeout(() => ac.abort(), timeout || CONFIG.TIMEOUT_MS);
     let res;
-    try { res = await fetch(base + '/rest/v1/rpc/' + name, { method: 'POST', headers, body: JSON.stringify({ p_key: KEY, ...body }), signal: ac.signal, cache: 'no-store' }); }
+    try { res = await fetch(base + '/rest/v1/rpc/' + name, { method: 'POST', headers: tok ? { ...headers, authorization: 'Bearer ' + tok } : headers, body: JSON.stringify({ p_key: tok ? null : KEY, ...body }), signal: ac.signal, cache: 'no-store' }); }
     catch (e) { throw new AdapterError(ac.signal.aborted ? 'timeout' : (navigator.onLine === false ? 'offline' : 'network'), ac.signal.aborted ? '連線逾時' : '連不上伺服器'); }
     finally { clearTimeout(t); }
     let data = null; const txt = await res.text();
@@ -188,6 +253,10 @@ function liveAdapter() {
     if (!res.ok) {
       const msg = String((data && (data.message || data.error || data.hint)) || ('HTTP ' + res.status));
       if (res.status === 403 && opt && opt.work) throw new AdapterError('forbidden', msg, 403);   // 案務 RPC：這把金鑰不能改案務（不是金鑰失效），不清金鑰
+      if (tok && (res.status === 401 || res.status === 403)) {   // 登入的 token 過期或被收回：先換一次新的再試，還不行才登出
+        if (!(opt && opt.retried)) return rpc(name, body, timeout, { ...(opt || {}), retried: true });
+        dropSess(); throw new AdapterError('auth', msg, res.status);
+      }
       if (res.status === 401 || res.status === 403) { LS.del(CONFIG.SNAPSHOT_KEY + ':' + keyTag()); LS.del(CONFIG.KEY_STORAGE); KEY = ''; throw new AdapterError('auth', msg, res.status); }
       throw new AdapterError(res.status === 400 || res.status === 422 ? 'state' : 'server', msg, res.status);
     }
@@ -197,7 +266,7 @@ function liveAdapter() {
   const R = CONFIG.RPC, W = { work: true };
   function wake() {   // 不等、不報錯；text/plain 免預檢
     try { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), CONFIG.WAKE_MS);
-      fetch(CONFIG.WAKE_URL, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ k: KEY }), signal: ac.signal, cache: 'no-store', credentials: 'omit' }).catch(() => {}).finally(() => clearTimeout(t)); } catch (e) {}
+      fetch(CONFIG.WAKE_URL, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify(KEY.length >= 20 ? { k: KEY } : { t: SESS ? SESS.a : '' }), signal: ac.signal, cache: 'no-store', credentials: 'omit' }).catch(() => {}).finally(() => clearTimeout(t)); } catch (e) {}
   }
   return {
     mode: 'live',
@@ -235,6 +304,9 @@ function liveAdapter() {
     async payCancel(id) { return rpc(R.payCancel, { p_id: +id }, 0, W); },
     async payList() { const d = await rpc(R.payList, { p_limit: 80 }, 0, W); return Array.isArray(d) ? d : []; },
     async calRefresh() { return rpc(R.calRefresh, {}, 0, W); },
+    // v60：公司卡（肉咖從皮條客同步過來，只有老大讀得到）與派工（肉咖或大器，各記一筆 hub_jobs）
+    async company() { return rpc(R.company, {}, 0, W); },
+    async coTask(cardId, who, body) { const r = await rpc(R.coTask, { p_card_id: cardId, p_assignee: who, p_body: body }, 0, W); if (who === 'daqi') wake(); return r; },
     async cardEdit(id, patch) { return card(await rpc(R.cardEdit, { p_id: id, p_patch: patch || {} }, 0, W)); },
     async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },
