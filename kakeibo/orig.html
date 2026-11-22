@@ -2336,7 +2336,9 @@ function acctSub(a) {
     if (ins.length) s.push('未到期分期 ' + nt(ins.reduce(function (x, i) { return x + Number(i.outstanding_amount || 0); }, 0)));
   }
   if ((a.kind === 'loan_in' || a.kind === 'loan_out') && (a.counterparty || a.loan_due_date)) s.push([a.counterparty, a.loan_due_date ? '預計 ' + md(a.loan_due_date) + ' 還' : ''].filter(Boolean).join('・'));
-  if (a.balance != null && a.diff != null) s.push('銀行實際 ' + sg(a.balance) + (Math.abs(a.diff) >= 1 ? ' <span class="neg">差 ' + sgp(a.diff) + '</span>' : ' <span class="pos">✓ 對得上</span>'));
+  /* v34.9：差額改同一時點比（實查餘額 − 實查當時推算），資料庫沒給當時推算就不比 */
+  if (a.balance != null) { var at = a.computed_at_balance_as_of, sd = at == null ? null : Math.round(Number(a.balance) - Number(at));
+    s.push('銀行實查 ' + sg(a.balance) + (a.balance_as_of ? '（' + thTime(a.balance_as_of) + ' 查的）' : '') + (at == null ? ' <span class="mut">算不出當時推算</span>' : Math.abs(sd) >= 1 ? ' <span class="neg">實查比當時推算' + (sd > 0 ? '多 ' : '少 ') + nt(Math.abs(sd)) + '</span>' : ' <span class="pos">✓ 跟當時推算對得上</span>')); }
   return s;
 }
 function holdRow(h) { return '<button type="button" class="hrow" data-hold="' + esc(h.symbol) + '"><span class="l"><b>' + esc(h.symbol) + ' ' + esc(h.name) + (h.verified ? '' : '<span class="tg o">未驗證</span>') + '</b><span class="mut num">' + ntf(h.shares) + ' 股・' + (h.live && h.live.price != null ? (h.live.stale ? '延遲報價 ' : '即時 ') + (h.live.quote_time ? String(tpe(h.live.quote_time)).slice(11, 16) + ' ' : '') + h.live.price : md(h.price_date) + ' 收盤 ' + h.close_price) + '</span></span><span class="r2"><span class="num" style="display:block">' + nt(h.market_value) + '</span><span class="num ' + (h.pnl >= 0 ? 'pos' : 'neg') + '">' + sgp(h.pnl) + '</span></span></button>'; }
@@ -3429,11 +3431,8 @@ function applyQuotes() {
     var q = QUOTE.quotes.filter(function (x) { return x.symbol === h.symbol && x.account_name === h.account_name; })[0];
     if (!q) { if (QUOTE.err) h.live = { fallback: true }; return; }
     if (q.fallback) { h.live = { fallback: true }; return; }
-    var old = Number(h.market_value || 0), mv = Number(q.market_value);
-    h.market_value = mv; h.pnl = h.cost_total != null ? mv - Number(h.cost_total) : null;
-    if (q.price != null) h.close_price = Number(q.price);
-    h.live = { price: q.price, kind: q.price_kind, quote_time: q.quote_time, stale: q.stale };
-    delta[h.account_name] = (delta[h.account_name] || 0) + (mv - old);
+    /* v34.9：即時報價只當參考，不改市值、收盤價、帳戶餘額與淨資產（delta 不累加） */
+    h.live = { price: q.price, kind: q.price_kind, quote_time: q.quote_time, stale: q.stale, mv: Number(q.market_value), ref: true };
   });
   (D.accounts || []).forEach(function (a) {
     var d = delta[a.name]; if (!d || a.computed_balance == null) return;
@@ -4303,7 +4302,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v34.8', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v34.9', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
