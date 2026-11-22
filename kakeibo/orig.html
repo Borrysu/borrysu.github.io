@@ -1145,6 +1145,28 @@ html.rm .lchart .ln{stroke-dashoffset:0}html.rm .lchart .ar{opacity:.16}
 #layout_b{min-width:40px;width:40px;flex:none}
 #layout_b .i{width:20px;height:20px}
 #showvoid{flex:none}
+/* ---------- kk-v32：預算、帳單提醒、待收款提醒 ---------- */
+.bgt{display:block;width:100%;text-align:left;padding:12px 14px;margin:10px 0 0;color:var(--ink)}
+#bgt_s .bgt{margin:0 0 10px}
+.bgt .bt{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:13px;color:var(--muted);font-weight:600}
+.bgt .bt b{font-size:20px;color:var(--ink);margin-left:2px}
+.bgt.over .bt b{color:var(--bad)}
+.bgt .gb{display:block;margin-top:8px}
+.bgt .bm{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+.bgt .bw{margin-top:6px;font-size:12.5px;color:var(--bad);font-weight:700}
+.brow{gap:8px}
+.bmain{flex:1;min-width:0;display:flex;align-items:center;gap:12px;text-align:left;color:inherit;min-height:48px}
+.bmain .chev{flex:none;color:var(--muted)}
+.due.od{background:var(--bad);color:var(--bg)}
+button.rcv{width:100%;text-align:left;color:var(--ink)}
+button.rcv .chev{flex:none;color:var(--muted)}
+.tg.r{color:var(--bad)}
+.v32row{display:flex;align-items:center;gap:10px;padding:8px 8px 8px 14px;min-height:56px;background:var(--solid);border:var(--x-border-w,1px) solid var(--line);border-radius:12px}
+.v32row .t{flex:1;min-width:0;font-size:15px}
+.v32row .t .t2{display:block}
+.v32row button{flex:none;min-height:44px;padding:0 14px;border-radius:22px;background:var(--solid2);font-weight:700;font-size:14px;color:var(--ink)}
+.bgc .amt{flex:none}
+#det_b .af label{width:auto;min-width:92px;white-space:nowrap}
 
 </style></head><body data-skin="6" data-theme="light">
 <a class="skip" href="#scroll">跳到內容</a>
@@ -1179,6 +1201,7 @@ html.rm .lchart .ln{stroke-dashoffset:0}html.rm .lchart .ar{opacity:.16}
             <button type="button" class="tile w2" data-det="goal"><span class="k"><span>距離目標</span><span class="num" id="ppct" style="margin-left:auto">0%</span></span><b class="num" id="gap"></b><span class="gb" style="margin-top:6px;display:block"><i id="pbar"></i></span></button>
           </div></div></div>
         </div>
+        <button type="button" class="bgt card" id="bgt" hidden></button>
         <div id="nc_part" class="foot" hidden></div>
         <button type="button" class="rp card" id="rep" hidden></button>
         <label class="srch" id="srch"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></svg><span class="vh">搜尋店家與備註</span><input id="q" type="search" placeholder="找店家、備註" autocomplete="off" enterkeyhint="search"><button type="button" id="q_x" aria-label="清除搜尋" hidden>✕</button></label>
@@ -1186,6 +1209,7 @@ html.rm .lchart .ln{stroke-dashoffset:0}html.rm .lchart .ar{opacity:.16}
       </section>
       <section id="tab_stats" hidden aria-label="統計">
         <div class="utabs" id="utabs"><button type="button" data-s="cat" class="on" aria-pressed="true">支出類別占比</button><button type="button" data-s="trend" aria-pressed="false">近 6 期收支</button></div>
+        <div id="bgt_s"></div>
         <div id="stat_cat"></div>
         <div id="stat_trend" hidden></div>
       </section>
@@ -3080,7 +3104,7 @@ function bind() {
 
 /* ===== v31 正式版資料層：金鑰、RPC、讀資料、寫入、即時連線、版面切換 =====
    資料呼叫照現行 kakeibo/index.html（kk-v30.3）的寫法。底稿裡記憶體假寫入的函式在這裡同名覆寫成真 RPC。
-   沒有後端的新功能（等你看確認列、集集在找、付款請求、到期提醒、問金金）不顯示。 */
+   kk-v32 起接上：預算、提醒我付、帳單自動扣款與到期提醒、待收款到期提醒、等你看確認列、取消作廢（檔尾「kk-v32」段）。集集在找、問金金仍沒有後端，不顯示。 */
 var URL_ = 'https://wbfdpuytffyaetghqkbl.supabase.co', APIKEY = 'sb_publishable_yXl1iCBorFdHNsTl1A4UPg_MQLMYukO';
 function tokenFrom(s) {
   s = String(s || '').trim(); if (!s) return '';
@@ -3178,7 +3202,7 @@ try { PREFS = JSON.parse(LS.get('kk_prefs') || '{}') || {}; } catch (e) {}
 try { EXC = new Set(JSON.parse(LS.get('kk_exc') || '[]') || []); } catch (e) {}
 if (PREFS.account_order && Array.isArray(PREFS.account_order.accounts) && PREFS.account_order.accounts.length) ORDER = PREFS.account_order.accounts.slice();
 function mapTx(t) {
-  t.occurred_at = tpe(t.occurred_at); t.voided_at = tpe(t.voided_at); t.review = null;
+  t.occurred_at = tpe(t.occurred_at); t.voided_at = tpe(t.voided_at); t.review = reviewOf(t);
   t.source = ({ 'Tal Tal': '塔塔', 'Borry': '老大', 'Pom Pom': '朋朋', 'Kim Kim': '金金' })[t.source] || t.source || '老大'; t.edit_count = Number(t.edit_count || 0);
   if (t.orig_currency == null) t.orig_amount = null;
   return t;
@@ -3342,7 +3366,7 @@ function markPaid(name) {
     catch (e) { showErr(e.message); }
   });
 }
-function openEdit(t) { if (t.voided_at) { showMsg('這筆已作廢（' + (t.void_reason || '沒寫原因') + '）'); return; } openEdit0(t); }
+function openEdit(t) { if (t.voided_at) { askUnvoid(t); return; } openEdit0(t); }
 function voidTx(t) {
   ask('確定作廢這筆 NT$ ' + nt(t.amount) + '？<div class="mut" style="margin-top:6px">作廢不會真的刪掉，只是不算進總數，打開「顯示作廢」還是看得到。</div>', '作廢', true).then(async function (ok) {
     if (!ok) return;
@@ -3529,7 +3553,6 @@ function ssArchive() {
     try { await rpc('kk_sub_archive', { p_name: it.name }); ssClose(); loadSubs(); showMsg('已封存'); } catch (e) { showErr(e.message); }
   });
 }
-function rvConfirm() {}
 /* ---------- 跟塔塔說（kk-refresh message） ---------- */
 var kkmBusyL = false, kkmIdL = null;
 async function kkmGo() {
@@ -3633,10 +3656,343 @@ if ('serviceWorker' in navigator && window.isSecureContext) {
   navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (r) { try { r.update().catch(function () {}); } catch (e) {} }).catch(function () {});
 }
 
+/* ===================== kk-v32：預算、提醒我付、自動扣款、到期提醒、等你看、取消作廢 =====================
+   資料庫函式照 _wG/v32/API.md。讀：kk_budget_get、kk_pay_requests_list、kk_reminders_list、kk_pending_confirm、kk_bill_flags。
+   寫：kk_budget_set、kk_pay_request(_cancel)、kk_reminder_set／cancel、kk_bill_set_auto_debit、kk_bill_unpay、kk_tx_confirm／unconfirm、kk_tx_unvoid。 */
+var V32 = { budget: null, pay: [], rem: [], pend: [], pmap: {}, flags: {}, at: 0, sig: '', fresh: false };
+function reviewOf(t) { var p = V32.pmap[t.id]; return p && !t.voided_at ? { guess: t.category || '其他', why: p.guess_reason || '' } : null; }
+function markReview() { TXALL.forEach(function (t) { t.review = reviewOf(t); }); }
+var v32Busy = false;
+async function loadV32(force) {
+  if (KEY.length < 20 || v32Busy) return;
+  if (!force && Date.now() - V32.at < 25000) return;
+  v32Busy = true; V32.at = Date.now();
+  var names = ['kk_budget_get', 'kk_pay_requests_list', 'kk_reminders_list', 'kk_pending_confirm', 'kk_bill_flags'];
+  var res = await Promise.all(names.map(function (n) { return rpc(n, {}).then(function (v) { return { v: v }; }, function (e) { return { e: e }; }); }));
+  v32Busy = false;
+  if (!res[0].e) V32.budget = res[0].v && (res[0].v.total != null || (res[0].v.categories && Object.keys(res[0].v.categories).length)) ? res[0].v : null;
+  if (!res[1].e) V32.pay = Array.isArray(res[1].v) ? res[1].v : [];
+  if (!res[2].e) V32.rem = Array.isArray(res[2].v) ? res[2].v : [];
+  if (!res[3].e) { V32.pend = (Array.isArray(res[3].v) ? res[3].v : []).map(function (p) { p.occurred_at = tpe(p.occurred_at); return p; }); V32.pmap = {}; V32.pend.forEach(function (p) { V32.pmap[p.id] = p; }); }
+  if (!res[4].e) { V32.flags = {}; (res[4].v || []).forEach(function (f) { V32.flags[f.name] = f; }); }
+  var sig = JSON.stringify([V32.budget, V32.pay, V32.rem, V32.pend.map(function (p) { return p.id; }), V32.flags]);
+  if (sig === V32.sig) return; V32.sig = sig;
+  markReview(); if (LIVE.o) render();
+}
+var _loadE = load;
+load = async function (opt) { await _loadE(opt); if (LIVE.o) loadV32(!!(opt && opt.force)); };
+
+/* ---------- 共用小工具 ---------- */
+function payReqFor(kind, id) { return V32.pay.filter(function (r) { return r.ref_kind === kind && Number(r.ref_id) === Number(id) && r.status === 'requested'; })[0] || null; }
+/* ref_id 統一寫法（兩個版面一致）：帳單 bill:<id>、訂閱 sub:<id>、待收款 r:<逐流 id>；讀的時候舊的純數字也認得 */
+function refKey(x) { return String(x == null ? '' : x).replace(/^(bill|sub|rcv|receivable|r):/, ''); }
+function refOut(kind, ref) { return (kind === 'receivable_due' ? 'r:' : 'bill:') + refKey(ref); }
+function remFor(kind, ref) { return V32.rem.filter(function (r) { return r.kind === kind && refKey(r.ref_id) === refKey(ref) && (r.status || 'pending') === 'pending'; })[0] || null; }
+function monthLen(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); }
+/* 帳單到期日：照期別算（原本 due_day 減今天幾號，跨月會錯，例：12/2 到期會被算成過期） */
+function billDue(b, ps) {
+  ps = ps || D.period_start; var y = Number(ps.slice(0, 4)), m = Number(ps.slice(5, 7)), d0 = Number(ps.slice(8, 10)), dd = Number(b.due_day) || 1;
+  if (dd < d0) { m++; if (m > 12) { m = 1; y++; } }
+  dd = Math.min(dd, monthLen(y, m)); return y + '-' + (m < 10 ? '0' : '') + m + '-' + (dd < 10 ? '0' : '') + dd;
+}
+function billDays(b) { return dayDiff(billDue(b), TODAY); }
+function dueTxt(dd) { return dd < 0 ? '過 ' + (-dd) + ' 天' : dd === 0 ? '今天到期' : dd === 1 ? '明天到期' : '剩 ' + dd + ' 天'; }
+function v32Err(e) { var m = String(e && e.message || e); if (/has no payment/.test(m)) return '這期沒有繳費紀錄，不用改回。'; if (/not found or not void/.test(m)) return '這筆已經不是作廢狀態了。'; return m; }
+
+/* ---------- 預算 ---------- */
+function budgetState() {
+  var b = V32.budget; if (!b || VIEW !== 0 || !LIVE.o) return null;
+  var spent = Number(D.summary.expense || 0), by = {}; D.category_share.forEach(function (r) { by[r.category] = r.expense; });
+  var cats = Object.keys(b.categories || {}).filter(function (c) { return Number(b.categories[c]) > 0; }).map(function (c) { var lim = Number(b.categories[c]), s = by[c] || 0; return { c: c, lim: lim, spent: s, left: lim - s, over: s > lim }; });
+  var total = b.total == null ? null : Number(b.total), daysLeft = Math.max(1, dayDiff(D.period_end, TODAY) + 1);
+  var ccLim = cats.reduce(function (x, r) { return x + r.lim; }, 0), ccSpent = cats.reduce(function (x, r) { return x + r.spent; }, 0);
+  var lim = total != null ? total : ccLim, use = total != null ? spent : ccSpent, left = lim - use, overCats = cats.filter(function (r) { return r.over; });
+  return { b: b, total: total, spent: spent, lim: lim, use: use, left: left, perDay: Math.floor(Math.max(0, left) / daysLeft), daysLeft: daysLeft, cats: cats, overCats: overCats, over: left < 0 || overCats.length > 0, totalOver: left < 0 };
+}
+function budgetCard(s) {
+  var p = s.lim > 0 ? Math.min(1, s.use / s.lim) : (s.use > 0 ? 1 : 0), col = s.totalOver ? 'var(--bad)' : p >= 0.85 ? 'var(--warn)' : 'var(--good)';
+  var head = s.totalOver ? '<span>本期預算</span><span class="num">超支 <b>' + nt(-s.left) + '</b></span>' : '<span>本期預算' + (s.total == null ? '（分類合計）' : '') + '</span><span class="num">還能花 <b>' + nt(s.left) + '</b></span>';
+  var warn = s.overCats.length ? '<div class="bw">' + s.overCats.map(function (r) { return esc(r.c) + ' 超支 ' + nt(r.spent - r.lim); }).join('、') + '</div>' : '';
+  return '<div class="bt">' + head + '</div><span class="gb" style="color:' + col + '"><i style="--p:' + p.toFixed(3) + '"></i></span><div class="bm"><span class="num">已花 ' + nt(s.use) + '／' + nt(s.lim) + '</span><span class="num">' + (s.totalOver ? '還剩 ' + s.daysLeft + ' 天' : '每天還能花 ' + nt(s.perDay)) + '</span></div>' + warn;
+}
+function renderBudget() {
+  var s = budgetState(), a = $('bgt'), b = $('bgt_s');
+  if (a) { a.hidden = !s; if (s) { a.classList.toggle('over', s.totalOver); a.innerHTML = '<span class="vh">預算，點開看各分類與設定</span>' + budgetCard(s); } }
+  if (b) {
+    if (VIEW !== 0) { b.innerHTML = ''; return; }
+    b.innerHTML = s ? '<button type="button" class="bgt card' + (s.totalOver ? ' over' : '') + '" data-x="bgt"><span class="vh">預算，點開看各分類與設定</span>' + budgetCard(s) + '</button>'
+      : '<div class="rows" style="margin-bottom:10px"><button type="button" class="cardrow" data-x="bgt">' + ico('🎯', 'var(--accent2)') + '<div style="flex:1;min-width:0"><div class="t1">設定預算</div><div class="t2">設了才會算「還能花」與超支提醒</div></div><span class="chev" aria-hidden="true">›</span></button></div>';
+  }
+}
+function budgetModel() {
+  var s = budgetState(), b = V32.budget, h = '';
+  if (s) {
+    h += dsum(s.totalOver ? '本期超支' : '本期還能花', nt(Math.abs(s.left)), '已花 ' + nt(s.use) + '／預算 ' + nt(s.lim) + '・還剩 ' + s.daysLeft + ' 天' + (s.totalOver ? '' : '，每天 ' + nt(s.perDay)), s.totalOver ? 'neg' : 'pos');
+    if (s.cats.length) h += '<div class="gh"><span><b>各分類</b>' + s.cats.length + ' 類</span></div><div class="rows">' + s.cats.map(function (r) { var p = Math.min(1, r.lim > 0 ? r.spent / r.lim : 1);
+      return '<div class="cardrow bgc">' + ico(CAT_EMOJI[r.c] || '🧾', CAT_COLOR[r.c]) + '<div style="flex:1;min-width:0"><div class="t1">' + esc(r.c) + (r.over ? '<span class="tg r">超支</span>' : '') + '</div><span class="gb" style="color:' + (r.over ? 'var(--bad)' : p >= 0.85 ? 'var(--warn)' : CAT_COLOR[r.c] || 'var(--good)') + ';margin-top:6px;display:block"><i style="--p:' + p.toFixed(3) + '"></i></span></div><div class="amt num' + (r.over ? ' neg' : '') + '" style="text-align:right">' + nt(r.spent) + '<div class="t2 num">／' + nt(r.lim) + '</div></div></div>'; }).join('') + '</div>';
+  } else h += '<div class="card" style="padding:14px 16px"><b>還沒設預算</b><div class="t2" style="margin-top:4px">設了之後，記帳本上方會出現「還能花」與預算條，超支時塔塔會變臉提醒。沒設就照原本只看收支。</div></div>';
+  var cur = b && b.categories || {}, scope = b ? b.scope : 'default';
+  h += '<div class="gh"><span><b>' + (b ? '修改預算' : '設定預算') + '</b></span></div><div class="sgrp">' + sel('bg_scope', '套用到', [['default', '每一期'], ['period', '只有本期']], scope === 'period' ? 'period' : 'default') + afield('bg_total', '總預算', 'inputmode="numeric" placeholder="不填＝不設總額"', b && b.total != null ? Math.round(b.total) : '') + '</div>';
+  h += '<div class="gh"><span><b>各分類</b>不填就不設</span></div><div class="sgrp">' + CATS.map(function (c, i) { return afield('bg_c' + i, '<span aria-hidden="true">' + CAT_EMOJI[c] + '</span> ' + esc(c), 'inputmode="numeric" placeholder="不設"', cur[c] != null ? Math.round(cur[c]) : ''); }).join('') + '</div>';
+  h += '<div class="ahint e" id="bg_err" role="alert"></div><button type="button" class="sbtn" data-x="bgsave">存預算</button>' + (b ? '<button type="button" class="sbtn dg" data-x="bgclear">清除預算</button><div class="foot">目前是「' + (scope === 'period' ? '只有本期' : '每一期通用') + '」的預算，最後由 ' + esc(({ 'Borry': '老大', 'Tal Tal': '塔塔' })[b.updated_by] || b.updated_by || '') + ' 改。</div>' : '');
+  return { title: '預算', html: h };
+}
+async function budgetSave() {
+  var er = function (m) { $('bg_err').textContent = m || ''; }, t = numOf($('bg_total').value), cats = {}, bad = false;
+  if (isNaN(t) || (t != null && t < 0)) return er('總預算要填 0 以上的數字。');
+  CATS.forEach(function (c, i) { var v = numOf($('bg_c' + i).value); if (v == null) return; if (isNaN(v) || v < 0) bad = true; else if (v > 0) cats[c] = Math.round(v); });
+  if (bad) return er('分類預算要填 0 以上的數字。');
+  if (t == null && !Object.keys(cats).length) return er('總預算或分類至少填一個。要取消預算請按「清除預算」。');
+  var scope = $('bg_scope').value, old = V32.budget; er('');
+  try {
+    var r = await rpc('kk_budget_set', { p_period_start: scope === 'period' ? D.period_start : null, p_total: t == null ? null : Math.round(t), p_categories: cats });
+    if (scope === 'default' && old && old.scope === 'period') r = await rpc('kk_budget_set', { p_period_start: old.period_start, p_total: null, p_categories: {} });
+    V32.budget = r || null; V32.fresh = true; V32.sig = ''; render(); showMsg('預算已存'); loadV32(true);
+  } catch (e) { er(e.message); }
+}
+function budgetClear() {
+  var b = V32.budget; if (!b) return;
+  ask('清除' + (b.scope === 'period' ? '本期' : '每一期通用') + '的預算？<div class="mut" style="margin-top:6px">清掉後不再顯示「還能花」與超支提醒，交易紀錄不受影響。</div>', '清除預算', true).then(async function (ok) {
+    if (!ok) return;
+    try { await rpc('kk_budget_set', { p_period_start: b.scope === 'period' ? b.period_start : null, p_total: null, p_categories: {} }); var g = await rpc('kk_budget_get', {}); V32.budget = g && (g.total != null || Object.keys(g.categories || {}).length) ? g : null; V32.fresh = true; V32.sig = ''; render(); showMsg(V32.budget ? '已清除本期預算，改用每一期通用的' : '已清除預算'); loadV32(true); }
+    catch (e) { showErr(e.message); }
+  });
+}
+/* 預算設好才看預算超支；沒設照第一段（花的比賺的多） */
+function moodNow() {
+  var s = budgetState();
+  if (s && s.over) return 'over';  /* v32：設了預算且超支，排最前（跟 A/B/C 一致） */
+  if (VIEW === 0 && rvList().length) return 'thinking';
+  if (VIEW === 0 && D.bills.some(function (b) { return !b.paid_at && billDays(b) <= 3; })) return 'alert';
+  if (s) { } else if (D.recent_periods[0].income - D.recent_periods[0].expense < 0) return 'over';
+  var h = new Date().getHours(); if (h < 5) return 'sleepy';
+  return 'idle';
+}
+var _renderE = render;
+render = function () { _renderE(); renderBudget(); syncMood(); };
+
+/* ---------- 塔塔記的 N 筆等你看（kk_pending_confirm） ---------- */
+function rvList() { return VIEW === 0 ? V32.pend : []; }
+function rvModel() {
+  var l = rvList();
+  if (!l.length) return { title: '等你看', html: '<div class="card">' + emptyBox('✅', '都看完了', '塔塔新記的帳會再出現在這裡') + '</div>' };
+  return { title: '等你看', html: '<div class="foot" style="padding-top:0">塔塔從通知自動記的帳。看過沒問題按「對」，不對就按「改」。</div><button type="button" class="dbtn" id="rv_all">全部都對（' + l.length + ' 筆）</button><div class="rows" style="margin-top:10px">' + l.map(function (p) {
+    var v = txView(p), sign = p.type === 'income' ? '+' : p.type === 'expense' ? '−' : '', note = firstLine(p.note);
+    return '<div class="rvc" data-rv="' + p.id + '"><div class="top">' + ico(v.emoji, v.color) + '<div style="flex:1;min-width:0"><div class="t1">' + esc(v.title) + '</div><div class="why">' + md(dayKey(p.occurred_at)) + ' ' + hm(p.occurred_at) + '・' + esc(p.account_name || '') + '</div><span class="chp">' + esc(p.type === 'expense' ? (p.category || '其他') : SRC_TYPE[p.type] || p.type) + '</span>' + (p.guess_reason ? '<span class="chp o">' + esc(p.guess_reason) + '</span>' : '') + (note ? '<div class="why">' + esc(note) + '</div>' : '') + '</div><div class="amt num ' + esc(p.type) + '">' + sign + nt(p.amount) + '</div></div>' +
+      '<div class="acts"><button type="button" data-rvedit="' + p.id + '">改</button><button type="button" class="p" data-rvok="' + p.id + '">對</button></div></div>'; }).join('') + '</div>' };
+}
+async function rvConfirm(ids) {
+  ids = (ids || []).map(Number).filter(function (x) { return x > 0; }); if (!ids.length) return;
+  if (ids.length > 1 && !(await ask('把塔塔記的 ' + ids.length + ' 筆全部標成「對」？<div class="mut" style="margin-top:6px">確認後就不會再出現在「等你看」。按錯了 8 秒內可以復原。</div>', '全部都對'))) return;
+  var card = ids.length === 1 ? document.querySelector('.rvc[data-rv="' + ids[0] + '"]') : null; if (card && !rm()) card.classList.add('out');
+  try {
+    showErr(''); var n = await rpc('kk_tx_confirm', { p_ids: ids });
+    V32.pend = V32.pend.filter(function (p) { return ids.indexOf(p.id) < 0; }); V32.pmap = {}; V32.pend.forEach(function (p) { V32.pmap[p.id] = p; }); V32.sig = '';
+    markReview(); render(); faceLogged('✓' + ids.length);
+    showUndo('已確認 ' + (typeof n === 'number' ? n : ids.length) + ' 筆', function () { rpc('kk_tx_unconfirm', { p_ids: ids }).then(function () { showMsg('已復原'); return loadV32(true); }).catch(function (e) { showErr(e.message); }); });
+    loadV32(true);
+  } catch (e) { if (card) card.classList.remove('out'); showErr(e.message); }
+}
+
+/* ---------- 取消作廢（kk_tx_unvoid） ---------- */
+function askUnvoid(t) {
+  ask('這筆已作廢<div class="mut" style="margin-top:6px">' + esc(txView(t).title) + '　NT$ ' + nt(t.amount) + '<br>原因：' + esc(t.void_reason || '沒寫原因') + '</div><div class="mut" style="margin-top:6px">取消作廢後會重新算進總數。</div>', '取消作廢').then(async function (ok) {
+    if (!ok) return;
+    try { showErr(''); await rpc('kk_tx_unvoid', { p_id: t.id }); showMsg('已取消作廢'); await load({ force: true }); }
+    catch (e) { showErr(v32Err(e)); }
+  });
+}
+
+/* ---------- 帳單：提醒我付、自動扣款、到期提醒、改回還沒繳 ---------- */
+function billChips(b, p) {
+  var f = V32.flags[b.name], c = [];
+  if (f && f.auto_debit) c.push('<span class="chp co">自動扣款</span>');
+  if (!p && f && payReqFor('bill', f.id)) c.push('<span class="chp o">已請塔塔提醒</span>');
+  var r = f && (remFor('bill_due', f.id) || remFor('balance_check', f.id)); if (!p && r) c.push('<span class="chp">' + md(r.remind_on) + ' 提醒</span>');
+  return c.length ? '<div>' + c.join('') + '</div>' : '';
+}
+function subChips(it) { return payReqFor('sub', it.id) ? '<span class="chp o">已請塔塔提醒</span>' : ''; }
+function renderBills() {
+  var B = D.bills, isCur = VIEW === 0, paid = B.filter(function (b) { return b.paid_at || !isCur; });
+  var sum = function (a) { return a.reduce(function (s, b) { return s + Number(b.amount || 0); }, 0); };
+  var due = sum(B) - sum(paid), C = 2 * Math.PI * 24;
+  $('bt_n1').textContent = paid.length + '/' + B.length; $('bt_n2').textContent = SUBS.length;
+  $('bill_p').hidden = btab !== 'bill'; $('sub_p').hidden = btab !== 'sub';
+  $('bill_p').innerHTML = '<div class="card"><div class="bsum"><span class="ring" role="img" aria-label="已繳 ' + paid.length + ' 筆，共 ' + B.length + ' 筆"><svg viewBox="0 0 56 56"><circle class="tr" cx="28" cy="28" r="24"/><circle class="pg" cx="28" cy="28" r="24" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C * (1 - paid.length / Math.max(1, B.length))).toFixed(1) + '"/></svg><b>' + paid.length + '/' + B.length + '</b></span><span class="t"><span>' + (isCur ? '本期' : md(viewPeriod()) + ' 那期') + '還要繳</span><b class="num" id="bill_due">' + nt(due) + '</b></span></div></div>' +
+    '<div class="rows" style="margin-top:10px">' + B.map(function (b) {
+      var p = b.paid_at || !isCur, dd = billDays(b), hot = !p && dd <= 3;
+      var inner = '<div class="due' + (hot ? (dd < 0 ? ' hot od' : ' hot') : '') + '"><b>' + b.due_day + '</b><i>號</i></div><div style="flex:1;min-width:0"><div class="t1">' + esc(b.name) + '</div><div class="t2 num">' + nt(b.amount) + (hot ? '　<span class="neg">' + (dd < 0 ? '過 ' + (-dd) + ' 天' : dd === 0 ? '今天' : '剩 ' + dd + ' 天') + '</span>' : '') + '</div>' + (isCur ? billChips(b, p) : '') + '</div>';
+      var main = isCur ? '<button type="button" class="bmain" data-x="bdet" data-ref="' + esc(b.name) + '"><span class="vh">' + esc(b.name) + '，點開看提醒與自動扣款</span>' + inner + '<span class="chev" aria-hidden="true">›</span></button>' : '<div class="bmain">' + inner + '</div>';
+      if (p) return '<div class="cardrow brow">' + main + '<span class="pill ok"><span aria-hidden="true">✓ </span>已繳' + (b.paid_at ? ' ' + md(dayKey(b.paid_at)) : '') + '</span></div>';
+      return '<div class="cardrow brow">' + main + '<button type="button" class="pill todo" data-bill="' + esc(b.name) + '">標已繳</button></div>';
+    }).join('') + '</div>' + (isCur ? '<div class="foot">點帳單可以設自動扣款、請塔塔提醒繳費、到期提醒。</div>' : '<div class="foot">過去的一期只能看。</div>');
+  var near = SUBS.filter(subSoon), tot = SUBS.filter(function (s) { return s.payer !== 'company' && s.billing_cycle !== 'yearly'; }).reduce(function (a, s) { return a + Number(s.amount); }, 0);
+  var co = SUBS.filter(function (s) { return s.payer === 'company'; }).reduce(function (a, s) { return a + Number(s.amount); }, 0);
+  var yr = SUBS.filter(function (s) { return s.billing_cycle === 'yearly' && s.due_this_period !== false; }).reduce(function (a, s) { return a + Number(s.amount); }, 0);
+  $('sub_p').innerHTML = '<div class="card"><div class="bsum"><span class="ring" aria-hidden="true"><b style="font-size:22px">🔁</b></span><span class="t"><span>每月訂閱</span><b class="num">' + nt(tot) + '</b></span><button type="button" class="gbtn" id="sub_add">＋ 新增</button></div>' +
+    (near.length ? '<div class="soonrow" role="group" aria-label="7 天內要扣的訂閱">' + near.map(function (it) { return '<button type="button" class="soonc" data-sub="' + esc(it.id) + '"><b>' + esc(it.name) + '</b><span class="num">' + subWhen(it) + '・' + nt(it.amount) + '</span></button>'; }).join('') + '</div>' : '') +
+    ((yr || co) ? '<div class="totline">' + (yr ? '<span>本期年費 <b class="num">' + nt(yr) + '</b></span>' : '') + (co ? '<span>公司付 <b class="num">' + nt(co) + '</b></span>' : '') + '</div>' : '') + '</div>' +
+    (SUBS.length ? '<div class="rows" style="margin-top:10px">' + SUBS.map(function (it) {
+      var chips = [];
+      if (it.payer === 'company') chips.push('<span class="chp co">公司付</span>');
+      if (it.billing_cycle === 'yearly') chips.push('<span class="chp">年繳</span>');
+      if (it.orig_currency) chips.push('<span class="chp num">' + esc(it.orig_currency) + ' ' + it.orig_amount + '</span>');
+      if (it.status === 'idle') chips.push('<span class="chp o">閒置</span>');
+      if (it.status === 'cancel') chips.push('<span class="chp r">要取消' + (it.cancel_by ? ' ' + md(it.cancel_by) + ' 前' : '') + '</span>');
+      if (it.paid_this_period === true) chips.push('<span class="chp g">✓ 已扣</span>');
+      var pc = subChips(it); if (pc) chips.push(pc);
+      return '<button type="button" class="cardrow subrow' + (subSoon(it) ? ' soon' : '') + '" data-sub="' + esc(it.id) + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(it.name) + '</div><div class="t2 num">' + md(it.next_charge_date) + '・' + subWhen(it) + '</div>' + (chips.length ? '<div>' + chips.join('') + '</div>' : '') + '</div><div class="amt num">' + nt(it.amount) + '</div></button>';
+    }).join('') + '</div>' : '<div class="card" style="margin-top:10px">' + emptyBox('🔁', '還沒有訂閱', '') + '</div>');
+}
+function billModel(name) {
+  var b = D.bills.filter(function (x) { return x.name === name; })[0];
+  if (!b) return { title: '帳單', html: '<div class="card">' + emptyBox('🧾', '找不到這張帳單', '') + '</div>' };
+  var f = V32.flags[b.name], id = f && f.id, auto = !!(f && f.auto_debit), paid = !!b.paid_at, due = billDue(b), dd = dayDiff(due, TODAY), h = '';
+  h += dsum(paid ? '本期已繳' + (b.paid_at ? '（' + md(dayKey(b.paid_at)) + '）' : '') : dueTxt(dd), 'NT$ ' + nt(b.amount), md(due) + ' ' + wd(due) + ' 到期' + (b.account ? '・預設從 ' + esc(b.account) + ' 扣' : ''), !paid && dd < 0 ? 'neg' : '');
+  if (!id) h += '<div class="foot">讀不到這張帳單的編號，提醒與自動扣款暫時不能設，重新整理再試。</div>';
+  h += '<div class="sgrp" style="margin-top:10px"><div class="af sw">' + swt('自動扣款', auto, 'data-x="auto" data-ref="' + esc(b.name) + '"' + (id ? '' : ' disabled')) + '</div></div>';
+  if (auto) { var bc = id && remFor('balance_check', id); h += '<div class="ahint">自動扣款，到期前一天提醒你看餘額。' + (bc ? '已設 ' + md(bc.remind_on) + ' 提醒。' : '') + '</div>'; }
+  if (!paid && !auto && id) {
+    var rq = payReqFor('bill', id);
+    h += '<div class="gh"><span><b>繳費</b></span></div>' + (rq ? '<div class="v32row"><span class="t"><b>已請塔塔提醒</b><span class="t2">' + md(dayKey(tpe(rq.requested_at))) + ' ' + hm(tpe(rq.requested_at)) + ' 送出，等塔塔回繳費管道</span></span><button type="button" data-x="paycancel" data-rid="' + rq.id + '">取消提醒</button></div>'
+      : '<button type="button" class="dbtn" data-x="paybill" data-ref="' + esc(b.name) + '">提醒我付</button><div class="ahint">塔塔會回你繳費管道與期限，到期前再提醒，不會代付。</div>');
+    var r = remFor('bill_due', id);
+    h += '<div class="gh"><span><b>到期提醒</b></span></div>' + (r ? '<div class="v32row"><span class="t"><b>' + md(r.remind_on) + ' 提醒你</b><span class="t2">到時還沒繳，塔塔會提醒</span></span><button type="button" data-x="remcancel" data-rid="' + r.id + '">取消</button></div>'
+      : '<div class="sgrp">' + afield('bd_date', '提醒日期', 'type="date"', addDays(due, -1)) + '</div><button type="button" class="dbtn n" data-x="billdue" data-ref="' + esc(b.name) + '">到期提醒我</button>');
+  }
+  h += paid ? '<button type="button" class="dbtn n" data-x="unpay" data-ref="' + esc(b.name) + '"' + (id ? '' : ' disabled') + '>改回還沒繳</button>' : '<button type="button" class="dbtn" data-bill="' + esc(b.name) + '" style="margin-top:16px">標已繳</button>';
+  return { title: b.name, html: h };
+}
+function billOf(name) { var b = D.bills.filter(function (x) { return x.name === name; })[0], f = V32.flags[name]; return b && f ? { b: b, id: f.id, f: f } : null; }
+async function payBill(name) {
+  var o = billOf(name); if (!o) return; var b = o.b, due = billDue(b);
+  var text = '[帳單:' + b.name + '] 老大按了「提醒我付」：NT$ ' + nt(b.amount) + '，' + md(due) + ' 到期' + (b.account ? '，預設從 ' + b.account + ' 扣' : '') + '。請回我繳費管道與期限，到期前再提醒我。';
+  if (!(await ask('請塔塔提醒你繳「' + esc(b.name) + '」？<div class="mut" style="margin-top:6px">會傳這段給塔塔：<br>' + esc(text) + '</div>', '提醒我付'))) return;
+  try { showErr(''); var r = await rpc('kk_pay_request', { p_kind: 'bill', p_ref_id: o.id, p_note: '網頁：提醒我付' }); V32.pay = V32.pay.filter(function (x) { return x.id !== r.id; }).concat([r]); V32.sig = ''; render();
+    var n = await notifyTal(text); if (n.ok) showMsg('已請塔塔提醒「' + b.name + '」'); else showErr('已記下，但沒通知到塔塔：' + n.why); loadV32(true); }
+  catch (e) { showErr(e.message); }
+}
+async function paySub(id) {
+  var it = SUBS.filter(function (x) { return String(x.id) === String(id); })[0]; if (!it) return;
+  var text = '[訂閱:' + it.name + '] 老大按了「提醒我付」：NT$ ' + nt(it.amount) + '，' + md(it.next_charge_date) + ' 扣款' + (it.account_name ? '（' + it.account_name + '）' : '') + '。請回我繳費管道與期限，到期前再提醒我。';
+  if (!(await ask('請塔塔提醒你付「' + esc(it.name) + '」？<div class="mut" style="margin-top:6px">會傳這段給塔塔：<br>' + esc(text) + '</div>', '提醒我付'))) return;
+  try { showErr(''); var r = await rpc('kk_pay_request', { p_kind: 'sub', p_ref_id: Number(it.id), p_note: '網頁：提醒我付' }); V32.pay = V32.pay.filter(function (x) { return x.id !== r.id; }).concat([r]); V32.sig = ''; render(); if (SS) ssDraw();
+    var n = await notifyTal(text); if (n.ok) showMsg('已請塔塔提醒「' + it.name + '」'); else showErr('已記下，但沒通知到塔塔：' + n.why); loadV32(true); }
+  catch (e) { showErr(e.message); }
+}
+async function payCancel(rid) {
+  try { showErr(''); await rpc('kk_pay_request_cancel', { p_id: Number(rid) }); V32.pay = V32.pay.filter(function (x) { return x.id !== Number(rid); }); V32.sig = ''; render(); if (SS) ssDraw(); showMsg('已取消提醒'); loadV32(true); }
+  catch (e) { showErr(e.message); }
+}
+async function remSet(kind, ref, on, name, note) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(on || '')) { showErr('提醒日期不對，請選一天。'); return null; }
+  try { showErr(''); var r = await rpc('kk_reminder_set', { p_kind: kind, p_ref_id: refOut(kind, ref), p_remind_on: on, p_ref_name: name, p_note: note || null }); V32.rem = V32.rem.filter(function (x) { return x.id !== r.id; }).concat([r]); V32.sig = ''; V32.fresh = true; render(); loadV32(true); return r; }
+  catch (e) { showErr(e.message); return null; }
+}
+async function remCancel(rid, quiet) {
+  try { showErr(''); await rpc('kk_reminder_cancel', { p_id: Number(rid) }); V32.rem = V32.rem.filter(function (x) { return x.id !== Number(rid); }); V32.sig = ''; render(); if (!quiet) showMsg('已取消提醒'); loadV32(true); }
+  catch (e) { showErr(e.message); }
+}
+async function billDueSet(name) {
+  var o = billOf(name); if (!o) return; var on = $('bd_date') && $('bd_date').value;
+  if (await remSet('bill_due', o.id, on, o.b.name, '網頁：到期提醒')) showMsg('已設 ' + md(on) + ' 提醒你繳「' + o.b.name + '」');
+}
+async function setAuto(name) {
+  var o = billOf(name); if (!o) return; var to = !o.f.auto_debit;
+  try {
+    showErr(''); var r = await rpc('kk_bill_set_auto_debit', { p_bill_id: o.id, p_on: to }); V32.flags[name] = Object.assign({}, o.f, r || { auto_debit: to });
+    var msg = '「' + name + '」' + (to ? '改成自動扣款' : '取消自動扣款');
+    if (to) {
+      var due = billDue(o.b); if (o.b.paid_at) due = billDue(o.b, addMonthsK(D.period_start, 1));
+      var bc = await remSet('balance_check', o.id, addDays(due, -1), name, '網頁：自動扣款前一天看餘額'); if (bc) msg += '，' + md(bc.remind_on) + ' 提醒你看餘額';
+      var rq = payReqFor('bill', o.id); if (rq) { await rpc('kk_pay_request_cancel', { p_id: rq.id }); V32.pay = V32.pay.filter(function (x) { return x.id !== rq.id; }); msg += '，原本的提醒我付已取消'; }
+    } else { var old = remFor('balance_check', o.id); if (old) { await rpc('kk_reminder_cancel', { p_id: old.id }); V32.rem = V32.rem.filter(function (x) { return x.id !== old.id; }); msg += '，看餘額提醒已取消'; } }
+    V32.sig = ''; render(); showMsg(msg); loadV32(true);
+  } catch (e) { showErr(e.message); loadV32(true); }
+}
+function unpayBill(name) {
+  var o = billOf(name); if (!o) return;
+  ask('把「' + esc(name) + '」改回本期還沒繳？<div class="mut" style="margin-top:6px">會刪掉這期的已繳紀錄；卡費自動建的轉帳會一起作廢。</div>', '改回還沒繳', true).then(async function (ok) {
+    if (!ok) return;
+    try { showErr(''); await rpc('kk_bill_unpay', { p_bill_id: o.id }); showMsg('「' + name + '」已改回還沒繳'); await load({ force: true }); }
+    catch (e) { showErr(v32Err(e)); }
+  });
+}
+/* 訂閱抽屜：詳情最上面加「提醒我付」 */
+var _ssDrawE = ssDraw;
+ssDraw = function () {
+  _ssDrawE(); if (!SS || SS.view !== 'detail' || !SS.it) return;
+  var it = SS.it, box = $('ss_body').querySelector('.sbtns'); if (!box || it.payer === 'company' || it.paid_this_period === true) return;
+  var rq = payReqFor('sub', it.id), el = document.createElement('div'); el.className = 'full';
+  el.innerHTML = rq ? '<div class="v32row" style="margin-top:12px"><span class="t"><b>已請塔塔提醒</b><span class="t2">' + md(dayKey(tpe(rq.requested_at))) + ' 送出</span></span><button type="button" data-x="paycancel" data-rid="' + rq.id + '">取消提醒</button></div>' : '<button type="button" class="sbtn" data-x="paysub" data-ref="' + esc(it.id) + '">提醒我付</button>';
+  box.insertBefore(el, box.firstChild);
+};
+
+/* ---------- 待收款：到期沒入帳提醒我（receivable_due） ---------- */
+var _goalHtmlE = goalHtml;
+goalHtml = function () {
+  var h = _goalHtmlE(), a = h.indexOf('<div class="gh"><span><b>應收</b>'), z = h.indexOf('<div class="gh"><span><b>撐幾個月</b>');
+  if (OFFLINE || a < 0 || z < a) return h;
+  var items = RCV, tot = items.reduce(function (x, i) { return x + (i.outstanding_amount || 0); }, 0);
+  var seg = '<div class="gh"><span><b>待收款</b>' + items.length + ' 筆</span><span class="num">' + nt(tot) + '</span></div><div class="rows">' + items.map(function (i) {
+    var r = remFor('receivable_due', i.id);
+    return '<button type="button" class="rcv" data-x="rcvi" data-ref="' + esc(i.id) + '"><div class="m"><div class="t">' + esc(i.short_title || i.title) + '</div><div>' + (i.status === 'delivered' ? '<span class="chp g">已交件</span>' : '<span class="chp">進行中</span>') + (i.signed ? '<span class="chp o">已簽約</span>' : '') + (i.overdue ? '<span class="chp r">已逾期</span>' : '') + '<span class="chp num">' + (i.expected_pay_date ? md(i.expected_pay_date) + ' 入帳' : '入帳日未定') + '</span>' + (r ? '<span class="chp co">' + md(r.remind_on) + ' 提醒</span>' : '') + '</div></div><div class="a num">' + (i.outstanding_amount == null ? '<span class="tg">金額未定</span>' : nt(i.outstanding_amount)) + '</div><span class="chev" aria-hidden="true">›</span></button>'; }).join('') + '</div>';
+  return h.slice(0, a) + seg + h.slice(z);
+};
+function rcviModel(id) {
+  var i = RCV.filter(function (x) { return String(x.id) === String(id); })[0];
+  if (!i) return { title: '待收款', html: '<div class="card">' + emptyBox('📄', '找不到這筆待收款', '') + '</div>' };
+  var r = remFor('receivable_due', i.id), h = dsum(esc(i.org || '待收款'), i.outstanding_amount == null ? '金額未定' : 'NT$ ' + nt(i.outstanding_amount), esc(i.title || i.short_title), i.overdue ? 'neg' : '');
+  h += '<div class="sgrp" style="margin-top:10px">' + [['約定付款日', i.expected_pay_date ? md(i.expected_pay_date) : '未定'], ['已收', nt(i.received_amount || 0)], ['狀態', (i.status === 'delivered' ? '已交件' : '進行中') + (i.signed ? '・已簽約' : '') + (i.overdue ? '・已逾期' : '')]].map(function (x) { return '<div class="af"><span class="k">' + x[0] + '</span><span class="v">' + esc(x[1]) + '</span></div>'; }).join('') + '</div>';
+  h += '<div class="gh"><span><b>到期沒入帳提醒我</b></span></div>' + (r ? '<div class="v32row"><span class="t"><b>' + md(r.remind_on) + ' 提醒你</b><span class="t2">到時還沒入帳，塔塔會提醒</span></span><button type="button" data-x="remcancel" data-rid="' + r.id + '">取消</button></div>'
+    : '<div class="sgrp">' + afield('rc_date', '提醒日期', 'type="date"', i.expected_pay_date || addDays(TODAY, 7)) + '</div><button type="button" class="dbtn" data-x="rcvrem" data-ref="' + esc(i.id) + '">到期沒入帳提醒我</button><div class="ahint">' + (i.expected_pay_date ? '預設是約定付款日。' : '這筆還沒有約定付款日，先預設一週後，可以改。') + '</div>');
+  return { title: i.short_title || '待收款', html: h };
+}
+async function rcvRemSet(id) {
+  var i = RCV.filter(function (x) { return String(x.id) === String(id); })[0]; if (!i) return; var on = $('rc_date') && $('rc_date').value;
+  if (await remSet('receivable_due', i.id, on, i.short_title || i.title, '網頁：到期沒入帳提醒')) showMsg('已設 ' + md(on) + ' 沒入帳就提醒你');
+}
+
+/* ---------- 詳細頁：新增四種（預算、帳單、待收款單筆、等你看改寫） ---------- */
+var _detModelE = detModel;
+detModel = function (d) { if (d.t === 'rv') return rvModel(); if (d.t === 'budget') return budgetModel(); if (d.t === 'bill') return billModel(d.arg); if (d.t === 'rcvi') return rcviModel(d.arg); return _detModelE(d); };
+/* 15 秒輪詢與即時更新會重畫詳細頁；有表單的頁面保留正在填的值 */
+var _drawDetE = drawDet;
+drawDet = function (keep) {
+  var vals = {}, foc = document.activeElement && document.activeElement.id, b = $('det_b');
+  if (keep && !V32.fresh) b.querySelectorAll('input[id],select[id]').forEach(function (e) { vals[e.id] = e.value; });
+  V32.fresh = false; _drawDetE(keep);
+  Object.keys(vals).forEach(function (id) { var e = $(id); if (e) e.value = vals[id]; });
+  if (keep && foc && $(foc) && b.contains($(foc))) try { $(foc).focus({ preventScroll: true }); } catch (e) {}
+};
+function v32Bind() {
+  document.addEventListener('click', function (ev) {
+    var x = ev.target.closest('[data-x]'); if (!x || x.disabled) return;
+    var k = x.dataset.x, ref = x.dataset.ref, rid = x.dataset.rid;
+    if (k === 'bgt') openDet('budget', 'budget');
+    else if (k === 'bgsave') budgetSave();
+    else if (k === 'bgclear') budgetClear();
+    else if (k === 'bdet') openDet('bill', ref);
+    else if (k === 'paybill') payBill(ref);
+    else if (k === 'paysub') paySub(ref);
+    else if (k === 'paycancel') payCancel(rid);
+    else if (k === 'remcancel') remCancel(rid);
+    else if (k === 'billdue') billDueSet(ref);
+    else if (k === 'auto') setAuto(ref);
+    else if (k === 'unpay') unpayBill(ref);
+    else if (k === 'rcvi') openDet('rcvi', ref);
+    else if (k === 'rcvrem') rcvRemSet(ref);
+    else return;
+    LOG('v32：' + k + (ref ? ' ' + ref : ''));
+  });
+  $('det_b').addEventListener('click', function (ev) { var b = ev.target.closest('[data-bill]'); if (b) markPaid(b.dataset.bill); });
+  $('bgt').onclick = function () { openDet('budget', 'budget'); };
+}
+
 /* ---------- 開機：有快取先畫快取，再讀雲端 ---------- */
 applyLook(false);
 setLive(false);
-bind(); liveBind(); mountFaces();
+bind(); liveBind(); v32Bind(); mountFaces();
 (function () {
   if (KEY.length < 20) { showGate('link'); return; }
   try { var c = JSON.parse(LS.get('kk_cache') || 'null'); if (c && c.v === 3 && c.k === KEY.slice(0, 10) && c.o && c.l) { LIVE.sig = ''; applyData(c.o, c.l); } } catch (e) {}

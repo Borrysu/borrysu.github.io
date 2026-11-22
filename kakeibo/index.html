@@ -486,7 +486,7 @@ label.field > .fl{font-size:13px;color:var(--muted)}
 .gate .paste{display:flex;gap:8px;margin-top:18px}.gate .paste input{flex:1;min-width:0;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:16px}
 .gate .paste button{min-height:48px;padding:0 18px;border:0;border-radius:12px;background:var(--accent);color:var(--on-accent,#fff);font-weight:700;font-size:16px}.gate .gerr{color:var(--bad);margin-top:10px;font-size:14px}
 .phone.gated .tabbar,.phone.gated .pnav,.phone.gated .composer,.phone.gated #refBtn,.phone.gated #maskBtn,.phone.gated #layBtn,.phone.gated #liveBtn{display:none !important}
-[data-act="payAuto"],[data-act="rcvRem"],[data-act="unvoid"],[data-act="unpaid"],[data-act="payUnreq"],[data-act="payTataDone"]{display:none !important}
+[data-act="payTataDone"]{display:none !important}
 </style>
 <style id="themes">
 /* 塔塔記帳設計提案｜themes.css｜單 B｜20261122
@@ -2449,9 +2449,9 @@ function fixedC(d){
 const facts=rows=>'<dl class="facts">'+rows.filter(Boolean).map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl>';
 const SH={
  left(d){const mx=Math.max.apply(null,W7.map(x=>x[1])),avg=W7.reduce((a,x)=>a+x[1],0)/7;
-  return{t:d.left<0?'超支怎麼算的':'還能花怎麼算的',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>預算 '+fmt(BUDGET)+'，花了 '+fmt(d.spent)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還能花 '+fmt(d.left))+'。</p>'+facts([['這期預算',amt(BUDGET)],['已經花了',amt(d.spent)],[d.left<0?'超支':'還能花',amt(d.left,{abs:1})],['每天可以花',amt(d.perDay)+'（還有 '+d.dl+' 天）'],d.empty||!KD.ps||d.per!==0?null:['上期同一天（'+KD.ps.label+'）',amt(KD.ps.tot)+'，這期'+(d.spent>=KD.ps.tot?'多 ':'少 ')+fmt(Math.abs(d.spent-KD.ps.tot))]])+leftBar(d,true)+(d.empty?'':'<h3 class="h3" style="margin-top:20px">近 7 天支出</h3><div class="bars" role="img" aria-label="近 7 天每天支出長條，平均 '+fmt(avg)+'"><span class="avg" style="--h:'+(avg/mx).toFixed(3)+'">平均 '+fmt(avg)+'</span>'+W7.map((x,i)=>'<span class="b'+(i===6?' now':'')+'"><i style="--h:'+(x[1]/mx).toFixed(3)+'"></i>'+x[0]+'</span>').join('')+'</div>')+B('toast','調整預算（即將推出）',{cls:'wide',dis:1})}},
+  return{t:d.left<0?'超支怎麼算的':'還能花怎麼算的',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>預算 '+fmt(BUDGET)+'，花了 '+fmt(d.spent)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還能花 '+fmt(d.left))+'。</p>'+facts([['這期預算',amt(BUDGET)],['已經花了',amt(d.spent)],[d.left<0?'超支':'還能花',amt(d.left,{abs:1})],['每天可以花',amt(d.perDay)+'（還有 '+d.dl+' 天）'],d.empty||!KD.ps||d.per!==0?null:['上期同一天（'+KD.ps.label+'）',amt(KD.ps.tot)+'，這期'+(d.spent>=KD.ps.tot?'多 ':'少 ')+fmt(Math.abs(d.spent-KD.ps.tot))]])+leftBar(d,true)+(d.empty?'':'<h3 class="h3" style="margin-top:20px">近 7 天支出</h3><div class="bars" role="img" aria-label="近 7 天每天支出長條，平均 '+fmt(avg)+'"><span class="avg" style="--h:'+(avg/mx).toFixed(3)+'">平均 '+fmt(avg)+'</span>'+W7.map((x,i)=>'<span class="b'+(i===6?' now':'')+'"><i style="--h:'+(x[1]/mx).toFixed(3)+'"></i>'+x[0]+'</span>').join('')+'</div>')+B('sheet','調整預算',{cls:'wide',k:'budSet'})}},
  cat(d,k){const c=d.cats.find(x=>x.k===k),ts=d.txs.filter(t=>t.c===k),cur=c.s/c.b;
-  return{t:k,h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>'+(c.s?'花了 '+fmt(c.s)+'，預算 '+fmt(c.b)+'，'+(c.s>c.b?'超過 '+fmt(c.s-c.b):'還剩 '+fmt(c.b-c.s))+'。':'這期還沒花。預算 '+fmt(c.b)+'。')+'</p>'+(c.s?bul(cur,d.pT,{big:true}):'')+'<h3 class="h3" style="margin-top:20px">與上期比 <span class="sub">同天數</span></h3>'+(d.per===0&&KD.ps?cmpBlock(c.s,KD.ps.cat[k]||0,KD.ps.label):'<p class="sub">只有本期能跟上期同天數比。</p>')+'<h3 class="h3">這期的 '+c.n+' 筆 <span class="sub">列出 '+ts.length+' 筆</span></h3>'+(ts.length?'<div class="list">'+ts.map(txRow).join('')+'</div>':'<p class="gray-line">'+'沒有交易。'+'</p>')+B('toast','調整這類預算（即將推出）',{cls:'wide',dis:1})}},
+  return{t:k,h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>'+(c.s?'花了 '+fmt(c.s)+'，預算 '+fmt(c.b)+'，'+(c.s>c.b?'超過 '+fmt(c.s-c.b):'還剩 '+fmt(c.b-c.s))+'。':'這期還沒花。預算 '+fmt(c.b)+'。')+'</p>'+(c.s?bul(cur,d.pT,{big:true}):'')+'<h3 class="h3" style="margin-top:20px">與上期比 <span class="sub">同天數</span></h3>'+(d.per===0&&KD.ps?cmpBlock(c.s,KD.ps.cat[k]||0,KD.ps.label):'<p class="sub">只有本期能跟上期同天數比。</p>')+'<h3 class="h3">這期的 '+c.n+' 筆 <span class="sub">列出 '+ts.length+' 筆</span></h3>'+(ts.length?'<div class="list">'+ts.map(txRow).join('')+'</div>':'<p class="gray-line">'+'沒有交易。'+'</p>')+B('sheet','調整這類預算',{cls:'wide',k:'budSet'})}},
  review(d){return{t:'確認塔塔記的帳',h:d.inbox.length?B('okAll',d.inbox.length+' 筆都對，全部確認',{cls:'pri wide'})+d.inbox.map(cfCard).join(''):'<div class="empty"><h2>都確認完了</h2><p>沒有等你看的帳。</p>'+B('close','回到今天',{cls:'pri'})+'</div>'}},
  cards(){const L=[['where','花在哪（前四類）'],['recent','最近 3 筆'],['subs','訂閱每月平均'],['acct','可動用現金與撐幾個月']];return{t:'調整卡片',h:'<p class="sub">今天一件事、還能花、收入、下一筆要繳固定顯示。下面的可以自己開關，之後有新卡片會出現在這裡，預設關閉。</p>'+L.map(x=>'<label class="check"><input type="checkbox" data-card="'+x[0]+'"'+(S.hide[x[0]]?'':' checked')+'>'+x[1]+'</label>').join('')+B('close','照這樣顯示',{cls:'pri wide'})}},
  recap(){return{t:'上期回顧 10/10～11/9',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>上期花了 49,300，在預算內。收入 96,000，達標。</p>'+facts([['花了',amt(49300)+'（預算內 2,700）'],['收入',amt(96000)+'（目標的 107%）'],['留下來',amt(46700)]])+'<h3 class="h3">跟前一期比</h3><div class="hbar"><span>吃</span><span class="t"><span style="--p:.86"></span></span><span class="num">多 1,900</span></div><div class="hbar"><span>訂閱</span><span class="t"><span style="--p:.4"></span></span><span class="num">多 330</span></div><div class="hbar"><span>交通</span><span class="t"><span style="--p:.22"></span></span><span class="num">少 480</span></div><p class="sub">每期結束我會整理一份，跟給金金的摘要是同一份資料。</p>'}},
@@ -3185,14 +3185,14 @@ function catList(d){const cs=d.cats.filter(c=>c.s>0||c.n>0).sort((a,b)=>b.s-a.s)
 function budgetHead(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null;const bk=' style="display:block"';return '<section class="card"><span class="lab"'+bk+'>'+P.label+' 支出</span><span class="big"'+bk+'>'+amt(d.spent,{abs:1,roll:'spent'})+'</span>'
   +(ps==null?'':prevNone()?'<span class="sub"'+bk+'>上一期（'+PLf(-1)[0]+'）沒有支出紀錄，還不能比</span>':'<span class="sub"'+bk+'>上期同一段（'+KD.ps.label+'）'+fmt(ps)+'，'+(d.spent>=ps?'多 ':'少 ')+fmt(Math.abs(d.spent-ps))+'</span>')
   +'<span class="sub"'+bk+'>收入 '+fmt(d.income)+' · 目標 '+fmt(TARGET)+' '+goalNums(d).txt+'</span></section>'}
-function budgetTail(){return B('toast','設定預算（即將推出）',{cls:'wide',dis:1})+B('sheet','看收入目標',{cls:'wide',k:'income'})}
+function budgetTail(){return B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})+B('sheet','看收入目標',{cls:'wide',k:'income'})}
 function budgetA(d){if(d.err)return errBlock();return budgetHead(d)+'<h2 class="h3">各類支出'+(prevNone()?'':' <span class="sub">與上期同天數比</span>')+'</h2>'+catList(d)+budgetTail()}
 function budgetB(d){return budgetA(d)}
 function budgetC(d){return budgetA(d)}
 SH.left=function(d){const g=goalNums(d),ps=S.per===0&&KD.ps?KD.ps.tot:null;
   return{t:'這期的數字怎麼算',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>這期支出 '+fmt(d.spent)+'，收入 '+fmt(g.inc)+'，目標 '+fmt(g.tgt)+'，'+g.txt+'。</p>'
    +facts([['期間',P.label],['支出（只算支出，轉帳與代收代付不算）',amt(d.spent)],['收入',amt(g.inc)],['收入目標',amt(g.tgt)],[g.gap>0?'還差':'超過目標',amt(Math.abs(g.gap))],['達成',g.pctTxt],ps==null?null:['上期同一段（'+KD.ps.label+'）支出',amt(ps)]].filter(Boolean))
-   +leftBar(d,true)+'<p class="sub">預算還沒有設定的地方，這裡不算「還能花」。</p>'+B('toast','設定預算（即將推出）',{cls:'wide',dis:1})}};
+   +leftBar(d,true)+'<p class="sub">預算還沒有設定的地方，這裡不算「還能花」。</p>'+B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})}};
 function reply(q,d){if(S.ctx&&/這筆|為什麼|哪/.test(q))return '這筆是照'+(S.ctx.ev||'清單')+'記的。金額 '+fmt(S.ctx.a||S.ctx.amt)+'。';
   const g=goalNums(d);
   if(/花|剩|預算|超/.test(q))return '這期花了 '+fmt(d.spent)+'。收入 '+fmt(g.inc)+'，目標'+g.txt+'。預算還沒設定。';
@@ -3219,6 +3219,127 @@ Object.assign(ACT,{
   if(kkBusy)return;kkBusy=true;try{await sendTata(tx);S.pay=null;closeSheet();toast('已送出，塔塔會回你繳費管道與期限')}catch(e){toast(e.message)}finally{kkBusy=false}},
 });
 function kimBlock(t){return S.kim[t.id]==='sent'?'<div class="cfm" id="kimBox" role="status"><p>已送出</p></div>':''}
+
+/* ================= v32 第二段：預算、提醒我付、到期提醒、自動扣款、塔塔確認、取消作廢、改回還沒繳 =================
+   新函式見 _wG/v32/API.md。全部寫入走 kkDo（寫完重讀資料庫），畫面狀態只來自資料庫。 */
+KD.v32={pend:[],flags:[],reqs:[],rems:[],bud:null,sig:''};
+const V32=KD.v32;
+const BUD=()=>!!(V32.bud&&Number(V32.bud.total)>0);
+const isoMinus1=iso=>{if(!iso)return '';const d=new Date(iso+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-1);return d.toISOString().slice(0,10)};
+const billRid=x=>{if(!x)return null;if(x.raw&&x.raw.id!=null)return x.raw.id;const f=V32.flags.find(y=>y.name===x.name);return f?f.id:null};
+const fxRef=x=>x.type==='bill'?'bill:'+billRid(x):'sub:'+x.rid;
+const remOf=(kind,ref)=>V32.rems.find(r=>r.kind===kind&&r.ref_id===ref);
+async function v32Load(){if(KEY.length<20||!KD.loaded)return;
+  const per=S.per,ps=per===0||!KD.cur?null:addMonths(KD.cur,per);
+  const safe=p=>p.catch(()=>undefined);
+  const [pend,flags,reqs,rems,bud]=await Promise.all([safe(rpc('kk_pending_confirm',{})),safe(rpc('kk_bill_flags',{})),safe(rpc('kk_pay_requests_list',{})),safe(rpc('kk_reminders_list',{})),safe(rpc('kk_budget_get',ps?{p_period_start:ps}:{}))]);
+  if(per!==S.per)return;
+  if(pend!==undefined)V32.pend=pend||[];if(flags!==undefined)V32.flags=flags||[];if(reqs!==undefined)V32.reqs=reqs||[];if(rems!==undefined)V32.rems=rems||[];if(bud!==undefined)V32.bud=bud||null;
+  const sig=JSON.stringify([V32.pend,V32.flags,V32.reqs,V32.rems,V32.bud,per]);if(sig===V32.sig)return;V32.sig=sig;
+  kkApply();if(!sheet.classList.contains('on'))render();else renderSheetBody()}
+const kkLoad_v31=kkLoad;kkLoad=async function(o){await kkLoad_v31(o);await v32Load().catch(()=>{})};
+const kkApply_v31=kkApply;kkApply=function(){kkApply_v31();v32Apply()};
+function v32Apply(){
+  /* 塔塔記的、還沒確認（本期才有） */
+  if(S.per===0){const m=new Map(V32.pend.map(r=>[Number(r.id),r]));TX.forEach(t=>{const r=m.get(Number(t.rid));if(r&&!t.v0){t.st='guess';t.why=r.guess_reason?String(r.guess_reason):'照'+(t.ev||'通知')+'記的'}})}
+  /* 自動扣款旗標 */
+  BILLS.forEach(b=>{const rid=billRid(b),f=V32.flags.find(y=>y.id===rid);if(f&&f.auto_debit)S.billFix[b.id]=Object.assign({},S.billFix[b.id],{auto:true})});
+  /* 提醒我付（status=requested） */
+  V32.reqs.filter(r=>r.status==='requested').forEach(r=>{let x=null;if(r.ref_kind==='bill')x=BILLS.find(b=>billRid(b)===Number(r.ref_id));else x=SUBS.find(s=>Number(s.rid)===Number(r.ref_id));if(x)S.payReq[x.id]={ac:x.ac,rid:r.id,at:r.requested_at}});
+  /* 待收款提醒 */
+  V32.rems.filter(r=>r.kind==='receivable_due').forEach(r=>S.rcvRem.add(r.ref_id));
+  /* 預算 */
+  if(BUD()){BUDGET=Number(V32.bud.total);const cs=V32.bud.categories||{};CATS.forEach(c=>{c.b=Number(cs[c.k])||0})}
+}
+/* D：有預算才算還能花 */
+const D_v31b=D;D=function(){const d=D_v31b();if(!BUD())return d;
+  d.bud=1;d.left=BUDGET-d.spent;d.pS=BUDGET>0?d.spent/BUDGET:0;d.perDay=d.dl>0?Math.floor(Math.max(d.left,0)/d.dl):0;return d};
+function leftBlock(d,cls){if(!d.bud)return '<span class="lab">'+(d.prev?'上一期支出':'這期支出')+'</span><span class="'+cls+'" data-main>'+amt(d.spent,{abs:1,roll:'spent'})+'</span>';
+  const over=d.left<0;return '<span class="lab">'+(d.prev?(over?'上一期超支':'上一期剩下'):over?'這期超支':'這期還能花')+'</span><span class="'+cls+'" data-main>'+amt(d.left,{abs:1,roll:'left',c:over?'neg':''})+'</span>'}
+function leftSub(d){if(!d.bud){const g=goalNums(d);return '收入 '+fmt(g.inc)+' · 目標 '+fmt(g.tgt)+' '+g.txt}
+  return d.prev?'已經結束 · 預算 '+fmt(BUDGET):d.left<0?'預算 '+fmt(BUDGET)+' · 花了 '+fmt(d.spent)+' · 還有 '+d.dl+' 天':'預算 '+fmt(BUDGET)+' · 每天 '+fmt(d.perDay)+' · 還有 '+d.dl+' 天'}
+function leftBar(d,big){if(!d.bud){const g=goalNums(d);return bul(g.tgt>0?g.inc/g.tgt:0,null,{big:big,lab:'收入到目標'})}
+  return bul(d.pS,d.prev?null:d.pT,{big:big,lab:'預算用了'})}
+function tata(d){
+  if(d.err)return{line:'讀不到資料。',mood:'idle'};
+  if(d.prev)return{line:'上一期，已經結束。',mood:'idle'};
+  if(d.fut)return{line:'下一期，還沒開始。',mood:'sleepy'};
+  if(d.scn==='offline')return{line:'離線中。先給你看 <b>'+(KD.atTxt||'上次')+'</b> 的。',mood:'sleepy'};
+  if(d.bud&&d.left<0)return{line:'超支 <b>'+fmt(-d.left)+'</b>。'+(d.inbox.length?'還有 '+d.inbox.length+' 筆等你看。':''),mood:'over'};
+  if(d.inbox.length)return{line:'<b>'+d.inbox.length+' 筆</b>等你看。',mood:'thinking'};
+  if(d.nb&&d.nb.rel<=3)return{line:d.nb.name+' <b>'+fmt(d.nb.amt)+'</b>，'+(d.nb.rel<0?rel(d.nb.rel)+'。':rel(d.nb.rel)+'繳。'),mood:'alert'};
+  if(d.empty)return{line:'新的一期，還沒花。',mood:'idle'};
+  return{line:KD.atTxt?'更新於 '+KD.atTxt:'讀取中',mood:'idle',idle:1};
+}
+function catList(d){const cs=d.cats.filter(c=>c.s>0||c.n>0||(d.bud&&c.b>0)).sort((a,b)=>b.s-a.s),zero=d.cats.filter(c=>!c.s&&!c.n&&!(d.bud&&c.b>0));
+  const budTag=c=>d.bud&&c.b>0?'<span class="sub">預算 '+fmt(c.b)+'，'+(c.s>c.b?'超過 '+fmt(c.s-c.b):'還剩 '+fmt(c.b-c.s))+'</span>'+bul(c.s/c.b,d.prev?null:d.pT,{lab:esc(c.k)+'預算用了'}):'';
+  return '<section class="card"><div class="list">'+(cs.length?cs.map(c=>'<button class="row" data-act="sheet" data-k="cat" data-id="'+esc(c.k)+'" style="flex-wrap:wrap"><span class="g" aria-hidden="true">'+c.g+'</span><span class="row-m"><b>'+esc(c.k)+'</b><small>'+c.n+' 筆 · 占 '+pc(d.spent?c.s/d.spent:0)+'</small>'+catCmpTag(c.k,c.s)+budTag(c)+'</span>'+amt(c.s,{c:d.bud&&c.b>0&&c.s>c.b?'neg':''})+CHEV+'</button>').join(''):'<p class="gray-line">這期還沒有支出。</p>')+'</div>'+(zero.length?'<p class="sub">還沒花：'+zero.map(c=>c.k).join('、')+'</p>':'')+'</section>'}
+function budgetHead(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null;const bk=' style="display:block"';
+  return '<section class="card"><span class="lab"'+bk+'>'+P.label+' 支出</span><span class="big"'+bk+'>'+amt(d.spent,{abs:1,roll:'spent'})+'</span>'
+  +(d.bud?'<span class="sub"'+bk+'>預算 '+fmt(BUDGET)+'，'+(d.left<0?'<b class="neg">超支 '+fmt(-d.left)+'</b>':'還能花 '+fmt(d.left)+(d.dl?'，每天 '+fmt(d.perDay):''))+(V32.bud.scope==='period'?'（這期專用）':'（每期通用）')+'</span>'+bul(d.pS,d.prev?null:d.pT,{big:true,lab:'預算用了'}):'')
+  +(ps==null?'':prevNone()?'<span class="sub"'+bk+'>上一期（'+PLf(-1)[0]+'）沒有支出紀錄，還不能比</span>':'<span class="sub"'+bk+'>上期同一段（'+KD.ps.label+'）'+fmt(ps)+'，'+(d.spent>=ps?'多 ':'少 ')+fmt(Math.abs(d.spent-ps))+'</span>')
+  +'<span class="sub"'+bk+'>收入 '+fmt(d.income)+' · 目標 '+fmt(TARGET)+' '+goalNums(d).txt+'</span></section>'}
+function budgetTail(){return B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})+B('sheet','看收入目標',{cls:'wide',k:'income'})}
+const SH_left_v31=SH.left;SH.left=function(d){const r=SH_left_v31(d);if(d.bud)r.h=r.h.replace('<p class="sub">預算還沒有設定的地方，這裡不算「還能花」。</p>',facts([['預算',amt(BUDGET)],[d.left<0?'超支':'還能花',amt(Math.abs(d.left))],['每天還能花',amt(d.perDay)]])+bul(d.pS,d.prev?null:d.pT,{big:true,lab:'預算用了'}));return r};
+/* 設定預算 */
+SH.budSet=function(d){const b=V32.bud||{},cs=b.categories||{},per=b.scope==='period';
+  return{t:BUD()?'調整預算':'設定預算',h:'<p class="sub">設好之後首頁會出現「還能花」與預算條，超支時塔塔會提醒。各類可以只填想管的。</p>'
+   +FI('budTotal','這期總預算（台幣）',{v:b.total!=null?String(Number(b.total)):'',im:'numeric',ph:'例如 50000'})
+   +'<span class="flab" id="lbudScope">套用範圍</span><div class="seg" role="group" aria-labelledby="lbudScope"><button data-act="budScope" data-c="all" aria-pressed="'+(!per)+'">每期通用</button><button data-act="budScope" data-c="period" aria-pressed="'+per+'">只有這期</button></div>'
+   +'<h3 class="h3" style="margin-top:14px">各類預算 <span class="sub">選填</span></h3>'
+   +'<div class="frow" style="flex-wrap:wrap">'+CATS.map((c,i)=>'<div style="flex:1 1 45%">'+FI('budC'+i,c.k,{v:cs[c.k]!=null?String(Number(cs[c.k])):'',im:'numeric',ph:'不設'})+'</div>').join('')+'</div>'
+   +'<p class="ferr" id="budErr" role="alert"></p>'+B('budSave','存檔',{cls:'pri wide'})+(BUD()?B('budClear','清除預算，回到只看支出',{cls:'wide'}):'')}};
+/* 確認全部 */
+SH.okAllCf=function(d){const n=d.inbox.length;return{t:'全部都對？',h:n?'<p class="sub">塔塔記的 '+n+' 筆會一次標成你確認過。分類不對的，先回去改那一筆。</p>'+d.inbox.slice(0,8).map(t=>'<p class="sub">・'+esc(t.d)+' '+esc(t.m)+' '+fmt(t.a)+'（'+esc(catName(t))+'）</p>').join('')+(n>8?'<p class="sub">還有 '+(n-8)+' 筆</p>':'')+'<div class="acts">'+B('close','先不要')+B('okAllGo','對，全部確認',{cls:'pri'})+'</div>':'<p class="gray-line">沒有等你看的帳。</p>'+B('close','關閉',{cls:'pri wide'})}};
+/* 帳單詳細頁：已繳可改回還沒繳 */
+const SH_fx_v31=SH.fx;SH.fx=function(d,id){const r=SH_fx_v31(d,id),x=d.bills.concat(d.subs).find(y=>y.id===id);if(!x)return r;
+  if(x.type==='bill'&&x.paid&&!x.ro&&d.per===0&&r.h.indexOf('data-act="unpaid"')<0)r.h=r.h.replace(/(<button class="btn[^"]*" data-act="askFx")/,B('unpaid','改回還沒繳',{id:x.id})+'$1');
+  if(x.type==='bill'&&x.auto)r.h=r.h.replace('（自動扣款）','（自動扣款，到期前一天提醒你看餘額）');
+  return r};
+/* 去繳費抽屜：已請塔塔提醒、自動扣款、到期提醒 */
+const SH_pay_v31=SH.pay;SH.pay=function(d,id){const r=SH_pay_v31(d,id),x=d.bills.concat(d.subs).find(y=>y.id===id);if(!x||x.paid)return r;const bill=x.type==='bill',rq=S.payReq[id];
+  if(rq){r.t='已請塔塔提醒：'+x.name;r.h=r.h.replace(/<p class="cf-why" id="payTataSt"[^>]*>[\s\S]*?<\/p>/,'<p class="cf-why" id="payTataSt" role="status">'+EYES+'已請塔塔提醒你付'+(rq.at?'（'+mdOf(tpDay(rq.at))+' '+tpTime(rq.at)+'）':'')+'。她會回你繳費管道與期限，不會代付。</p>').replace(/<p class="sub" style="margin-top:14px">原型示範[\s\S]*$/,'');r.h=r.h.replace('取消請求','取消提醒');return r}
+  const ref=fxRef(x),due=isoOfMD(x.due);let extra='';
+  if(bill&&x.auto){const bc=remOf('balance_check',ref);extra='<p class="sub" id="payBalRem">'+(bc?'到期前一天（'+mdOf(bc.remind_on)+'）會提醒你看餘額。':'到期前一天提醒你看餘額（還沒設定，按下面重新設定）。')+'</p>'+(bc?'':B('payAuto','重新設定自動扣款提醒',{cls:'wide',id:id,c:'1'}))}
+  else{const bd=remOf('bill_due',ref);extra=(bd?'<p class="sub" id="payDueRem">已設到期提醒：'+mdOf(bd.remind_on)+' 提醒你。</p>'+B('dueRemOff','取消到期提醒',{cls:'wide',id:id}):B('dueRem','到期前一天提醒我',{cls:'wide',id:id}))+(bill?B('payAuto','這張是自動扣款',{cls:'wide',id:id,c:'1'}):'')}
+  r.h=r.h+extra;return r};
+/* 動作 */
+Object.assign(ACT,{
+ ok(el){const t=TX.find(x=>x.id===el.dataset.id);if(!t)return;const c=el.dataset.c,r=t.raw;
+  kkDo(async()=>{if(c&&r.type==='expense'&&c!==(r.category||'其他'))await rpc('update_transaction',{p_id:t.rid,p_category:c});return rpc('kk_tx_confirm',{p_ids:[t.rid]})},()=>{setMood('logged',true);return c?'「'+t.m+'」記成'+c+'，確認了':'「'+t.m+'」確認了'},{close:S.stack.length&&S.stack[S.stack.length-1].k==='tx'})},
+ okAll(){openSheet('okAllCf',null,false)},
+ okAllGo(){const ids=D().inbox.map(t=>t.rid).filter(x=>x!=null);if(!ids.length){closeSheet();return}
+  kkDo(()=>rpc('kk_tx_confirm',{p_ids:ids}),n=>{setMood('logged',true);return (n||ids.length)+' 筆確認了'})},
+ unvoid(el){const t=TX.find(x=>x.id===el.dataset.id);if(!t)return;kkDo(()=>rpc('kk_tx_unvoid',{p_id:t.rid}),'取消作廢，這筆算回來了')},
+ unpaid(el){const x=fxFind(el.dataset.id);if(!x||x.type!=='bill')return;const rid=billRid(x);if(rid==null){toast('找不到這張帳單的編號');return}
+  kkDo(()=>rpc('kk_bill_unpay',{p_bill_id:rid}),'「'+x.name+'」改回還沒繳')},
+ async payCf(el){const id=el.dataset.id,x=fxFind(id);if(el.dataset.c!=='1'||!x||!S.pay){if(S.pay)S.pay.cf=false;renderSheetBody();reFocus('[data-act="payTata"]');return}
+  const bill=x.type==='bill',rid=bill?billRid(x):x.rid;if(rid==null){toast('找不到這筆的編號');return}
+  const ok=await kkDo(async()=>{const r=await rpc('kk_pay_request',{p_kind:bill?'bill':'sub',p_ref_id:rid,p_note:'面板提醒我付'});
+    await sendTata('[面板提醒我付] 「'+x.name+'」NT$'+fmt(x.amt)+'，'+(x.rel<0?rel(x.rel):x.due+' 到期')+'。請回我繳費管道與期限，不用代付。（提醒單 #'+r.id+'）').catch(e=>{throw new Error('提醒已記下，但傳給塔塔失敗：'+e.message)});return r},'已請塔塔提醒你付「'+x.name+'」，她會回繳費管道與期限');
+  if(ok)S.pay=null},
+ payUnreq(el){const id=el.dataset.id,rq=S.payReq[id];if(!rq||!rq.rid){toast('找不到這筆提醒');return}kkDo(()=>rpc('kk_pay_request_cancel',{p_id:rq.rid}),'已取消提醒')},
+ payAuto(el){const id=el.dataset.id,x=fxFind(id);if(!x||x.type!=='bill')return;const on=el.dataset.c==='1',rid=billRid(x),ref=fxRef(x),due=isoOfMD(x.due);if(rid==null){toast('找不到這張帳單的編號');return}
+  kkDo(async()=>{await rpc('kk_bill_set_auto_debit',{p_bill_id:rid,p_on:on});
+    if(on){if(due)await rpc('kk_reminder_set',{p_kind:'balance_check',p_ref_id:ref,p_remind_on:isoMinus1(due),p_ref_name:x.name,p_note:'自動扣款前一天看餘額'});const bd=remOf('bill_due',ref);if(bd)await rpc('kk_reminder_cancel',{p_id:bd.id})}
+    else{const bc=remOf('balance_check',ref);if(bc)await rpc('kk_reminder_cancel',{p_id:bc.id})}},
+   on?'「'+x.name+'」標成自動扣款，到期前一天提醒你看餘額':'「'+x.name+'」改回自己繳',{close:false})},
+ dueRem(el){const x=fxFind(el.dataset.id);if(!x)return;const due=isoOfMD(x.due);if(!due){toast('這筆沒有到期日');return}const on=x.rel<=1?todayISO():isoMinus1(due);
+  kkDo(()=>rpc('kk_reminder_set',{p_kind:'bill_due',p_ref_id:fxRef(x),p_remind_on:on,p_ref_name:x.name,p_note:'到期提醒'}),'會在 '+mdOf(on)+' 提醒你「'+x.name+'」',{close:false})},
+ dueRemOff(el){const x=fxFind(el.dataset.id);if(!x)return;const r=remOf('bill_due',fxRef(x));if(!r)return;kkDo(()=>rpc('kk_reminder_cancel',{p_id:r.id}),'取消了「'+x.name+'」的到期提醒',{close:false})},
+ rcvRem(el){const id=el.dataset.id,x=rcvAll().find(y=>y.id===id);if(!x)return;const r=remOf('receivable_due',id);
+  if(r){kkDo(()=>rpc('kk_reminder_cancel',{p_id:r.id}),'已取消提醒：'+x.m,{close:false});return}
+  const d0=isoOfMD(x.due),on=!d0||x.late?todayISO():d0;
+  kkDo(()=>rpc('kk_reminder_set',{p_kind:'receivable_due',p_ref_id:id,p_remind_on:on,p_ref_name:x.m,p_note:x.a!=null?'金額 '+x.a:null}),x.late?'「'+x.m+'」我盯著，今天起每次對帳都會看':'「'+x.m+'」'+mdOf(on)+' 沒入帳就提醒你',{close:false})},
+ budScope(el){document.querySelectorAll('[data-act="budScope"]').forEach(b=>b.setAttribute('aria-pressed',String(b===el)))},
+ budSave(){const num=v=>{v=String(v==null?'':v).replace(/,/g,'').trim();return v===''?null:Number(v)};const tot=num(val('budTotal'));
+  if(tot==null||!isFinite(tot)||tot<=0){ferr('budErr','總預算要填大於 0 的數字');return}
+  const cs={};for(let i=0;i<CATS.length;i++){const v=num(val('budC'+i));if(v==null)continue;if(!isFinite(v)||v<0){ferr('budErr','「'+CATS[i].k+'」要填 0 以上的數字');return}cs[CATS[i].k]=v}
+  const per=($('[data-act="budScope"][aria-pressed="true"]')||{}).dataset;const ps=per&&per.c==='period'?(KD.o&&KD.o.period_start):null;
+  kkDo(()=>rpc('kk_budget_set',{p_period_start:ps,p_total:tot,p_categories:cs}),'預算存好了：'+fmt(tot)+(ps?'（只有這期）':'（每期通用）'),{err:'budErr'})},
+ budClear(){const b=V32.bud;if(!b)return;const ps=b.scope==='period'?b.period_start:null;kkDo(()=>rpc('kk_budget_set',{p_period_start:ps,p_total:null,p_categories:{}}),'預算清除了，回到只看支出')}
+});
+window.__kk2={busy:()=>kkBusy,rcvAll:()=>rcvAll(),ACT:ACT,rcvTestDue:(md)=>{const x=RCV0[0];if(x){x.due=md;return x.id}return null}};
 
 function keepAdd(){const a=S.add;if(!a)return;const c=$('#adAgain');if(c)a.again=c.checked;[['m','adM'],['note','adNote'],['fee','adFee'],['cur','adCur'],['oamt','adOamt'],['cp','adCp']].forEach(p=>{const x=$('#'+p[1]);if(x)a[p[0]]=x.value.trim()})}
 function keepEd(){const e=S.ed;if(!e)return;[['a','edAmt'],['d','edDate'],['m','edM'],['note','edNote'],['fee','edFee']].forEach(p=>{const x=$('#'+p[1]);if(x)e[p[0]]=x.value.trim()});const l=$('#edLearn');if(l)e.learn=l.checked;const to=$('#edTo');if(to)e.to=to.value;const pn=$('#edPend');if(pn)e.pend=pn.checked}
