@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v63');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v64');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2973,7 +2973,7 @@ ACT.ydpaste=id=>{const t=document.getElementById('ydPaste'),v=t?t.value.trim():'
  const m='aria-label="案子分類">',i=h.indexOf(m);if(i<0)return f+h;const j=h.indexOf('</div>',i);return j<0?f+h:h.slice(0,j+6)+f+h.slice(j+6)}}
 ACT.pjadd=()=>{const t=$('#pjIn'),v=t?t.value.trim():'';if(!v){S.err='pj';render('keep');const x=$('#pjIn');if(x)x.focus();return}S.err='';
  if(!LV.api||!LV.api.todoAdd){toast('離線中，等連上再加');return}
- LV.api.todoAdd(v.slice(0,200)).then(()=>{const x=$('#pjIn');if(x)x.value='';toast('加進待辦了：'+clip(v,24));return reload()}).catch(e=>toast('沒存上：'+LERR(e)))};
+ LV.api.todoAdd(v.slice(0,200)).then(()=>{const x=$('#pjIn');if(x)x.value='';toast('加進待辦了：'+clip(v,24));return reload().then(()=>{paint('keep');const y=$('#pjIn');if(y)y.focus({preventScroll:true})})}).catch(e=>toast('沒存上：'+LERR(e)))};
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='pjIn'&&!e.isComposing){e.preventDefault();ACT.pjadd()}});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
