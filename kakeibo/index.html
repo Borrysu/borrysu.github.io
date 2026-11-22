@@ -1220,7 +1220,7 @@ details.rep .rep-t{font-size:12px;color:var(--muted);font-weight:500;flex:none}
 .updrow .updgo{flex:none;font-weight:600;color:var(--ink2)}
 /* v34.4 補單 4：iPhone 主畫面底部空白。外殼高度用 --kk-vh（主畫面模式短少狀態列時改用螢幕高度），底下若還有縫用分頁列同色 */
 html{background-color:var(--x-surface-solid,var(--surface))}
-body{bottom:auto;height:var(--kk-vh,100lvh)}
+html.kk-vhfix body{bottom:auto;height:var(--kk-vh)}
 .hd{border-bottom:1px solid var(--line)}
 </style>
 </head>
@@ -3749,13 +3749,13 @@ function updMark(id) { UPD[id] = Date.now(); try { localStorage.setItem('kk_upd'
 function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶] 請登入「' + name + '」的網銀或 App 實查目前真實餘額' + (isCard ? '（信用卡查未出帳與帳單）' : '') + '，查完回報並更新，附查到的時間。帳上目前 ' + bal + '，上次實查 ' + (asof || '沒有資料') + '。查不到就說查不到，不要用推算的。'; }
 /* ---------- v34.4 iPhone 主畫面外殼高度 ----------
  iOS 主畫面模式（black-translucent）有時把可用高度少算一個狀態列，App 底下露出一條空白。
- 主畫面模式、直向、寬度等於螢幕寬、短少在 100 以內（不是鍵盤）時，外殼高度改用螢幕高度；其他情況用視窗高度。 */
+ 只有主畫面模式、直向、寬度等於螢幕寬、短少在 100 以內（不是鍵盤）時，才加 kk-vhfix 讓外殼改用螢幕高度；其他情況外殼照舊貼滿視窗。 */
 function kkVH() {
   try {
     var de = document.documentElement, sa = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
     var h = window.innerHeight, sh = window.screen ? screen.height : 0, sw = window.screen ? screen.width : 0;
-    if (sa && h > window.innerWidth && sh && Math.abs(sw - window.innerWidth) < 2 && sh > h && sh - h <= 100) h = sh;
-    de.style.setProperty('--kk-vh', h + 'px');
+    var fix = sa && h > window.innerWidth && sh && Math.abs(sw - window.innerWidth) < 2 && sh > h && sh - h <= 100;
+    de.style.setProperty('--kk-vh', (fix ? sh : h) + 'px'); de.classList.toggle('kk-vhfix', !!fix);
   } catch (e) {}
 }
 kkVH(); window.addEventListener('resize', kkVH); window.addEventListener('orientationchange', function () { setTimeout(kkVH, 300); });
@@ -3845,7 +3845,7 @@ function debtItems(d) {
 function debtCard(d) {
   var L = debtItems(d); if (!L.length) return '';
   return '<section class="card kk-debt" data-ctitle="欠款、卡費、分期"><h2 class="h3">欠款、卡費、分期</h2><div class="list">'
-    + L.map(function (x) { return '<button class="row" data-act="sheet" data-k="debtx" data-id="' + x.key + '"><span class="row-m"><b>' + esc(x.name) + '</b><small>' + (x.sub ? esc(x.sub) + '・' : '') + (x.due === '沒有日子' ? '沒有日子' : '還款 ' + x.due) + '</small></span>' + amt(-x.rem, { c: 'neg' }) + CHEV + '</button>'; }).join('') + '</div></section>';
+    + L.map(function (x) { return '<button class="row" data-act="sheet" data-k="debtx" data-id="' + x.key + '"><span class="row-m"><b>' + esc(x.per2 ? (x.per2 === '上期帳單' ? '上期帳單未繳' : x.per2) + '｜' + x.acc.n : x.name) + '</b><small>' + (x.sub ? esc(x.sub) + '・' : '') + (x.due === '沒有日子' ? '沒有日子' : '還款 ' + x.due) + '</small></span>' + amt(-x.rem, { c: 'neg' }) + CHEV + '</button>'; }).join('') + '</div></section>';
 }
 /* 直接送一段話給塔塔（訂閱請求、卡片），回覆進同一串 */
 function thSendDirect(org, lab, q, text) {
