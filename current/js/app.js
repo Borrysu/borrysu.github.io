@@ -448,7 +448,7 @@ Object.assign(BOTS,{
  kim:{name:'金金',grok:'Kim Kim',mono:'金',zone:'錢該不該花',role:'大筆的錢值不值得花，我給一句話。',can:'看一筆錢對工作或生活的幫助，建議買、等、或不買',cant:'付款、記帳；買不買得起是塔塔的事'}});
 /* 老大 2026-11-22：「面板上面可以的話 可以按付款按鈕 我點了就是同意」：各 Bot 的「不做」跟著改 */
 BOTS.daqi.cant='刪檔、對外發訊要你在對話裡親口說；付款要你自己按付款鈕';
-BOTS.jiji.cant='替你送件；領標、報名費要你按了付款鈕才付';
+BOTS.jiji.cant='替你送件、付款；領標、報名費由塔塔付，要你按了付款鈕才付';
 BOTS.tata.cant='轉帳、替你取消訂閱；帳單要你按了付款鈕才付';
 BOTS.peng.can='記例行、到期提醒、改備品清單、補齊購物清單、轉給萌萌比價、備訂單';
 BOTS.peng.cant='你沒按付款鈕就付錢、刪掉你的紀錄';
@@ -497,7 +497,7 @@ ACT.pay=id=>{const p=PAY[id];if(!p||p.st!=='idle'||p.bad)return;p.st='count';p.n
 ACT.paycancel=id=>payStop(id,'付款取消了，沒有扣款');
 ACT.payrc=id=>{const p=PAY[id];p.rc=!p.rc;paySync(id)};
 ACT.payfix=id=>{const p=PAY[id];p.bad=null;p.amt=p.want;if(p.fix)p.fix();CH[p.by].push({w:'bot',t:`我重新確認了：店家把運費多算一次，已經改回 ${p.want}。`,fresh:1});if(S.chat)logSync();else paySync(id);arrive(p.by)};
-function oppPay(o){payReg('o_'+o.id,{amt:'€ 25',to:'Lumen（報名費）',by:'jiji'});return `<p class="h4">報名費</p>${payHTML('o_'+o.id)}`}
+function oppPay(o){payReg('o_'+o.id,{amt:'€ 25',to:'Lumen（報名費）',by:'tata'});return `<p class="h4">報名費</p>${payHTML('o_'+o.id)}`}
 function billsHTML(){const bs=E()?[]:DB.bills;if(!bs.length)return '';
  return `<section class="sec">${sh('','待繳帳單',bs.filter(b=>PAY['b_'+b.id].st!=='paid').length+' 筆')}<div class="stack">${bs.map(b=>`<div class="card"><div class="meta">${chip(b.in+' 天後到期',b.in<=3)}</div><div class="li"><div><h3>${esc(b.name)}</h3></div><span class="amt">${nt(b.amt)}</span></div>${payHTML('b_'+b.id)}</div>`).join('')}</div></section>`}
 
@@ -2438,13 +2438,13 @@ WRITE.push('hshelf','hsave','csave','tdel','pkill');
 
 /* ---------- v48（2026-11-22）：付款鈕＝授權單、行事曆近即時 ----------
    老大原話：「付款後端當然要接啊！通常按下去是授權讓朋朋或塔塔去付款啦所以他們要知道」
-   付款：倒數 5 秒（可取消）後呼叫 hub_pay_authorize 開一張授權單；Mac relay 通知負責的那隻（帳單→塔塔、訂單→朋朋、報名費→集集），
+   付款：倒數 5 秒（可取消）後呼叫 hub_pay_authorize 開一張授權單；Mac relay 通知負責的那隻（帳單→塔塔、訂單→朋朋、報名費→塔塔），
    那隻付完用付款票 hub_pay_report 回報，面板從 hub_pay_list 讀狀態。面板與大器都不碰錢、不存卡號。
    行事曆：打開今天頁、行事曆頁或按「現在更新」寫一筆刷新請求（hub_cal_refresh_request），Mac relay 30 秒內看到就跑一次同步。 */
 const PBY={tata:'塔塔',peng:'朋朋',jiji:'集集'};
 function paySrc(id){const p=PAY[id]||{};
  if(id.indexOf('d_')===0){const d=DB.due.find(q=>q.id===id.slice(2));return d?{kind:'bill',id:d.bid!=null?d.bid:d.id,title:d.name,amount:d.amt,amountText:p.amt,payee:p.to,by:'tata'}:null}
- if(id.indexOf('o_')===0)return {kind:'fee',id:id.slice(2),title:p.title||'報名費',amountText:p.amt,payee:p.to,by:'jiji'};
+ if(id.indexOf('o_')===0)return {kind:'fee',id:id.slice(2),title:p.title||'報名費',amountText:p.amt,payee:p.to,by:'tata'};
  return {kind:p.by==='peng'?'order':'other',id:id,title:p.title||p.to,amountText:p.amt,payee:p.to,by:p.by||'peng'}}
 function payKeyOf(r){return r.src_kind==='bill'?'d_b'+r.src_id:r.src_kind==='fee'?'o_'+r.src_id:r.src_id}
 function payApplyRows(rows){if(!Array.isArray(rows))return;const seen={};
@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v60');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v61');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
