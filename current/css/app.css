@@ -742,6 +742,7 @@ html body .bm.bf[data-b=din]{background:none!important;padding:0}
 .mine:focus-visible,.mb:focus-visible,.mi:focus-visible{outline:2px solid var(--ink);outline-offset:-2px}
 .mb{display:inline-flex;align-items:center;gap:4px;min-height:44px;padding:0 10px;margin:0 -2px;background:none;border:0;border-radius:12px;color:var(--ink2);font:500 13px/1.2 var(--zh);white-space:nowrap}
 .mb[disabled]{opacity:.4}
+.mb .bm,.btn .bm{width:24px;height:24px;flex:none;pointer-events:none}.btn .bm{margin-right:6px;vertical-align:middle}
 .mrow{display:flex;flex-wrap:wrap;align-items:center;gap:0 6px;margin:6px 0 0 -8px}
 .rt .mb{margin-right:-8px}
 .mlist{margin-top:10px;border-top:1px solid var(--line)}

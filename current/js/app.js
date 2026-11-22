@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v65');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v66');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2997,7 +2997,7 @@ const jOf=ctx=>{const a=(ctx||'').split(':');return a[0]==='proj'?DB.todo.find(t
 // 案子房間：分頁改名交辦、新增列加兩顆規劃鈕、每張交辦卡底部放定定與大器的臉
 {const _zp=zoneProj;zoneProj=function(){let h=_zp();h=h.replace(/(data-id="proj:todo">)待辦 /,'$1交辦 ');if(S.sub.proj!=='todo')return h;
  h=h.replace('<label class="vh" for="pjIn">新增待辦</label>','<label class="vh" for="pjIn">新增交辦</label>').replace('placeholder="要做的事，例：寄合約給客戶"','placeholder="要交辦的事，例：把報價單做成模板"')
-  .replace(/(<button class="btn pri" data-act="pjadd">加進去<\/button><\/div>)/,`$1<div class="mrow pjplan">${mb('🧭 請定定規劃','pjplan','din')}${mb('🧭 請大器規劃','pjplan','daqi')}</div>`)
+  .replace(/(<button class="btn pri" data-act="pjadd">加進去<\/button><\/div>)/,`$1<div class="mrow pjplan">${mb(bm('din')+'請定定規劃','pjplan','din')}${mb(bm('daqi')+'請大器規劃','pjplan','daqi')}</div>`)
   .replace(/<h2 class="vh">待辦<\/h2>/,'<h2 class="vh">交辦</h2>').replace('沒有待辦','沒有交辦');
  return h.replace(/(<article class="card cardx" data-card="([^"]*)"[\s\S]*?<div class="cf-r">)/g,(m,a,id)=>{const t=DB.todo.find(q=>q.id===id);return t?a+aiF('din','proj:'+id,'','')+aiF('daqi','proj:'+id,t.run==='running'?'跑中':''):m})}}
 ACT.pjplan=b=>{const t=$('#pjIn'),v=t?t.value.trim():'';if(!v){S.err='pj';render('keep');const x=$('#pjIn');if(x)x.focus();return}S.err='';
@@ -3010,7 +3010,7 @@ const realBot=(b,m)=>m.w==='bot'&&!m.wait&&!m.local&&m.t&&m.t!==HI(b)&&m.t!=='�
  const a=CH[on.b]||[],id=t.id;let x='';
  if(t.run)x=`<p class="note">這件已經送出執行了：${esc(t.st)}。進度會寫回卡片。</p>`;
  else if(a.some(m=>realBot(on.b,m)))x=`<p class="note">規劃看起來可以，就送出。Mac 會開新視窗照這段對話跑。</p><div class="btns">${B('▶ 照這個規劃送出執行','planrun',on.b+'|'+id,'pri wide')}</div>`;
- else if(!a.some(m=>m.w==='me'))x=`<div class="btns">${B('🧭 請'+NAMES[on.b]+'規劃這件','planask',on.b+'|'+id,'pri wide')}</div>`;
+ else if(!a.some(m=>m.w==='me'))x=`<div class="btns">${B(bm(on.b)+'請'+NAMES[on.b]+'規劃這件','planask',on.b+'|'+id,'pri wide')}</div>`;
  if(x){l.insertAdjacentHTML('beforeend',`<div class="cm bot card jplan">${x}</div>`);l.scrollTop=l.scrollHeight}}}
 ACT.planask=v=>{const [b,id]=v.split('|'),t=DB.todo.find(q=>q.id===id);if(!t||!S.chat)return;say(b,PLANQ(t.title),'proj:'+id)};
 ACT.planrun=async v=>{const [b,id]=v.split('|'),t=DB.todo.find(q=>q.id===id);if(!t||t.run){toast('這件已經送出了');return}
@@ -3020,7 +3020,7 @@ ACT.planrun=async v=>{const [b,id]=v.split('|'),t=DB.todo.find(q=>q.id===id);if(
 // 交辦卡詳情：還沒送出的多兩顆規劃鈕
 {const _s=sheetHTML;sheetHTML=function(){const h=_s(),m=/^cview:todo:(.+)$/.exec(S.sheet||'');if(!m)return h;const t=DB.todo.find(q=>q.id===m[1]);if(!t)return h;
  const p=t.raw||{},st=(p.progressSteps||[]).length?`<ul class="tl">${p.progressSteps.map(s=>`<li>${s.status==='done'?'✓':s.status==='current'?'▶':s.status==='blocked'?'▲':'・'} ${esc(s.name)}</li>`).join('')}</ul>`:'';
- return h+(st?`<section class="sec"><h3>步驟</h3>${st}</section>`:'')+`<div class="mrow">${mb('🧭 跟定定規劃','ai','din|proj:'+t.id+'||')}${mb('🧭 跟大器規劃','ai','daqi|proj:'+t.id+'||')}</div>`}}
+ return h+(st?`<section class="sec"><h3>步驟</h3>${st}</section>`:'')+`<div class="mrow">${mb(bm('din')+'跟定定規劃','ai','din|proj:'+t.id+'||')}${mb(bm('daqi')+'跟大器規劃','ai','daqi|proj:'+t.id+'||')}</div>`}}
 // 首頁：「正在跑」同一條清單加上交辦，標「交辦」，可篩選（全部、交辦、工作）
 S.jf=S.jf||'all';
 function jiaoRows(){return DB.todo.map(t=>`<div class="rowi" data-card="${esc(t.id)}"><div class="rowb">${aiF('daqi','proj:'+t.id,t.run==='running'?'跑中':'')}<button class="tx" data-act="sheet" data-id="cview:todo:${esc(t.id)}" style="min-height:44px;text-align:left"><b>${esc(t.ask)}</b><small>${esc(t.st)}</small></button><span class="rt">${chip('交辦')}</span></div></div>`).join('')}
