@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v50');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v51');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2539,7 +2539,7 @@ function todoHTML(){const a=ltodos(),open=a.filter(t=>!t.done),done=a.filter(t=>
  if(gone.length)h+=`<section class="sec"><div class="rows"><div class="rowi"><button class="rowb" data-act="open" data-id="ltgone" aria-expanded="${og}"><span class="tx"><b>最近刪掉的 ${gone.length} 項</b><small>72 小時內可以救回</small></span><span class="rt"><span class="chev" aria-hidden="true">${og?'⌃':'⌄'}</span></span></button></div>${og?gone.map(t=>`<div class="rowi"><div class="rowb"><span class="tx"><b style="font-weight:500">${esc(t.name)}</b></span><span class="rt">${mb('↺ 救回','ltrestore',t.id)}</span></div></div>`).join(''):''}</div></section>`;
  return h}
 // 備品：排進「要買」的那一項請萌萌比價；狀態從萌萌那段對話讀（送出時句子裡帶備品編號）
-function supCmp(u){const ms=LV.monMsgs||[];let q=-1;ms.forEach((m,i)=>{if(m.kind==='user'&&m.body.indexOf('備品編號 '+u.id)>-1)q=i});
+function supCmp(u){const ms=LV.monMsgs||[];let q=-1;ms.forEach((m,i)=>{if(m.kind==='user'&&m.body.indexOf('【測試】')!==0&&Date.now()-m.at<14*864e5&&m.body.indexOf('備品編號 '+u.id)>-1)q=i});   // 驗收用的【測試】訊息與兩週前的不算
  if(q<0)return LV.supRun[u.id]?{run:1,t:'萌萌比價中'}:null;
  const later=ms.slice(q+1).filter(m=>m.kind!=='user'),r=later.find(m=>m.body.indexOf(u.name)>-1)||later[0];
  return r?{t:'萌萌：'+clip(r.body,34)}:{run:1,t:'萌萌比價中・'+LHM(ms[q].at)+' 送出'}}
