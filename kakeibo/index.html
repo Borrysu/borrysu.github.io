@@ -1125,6 +1125,50 @@ body{position:fixed;top:0;right:0;bottom:0;left:0;height:auto;width:100%}
 .cmp .toast{bottom:calc(116px + env(safe-area-inset-bottom,0px))}
 @media (prefers-reduced-motion: reduce){.pnav{transition:none}}
 </style>
+<style id="kk-v34">
+/* v34（2026-11-22）：期別列跟內容一起捲、上下列固定不伸縮；回覆槽；減字摺疊 */
+.hd{padding-top:env(safe-area-inset-top,0px)}
+.composer{padding:2px 12px}
+.tab{min-height:46px}
+.fab{margin-top:-10px}
+.scroll>.pnav{display:flex;height:44px;padding:0 4px;margin:0;transition:none;opacity:1;pointer-events:auto}
+.scroll>.pnav[hidden]{display:none}
+.scroll>.pnav+.pg{padding-top:0}
+.bub{top:calc(50px + env(safe-area-inset-top,0px))}
+.laymenu{top:calc(env(safe-area-inset-top,0px) + 46px)}
+.toast{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+.cmp .toast{bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+/* 回覆槽 */
+.th{display:flex;flex-direction:column;gap:8px}
+.th:empty{display:none}
+.th-i{display:flex;flex-direction:column;gap:6px}
+.th-q,.th-a{margin:0;padding:8px 12px;border-radius:14px;font-size:15px;line-height:1.5;max-width:92%;white-space:pre-wrap;word-break:break-word}
+.th-q{align-self:flex-end;background:var(--ink);color:var(--bg);border-radius:14px 4px 14px 14px}
+.th-a{align-self:flex-start;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:4px 14px 14px 14px}
+.th-w{display:block;font-size:12px;font-weight:700;opacity:.7;margin-bottom:1px}
+.th-t{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.th-wait{color:var(--muted);border-style:dashed}
+.th-err{color:var(--neg,#c0392b);border-color:currentColor}
+.th-more{align-self:center;min-height:44px;padding:0 14px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;text-decoration:underline}
+.th-ask{display:flex}
+.th-ask .btn{flex:1}
+.sheet .th,.aexp .th{margin-top:10px}
+/* 減字：看細節、看說明 */
+details.kk-more{margin:2px 0 0}
+details.kk-more>summary{min-height:44px;font-size:14px;font-weight:600;color:var(--muted);list-style:none;gap:4px}
+details.kk-more>summary::-webkit-details-marker{display:none}
+details.kk-more>summary::after{content:"›";transform:rotate(90deg);display:inline-block;margin-left:4px}
+details.kk-more[open]>summary::after{transform:rotate(-90deg)}
+.kk-more-p,details.kk-more>p{margin:0 0 6px;font-size:14px;color:var(--ink2);line-height:1.55}
+.msg-b details.kk-more>summary{min-height:36px}
+/* 回報頁 */
+details.rep{border-top:1px solid var(--line);padding:2px 0}
+details.rep>summary{justify-content:space-between;gap:8px;font-size:15px}
+details.rep .rep-t{font-size:12px;color:var(--muted);font-weight:500;flex:none}
+.rep-q{margin:0 0 6px;font-size:13px;color:var(--muted)}
+.rep-q .th-w{display:inline;margin-right:6px}
+.rep-a{margin:0 0 8px;font-size:15px;line-height:1.55;white-space:pre-wrap}
+</style>
 </head>
 <body>
 <a class="vh" href="#main">跳到內容</a>
@@ -2049,7 +2093,7 @@ function kkSide(){/* 不擋首頁：訂閱、應收、回報、偏好、上一�
   const re=()=>{if(!KD.loaded)return;kkApply();if(!sheet.classList.contains('on'))render();else renderSheetBody()};
   rpc('kk_subs_list',{}).then(s=>{KD.subs=s;kkCacheSave();re()}).catch(()=>{});
   rpc('opp_receivables',{}).then(r=>{KD.rcv=r;kkCacheSave();re()}).catch(()=>{});
-  rpc('kk_reports_list',{p_limit:10}).then(r=>{KD.reps=r;kkCacheSave();re()}).catch(()=>{});
+  rpc('kk_reports_list',{p_limit:20}).then(r=>{KD.reps=r;kkCacheSave();re();thIngest(r)}).catch(()=>{});
   rpc('kk_prefs_get',{}).then(p=>{KD.prefs=p||{};kkCacheSave();re()}).catch(()=>{});
   if(KD.cur)rpc('list_transactions',{p_period_start:addMonths(KD.cur,-1),p_include_void:false}).then(l=>{KD.prevL=l;re()}).catch(()=>{});
   if(KD.cur)rpc('get_overview',{p_period_start:addMonths(KD.cur,-1)}).then(po=>{const m={};(po.category_share||[]).forEach(r=>{m[r.category]=Number(r.expense)||0});KD.prevCat=m;re()}).catch(()=>{});
@@ -2235,7 +2279,7 @@ function homePaid(d){const p=d.bills.filter(b=>b.paid).map(b=>b.name);return p.l
 function homeA(d){
   if(d.err)return errBlock();
   let h='<button class="strip" data-act="sheet" data-k="left">'+leftBlock(d,'big')+'<span class="sub">'+leftSub(d)+' ›</span>'+leftBar(d)+'</button>';
-  h+=S.chat.map((c,i)=>c.me?'<div class="msg me" data-flip="c'+c.n+'"><div class="msg-b"><p>'+esc(c.t)+'</p></div></div>':msg('c'+c.n,c.t)).join('');
+  h+=thSlot('feed',3);
   if(d.empty)return h+'<div class="empty"><h2>新的一期開始了</h2><p>'+P.label.split('～')[0]+' 起算，還沒有任何支出。銀行通知進來我會自己記。</p>'+B('add','記第一筆',{cls:'pri'})+'</div>';
   const by=dd=>d.inbox.filter(t=>t.d===dd),t0=by(mdAgo(0)),t1=by(mdAgo(1)),t2=by(mdAgo(2));
   h+='<p class="day">今天 '+P.today+'</p>';
@@ -2336,7 +2380,7 @@ function swRow(a,key){const on=!!a[key],lock=key==='sp'&&LIAB.includes(a.k),lab=
   return '<div class="swrow"><span class="tx">'+lab+'<small>'+hint+'</small></span><span class="swst" aria-hidden="true">'+(on?'開':'關')+'</span><button class="swt" role="switch" data-act="sw" data-id="'+a.id+'" data-c="'+key+'" aria-checked="'+on+'" aria-label="「'+esc(a.n)+'」'+lab+'"'+(lock?' aria-disabled="true"':'')+'><i></i></button></div>'}
 function acctNotes(a){const x=[];if(a.sfx)x.push(a.sfx);if(a.rec)x.push('待對帳：還沒有可靠的開帳數字，先不算進總額。設定餘額後就會開始算');if(a.note)x.push(a.note);return x}
 function acctExp(a){const hs=HOLD.filter(h=>h.ac===a.id),x=[acctSubLine(a)].concat(acctNotes(a));
-  return '<div class="aexp" id="axp-'+a.id+'">'+swRow(a,'as')+swRow(a,'sp')+'<p class="sub">'+esc(x.join(' · '))+'</p>'+(hs.length?'<div class="list">'+hs.map(holdRow).join('')+'</div>':'')+'<div class="acts" style="margin-top:6px">'+B('sheet','看詳細與交易',{k:'acct',id:a.id})+B('sheet','設定餘額',{k:'acctBal',id:a.id})+'</div></div>'}
+  return '<div class="aexp" id="axp-'+a.id+'">'+swRow(a,'as')+swRow(a,'sp')+'<p class="sub">'+esc(x.join(' · '))+'</p>'+(hs.length?'<div class="list">'+hs.map(holdRow).join('')+'</div>':'')+'<div class="acts" style="margin-top:6px">'+B('sheet','看詳細與交易',{k:'acct',id:a.id})+B('sheet','設定餘額',{k:'acctBal',id:a.id})+B('askAcct','跟塔塔說',{id:a.id})+'</div>'+thSlot('acct:'+a.id,2)+'</div>'}
 function acctRow(a,i,n,plain){const cu=S.asort==='custom'&&!plain,op=!cu&&!plain&&S.aopen.has(a.id);
   return '<div class="row arow" data-flip="ac-'+a.id+'"'+(plain?'':' data-aid="'+a.id+'"')+'>'
     +(cu?'<button class="grip" data-grip="'+a.id+'" aria-label="按住拖動「'+esc(a.n)+'」調整順序。也可以用右邊的上移、下移" title="按住拖動調整順序">'+GRI+'</button>':'')
@@ -2361,6 +2405,7 @@ function acctPage(d){
     h='<section class="dcard fit" style="flex:none"><span class="kick">'+P.today+' 現在</span><span class="lab">可動用現金</span><button class="tile" data-act="sheet" data-k="comp" data-id="spend" style="border:0;background:none;padding:0"><span class="huge">'+amt(T.cash)+'</span></button><span class="sub">照這期預算可以撐 '+mon+' 個月</span>'
      +'<div class="list" style="margin-top:8px">'+[['net','淨資產',T.net],['assets','總資產',T.assets],['invest','投資帳戶',T.invest],['liab','負債',-T.liab],['pend','在途／待入帳',T.pend]].map(r=>'<button class="row" data-act="sheet" data-k="comp" data-id="'+r[0]+'"><span class="row-m"><b>'+r[1]+'</b></span>'+amt(r[2],{c:r[2]<0?'neg':''})+CHEV+'</button>').join('')+'</div></section>'+invSeg;
   }
+  h+='<div class="th-ask">'+B('askAcct','跟塔塔說',{id:'all'})+'</div>'+thSlot('acct:all',2);
   const recs=S.accts.filter(a=>!a.arch&&a.rec);
   if(recs.length)h+='<button class="recline" data-act="sheet" data-k="acct" data-id="'+recs[0].id+'"><span class="mk" style="flex:none;width:22px;height:22px;border-radius:50%;border:2px solid var(--warn);color:var(--warn);display:grid;place-items:center;font-weight:700;font-size:13px" aria-hidden="true">!</span><span style="flex:1">還有 '+recs.length+' 個帳戶待對帳（'+esc(recs.map(a=>a.n).join('、'))+'），先不算進總額。</span>'+CHEV+'</button>';
   h+='<h2 class="h3">在途／待入帳 <span class="sub">'+pd.length+' 筆</span></h2>'+(pd.length?'<section class="card"><div class="list">'+pd.map(p=>'<button class="row" data-act="sheet" data-k="pend" data-id="'+p.id+'"><span class="g" aria-hidden="true">途</span><span class="row-m"><b>'+esc(p.m)+'</b><small>預計 '+p.due+' · '+esc(p.note)+'</small></span>'+amt(p.a,{c:p.a<0?'neg':''})+CHEV+'</button>').join('')+'</div></section>':'<p class="gray-line">沒有在路上的錢。</p>');
@@ -2470,7 +2515,7 @@ function fixedC(d){
 }
 
 /* ---------- 抽屜內容 ---------- */
-const facts=rows=>'<dl class="facts">'+rows.filter(Boolean).map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl>';
+const facts=rows=>'<dl class="facts">'+rows.filter(r=>r&&r[1]!=='未填'&&r[1]!==esc('未填')).map(r=>'<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>').join('')+'</dl>';
 const SH={
  left(d){const mx=Math.max.apply(null,W7.map(x=>x[1])),avg=W7.reduce((a,x)=>a+x[1],0)/7;
   return{t:d.left<0?'超支怎麼算的':'還能花怎麼算的',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>預算 '+fmt(BUDGET)+'，花了 '+fmt(d.spent)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還能花 '+fmt(d.left))+'。</p>'+facts([['這期預算',amt(BUDGET)],['已經花了',amt(d.spent)],[d.left<0?'超支':'還能花',amt(d.left,{abs:1})],['每天可以花',amt(d.perDay)+'（還有 '+d.dl+' 天）'],d.empty||!KD.ps||d.per!==0?null:['上期同一天（'+KD.ps.label+'）',amt(KD.ps.tot)+'，這期'+(d.spent>=KD.ps.tot?'多 ':'少 ')+fmt(Math.abs(d.spent-KD.ps.tot))]])+leftBar(d,true)+(d.empty?'':'<h3 class="h3" style="margin-top:20px">近 7 天支出</h3><div class="bars" role="img" aria-label="近 7 天每天支出長條，平均 '+fmt(avg)+'"><span class="avg" style="--h:'+(avg/mx).toFixed(3)+'">平均 '+fmt(avg)+'</span>'+W7.map((x,i)=>'<span class="b'+(i===6?' now':'')+'"><i style="--h:'+(x[1]/mx).toFixed(3)+'"></i>'+x[0]+'</span>').join('')+'</div>')+B('sheet','調整預算',{cls:'wide',k:'budSet'})}},
@@ -2560,10 +2605,10 @@ Object.assign(SH,{
  tx(d,id){const t=d.every.find(x=>x.id===id);if(!t)return{t:'這筆',h:'<p>找不到這筆。</p>'};
   return{t:t.m,h:'<div style="text-align:center"><span class="amtbox">'+amt(t.a,{plus:1})+'</span>'+(t.void?'<p><span class="tag">已作廢</span></p>':'')+(t.pend?'<p><span class="tag act">待確認</span></p>':'')+(t.pending?'<p><span class="tag">'+(t.a<0&&!t.transfer?'待扣款':'待入帳')+'</span></p>':'')+(t.queued?'<p><span class="tag">等待上傳</span></p>':'')+'</div>'
    +facts([['分類','<span class="g" style="display:inline-grid;width:26px;height:26px;font-size:13px;vertical-align:-7px" aria-hidden="true">'+G(t.c)+'</span> '+catName(t)],['帳戶',esc(t.ac)],t.to?['轉入',esc(t.to)]:null,t.cp?['對象',esc(t.cp)]:null,['時間',t.d+' '+t.t],['誰記的',t.by],['來源',t.ev],t.fx?['原幣',esc(t.fx)]:null,t.fee?['手續費',amt(+t.fee)]:null,t.note?['備註',esc(t.note)]:null])
-   +(t.why?'<p class="cf-why"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>'+(t.c==='未分類'?'我分不出來。':'我推定是'+catName(t)+'。')+t.why+'。</p>':'')+(t.edits?'<p class="sub">改過 '+t.edits+' 次，舊值有留紀錄。</p>':'')
+   +(t.why?'<p class="cf-why"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>'+(t.c==='未分類'?'我分不出來。':'我推定是'+catName(t)+'。')+t.why+'。</p>':'')+(t.edits?facts([['改過',t.edits+' 次，舊值有留']]):'')
    +kimBlock(t)
    +(t.void?'<p class="sub">作廢的交易不算進餘額與統計，資料還在。</p><div class="acts">'+B('unvoid','取消作廢',{cls:'pri',id:t.id})+'</div>'
-     :'<div class="acts">'+(t.pend?B('ok','對，記成'+catName(t),{cls:'pri',id:t.id}):'')+B('fix','改這筆',{id:t.id})+B('askTx','問塔塔這筆',{id:t.id})+(kimOk(t)&&!S.kim[t.id]?B('kim','問金金值不值',{id:t.id,c:'ask'}):'')+B('void','作廢這筆',{cls:'warn',id:t.id})+'</div>')}},
+     :'<div class="acts">'+(t.pend?B('ok','對，記成'+catName(t),{cls:'pri',id:t.id}):'')+B('fix','改這筆',{id:t.id})+B('askTx','問塔塔這筆',{id:t.id})+(kimOk(t)&&!S.kim[t.id]?B('kim','問金金值不值',{id:t.id,c:'ask'}):'')+B('void','作廢這筆',{cls:'warn',id:t.id})+'</div>')+thSlot('tx:'+t.id,3)}},
  edit(d,id){const t=d.txs.find(x=>x.id===id);if(!t)return{t:'改這筆',h:'<p>找不到這筆。</p>'};
   if(!S.ed||S.ed.id!==id)S.ed={id:id,c:t.c,ac:t.ac,learn:true,a:String(Math.abs(t.a)),d:toISO(t.d),m:t.m,note:t.note||'',fee:t.fee||'',stream:t.stream||'',to:t.to||'',pend:!!t.pending};const e=S.ed,inc=t.a>0,tr=!!t.transfer;
   return{t:'改這筆：'+t.m,h:'<div class="frow">'+FI('edAmt','金額',{v:e.a,im:'decimal'})+FI('edDate','日期',{v:e.d,type:'date',min:'2026-09-10',mx:todayISO()})+'</div>'
@@ -2580,14 +2625,15 @@ Object.assign(SH,{
      :[['週期',x.cyc+'繳'+(x.cyc==='年'?'，每月約 '+fmt(x.amt/12):'')],['下次扣款日',x.due+'，'+rel(x.rel)],['扣款帳戶',esc(x.ac||'未填')],['經由',esc(x.via||'未填')],['原幣金額',esc(x.fx||'未填')],['一年下來',amt(x.cyc==='年'?x.amt:x.amt*12)],['狀態',x.cancel?'要取消':'使用中'],['取消期限',x.cancel?(x.cancelBy||x.due)+' 前':'未填'],['公司付',x.co?'是，不算進你的預算':'否'],['比對名稱',esc(x.match||x.name)],['本期已扣',x.rel>17?'是':'否'],['備註',esc(x.note||'未填')]])
    +(bill?(x.ro?'<p class="sub">這是過去的一期，只能看，不能標已繳。</p>':''):'<p class="cf-why"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>取消要你自己或朋朋去做。我只提醒，不代你取消。</p>')
    +'<div class="acts">'+(bill?(x.ro?'':x.paid?(S.paid.has(x.id)?B('unpaid','改回還沒繳',{id:x.id}):''):(x.auto?B('sheet','自動扣款設定',{k:'pay',id:x.id}):B('sheet',x.tata?'塔塔處理中':'去繳費',{cls:'pri',k:'pay',id:x.id})))
-     :(x.paid||x.co?'':B('sheet',x.tata?'塔塔處理中':'去付款',{cls:x.rel<=3?'pri':'',k:'pay',id:x.id}))+B('sheet','改卡',{k:'subCard',id:x.id})+B('sheet','換方案',{k:'subPlan',id:x.id})+B('sheet','其他欄位',{k:'subOther',id:x.id})+(x.cancel?B('uncancel','不取消了',{id:x.id}):B('sheet','退訂',{k:'subCancel',id:x.id}))+B('subArch','封存',{id:x.id}))+B('askFx','問塔塔這筆',{id:x.id})+'</div>'}},
+     :(x.paid||x.co?'':B('sheet',x.tata?'塔塔處理中':'去付款',{cls:x.rel<=3?'pri':'',k:'pay',id:x.id}))+B('sheet','改卡',{k:'subCard',id:x.id})+B('sheet','換方案',{k:'subPlan',id:x.id})+B('sheet','其他欄位',{k:'subOther',id:x.id})+(x.cancel?B('uncancel','不取消了',{id:x.id}):B('sheet','退訂',{k:'subCancel',id:x.id}))+B('subArch','封存',{id:x.id}))+B('askFx','問塔塔這筆',{id:x.id})+'</div>'+thSlot('fx:'+x.id,3)}},
  subCard(d,id){const x=d.subs.find(y=>y.id===id),ns=acctNames();return{t:'改卡：'+x.name,h:'<p class="sub">「'+esc(x.name)+'」目前從「'+esc(x.ac)+'」扣款。</p>'+FS('sfAcct','扣款帳戶',ns.map(n=>[n,n]),x.ac)+B('subCardSave','存檔',{cls:'pri wide',id:id})}},
  subPlan(d,id){const x=d.subs.find(y=>y.id===id);return{t:'換方案：'+x.name,h:'<p class="sub">只改要換的欄位，其他資料原封不動。</p>'+FI('sfName','名稱',{v:x.name,max:60})+'<div class="frow">'+FI('sfAmt','金額（台幣）',{v:x.amt,im:'numeric'})+FS('sfCyc','週期',[['月','月繳'],['年','年繳']],x.cyc)+'</div>'+(x.cyc==='年'?FI('sfRenew','續訂日',{type:'date',v:toISO(x.due)}):FI('sfDay','每月扣款日',{v:String(+x.due.slice(3)),im:'numeric',ph:'1 到 31'}))+'<p class="ferr" id="sfErr" role="alert"></p>'+B('subPlanSave','存檔',{cls:'pri wide',id:id})}},
  subOther(d,id){const x=d.subs.find(y=>y.id===id);return{t:'其他欄位：'+x.name,h:FI('sfVia','經由',{v:x.via||'',ph:'例如 App Store',max:30})+FI('sfMatch','比對名稱',{v:x.match||'',ph:'用「、」分隔'})+FI('sfFx','原幣金額',{v:x.fx||'',ph:'例如 US$20.00'})+FI('sfNote','備註',{v:x.note||'',ph:'選填',max:200})+CK('sfCo','公司付（不算進我的預算）',x.co)+B('subOtherSave','存檔',{cls:'pri wide',id:id})}},
  subCancel(d,id){const x=d.subs.find(y=>y.id===id);return{t:'退訂：'+x.name,h:'<p class="sub">把「'+esc(x.name)+'」標成要取消，並通知塔塔。取消期限可以不填，不填就用下次扣款日 '+x.due+'。</p>'+FI('sfBy','取消期限',{type:'date',v:toISO(x.due),min:todayISO()})+B('subCancelSave','標成要取消',{cls:'pri wide',id:id})}},
  subAdd(){const ns=acctNames();return{t:'新增訂閱',h:'<p class="sub">名稱不能和現有的訂閱重複。</p>'+FI('sfName','名稱',{ph:'必填',max:60})+'<div class="frow">'+FI('sfAmt','台幣金額',{im:'numeric',ph:'必填，整數'})+FS('sfCyc','週期',[['月','月繳'],['年','年繳']],'月')+'</div><div class="frow">'+FI('sfDay','每月扣款日',{im:'numeric',ph:'1 到 31'})+FS('sfAcct','扣款帳戶',ns.map(n=>[n,n]),'主力卡')+'</div>'+FI('sfVia','經由',{ph:'選填，例如 App Store',max:30})+CK('sfCo','公司付（不算進我的預算）',false)+'<p class="ferr" id="sfErr" role="alert"></p>'+B('subAddSave','新增這個訂閱',{cls:'pri wide'})}},
- report(d){return{t:'塔塔的回報',h:'<p class="sub">'+(REPS[0]?REPS[0][0]+' · '+REPS[0][1]:'還沒有回報')+'</p><p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>本期支出 '+fmt(d.spent)+'，預算還剩 '+fmt(Math.max(d.left,0))+'。收入 '+fmt(d.income)+'。</p>'+facts([['補記',d.inbox.length+' 筆，等你確認'],['未分類',d.un.n+' 筆'],['下一筆要繳',d.nb?d.nb.name+' '+fmt(d.nb.amt)+'，'+rel(d.nb.rel):'沒有']])+'<details><summary>看全文</summary><p>本期（'+P.label+'）支出 '+fmt(d.spent)+'，預算 '+fmt(BUDGET)+'，'+(d.left<0?'超支 '+fmt(-d.left):'還剩 '+fmt(d.left))+'；收入 '+fmt(d.income)+'，離目標 '+fmt(TARGET)+' 還差 '+fmt(Math.max(TARGET-d.income,0))+'。<br>補記（主力卡，銀行 LINE 通知）：'+d.inbox.map(t=>'<br>・'+t.d+' '+t.t+' '+esc(t.m)+' '+fmt(t.a)+'，'+catName(t)+'（塔塔判斷，推定）').join('')+'<br>以上推定的分類請確認。未分類 '+d.un.n+' 筆我分不出來，要你給。</p></details>'
-   +B('sheet','去確認這 '+d.inbox.length+' 筆',{cls:'pri wide',k:'review',dis:!d.inbox.length})+'<h3 class="h3" style="margin-top:8px">更早的回報 <span class="sub">最近 '+REPS.length+' 則</span></h3>'+REPS.map(r=>'<details><summary>'+r[0]+'　'+r[1]+'</summary><p>'+r[2]+'</p></details>').join('')}},
+ report(d){return{t:'塔塔的回報',h:facts([['本期支出',fmt(d.spent)],['預算還剩',fmt(Math.max(d.left,0))],['收入',fmt(d.income)],['補記',d.inbox.length+' 筆待確認'],['未分類',d.un.n+' 筆'],['下一筆要繳',d.nb?d.nb.name+' '+fmt(d.nb.amt)+'，'+rel(d.nb.rel):'沒有']])
+   +(d.inbox.length?'<details class="kk-more"><summary>補記明細 '+d.inbox.length+' 筆</summary>'+facts(d.inbox.map(t=>[t.d+' '+esc(t.m),fmt(t.a)+' '+catName(t)+'（推定）']))+'</details>':'')
+   +B('sheet','去確認這 '+d.inbox.length+' 筆',{cls:'pri wide',k:'review',dis:!d.inbox.length})+'<h3 class="h3" style="margin-top:8px">最近的回報</h3>'+thRepList()}},
  comp(d,k){const T=totals(),A=S.accts.filter(a=>!a.arch),inv=S.inv,row=a=>'<button class="row" data-act="sheet" data-k="acct" data-id="'+a.id+'"><span class="g" aria-hidden="true">'+KN(a.k)[2]+'</span><span class="row-m"><b>'+esc(a.n)+'</b><small>'+KN(a.k)[1]+'</small></span>'+amt(a.bal,{c:a.bal<0?'neg':''})+CHEV+'</button>';
   const extra=INSTS.map(x=>'<div class="row"><span class="g" aria-hidden="true">期</span><span class="row-m"><b>'+esc(x.n)+'</b><small>還沒出帳的分期</small></span>'+amt(-x.out,{c:'neg'})+'</div>').join('')+DEBTS.map(x=>'<div class="row"><span class="g" aria-hidden="true">欠</span><span class="row-m"><b>'+esc(x.n)+'</b><small>欠款剩下的</small></span>'+amt(-x.rem,{c:'neg'})+'</div>').join('');
   const defs={spend:['可動用現金',T.cash,'現金、銀行、電子貨幣裡可以直接花的錢。',A.filter(a=>a.sp),''],
@@ -2600,10 +2646,10 @@ Object.assign(SH,{
  acct(d,id){const a=S.accts.find(x=>x.id===id);if(!a)return{t:'帳戶',h:'<p>找不到這個帳戶。</p>'};const ts=d.txs.filter(t=>t.ac===a.n||t.to===a.n),hs=HOLD.filter(h=>h.ac===a.id);
   return{t:a.n,h:'<div style="text-align:center"><span class="amtbox">'+amt(a.bal,{c:a.bal<0?'neg':''})+'</span><p class="sub">'+KN(a.k)[1]+(a.arch?' · 已停用':'')+' · '+(a.as?'有計入資產':'不計入資產')+(a.sp?' · 可動用':'')+'</p></div>'
    +(a.arch?'':'<div class="card" style="padding:2px 14px;box-shadow:none">'+swRow(a,'as')+swRow(a,'sp')+'</div>')
-   +facts([a.sfx?['尾碼',esc(a.sfx.replace('尾碼 ',''))]:null,a.rec?['狀態','待對帳，先不算進總額。設定餘額後開始算']:null,a.limit?['額度',amt(a.limit)+'，可用 '+fmt(a.limit+a.bal)]:null,a.stmt?['結帳日','每月 '+a.stmt+' 號']:null,a.due?['繳款截止','每月 '+a.due+' 號']:null,a.cpty?['對象',esc(a.cpty)]:null,a.ldue?['預計還款',a.ldue]:null,a.real!=null?['銀行實際',amt(a.real)+(a.real===a.bal?'，對得上':'，差 '+sgn(a.bal-a.real))]:null,a.note?['備註',esc(a.note)]:null])
+   +facts([a.sfx?['尾碼',esc(a.sfx.replace('尾碼 ',''))]:null,a.rec?['狀態','待對帳，先不算進總額']:null,a.limit?['額度',amt(a.limit)+'，可用 '+fmt(a.limit+a.bal)]:null,a.stmt?['結帳日','每月 '+a.stmt+' 號']:null,a.due?['繳款截止','每月 '+a.due+' 號']:null,a.cpty?['對象',esc(a.cpty)]:null,a.ldue?['預計還款',a.ldue]:null,a.real!=null?['銀行實際',amt(a.real)+(a.real===a.bal?'，對得上':'，差 '+sgn(a.bal-a.real))]:null,a.note?['備註',esc(a.note)]:null])
    +(hs.length?'<h3 class="h3">持股</h3><div class="list">'+hs.map(holdRow).join('')+'</div>':'')
    +'<h3 class="h3" style="margin-top:8px">餘額走勢 <span class="sub">最近 3 期</span></h3>'+balLine(a)
-   +'<div class="acts">'+B('sheet','編輯帳戶',{k:'acctEdit',id:a.id})+B('sheet','設定餘額',{k:'acctBal',id:a.id})+(a.arch?B('acctOn','重新啟用',{id:a.id}):B('acctArch','停用這個帳戶',{id:a.id}))+B('sheet','刪除',{cls:'warn',k:'acctDel',id:a.id})+'</div>'
+   +'<div class="acts">'+B('askAcct','跟塔塔說',{cls:'pri',id:a.id})+B('sheet','編輯帳戶',{k:'acctEdit',id:a.id})+B('sheet','設定餘額',{k:'acctBal',id:a.id})+(a.arch?B('acctOn','重新啟用',{id:a.id}):B('acctArch','停用這個帳戶',{id:a.id}))+B('sheet','刪除',{cls:'warn',k:'acctDel',id:a.id})+'</div>'+thSlot('acct:'+a.id,3)
    +'<h3 class="h3">交易明細 <span class="sub">這期 '+ts.length+' 筆</span></h3>'+(ts.length?'<div class="list">'+ts.map(txRow).join('')+'</div>':'<p class="gray-line">最近 3 期沒有這個帳戶的交易。</p>')}},
  acctEdit(d,id){const a=id?S.accts.find(x=>x.id===id):null;if(!S.ae||S.ae.id!==(id||'new'))S.ae={id:id||'new',k:a?a.k:'bank',n:a?a.n:'',cur:a&&a.cur||'TWD',open:'',limit:a&&a.limit||'',stmt:a&&a.stmt||'',due:a&&a.due||'',cpty:a&&a.cpty||'',ldue:a?toISO(a.ldue):'',as:a?!!a.as:true,sp:a?!!a.sp:true,note:a&&a.note||'',icon:a&&a.icon||''};const e=S.ae,card=e.k==='credit_card',loan=e.k==='loan_in'||e.k==='loan_out';
   return{t:a?'編輯帳戶：'+a.n:'新增帳戶',h:'<span class="flab" id="aek">帳戶類型</span><div class="cgrid" role="group" aria-labelledby="aek">'+KINDS.map(k=>'<button class="cbtn" data-act="aeK" data-c="'+k[0]+'" aria-pressed="'+(e.k===k[0])+'"><b aria-hidden="true">'+k[2]+'</b>'+k[1].slice(0,4)+'</button>').join('')+'</div>'
@@ -2766,7 +2812,7 @@ function render(dir){
   try{bigFace&&bigFace.destroy()}catch(e){}bigFace=null;
   const pre=(S.tab==='home'||S.tab==='ledger')&&!S.loading&&!d.err?acctEntry(d):'';
   const body=d.scn==='nokey'?gateHtml():S.loading?skeleton():(S.tab==='home'&&(d.prev||d.fut)&&!d.err)?perHome(d):PAGES[S.tab][S.v](d);
-  main.innerHTML='<div class="pg'+(dir?' fresh in-'+dir:'')+'">'+pre+body+'</div>';
+  {const _pn=$('#pnav');main.innerHTML='<div class="pg'+(dir?' fresh in-'+dir:'')+'">'+pre+body+'</div>';if(_pn)main.insertBefore(_pn,main.firstChild);kkTidyAbc(main)}
   main.scrollTop=dir?(S.scroll[S.tab+S.v]||0):st;
   if(keep)$$('[data-flip]',main).forEach(e=>{const o=keep.get(e.dataset.flip);if(o!=null){const dy=o-e.getBoundingClientRect().top;if(Math.abs(dy)>2)anim(e,[{transform:'translateY('+dy+'px)'},{transform:'none'}])}});
   const bf=$('#bigFace');$('#hdFace').style.visibility=bf?'hidden':'';
@@ -2778,7 +2824,7 @@ function render(dir){
 }
 function go(tab){closeLay();if(tab===S.tab){main.scrollTo({top:0,behavior:rm?'auto':'smooth'});return}S.scroll[S.tab+S.v]=main.scrollTop;const dir=ORDER.indexOf(tab)>ORDER.indexOf(S.tab)?'r':'l';S.tab=tab;render(dir)}
 function leaveAcct(){if(S.tab==='looks'){S.tab=S.from2||'accounts';render('l');const g=$('#lookBtn');g&&!g.hidden&&g.focus({preventScroll:true});return}if(S.tab!=='accounts')return;S.tab=S.from||'home';render('l');const e=$('#acctEntry');e&&e.focus({preventScroll:true})}
-function renderSheetBody(sw){const top=S.stack[S.stack.length-1];if(!top)return;const r=SH[top.k](D(),top.id);$('#shT').textContent=r.t;const b=$('#shB'),at=$('#adTop'),ks=at?at.scrollTop:0;b.innerHTML=r.h;b.classList.toggle('sw',!!sw);if(sw)b.scrollTop=0;sheet.classList.toggle('tall',!!r.tall);sheet.classList.toggle('calcsh',!!r.calc);
+function renderSheetBody(sw){const top=S.stack[S.stack.length-1];if(!top)return;const r=SH[top.k](D(),top.id);$('#shT').textContent=r.t;const b=$('#shB'),at=$('#adTop'),ks=at?at.scrollTop:0;b.innerHTML=r.h;kkTidyAbc(b);b.classList.toggle('sw',!!sw);if(sw)b.scrollTop=0;sheet.classList.toggle('tall',!!r.tall);sheet.classList.toggle('calcsh',!!r.calc);
   const at2=$('#adTop');if(at2&&!sw)at2.scrollTop=ks;lgMount(true);
   const bk=$('#shBack');if(S.stack.length>1){const p=S.stack[S.stack.length-2];bk.hidden=false;bk.textContent='‹ '+(SH[p.k](D(),p.id).t.slice(0,6))}else bk.hidden=true;rollNums()}
 let lastFocus=null,popping=false;
@@ -2806,8 +2852,8 @@ function askProto(q,into){q=q.trim();if(!q)return;const log=into==='feed'?S.chat
   if(rx&&into!=='feed'){rollOn=false;render()}
   setTimeout(()=>{const a=gig?'收到，缺口我記下了，已經請集集去翻有沒有外快機會，找到會列在逐流。':rx?(rx.late?'好，我盯著，「'+rx.m+'」入帳了馬上跟你說。':'好，'+rx.due+' 沒入帳我就提醒你。'):reply(q,D()),m=++S.seq;moodT=0;if(into==='feed'){log.unshift({t:esc(a),n:m});rollOn=false;render()}else{log.push({t:a,n:m});renderBub()}setMood(tata(D()).mood)},900)}
 function renderBub(){const d=D(),tt=tata(d),cx=S.ctx;
-  bub.innerHTML='<p class="say">'+(tt.idle?'沒事。這期花了 <b class="num">'+fmt(d.spent)+'</b>，收入目標'+goalNums(d).txt+'。':tt.line)+'</p>'+(d.err?'':'<div class="acts" style="margin:0">'+B('sheet','看回報全文',{k:'report'})+B('q','還能花多少')+B('q','下一筆要繳什麼')+B('q','幫我補分類')+B('sheet','記號說明',{k:'legend'})+'</div>')+(S.gigDraft?'<p class="ctx" id="gigDraft"><b style="color:var(--ink)">要送給塔塔的話，還沒送：</b><br>'+esc(S.gigDraft)+'<br>看過沒問題再按「傳給塔塔」，也可以在下面的框裡改。不想送就收起塔塔。</p>':'')+(S.gig?'<p class="ctx" id="bubGig">集集在找外快。<a href="'+GIG_URL+'" target="_blank" rel="noopener">看找到的機會 ›</a></p>':'')+(cx?'<p class="ctx">在問這一筆：'+esc(cx.m||cx.name)+' '+fmt(cx.a||cx.amt)+'</p>':'')+'<div class="log" aria-live="polite">'+S.bchat.map(c=>'<div class="msg'+(c.me?' me':'')+'">'+(c.me?'':'<span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>')+'<div class="msg-b"><p>'+esc(c.t)+'</p></div></div>').join('')+'</div><form id="bubF" autocomplete="off" aria-label="跟塔塔說"><input id="bubIn" aria-label="跟塔塔說" placeholder="跟塔塔說" maxlength="500" enterkeyhint="send"><button class="btn pri" type="submit">傳給塔塔</button></form>'+B('closeBub','收起塔塔',{cls:'wide'});
-  bub.scrollTop=bub.scrollHeight}
+  bub.innerHTML='<p class="say">'+(tt.idle?'沒事。這期花了 <b class="num">'+fmt(d.spent)+'</b>，收入目標'+goalNums(d).txt+'。':tt.line)+'</p>'+(d.err?'':'<div class="acts" style="margin:0">'+B('sheet','看回報全文',{k:'report'})+B('q','還能花多少')+B('q','下一筆要繳什麼')+B('q','幫我補分類')+B('sheet','記號說明',{k:'legend'})+'</div>')+(S.gigDraft?'<p class="ctx" id="gigDraft"><b style="color:var(--ink)">要送給塔塔的話，還沒送：</b><br>'+esc(S.gigDraft)+'<br>看過沒問題再按「傳給塔塔」，也可以在下面的框裡改。不想送就收起塔塔。</p>':'')+(S.gig?'<p class="ctx" id="bubGig">集集在找外快。<a href="'+GIG_URL+'" target="_blank" rel="noopener">看找到的機會 ›</a></p>':'')+(cx?'<p class="ctx">在問：'+esc(cx.m||cx.name)+' '+fmt(cx.a||cx.amt)+'</p>':'')+'<div class="log" aria-live="polite">'+S.bchat.map(c=>'<div class="msg'+(c.me?' me':'')+'">'+(c.me?'':'<span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>')+'<div class="msg-b"><p>'+esc(c.t)+'</p></div></div>').join('')+'</div>'+thSlot(thOrg(S.ctx,'bub').k,3)+'<form id="bubF" autocomplete="off" aria-label="跟塔塔說"><input id="bubIn" aria-label="跟塔塔說" placeholder="跟塔塔說" maxlength="500" enterkeyhint="send"><button class="btn pri" type="submit">傳給塔塔</button></form>'+B('closeBub','收起塔塔',{cls:'wide'});
+  kkTidyAbc(bub);bub.scrollTop=bub.scrollHeight}
 function openBub(){if(sheet.classList.contains('on'))closeSheet();renderBub();bub.classList.add('on');scrim.classList.add('on');$('#tataBtn').setAttribute('aria-expanded','true')}
 function closeBub(){if(!bub.classList.contains('on'))return;bub.classList.remove('on');if(!sheet.classList.contains('on'))scrim.classList.remove('on');$('#tataBtn').setAttribute('aria-expanded','false');S.ctx=null;S.gigDraft=false;S.draftRcv=null}
 
@@ -2818,6 +2864,8 @@ function deckMove(el,dx,fn){const c=$('.dcard',main);const a=c&&anim(c,[{opacity
 const PK=k=>({b:'bIdx',f:'fIdx',s:'sIdx'})[k]||'cIdx';
 function pager(k,step){const key=PK(k);deckMove(null,step>0?-60:60,()=>{S[key]+=step;render()})}
 const ACT={
+ askAcct(el){const id=el.dataset.id;if(id==='all'){const T=totals();thAskOpen({kind:'acctAll',m:'全部帳戶',a:T.cash,cash:T.cash,net:T.net});return}const a=acctBy(id);if(!a)return;thAskOpen({kind:'acct',id:a.id,n:a.n,m:'帳戶 '+a.n,a:a.bal,k:KN(a.k)[1]})},
+ askBud(el){const d=D();thAskOpen({kind:'budget',m:'本期預算',a:BUDGET,b:BUDGET,s:d.spent})},
  /* --- 單 D 新增的動作 --- */
  per(el){const n=S.per+(+el.dataset.c);if(n<-1||n>1)return;S.per=n;prevNum={};S.cIdx=S.bIdx=S.fIdx=0;S.lf='all';render('f');toast(PL[n][1]+' '+PL[n][0])},
  per0(){S.per=0;prevNum={};render('f')},
@@ -3094,14 +3142,11 @@ function subPayload(it,o){const cyc=o.cycle||(it.billing_cycle==='yearly'?'yearl
   a.p_match_names=o.match!=null?o.match:(it.match_names||[]);a.p_payer=o.payer||it.payer||'self';
   return a}
 /* 跟塔塔說：自由輸入的話一律送前確認一次，再經 kk-refresh 傳給塔塔；快捷問題用本頁真資料直接回答 */
-function ask(q,into){q=q.trim();if(!q)return;const log=into==='feed'?S.chat:S.bchat;
-  const cx=S.ctx?'（關於：'+(S.ctx.m||S.ctx.name)+' NT$'+fmt(S.ctx.a||S.ctx.amt)+(S.ctx.d?'，'+S.ctx.d:'')+'）':'';
+function ask(q,into){q=q.trim();if(!q)return;const c=S.ctx,o=thOrg(c,into),cx=thCtx(c);
   if(!window.confirm('要把這段話傳給塔塔嗎？\n\n'+q+cx))return;
-  const push=(m)=>{if(into==='feed'){log.unshift(m);rollOn=false;render()}else{log.push(m);renderBub()}};
-  push({me:1,t:q,n:++S.seq});clearTimeout(moodT);moodT=1;try{hdFace&&hdFace.setMood('thinking')}catch(e){}
   S.gigDraft=false;S.draftRcv=null;const inp=$(into==='feed'?'#cmpIn':'#bubIn');if(inp)inp.value='';
-  sendTata(q+cx).then(j=>{moodT=0;push({t:j&&j.reason==='duplicate'?'這則剛剛已經送出了。':'傳到了。塔塔的回覆會出現在「看回報全文」。',n:++S.seq});setMood(tata(D()).mood);rpc('kk_reports_list',{p_limit:10}).then(r=>{KD.reps=r;kkApply()}).catch(()=>{})})
-   .catch(e=>{moodT=0;push({t:'沒傳出去：'+e.message,n:++S.seq});setMood(tata(D()).mood)})}
+  const t=thNew(o.k,o.lab,q,q+cx);thPaint();thReveal(t);clearTimeout(moodT);moodT=1;try{hdFace&&hdFace.setMood('thinking')}catch(e){}
+  kkRefresh({action:'message',text:q+cx,client_id:t.cid}).then(j=>{moodT=0;thMark(t,j);setMood(tata(D()).mood);thReveal(t)}).catch(e=>{moodT=0;thMark(t,null,e.message);setMood(tata(D()).mood)})}
 /* 帳戶順序：自訂排序存進 kk_prefs（set_account_order），換手機也跟著 */
 function saveOrdRemote(){if(S.asort!=='custom'||!S.aorder)return;const ids=S.aorder.map(id=>{const a=acctBy(id);return a?a.rid:null}).filter(x=>x!=null);
   rpc('set_account_order',{p_groups:[],p_accounts:ids}).then(p=>{if(p)KD.prefs=p}).catch(e=>toast('順序沒存到雲端：'+e.message))}
@@ -3209,7 +3254,7 @@ function catList(d){const cs=d.cats.filter(c=>c.s>0||c.n>0).sort((a,b)=>b.s-a.s)
 function budgetHead(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null;const bk=' style="display:block"';return '<section class="card"><span class="lab"'+bk+'>'+P.label+' 支出</span><span class="big"'+bk+'>'+amt(d.spent,{abs:1,roll:'spent'})+'</span>'
   +(ps==null?'':prevNone()?'<span class="sub"'+bk+'>上一期（'+PLf(-1)[0]+'）沒有支出紀錄，還不能比</span>':'<span class="sub"'+bk+'>上期同一段（'+KD.ps.label+'）'+fmt(ps)+'，'+(d.spent>=ps?'多 ':'少 ')+fmt(Math.abs(d.spent-ps))+'</span>')
   +'<span class="sub"'+bk+'>收入 '+fmt(d.income)+' · 目標 '+fmt(TARGET)+' '+goalNums(d).txt+'</span></section>'}
-function budgetTail(){return B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})+B('sheet','看收入目標',{cls:'wide',k:'income'})}
+function budgetTail(){return B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})+B('sheet','看收入目標',{cls:'wide',k:'income'})+B('askBud','跟塔塔說',{cls:'wide'})+thSlot('budget',2)}
 function budgetA(d){if(d.err)return errBlock();return budgetHead(d)+'<h2 class="h3">各類支出'+(prevNone()?'':' <span class="sub">與上期同天數比</span>')+'</h2>'+catList(d)+budgetTail()}
 function budgetB(d){return budgetA(d)}
 function budgetC(d){return budgetA(d)}
@@ -3303,7 +3348,7 @@ function budgetHead(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null;const bk=' style
   +(d.bud?'<span class="sub"'+bk+'>預算 '+fmt(BUDGET)+'，'+(d.left<0?'<b class="neg">超支 '+fmt(-d.left)+'</b>':'還能花 '+fmt(d.left)+(d.dl?'，每天 '+fmt(d.perDay):''))+(V32.bud.scope==='period'?'（這期專用）':'（每期通用）')+'</span>'+bul(d.pS,d.prev?null:d.pT,{big:true,lab:'預算用了'}):'')
   +(ps==null?'':prevNone()?'<span class="sub"'+bk+'>上一期（'+PLf(-1)[0]+'）沒有支出紀錄，還不能比</span>':'<span class="sub"'+bk+'>上期同一段（'+KD.ps.label+'）'+fmt(ps)+'，'+(d.spent>=ps?'多 ':'少 ')+fmt(Math.abs(d.spent-ps))+'</span>')
   +'<span class="sub"'+bk+'>收入 '+fmt(d.income)+' · 目標 '+fmt(TARGET)+' '+goalNums(d).txt+'</span></section>'}
-function budgetTail(){return B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})+B('sheet','看收入目標',{cls:'wide',k:'income'})}
+function budgetTail(){return B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})+B('sheet','看收入目標',{cls:'wide',k:'income'})+B('askBud','跟塔塔說',{cls:'wide'})+thSlot('budget',2)}
 const SH_left_v31=SH.left;SH.left=function(d){const r=SH_left_v31(d);if(d.bud)r.h=r.h.replace('<p class="sub">預算還沒有設定的地方，這裡不算「還能花」。</p>',facts([['預算',amt(BUDGET)],[d.left<0?'超支':'還能花',amt(Math.abs(d.left))],['每天還能花',amt(d.perDay)]])+bul(d.pS,d.prev?null:d.pT,{big:true,lab:'預算用了'}));return r};
 /* 設定預算 */
 SH.budSet=function(d){const b=V32.bud||{},cs=b.categories||{},per=b.scope==='period';
@@ -3374,7 +3419,7 @@ phone.addEventListener('change',e=>{const t=e.target,c=t.dataset&&t.dataset.card
   else if(t.id==='adDate'&&t.value){keepAdd();S.add.date=toMD(t.value);renderSheetBody()}
   else if(t.id==='acSort'){S.asort=t.value;if(t.value==='custom')initOrder();saveOrd();render();const s=$('#acSort');s&&s.focus({preventScroll:true})}});
 phone.addEventListener('input',e=>{if(e.target.id==='ldQ'){S.q=e.target.value;$('#ldList').innerHTML=ledgerList(D())}});
-phone.addEventListener('submit',e=>{e.preventDefault();const i=$('input',e.target);if(e.target.id==='composer'){ask(i.value,'feed');main.scrollTo({top:0})}else ask(i.value,'bub');i.value=''});
+phone.addEventListener('submit',e=>{e.preventDefault();const i=$('input',e.target);if(e.target.id==='composer'){ask(i.value,'feed')}else ask(i.value,'bub');i.value=''});
 document.addEventListener('keydown',e=>{const top=S.stack[S.stack.length-1],ae=document.activeElement,tg=ae?ae.tagName:'';
   if(sheet.classList.contains('on')&&top&&top.k==='add'&&!e.metaKey&&!e.ctrlKey&&!e.altKey&&!/INPUT|TEXTAREA|SELECT/.test(tg)){
     let k=null;if(/^[0-9.+\-*/]$/.test(e.key))k=e.key;else if(e.key==='Backspace')k='⌫';else if(e.key==='='||(e.key==='Enter'&&((tg!=='BUTTON'&&tg!=='SUMMARY')||ae.classList.contains('key'))))k='=';
@@ -3434,6 +3479,174 @@ document.addEventListener('click',e=>{const m=$('#layMenu');if(m&&!m.hidden&&!e.
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeLay()});
 const onRM=()=>{rm=RMQ.matches;remountHd();render()};RMQ.addEventListener?RMQ.addEventListener('change',onRM):RMQ.addListener&&RMQ.addListener(onRM);
 if(!PAGES[S.tab])S.tab='home';if(!VI[S.v])S.v='A';
+/* ---------- v34 回覆就地看見（共用核心，A/B/C 與 E 都用）----------
+ 每一則跟塔塔說的話存成一串（kk_threads，只存在這支手機）：從哪裡說（org）、說了什麼、kk-refresh 回的 request_id。
+ 塔塔的回報（kk_reports_list）用三層對回原話：1. request_id 相同；2. request_text 逐字相同；3. 都沒有時，發話後第一則沒有原話的訊息回覆（標「推定」）。
+ 各版面要先定義：thFetch()→Promise(回報列)、thOnReps(列)、thEsc(字)。 */
+var TH = [], THX = { open: {}, timer: 0, until: 0, rows: [] };
+try { TH = JSON.parse(localStorage.getItem('kk_threads') || '[]') || []; if (!Array.isArray(TH)) TH = []; } catch (e) { TH = []; }
+TH.forEach(function (t) { if (t.st === 'sending') t.st = 'sent'; });
+function thSave() { try { localStorage.setItem('kk_threads', JSON.stringify(TH.slice(-40))); } catch (e) {} }
+function thUuid() { try { return crypto.randomUUID(); } catch (e) { return 'th' + Date.now().toString(36) + Math.random().toString(36).slice(2); } }
+function thMs(s) { var n = Date.parse(s || ''); return isNaN(n) ? 0 : n; }
+function thNew(org, lab, q, text) { var t = { cid: thUuid(), org: org, lab: lab, q: q, text: text, at: Date.now(), rid: null, st: 'sending', err: '', reps: [], how: '' }; TH.push(t); if (TH.length > 40) TH = TH.slice(-40); thSave(); return t; }
+function thMark(t, j, err) {
+  if (err) { t.st = 'fail'; t.err = err; }
+  else if (j && j.ok) { t.st = 'sent'; if (j.request_id != null) t.rid = String(j.request_id); }
+  else if (j && j.reason === 'duplicate') { t.st = 'sent'; }
+  else { t.st = 'fail'; t.err = thWhy(j); }
+  thSave(); thPaint(); if (t.st === 'sent') thPollStart();
+}
+function thWhy(j) { var r = j && j.reason; return r === 'too_fast' ? '送太快了，等幾秒再試' : r === 'cannot write' ? '這把密鑰沒有寫入權限' : r === 'not_configured' ? '還沒接上塔塔的排程' : r === 'bad_text' ? '文字要 1 到 500 字' : r === 'webhook_failed' ? '塔塔那邊沒接到，稍後再送' : '塔塔那邊沒有回應（' + (r || '未知') + '）'; }
+/* 用目前讀到的回報列，替每一串找回覆 */
+function thMatchAll(rows) {
+  rows = (rows || []).filter(function (r) { return r && r.id != null; });
+  var claimed = {}, byRid = {};
+  TH.forEach(function (t) { if (t.rid) byRid[t.rid] = 1; });
+  TH.slice().sort(function (a, b) { return a.at - b.at; }).forEach(function (t) {
+    if (t.st === 'fail') return;
+    var rs = [], how = '';
+    if (t.rid) { rs = rows.filter(function (r) { return r.request_id != null && String(r.request_id) === t.rid; }); if (rs.length) how = 'id'; }
+    if (!rs.length) { rs = rows.filter(function (r) { return r.request_text && r.request_text === t.text && (thMs(r.requested_at) || thMs(r.created_at)) >= t.at - 60000; }); if (rs.length) how = 'text'; }
+    if (!rs.length && !t.rid && !(t.reps && t.reps.length)) {
+      var c = rows.filter(function (r) { return r.kind !== 'refresh' && !r.request_text && !(r.request_id != null && byRid[String(r.request_id)]) && !claimed[r.id] && thMs(r.created_at) >= t.at; })
+        .sort(function (a, b) { return thMs(a.created_at) - thMs(b.created_at); })[0];
+      if (c) { rs = [c]; how = 'guess'; }
+    }
+    if (rs.length) {
+      rs.forEach(function (r) { claimed[r.id] = 1; });
+      var have = {}; (t.reps || []).forEach(function (x) { have[x.id] = x; });
+      rs.forEach(function (r) { have[String(r.id)] = { id: String(r.id), text: String(r.text || ''), at: r.created_at }; });
+      t.reps = Object.keys(have).map(function (k) { return have[k]; }).sort(function (a, b) { return thMs(a.at) - thMs(b.at); });
+      if (!t.how || how === 'id' || (how === 'text' && t.how === 'guess')) t.how = how;
+    }
+  });
+}
+function thIngest(rows) {
+  if (!Array.isArray(rows)) rows = (rows && rows.items) || [];
+  THX.rows = rows; var before = {}; TH.forEach(function (t) { before[t.cid] = (t.reps || []).length; });
+  thMatchAll(rows); thSave();
+  var fresh = TH.filter(function (t) { return (t.reps || []).length > before[t.cid]; });
+  thPaint(); if (fresh.length) thReveal(fresh[fresh.length - 1], true);
+}
+/* 這則回報是在回哪裡（給回報全文用） */
+function thWhere(r) {
+  var id = String(r.id), t = TH.filter(function (x) { return (x.reps || []).some(function (y) { return y.id === id; }); })[0];
+  if (t) return '回你在「' + t.lab + '」說的' + (t.how === 'guess' ? '（推定）' : '');
+  if (r.kind === 'refresh') return '對帳後的回報';
+  var m = String(r.request_text || '').match(/（關於(?:帳戶)?：([^，）]{1,20})/);
+  if (m) return '回你問「' + m[1] + '」';
+  return r.request_text ? '回你的訊息' : '塔塔的訊息';
+}
+function thTime(s) { var d = new Date(s); if (isNaN(d)) return ''; var md = d.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric' }), hm = d.toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false }); return md + ' ' + hm; }
+/* ---------- 畫面：每個發話處放一個 data-th 槽，回覆就地出現 ---------- */
+function thItem(t) {
+  var h = '<div class="th-i" data-cid="' + t.cid + '"><p class="th-q"><span class="th-w">你</span>' + thEsc(t.q) + '</p>';
+  if (t.st === 'fail') h += '<p class="th-a th-err" role="status">沒傳出去：' + thEsc(t.err) + '</p>';
+  else if (t.reps && t.reps.length) t.reps.forEach(function (r) { h += '<p class="th-a"><span class="th-w">塔塔</span>' + thEsc(r.text) + '<small class="th-t">' + thTime(r.at) + (t.how === 'guess' ? '・推定是回這則' : '') + '</small></p>'; });
+  else h += '<p class="th-a th-wait" role="status"><span class="th-w">塔塔</span>' + (t.st === 'sending' ? '傳送中' : (Date.now() - t.at < 120000 ? '傳到了，回了會出現在這裡' : '還沒回，按 ↻ 再看一次')) + '</p>';
+  return h + '</div>';
+}
+function thBlock(org, max) {
+  var L = TH.filter(function (t) { return t.org === org; }); if (!L.length) return '';
+  var open = THX.open[org], more = L.length - max, vis = open || more <= 0 ? L : L.slice(-max);
+  return (more > 0 && !open ? '<button type="button" class="th-more" data-th-more="' + thEsc(org) + '">更早的 ' + more + ' 則</button>' : '') + vis.map(thItem).join('');
+}
+function thSlot(org, max) { max = max || 3; return '<div class="th" data-th="' + thEsc(org) + '" data-max="' + max + '" aria-live="polite">' + thBlock(org, max) + '</div>'; }
+function thPaint() { var els = document.querySelectorAll('[data-th]'); for (var i = 0; i < els.length; i++) { var el = els[i]; el.innerHTML = thBlock(el.getAttribute('data-th'), +el.getAttribute('data-max') || 3); } }
+/* 新的一則（或新回覆）捲進看得到的地方：只捲它所在的那個捲動區 */
+function thReveal(t, soft) {
+  var els = document.querySelectorAll('[data-cid="' + t.cid + '"]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i], r = el.getBoundingClientRect(); if (!r.width && !r.height) continue;
+    var sc = el.parentElement; while (sc && sc !== document.body) { var cs = getComputedStyle(sc); if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight) break; sc = sc.parentElement; }
+    if (!sc || sc === document.body) continue;
+    var sr = sc.getBoundingClientRect(), last = el.lastElementChild || el, lr = last.getBoundingClientRect();
+    if (lr.bottom > sr.bottom - 8) sc.scrollTop += Math.min(lr.bottom - sr.bottom + 16, r.top - sr.top - 8);
+    else if (r.top < sr.top) sc.scrollTop -= (sr.top - r.top + 8);
+  }
+}
+function thPending() { var now = Date.now(); return TH.some(function (t) { return t.st === 'sent' && !(t.reps && t.reps.length) && now - t.at < 120000; }); }
+function thPollStart() { THX.until = Date.now() + 120000; if (!THX.timer) thTick(); }
+function thTick() { THX.timer = setTimeout(function () { THX.timer = 0; thFetch().then(function (rows) { thOnReps(rows); thIngest(rows); }).catch(function () {}).then(function () { if (thPending() && Date.now() < THX.until) thTick(); else thPaint(); }); }, 5000); }
+document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-th-more]'); if (!b) return; THX.open[b.getAttribute('data-th-more')] = 1; thPaint(); });
+/* ---------- v34 減字：塔塔一張卡只留一句（20 字內），其餘收進「看細節」；長的說明句收進「看說明」 ---------- */
+function tdLen(s) { return String(s).replace(/\s+/g, '').length; }
+function tdCut(text) { /* 回傳要留在卡面的字數（原字串索引） */
+  var n = 0, lastStop = -1, lastComma = -1;
+  for (var i = 0; i < text.length; i++) { var c = text[i]; if (!/\s/.test(c)) n++; if (n > 20) break; if (/[。！？]/.test(c)) lastStop = i + 1; else if (/[，；：]/.test(c)) lastComma = i + 1; }
+  if (lastStop > 0) return { at: lastStop, ell: false };
+  if (lastComma > 0) return { at: lastComma, ell: true };
+  var k = 0, j = 0; for (; j < text.length; j++) { if (!/\s/.test(text[j])) k++; if (k >= 19) { j++; break; } }
+  return { at: j, ell: true };
+}
+function tdPoint(p, at) { var w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null), n, seen = 0; while ((n = w.nextNode())) { var L = n.nodeValue.length; if (seen + L >= at) return { node: n, off: at - seen }; seen += L; } return null; }
+function tdSplit(p, label) {
+  var text = p.textContent || ''; if (tdLen(text) <= 20) return false;
+  var c = tdCut(text); if (c.at >= text.length) return false;
+  var pt = tdPoint(p, c.at); if (!pt) return false;
+  var rg = document.createRange(); rg.setStart(pt.node, pt.off); rg.setEnd(p, p.childNodes.length);
+  var frag = rg.extractContents(); if (!tdLen(frag.textContent || '')) return false;
+  if (c.ell) p.appendChild(document.createTextNode('…'));
+  var d = document.createElement('details'); d.className = 'kk-more'; d.setAttribute('data-td', 'split');
+  d.innerHTML = '<summary>' + label + '</summary>'; var q = document.createElement('p'); q.className = 'kk-more-p'; q.appendChild(frag); d.appendChild(q);
+  p.parentNode.insertBefore(d, p.nextSibling); p.setAttribute('data-td', '1'); return true;
+}
+function tdHelp(list, host, before) { /* 長說明句：同一區塊收成一個「看說明」 */
+  if (!list.length) return;
+  var d = document.createElement('details'); d.className = 'kk-more kk-help'; d.setAttribute('data-td', 'help'); d.innerHTML = '<summary>看說明</summary>';
+  list.forEach(function (p) { p.setAttribute('data-td', '1'); d.appendChild(p); });
+  if (before && before.parentNode === host) host.insertBefore(d, before); else host.appendChild(d);
+}
+function tdHelpable(p) { if (p.getAttribute('data-td') || p.id || p.getAttribute('role')) return false; if (p.querySelector('button,a,input,select,textarea,[data-act]')) return false; if (p.closest('.th,.kk-more,details,.bub,.facts')) return false; return tdLen(p.textContent || '') > 20; }
+
+/* ---------- v34 A/B/C 接線：回覆就地看見、帳戶跟塔塔說、減字 ---------- */
+function thEsc(s) { return esc(String(s == null ? '' : s)); }
+function thFetch() { return rpc('kk_reports_list', { p_limit: 20 }); }
+function thOnReps(r) {
+  KD.reps = r; try { kkCacheSave(); } catch (e) {}
+  REPS = ((Array.isArray(KD.reps) ? KD.reps : (KD.reps && KD.reps.items)) || []).slice(0, 10).map(function (x) { return [mdOf(tpDay(x.created_at)) + ' ' + tpTime(x.created_at), x.kind === 'refresh' ? '對帳後' : x.request_kind ? '你問的' : '訊息', String(x.text || '')]; });
+  var top = S.stack && S.stack[S.stack.length - 1]; if (sheet.classList.contains('on') && top && top.k === 'report') renderSheetBody();
+}
+/* 從哪裡說：帳戶、全部帳戶、預算、帳單訂閱、交易、A 版輸入框、泡泡 */
+function thOrg(c, into) {
+  if (c && c.kind === 'acct') return { k: 'acct:' + c.id, lab: '帳戶 ' + c.n };
+  if (c && c.kind === 'acctAll') return { k: 'acct:all', lab: '帳戶總覽' };
+  if (c && c.kind === 'budget') return { k: 'budget', lab: '預算' };
+  if (c && c.name != null && c.id != null) return { k: 'fx:' + c.id, lab: c.name };
+  if (c && c.id != null) return { k: 'tx:' + c.id, lab: c.m || '這筆' };
+  return into === 'feed' ? { k: 'feed', lab: '今天' } : { k: 'bub', lab: '塔塔泡泡' };
+}
+function thCtx(c) {
+  if (!c) return '';
+  if (c.kind === 'acct') return '（關於帳戶：' + c.n + '，餘額 NT$' + fmt(c.a) + '，' + c.k + '）';
+  if (c.kind === 'acctAll') return '（關於：全部帳戶，可動用 NT$' + fmt(c.cash) + '，淨資產 NT$' + fmt(c.net) + '）';
+  if (c.kind === 'budget') return '（關於：本期預算 NT$' + fmt(c.b) + '，已花 NT$' + fmt(c.s) + '）';
+  return '（關於：' + (c.m || c.name) + ' NT$' + fmt(c.a || c.amt) + (c.d ? '，' + c.d : '') + '）';
+}
+function thAskOpen(c) { closeSheet(); S.ctx = c; openBub(); setTimeout(function () { var i = $('#bubIn'); i && i.focus({ preventScroll: true }); }, 80); }
+/* 回報全文：每則標出在回哪裡 */
+function thRepList() {
+  var rows = (Array.isArray(KD.reps) ? KD.reps : (KD.reps && KD.reps.items)) || [];
+  if (!rows.length) return '<p class="gray-line">還沒有回報。</p>';
+  return rows.slice(0, 20).map(function (r, i) {
+    var q = String(r.request_text || '').replace(/（關於[^）]*）\s*$/, '');
+    return '<details class="rep"' + (i === 0 ? ' open' : '') + '><summary><span class="rep-w">' + thEsc(thWhere(r)) + '</span><span class="rep-t">' + thTime(r.created_at) + '</span></summary>'
+      + (q ? '<p class="rep-q"><span class="th-w">你</span>' + thEsc(q.length > 60 ? q.slice(0, 60) + '…' : q) + '</p>' : '') + '<p class="rep-a">' + thEsc(r.text) + '</p></details>';
+  }).join('');
+}
+function kkTidyAbc(root) {
+  try {
+    if (!root) return;
+    var ps = root.querySelectorAll('.cf-why,.msg .msg-b>p:first-child,p.lead,p.say');
+    for (var i = 0; i < ps.length; i++) { var p = ps[i]; if (!p.closest('.th') && !p.getAttribute('data-td')) tdSplit(p, '看細節'); }
+    if (root === bub) return;
+    var subs = Array.prototype.filter.call(root.querySelectorAll('p.sub'), tdHelpable);
+    if (root.id === 'shB') tdHelp(subs, root);
+    else subs.forEach(function (p) { tdHelp([p], p.parentNode, p.nextSibling); });
+  } catch (e) {}
+}
+
 syncSkin();remountHd();
 if(KEY.length>=20&&kkCacheLoad()){kkApply();KD.loaded=true;S.loading=false}
 render('f');kkLoad({dir:'f'});
@@ -3443,12 +3656,6 @@ if('serviceWorker' in navigator&&window.isSecureContext){
 window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
 
 })();
-</script>
-<script>
-/* v33：內容往下捲超過一段就收起期別列，捲回頂端再出現；內容不夠長時不收，避免來回跳 */
-(function(){var m=document.getElementById('main'),a=m&&m.closest('.app');if(!a)return;var on=false;
-function chk(){var t=m.scrollTop,room=m.scrollHeight-m.clientHeight;if(!on&&t>48&&room>120){on=true;a.classList.add('kk-scd')}else if(on&&(t<8||room<20)){on=false;a.classList.remove('kk-scd')}}
-m.addEventListener('scroll',chk,{passive:true});try{new MutationObserver(function(){requestAnimationFrame(chk)}).observe(m,{childList:true})}catch(e){}})();
 </script>
 </body>
 </html>

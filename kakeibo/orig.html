@@ -1182,6 +1182,37 @@ button.rcv .chev{flex:none;color:var(--muted)}
 .a2hs{bottom:calc(60px + var(--sab))}
 @media (prefers-reduced-motion: reduce){.pnav{transition:none}}
 
+/* v34（2026-11-22）E 版：期別列跟內容一起捲、上下列固定；回覆槽；減字摺疊 */
+.bar{height:44px}
+.tabbar .in,.tb{height:46px}
+.fab{width:46px;height:46px}
+#scroll>.pnav{height:44px;transition:none;opacity:1;pointer-events:auto;border-bottom:1px solid var(--line)}
+#scroll>.pnav[hidden]{display:none}
+#lay_m{top:calc(env(safe-area-inset-top,0px) + 46px)}
+#msg,#undo{bottom:calc(62px + var(--sab))}
+#err{top:calc(50px + var(--sat))}
+.th{display:flex;flex-direction:column;gap:8px;margin:10px 0 0}
+.th:empty{display:none}
+.th-i{display:flex;flex-direction:column;gap:6px}
+.th-q,.th-a{margin:0;padding:8px 12px;border-radius:14px;font-size:15px;line-height:1.5;max-width:92%;white-space:pre-wrap;word-break:break-word}
+.th-q{align-self:flex-end;background:var(--fill);color:var(--onfill);border-radius:14px 4px 14px 14px}
+.th-a{align-self:flex-start;background:var(--solid);border:1px solid var(--line);color:var(--ink);border-radius:4px 14px 14px 14px}
+.th-w{display:block;font-size:12px;font-weight:700;opacity:.75;margin-bottom:1px}
+.th-t{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.th-wait{color:var(--muted);border-style:dashed}
+.th-err{color:var(--bad);border-color:currentColor}
+.th-more{align-self:center;min-height:44px;padding:0 14px;border:0;background:none;color:var(--muted);font:inherit;font-size:14px;text-decoration:underline}
+.ttb_th{max-height:min(46vh,360px);overflow-y:auto;margin:8px 0 0;overscroll-behavior:contain}
+.th-ask{margin:10px 0 0}
+.th-askb{width:100%;margin-top:10px}
+.xp .th-askb{margin-top:8px}
+details.kk-more{margin:2px 0 0}
+details.kk-more>summary{min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:600;color:var(--muted);list-style:none;cursor:pointer}
+details.kk-more>summary::-webkit-details-marker{display:none}
+details.kk-more>summary::after{content:"›";transform:rotate(90deg);display:inline-block;margin-left:6px}
+details.kk-more[open]>summary::after{transform:rotate(-90deg)}
+.kk-more-p{margin:0 0 6px;font-size:14px;color:var(--ink2,var(--ink));line-height:1.55}
+
 </style></head><body data-skin="6" data-theme="light">
 <a class="skip" href="#scroll">跳到內容</a>
 <div id="err" role="alert"></div><div id="msg" role="status"></div><div id="undo" role="status"><span id="undo_t"></span><button type="button" id="undo_b">復原</button></div>
@@ -1193,13 +1224,13 @@ button.rcv .chev{flex:none;color:var(--muted)}
       <h1><span id="hdr_title">塔塔記帳</span><i id="live" class="on" role="img" aria-label="即時連線中"></i></h1>
       <span class="hr"><button class="hbtn" id="layout_b" type="button" aria-label="換版面" aria-haspopup="menu" aria-expanded="false"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg></button><button class="hbtn" id="showvoid" type="button" aria-pressed="false"><span>顯示作廢</span></button><button class="hbtn" id="gear" type="button" aria-label="外觀設定" hidden><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg></button></span>
     </div>
+  </header>
+  <main id="scroll" tabindex="-1">
     <div class="pnav" id="pnav">
       <button type="button" id="p_prev" aria-label="上一期">‹</button>
       <div class="pl"><span id="p_label"></span><em id="p_tag">本期</em></div>
       <button type="button" id="p_next" aria-label="下一期">›</button>
     </div>
-  </header>
-  <main id="scroll" tabindex="-1">
     <div id="app">
       <section id="tab_list" aria-label="記帳本">
         <button type="button" class="rv" id="rv" hidden><span class="dotf" aria-hidden="true"></span><span class="t">塔塔記的<b class="num" id="rv_n">0</b>筆等你看</span><span class="chev" aria-hidden="true">›</span></button>
@@ -4011,10 +4042,229 @@ bind(); liveBind(); v32Bind(); mountFaces();
   load({ force: true });
 })();
 
-/* v33：內容往下捲超過一段就收起期別列，捲回頂端再出現；內容不夠長時不收，避免來回跳 */
-(function(){var m=document.getElementById('scroll'),a=document.getElementById('shell');if(!m||!a)return;var on=false;
-function chk(){var t=m.scrollTop,room=m.scrollHeight-m.clientHeight;if(!on&&t>48&&room>120){on=true;a.classList.add('kk-scd')}else if(on&&(t<8||room<20)){on=false;a.classList.remove('kk-scd')}}
-m.addEventListener('scroll',chk,{passive:true});try{new MutationObserver(function(){requestAnimationFrame(chk)}).observe(m,{childList:true,subtree:true})}catch(e){}})();
+/* ---------- v34 回覆就地看見（共用核心，A/B/C 與 E 都用）----------
+ 每一則跟塔塔說的話存成一串（kk_threads，只存在這支手機）：從哪裡說（org）、說了什麼、kk-refresh 回的 request_id。
+ 塔塔的回報（kk_reports_list）用三層對回原話：1. request_id 相同；2. request_text 逐字相同；3. 都沒有時，發話後第一則沒有原話的訊息回覆（標「推定」）。
+ 各版面要先定義：thFetch()→Promise(回報列)、thOnReps(列)、thEsc(字)。 */
+var TH = [], THX = { open: {}, timer: 0, until: 0, rows: [] };
+try { TH = JSON.parse(localStorage.getItem('kk_threads') || '[]') || []; if (!Array.isArray(TH)) TH = []; } catch (e) { TH = []; }
+TH.forEach(function (t) { if (t.st === 'sending') t.st = 'sent'; });
+function thSave() { try { localStorage.setItem('kk_threads', JSON.stringify(TH.slice(-40))); } catch (e) {} }
+function thUuid() { try { return crypto.randomUUID(); } catch (e) { return 'th' + Date.now().toString(36) + Math.random().toString(36).slice(2); } }
+function thMs(s) { var n = Date.parse(s || ''); return isNaN(n) ? 0 : n; }
+function thNew(org, lab, q, text) { var t = { cid: thUuid(), org: org, lab: lab, q: q, text: text, at: Date.now(), rid: null, st: 'sending', err: '', reps: [], how: '' }; TH.push(t); if (TH.length > 40) TH = TH.slice(-40); thSave(); return t; }
+function thMark(t, j, err) {
+  if (err) { t.st = 'fail'; t.err = err; }
+  else if (j && j.ok) { t.st = 'sent'; if (j.request_id != null) t.rid = String(j.request_id); }
+  else if (j && j.reason === 'duplicate') { t.st = 'sent'; }
+  else { t.st = 'fail'; t.err = thWhy(j); }
+  thSave(); thPaint(); if (t.st === 'sent') thPollStart();
+}
+function thWhy(j) { var r = j && j.reason; return r === 'too_fast' ? '送太快了，等幾秒再試' : r === 'cannot write' ? '這把密鑰沒有寫入權限' : r === 'not_configured' ? '還沒接上塔塔的排程' : r === 'bad_text' ? '文字要 1 到 500 字' : r === 'webhook_failed' ? '塔塔那邊沒接到，稍後再送' : '塔塔那邊沒有回應（' + (r || '未知') + '）'; }
+/* 用目前讀到的回報列，替每一串找回覆 */
+function thMatchAll(rows) {
+  rows = (rows || []).filter(function (r) { return r && r.id != null; });
+  var claimed = {}, byRid = {};
+  TH.forEach(function (t) { if (t.rid) byRid[t.rid] = 1; });
+  TH.slice().sort(function (a, b) { return a.at - b.at; }).forEach(function (t) {
+    if (t.st === 'fail') return;
+    var rs = [], how = '';
+    if (t.rid) { rs = rows.filter(function (r) { return r.request_id != null && String(r.request_id) === t.rid; }); if (rs.length) how = 'id'; }
+    if (!rs.length) { rs = rows.filter(function (r) { return r.request_text && r.request_text === t.text && (thMs(r.requested_at) || thMs(r.created_at)) >= t.at - 60000; }); if (rs.length) how = 'text'; }
+    if (!rs.length && !t.rid && !(t.reps && t.reps.length)) {
+      var c = rows.filter(function (r) { return r.kind !== 'refresh' && !r.request_text && !(r.request_id != null && byRid[String(r.request_id)]) && !claimed[r.id] && thMs(r.created_at) >= t.at; })
+        .sort(function (a, b) { return thMs(a.created_at) - thMs(b.created_at); })[0];
+      if (c) { rs = [c]; how = 'guess'; }
+    }
+    if (rs.length) {
+      rs.forEach(function (r) { claimed[r.id] = 1; });
+      var have = {}; (t.reps || []).forEach(function (x) { have[x.id] = x; });
+      rs.forEach(function (r) { have[String(r.id)] = { id: String(r.id), text: String(r.text || ''), at: r.created_at }; });
+      t.reps = Object.keys(have).map(function (k) { return have[k]; }).sort(function (a, b) { return thMs(a.at) - thMs(b.at); });
+      if (!t.how || how === 'id' || (how === 'text' && t.how === 'guess')) t.how = how;
+    }
+  });
+}
+function thIngest(rows) {
+  if (!Array.isArray(rows)) rows = (rows && rows.items) || [];
+  THX.rows = rows; var before = {}; TH.forEach(function (t) { before[t.cid] = (t.reps || []).length; });
+  thMatchAll(rows); thSave();
+  var fresh = TH.filter(function (t) { return (t.reps || []).length > before[t.cid]; });
+  thPaint(); if (fresh.length) thReveal(fresh[fresh.length - 1], true);
+}
+/* 這則回報是在回哪裡（給回報全文用） */
+function thWhere(r) {
+  var id = String(r.id), t = TH.filter(function (x) { return (x.reps || []).some(function (y) { return y.id === id; }); })[0];
+  if (t) return '回你在「' + t.lab + '」說的' + (t.how === 'guess' ? '（推定）' : '');
+  if (r.kind === 'refresh') return '對帳後的回報';
+  var m = String(r.request_text || '').match(/（關於(?:帳戶)?：([^，）]{1,20})/);
+  if (m) return '回你問「' + m[1] + '」';
+  return r.request_text ? '回你的訊息' : '塔塔的訊息';
+}
+function thTime(s) { var d = new Date(s); if (isNaN(d)) return ''; var md = d.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric' }), hm = d.toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false }); return md + ' ' + hm; }
+/* ---------- 畫面：每個發話處放一個 data-th 槽，回覆就地出現 ---------- */
+function thItem(t) {
+  var h = '<div class="th-i" data-cid="' + t.cid + '"><p class="th-q"><span class="th-w">你</span>' + thEsc(t.q) + '</p>';
+  if (t.st === 'fail') h += '<p class="th-a th-err" role="status">沒傳出去：' + thEsc(t.err) + '</p>';
+  else if (t.reps && t.reps.length) t.reps.forEach(function (r) { h += '<p class="th-a"><span class="th-w">塔塔</span>' + thEsc(r.text) + '<small class="th-t">' + thTime(r.at) + (t.how === 'guess' ? '・推定是回這則' : '') + '</small></p>'; });
+  else h += '<p class="th-a th-wait" role="status"><span class="th-w">塔塔</span>' + (t.st === 'sending' ? '傳送中' : (Date.now() - t.at < 120000 ? '傳到了，回了會出現在這裡' : '還沒回，按 ↻ 再看一次')) + '</p>';
+  return h + '</div>';
+}
+function thBlock(org, max) {
+  var L = TH.filter(function (t) { return t.org === org; }); if (!L.length) return '';
+  var open = THX.open[org], more = L.length - max, vis = open || more <= 0 ? L : L.slice(-max);
+  return (more > 0 && !open ? '<button type="button" class="th-more" data-th-more="' + thEsc(org) + '">更早的 ' + more + ' 則</button>' : '') + vis.map(thItem).join('');
+}
+function thSlot(org, max) { max = max || 3; return '<div class="th" data-th="' + thEsc(org) + '" data-max="' + max + '" aria-live="polite">' + thBlock(org, max) + '</div>'; }
+function thPaint() { var els = document.querySelectorAll('[data-th]'); for (var i = 0; i < els.length; i++) { var el = els[i]; el.innerHTML = thBlock(el.getAttribute('data-th'), +el.getAttribute('data-max') || 3); } }
+/* 新的一則（或新回覆）捲進看得到的地方：只捲它所在的那個捲動區 */
+function thReveal(t, soft) {
+  var els = document.querySelectorAll('[data-cid="' + t.cid + '"]');
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i], r = el.getBoundingClientRect(); if (!r.width && !r.height) continue;
+    var sc = el.parentElement; while (sc && sc !== document.body) { var cs = getComputedStyle(sc); if (/(auto|scroll)/.test(cs.overflowY) && sc.scrollHeight > sc.clientHeight) break; sc = sc.parentElement; }
+    if (!sc || sc === document.body) continue;
+    var sr = sc.getBoundingClientRect(), last = el.lastElementChild || el, lr = last.getBoundingClientRect();
+    if (lr.bottom > sr.bottom - 8) sc.scrollTop += Math.min(lr.bottom - sr.bottom + 16, r.top - sr.top - 8);
+    else if (r.top < sr.top) sc.scrollTop -= (sr.top - r.top + 8);
+  }
+}
+function thPending() { var now = Date.now(); return TH.some(function (t) { return t.st === 'sent' && !(t.reps && t.reps.length) && now - t.at < 120000; }); }
+function thPollStart() { THX.until = Date.now() + 120000; if (!THX.timer) thTick(); }
+function thTick() { THX.timer = setTimeout(function () { THX.timer = 0; thFetch().then(function (rows) { thOnReps(rows); thIngest(rows); }).catch(function () {}).then(function () { if (thPending() && Date.now() < THX.until) thTick(); else thPaint(); }); }, 5000); }
+document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-th-more]'); if (!b) return; THX.open[b.getAttribute('data-th-more')] = 1; thPaint(); });
+/* ---------- v34 減字：塔塔一張卡只留一句（20 字內），其餘收進「看細節」；長的說明句收進「看說明」 ---------- */
+function tdLen(s) { return String(s).replace(/\s+/g, '').length; }
+function tdCut(text) { /* 回傳要留在卡面的字數（原字串索引） */
+  var n = 0, lastStop = -1, lastComma = -1;
+  for (var i = 0; i < text.length; i++) { var c = text[i]; if (!/\s/.test(c)) n++; if (n > 20) break; if (/[。！？]/.test(c)) lastStop = i + 1; else if (/[，；：]/.test(c)) lastComma = i + 1; }
+  if (lastStop > 0) return { at: lastStop, ell: false };
+  if (lastComma > 0) return { at: lastComma, ell: true };
+  var k = 0, j = 0; for (; j < text.length; j++) { if (!/\s/.test(text[j])) k++; if (k >= 19) { j++; break; } }
+  return { at: j, ell: true };
+}
+function tdPoint(p, at) { var w = document.createTreeWalker(p, NodeFilter.SHOW_TEXT, null), n, seen = 0; while ((n = w.nextNode())) { var L = n.nodeValue.length; if (seen + L >= at) return { node: n, off: at - seen }; seen += L; } return null; }
+function tdSplit(p, label) {
+  var text = p.textContent || ''; if (tdLen(text) <= 20) return false;
+  var c = tdCut(text); if (c.at >= text.length) return false;
+  var pt = tdPoint(p, c.at); if (!pt) return false;
+  var rg = document.createRange(); rg.setStart(pt.node, pt.off); rg.setEnd(p, p.childNodes.length);
+  var frag = rg.extractContents(); if (!tdLen(frag.textContent || '')) return false;
+  if (c.ell) p.appendChild(document.createTextNode('…'));
+  var d = document.createElement('details'); d.className = 'kk-more'; d.setAttribute('data-td', 'split');
+  d.innerHTML = '<summary>' + label + '</summary>'; var q = document.createElement('p'); q.className = 'kk-more-p'; q.appendChild(frag); d.appendChild(q);
+  p.parentNode.insertBefore(d, p.nextSibling); p.setAttribute('data-td', '1'); return true;
+}
+function tdHelp(list, host, before) { /* 長說明句：同一區塊收成一個「看說明」 */
+  if (!list.length) return;
+  var d = document.createElement('details'); d.className = 'kk-more kk-help'; d.setAttribute('data-td', 'help'); d.innerHTML = '<summary>看說明</summary>';
+  list.forEach(function (p) { p.setAttribute('data-td', '1'); d.appendChild(p); });
+  if (before && before.parentNode === host) host.insertBefore(d, before); else host.appendChild(d);
+}
+function tdHelpable(p) { if (p.getAttribute('data-td') || p.id || p.getAttribute('role')) return false; if (p.querySelector('button,a,input,select,textarea,[data-act]')) return false; if (p.closest('.th,.kk-more,details,.bub,.facts')) return false; return tdLen(p.textContent || '') > 20; }
+
+/* ---------- v34 E 版接線：回覆就地看見、帳戶跟塔塔說、減字（接在 z_live.js 後面，同名函式以這裡為準） ---------- */
+function thEsc(s) { return esc(String(s == null ? '' : s)); }
+function thFetch() { return rpc('kk_reports_list', { p_limit: 20 }); }
+function thOnReps(j) {
+  REP = (j || []).map(function (r) { return { id: String(r.id), kind: r.kind, created_at: tpe(r.created_at), request_id: r.request_id, request_text: r.request_text, text: r.text || '', sum: firstLine(r.text) }; });
+  if (REP_BUSY && REP[0] && REP[0].created_at > (LIVE.busyAt || '')) REP_BUSY = null;
+  renderRep(); var d = DET[DET.length - 1]; if (d && d.t === 'rep') drawDet(true); syncMood();
+}
+async function repLoad() { try { var j = await thFetch(); thOnReps(j); thIngest(j); } catch (e) {} }
+/* 從哪裡說 */
+function thOrgE(c) {
+  if (c && c.type === 'account' && c.id != null) return { k: 'acct:' + c.id, lab: c.label };
+  if (c && c.type === 'acctAll') return { k: 'acct:all', lab: '帳戶總覽' };
+  if (c && c.type === 'transaction' && c.id != null) return { k: 'tx:' + c.id, lab: c.label };
+  if (c && c.type === 'subscription') return { k: 'sub:' + (c.label || ''), lab: c.label };
+  if (c && c.type === 'goal') return { k: 'goal', lab: '收入目標' };
+  return { k: 'bub', lab: '塔塔泡泡' };
+}
+function thCtxE(c) {
+  if (!c) return '';
+  if (c.type === 'account' && c.id != null) { var a = acctId(c.id); if (a) return '（關於帳戶：' + a.name + '，餘額 ' + (a.computed_balance == null ? '待對帳' : 'NT$' + nt(a.computed_balance)) + '，' + kindName(a.kind) + '）'; }
+  if (c.type === 'acctAll') { var T = D.totals || {}; return '（關於：全部帳戶，可動用 NT$' + nt(T.spendable_cash || 0) + '，淨資產 NT$' + nt(T.net_worth || 0) + '）'; }
+  return '';
+}
+/* 打開泡泡時記下是哪一筆、哪個帳戶，回覆槽換成那一串 */
+var _ttOpenE = ttOpen;
+ttOpen = function (anch, opt) {
+  _ttOpenE(anch, opt);
+  if (opt && opt.id != null && ttCur) ttCur.id = opt.id;
+  if (!opt && ttCur && ttCur.type === 'transaction' && editing) ttCur.id = editing.id;
+  if (!opt && ttCur && ttCur.type === 'account') { var d = DET[DET.length - 1]; if (d && d.t === 'acct') ttCur.id = d.arg; }
+  var el = $('ttb_th'); if (el) { el.setAttribute('data-th', thOrgE(ttCur).k); thPaint(); ttPlace(); thRevealLast(); }
+};
+function thRevealLast() { var el = $('ttb_th'); if (el) el.scrollTop = el.scrollHeight; }
+var kkmBusyL = false;
+async function kkmGo() {
+  var inp = $('kkm_in'), btn = $('kkm_send'), s = $('kkm_s'), text = inp.value.trim(), q = text;
+  function say(m, c) { s.textContent = m; s.className = c || ''; ttPlace(); }
+  if (kkmBusyL || KEY.length < 20) return;
+  if (!text) return say('先寫點什麼再傳', 'err');
+  var o = thOrgE(ttCur), cx = thCtxE(ttCur);
+  if (ttCur && ttCur.type === 'subscription' && SS && SS.it) { var pf = '[訂閱:' + SS.it.name + ']'; if (text.indexOf(pf) !== 0) text = pf + ' ' + text; }
+  else if (cx) text = text + cx;
+  else if (ttCur && ttCur.type !== 'goal' && ttCur.label) text = '[' + ttCur.label + '] ' + text;
+  if (text.length > 500) return say('最多 500 字，目前 ' + text.length + ' 字', 'err');
+  kkmBusyL = true; btn.disabled = true; inp.readOnly = true; btn.textContent = '傳送中'; say('');
+  var t = thNew(o.k, o.lab, q, text); thPaint(); thRevealLast(); ttPlace();
+  var x = await kkRefresh({ action: 'message', text: text, client_id: t.cid, test: LS.get('kk_testmsg') === '1' }), j = x.j, re = j && j.reason;
+  kkmBusyL = false; btn.disabled = false; inp.readOnly = false; btn.textContent = '傳給塔塔';
+  function drop(m) { TH = TH.filter(function (y) { return y !== t; }); thSave(); thPaint(); say(m, 'err'); }
+  if (x.net) return drop('連不上伺服器，文字還在，檢查網路後再按傳送');
+  if (j && (j.ok || re === 'duplicate')) { inp.value = ''; growTA(inp); thMark(t, j); say(j.ok ? '' : '這則剛剛已經送出了', 'ok'); REP_BUSY = '已傳給塔塔，等他回覆'; LIVE.busyAt = tpe(new Date().toISOString()); renderRep(); thRevealLast(); ttPlace(); return; }
+  if (re === 'too_fast') return drop('送太快了，等 3 秒再按傳送');
+  if (x.r && x.r.status === 403) return drop('這把金鑰沒有寫入權限，不能傳話');
+  if (re === 'not_configured') return drop('還沒接上塔塔的排程，暫時不能傳話');
+  if (re === 'bad_text') return drop('文字要 1 到 500 字');
+  drop(re === 'webhook_failed' ? '塔塔那邊沒接到，文字還在，稍後再送' : '送出失敗，文字還在，稍後再試');
+}
+/* 帳戶詳細頁、帳戶列展開區、帳戶頁頂部：跟塔塔說＋回覆槽 */
+document.addEventListener('click', function (ev) {
+  var b = ev.target.closest && ev.target.closest('[data-dask]'); if (!b) return;
+  ev.stopPropagation(); var id = b.getAttribute('data-dask');
+  if (id === 'all') ttOpen(b, { type: 'acctAll', label: '全部帳戶' });
+  else { var a = acctId(Number(id)); if (a) ttOpen(b, { type: 'account', label: '帳戶 ' + a.name, id: a.id }); }
+}, true);
+function eAskBtn(id) { return '<button type="button" class="dbtn n th-askb" data-dask="' + id + '">跟塔塔說</button>'; }
+var _detModelV34 = detModel;
+detModel = function (d) {
+  var m = _detModelV34(d);
+  if (d.t === 'acct' && acctId(d.arg)) m.html = m.html.replace('<button type="button" class="dbtn n" data-dbal="1">設定餘額</button></div>', '<button type="button" class="dbtn n" data-dbal="1">設定餘額</button></div>' + eAskBtn(d.arg) + thSlot('acct:' + d.arg, 3));
+  return m;
+};
+var _drawDetV34 = drawDet;
+drawDet = function (keep) { _drawDetV34(keep); try { kkTidyE($('det_b')); } catch (e) {} };
+var _renderAssetsV34 = renderAssets;
+renderAssets = function () {
+  _renderAssetsV34.apply(this, arguments);
+  var xs = document.querySelectorAll('#tab_assets .xp');
+  for (var i = 0; i < xs.length; i++) { var g = xs[i].closest('[data-gid]'); if (!g || xs[i].querySelector('[data-dask]')) continue; var id = g.getAttribute('data-gid'); xs[i].insertAdjacentHTML('beforeend', eAskBtn(id) + thSlot('acct:' + id, 2)); }
+  try { kkTidyE($('tab_assets')); } catch (e) {}
+};
+/* 減字（E）：塔塔的話一句、長說明收進「看說明」 */
+function kkTidyE(root) {
+  if (!root) return;
+  var ps = root.querySelectorAll('.foot,.ahint,p.mut,div.mut');
+  var list = Array.prototype.filter.call(ps, function (p) { return tdHelpable(p); });
+  list.forEach(function (p) { tdHelp([p], p.parentNode, p.nextSibling); });
+  var dm = root.querySelectorAll('.dsum .dm+.dm,.xp .t2+.t2');
+  for (var i = 0; i < dm.length; i++) { var x = dm[i]; if (x.getAttribute('data-td') || tdLen(x.textContent) <= 20) continue; tdSplit(x, '看細節'); }
+}
+/* 開機：泡泡裡放回覆槽、帳戶頁頂部放一顆 */
+(function () {
+  var s = $('kkm_s'); if (s && !$('ttb_th')) s.insertAdjacentHTML('afterend', '<div class="th ttb_th" id="ttb_th" data-th="bub" data-max="3" aria-live="polite"></div>');
+  var c = document.querySelector('#tab_assets > .card'); if (c && !document.querySelector('[data-th="acct:all"]')) c.insertAdjacentHTML('afterend', '<div class="th-ask">' + eAskBtn('all') + '</div>' + thSlot('acct:all', 2));
+})();
+/* 交易頁的塔塔浮鈕：原本貼在鍵盤上方，鍵盤在畫面外時會跟著跑出畫面（v33 以前就有）；夾回畫面內 */
+var _syncFabV34 = syncFab;
+syncFab = function () {
+  _syncFabV34(); var fab = $('tt_fab'); if (!fab || fab.hidden) return;
+  var r = fab.getBoundingClientRect(), vh = innerHeight;
+  if (r.top < 8 || r.bottom > vh - 8) { var kp = $('keypad'), k = kp ? kp.getBoundingClientRect() : null, b = k && k.height > 0 && k.top > 80 && k.top < vh ? vh - k.top + 12 : 96; fab.style.bottom = Math.max(12, Math.min(vh - 80, b)) + 'px'; }
+};
 
 </script>
 </body></html>
