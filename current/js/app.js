@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v64');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v65');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2973,8 +2973,71 @@ ACT.ydpaste=id=>{const t=document.getElementById('ydPaste'),v=t?t.value.trim():'
  const m='aria-label="案子分類">',i=h.indexOf(m);if(i<0)return f+h;const j=h.indexOf('</div>',i);return j<0?f+h:h.slice(0,j+6)+f+h.slice(j+6)}}
 ACT.pjadd=()=>{const t=$('#pjIn'),v=t?t.value.trim():'';if(!v){S.err='pj';render('keep');const x=$('#pjIn');if(x)x.focus();return}S.err='';
  if(!LV.api||!LV.api.todoAdd){toast('離線中，等連上再加');return}
- LV.api.todoAdd(v.slice(0,200)).then(()=>{const x=$('#pjIn');if(x)x.value='';toast('加進待辦了：'+clip(v,24));return reload().then(()=>{paint('keep');const y=$('#pjIn');if(y)y.focus({preventScroll:true})})}).catch(e=>toast('沒存上：'+LERR(e)))};
+ LV.api.todoAdd(v.slice(0,200)).then(()=>{const x=$('#pjIn');if(x)x.value='';toast('加進交辦了：'+clip(v,24));return reload().then(()=>{paint('keep');const y=$('#pjIn');if(y)y.focus({preventScroll:true})})}).catch(e=>toast('沒存上：'+LERR(e)))};
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='pjIn'&&!e.isComposing){e.preventDefault();ACT.pjadd()}});
+/* ---------- v65（2026-11-22）：交辦先規劃再執行，首頁看得到 ----------
+   老大原話：「新增的時候當然可以讓定定一起來幫我規劃或者是大器 規劃好之後送出執行，就會在我的電腦上面開新視窗開始運行
+   然後那個首頁是不是也要有一個 感覺是不一樣的分類啦，因為為不是案子 有可能是我交代要建置某件事情或執行某件事情 但不希望有大費周章多一個版面」
+   - 待辦（basket='todo'）改叫「交辦」。還沒送出（new）與跑中（doing 且 run_status 不是 done）都算交辦，不再算進「案子」；做完的照舊回案子列表可以結案。
+   - 新增列多兩顆「請定定規劃」「請大器規劃」：建卡後打開那張卡跟它的對話，送一句規劃請求（老大按了才送）。
+   - 對話裡定定或大器回過之後出現「照這個規劃送出執行」：定定的規劃先寫進卡片說明（opp_card_edit why，送進 brief），再走既有 opp_run。
+   - 首頁「正在跑」同一條清單加上交辦，標「交辦」，有篩選鈕；不開新版面。資料庫沒動。 */
+const JIAO=c=>c&&c.basket==='todo'&&(c.status==='new'||(c.status==='doing'&&c.runStatus!=='done'));
+const PLANQ=t=>`幫我規劃這件：${t}。分成步驟、要準備什麼、哪裡要我決定。`;
+function jiaoSt(c){if(!c.runStatus)return '還沒送出';const s=c.progressSteps||[],d=s.filter(x=>x.status==='done').length,cu=s.find(x=>x.status==='current'||x.status==='blocked');
+ return (RUNST[c.runStatus]||'進行中')+(s.length?`・${Math.min(d+1,s.length)}/${s.length} 步`:'')+(cu?'・'+cu.name:'')}
+{const _t=mapTodo;mapTodo=function(c){const x=_t(c);x.st=jiaoSt(c);return x}}
+{const _ad=applyData;applyData=function(){_ad();const it=LV.items||[];
+ DB.todo=it.filter(JIAO).map(mapTodo).sort((a,b)=>(a.run?0:1)-(b.run?0:1));
+ DB.proj=DB.proj.filter(p=>!JIAO(p.raw))}}
+// 對話裡認得交辦卡（ctx 用 proj:<id>，ctxItem 本來就收 LV.items 裡的卡）
+const jOf=ctx=>{const a=(ctx||'').split(':');return a[0]==='proj'?DB.todo.find(t=>t.id===a[1]):null};
+{const _n=ctxName;ctxName=function(ctx){const t=jOf(ctx);return t?t.title:_n(ctx)}}
+{const _g=ctxTag;ctxTag=function(b,ctx){const t=jOf(ctx);if(!t)return _g(b,ctx);return `［老大在逐流的${ROOMN[S.tab]||'案子房間'}，正在看交辦「${t.title}」（${t.st}）］\n`}}
+// 案子房間：分頁改名交辦、新增列加兩顆規劃鈕、每張交辦卡底部放定定與大器的臉
+{const _zp=zoneProj;zoneProj=function(){let h=_zp();h=h.replace(/(data-id="proj:todo">)待辦 /,'$1交辦 ');if(S.sub.proj!=='todo')return h;
+ h=h.replace('<label class="vh" for="pjIn">新增待辦</label>','<label class="vh" for="pjIn">新增交辦</label>').replace('placeholder="要做的事，例：寄合約給客戶"','placeholder="要交辦的事，例：把報價單做成模板"')
+  .replace(/(<button class="btn pri" data-act="pjadd">加進去<\/button><\/div>)/,`$1<div class="mrow pjplan">${mb('🧭 請定定規劃','pjplan','din')}${mb('🧭 請大器規劃','pjplan','daqi')}</div>`)
+  .replace(/<h2 class="vh">待辦<\/h2>/,'<h2 class="vh">交辦</h2>').replace('沒有待辦','沒有交辦');
+ return h.replace(/(<article class="card cardx" data-card="([^"]*)"[\s\S]*?<div class="cf-r">)/g,(m,a,id)=>{const t=DB.todo.find(q=>q.id===id);return t?a+aiF('din','proj:'+id,'','')+aiF('daqi','proj:'+id,t.run==='running'?'跑中':''):m})}}
+ACT.pjplan=b=>{const t=$('#pjIn'),v=t?t.value.trim():'';if(!v){S.err='pj';render('keep');const x=$('#pjIn');if(x)x.focus();return}S.err='';
+ if(!LV.api||!LV.api.todoAdd){toast('離線中，等連上再加');return}
+ LV.api.todoAdd(v.slice(0,200)).then(c=>{const x=$('#pjIn');if(x)x.value='';return reload().then(()=>{paint('keep');if(!c||!c.id){toast('加進交辦了，打開卡片再請它規劃');return}
+  const ctx='proj:'+c.id;openChat(b,ctx,null,()=>say(b,PLANQ(v.slice(0,200)),ctx))})}).catch(e=>toast('沒存上：'+LERR(e)))};
+// 對話裡：還沒問就給「請它規劃這件」，回過了就給「照這個規劃送出執行」
+const realBot=(b,m)=>m.w==='bot'&&!m.wait&&!m.local&&m.t&&m.t!==HI(b)&&m.t!=='讀取中…'&&!/^(沒送出|對話讀不到|收到，正在看|櫃檯視窗)/.test(m.t);
+{const _l=logSync;logSync=function(){_l();const on=S.chat,l=$('#clog');if(!on||!l||(on.b!=='din'&&on.b!=='daqi'))return;const t=jOf(on.ctx);if(!t)return;
+ const a=CH[on.b]||[],id=t.id;let x='';
+ if(t.run)x=`<p class="note">這件已經送出執行了：${esc(t.st)}。進度會寫回卡片。</p>`;
+ else if(a.some(m=>realBot(on.b,m)))x=`<p class="note">規劃看起來可以，就送出。Mac 會開新視窗照這段對話跑。</p><div class="btns">${B('▶ 照這個規劃送出執行','planrun',on.b+'|'+id,'pri wide')}</div>`;
+ else if(!a.some(m=>m.w==='me'))x=`<div class="btns">${B('🧭 請'+NAMES[on.b]+'規劃這件','planask',on.b+'|'+id,'pri wide')}</div>`;
+ if(x){l.insertAdjacentHTML('beforeend',`<div class="cm bot card jplan">${x}</div>`);l.scrollTop=l.scrollHeight}}}
+ACT.planask=v=>{const [b,id]=v.split('|'),t=DB.todo.find(q=>q.id===id);if(!t||!S.chat)return;say(b,PLANQ(t.title),'proj:'+id)};
+ACT.planrun=async v=>{const [b,id]=v.split('|'),t=DB.todo.find(q=>q.id===id);if(!t||t.run){toast('這件已經送出了');return}
+ if(b==='din'){const plan=(CH.din||[]).filter(m=>realBot('din',m)).slice(-3).map(m=>m.t).join('\n\n').slice(0,3000);
+  if(plan&&LV.api.cardEdit){const w=(t.raw&&t.raw.why)||'';try{await LV.api.cardEdit(id,{why:(w?w+'\n\n':'')+'【定定的規劃】\n'+plan})}catch(e){toast('規劃沒寫進卡片（'+LERR(e)+'），照樣送出')}}}
+ if(S.chat)back();setTimeout(()=>projDo(id,'run',null,'送出了。Mac 會開新視窗跑，進度寫回這張卡'),260)};
+// 交辦卡詳情：還沒送出的多兩顆規劃鈕
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),m=/^cview:todo:(.+)$/.exec(S.sheet||'');if(!m)return h;const t=DB.todo.find(q=>q.id===m[1]);if(!t)return h;
+ const p=t.raw||{},st=(p.progressSteps||[]).length?`<ul class="tl">${p.progressSteps.map(s=>`<li>${s.status==='done'?'✓':s.status==='current'?'▶':s.status==='blocked'?'▲':'・'} ${esc(s.name)}</li>`).join('')}</ul>`:'';
+ return h+(st?`<section class="sec"><h3>步驟</h3>${st}</section>`:'')+`<div class="mrow">${mb('🧭 跟定定規劃','ai','din|proj:'+t.id+'||')}${mb('🧭 跟大器規劃','ai','daqi|proj:'+t.id+'||')}</div>`}}
+// 首頁：「正在跑」同一條清單加上交辦，標「交辦」，可篩選（全部、交辦、工作）
+S.jf=S.jf||'all';
+function jiaoRows(){return DB.todo.map(t=>`<div class="rowi" data-card="${esc(t.id)}"><div class="rowb">${aiF('daqi','proj:'+t.id,t.run==='running'?'跑中':'')}<button class="tx" data-act="sheet" data-id="cview:todo:${esc(t.id)}" style="min-height:44px;text-align:left"><b>${esc(t.ask)}</b><small>${esc(t.st)}</small></button><span class="rt">${chip('交辦')}</span></div></div>`).join('')}
+{const _h=homeL2;homeL2=function(){const h=_h();if(E()||!DB.todo.length)return h;const i=h.lastIndexOf('<div class="cols">');if(i<0)return h;
+ const k=h.indexOf('正在跑',i);if(k<0)return h;const s0=h.lastIndexOf('<section class="sec">',k),e0=h.indexOf('</section>',k);if(s0<0||e0<0)return h;
+ const nj=DB.todo.length,nw=jobs().length,f=nw?S.jf:'all';
+ const seg=nw?`<div class="seg jseg" role="group" aria-label="篩選">${[['all','全部 '+(nj+nw)],['todo','交辦 '+nj],['job','工作 '+nw]].map(x=>`<button aria-pressed="${f===x[0]}" data-act="jfilt" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>`:'';
+ const body=`<div class="rows">${f!=='job'?jiaoRows():''}${f!=='todo'&&nw?jobList().replace(/^<div class="rows">/,'').replace(/<\/div>$/,''):''}</div>`;
+ return h.slice(0,s0)+`<section class="sec">${sh('','交辦・正在跑',(nj+nw)+' 件')}${seg}${body}</section>`+h.slice(e0+10)}}
+ACT.jfilt=id=>{S.jf=id;render('keep')};
+// 版面 3（河）也認得交辦
+{const _r=riverItems;riverItems=function(){return _r().concat(E()?[]:DB.todo.map((t,i)=>({z:'todo',b:'daqi',t:t.ask,s:t.st,c:'交辦',u:0,k:t.run?5+i:30+i,id:'cview:todo:'+t.id,card:t.id}))).sort((x,y)=>x.k-y.k)}}
+{const _h3=homeL3;homeL3=function(){const f=S.filt;if(f!=='todo')return _h3().replace(/(<button aria-pressed="false" data-act="filt" data-id="proj">[^<]*<\/button>)/,`$1<button aria-pressed="false" data-act="filt" data-id="todo">交辦 ${riverItems().filter(i=>i.z==='todo').length}</button>`);
+ S.filt='dec';let h;try{h=_h3()}finally{S.filt='todo'}const its=riverItems().filter(i=>i.z==='todo');
+ h=h.replace(/aria-pressed="true" data-act="filt" data-id="dec"/,'aria-pressed="false" data-act="filt" data-id="dec"').replace(/(<button aria-pressed="false" data-act="filt" data-id="proj">[^<]*<\/button>)/,`$1<button aria-pressed="true" data-act="filt" data-id="todo">交辦 ${its.length}</button>`);
+ const rows=its.map(i=>`<div class="rowi" data-card="${i.card}"><button class="rowb" data-act="sheet" data-id="${esc(i.id)}">${bm(i.b)}<span class="tx"><b>${esc(i.t)}</b><small>${esc(i.s)}</small></span><span class="rt">${chip(i.c)}<span class="chev" aria-hidden="true">›</span></span></button></div>`).join('');
+ return h.replace(/(<h2 class="vh">依急迫排序<\/h2>)[\s\S]*?(<\/section>)/,`$1${rows?`<div class="rows stg">${rows}</div>`:emptyBox('沒有交辦','到案子房間的「交辦」新增一件。','')}$2`)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
