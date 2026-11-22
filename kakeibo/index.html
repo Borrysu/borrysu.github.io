@@ -3598,7 +3598,7 @@ function tdHelp(list, host, before) { /* 長說明句：同一區塊收成一個
   list.forEach(function (p) { p.setAttribute('data-td', '1'); d.appendChild(p); });
   if (before && before.parentNode === host) host.insertBefore(d, before); else host.appendChild(d);
 }
-function tdHelpable(p) { if (p.getAttribute('data-td') || p.id || p.getAttribute('role')) return false; if (p.querySelector('button,a,input,select,textarea,[data-act]')) return false; if (p.closest('.th,.kk-more,details,.bub,.facts')) return false; return tdLen(p.textContent || '') > 20; }
+function tdHelpable(p) { if (p.getAttribute('data-td') || p.id || p.getAttribute('role')) return false; if (p.querySelector('button,a,input,select,textarea,[data-act]')) return false; if (p.closest('.th,.kk-more,details,.bub,.facts')) return false; var t = p.textContent || ''; if ((t.match(/\d[\d,]{2,}/g) || []).length >= 2) return false; return tdLen(t) > 20; }
 
 /* ---------- v34 A/B/C 接線：回覆就地看見、帳戶跟塔塔說、減字 ---------- */
 function thEsc(s) { return esc(String(s == null ? '' : s)); }
