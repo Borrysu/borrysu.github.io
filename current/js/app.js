@@ -1034,8 +1034,11 @@ decCard=function(d){return `<article class="card cardx" data-card="${esc(d.id)}"
 {const _m=ACT.mine;ACT.mine=id=>id.indexOf('dec:')===0?ACT.sheet(id):_m(id)}
 jobList=function(){const j=jobs();if(!j.length)return `<div class="card"><p>現在沒有在跑的工作。</p></div>`;
  return `<div class="rows">`+j.map(x=>`<div class="rowi"><div class="rowb">${aiF(x.bot,'job:'+x.id)}<span class="tx"><b>${esc(x.title)}</b><small>${esc(x.who)}・${esc(x.ago)}</small></span><span class="rt">${chip(x.st,x.wait)}</span></div></div>`).join('')+`</div>`};
-evtList=function(n){const e=evts().slice(0,n);if(!e.length)return `<div class="card"><p>還沒有做完的紀錄。</p></div>`;
- return `<div class="rows">`+e.map((x,i)=>`<div class="rowi"><div class="rowb">${aiF(x.bot,'evt:'+DB.events.indexOf(x))}<span class="tx"><b style="font-weight:500;white-space:normal">${esc(x.text)}</b><small>${esc(x.who)}・${esc(x.at)}</small></span></div></div>`).join('')+`</div>`};
+// v37：最近做完只留一句話（老大 2026-11-22：「最近做完那些文字也太亂」），全文在「看全部」頁點開
+const evtShort=t=>{let a=String(t||'').split('｜').map(x=>x.trim()).filter(Boolean);if(a.length>1&&/^[^：]{0,30}（[^）]*）$/.test(a[0]))a=a.slice(1);
+ let s=(a[0]||'').replace(/^(狀態|結果)：/,'');const m=s.search(/[；。]/);if(m>8)s=s.slice(0,m);return s.length>48?s.slice(0,46)+'…':s};
+evtList=function(n){const e=evts().slice(0,n);if(!e.length)return `<div class="card"><p>還沒有做完的紀錄。</p></div>`;const full=n>=99;
+ return `<div class="rows">`+e.map((x,i)=>`<div class="rowi"><div class="rowb">${aiF(x.bot,'evt:'+DB.events.indexOf(x))}<span class="tx">${full?`<details class="evd"><summary><b class="evs">${esc(evtShort(x.text))}</b></summary><p class="evf">${esc(x.text)}</p></details>`:`<b class="evs">${esc(evtShort(x.text))}</b>`}<small>${esc(x.who)}・${esc(x.at)}</small></span></div></div>`).join('')+`</div>`};
 dinB=function(ctx){return aiF('din',ctx,'',{do:'askdin'})};
 
 /* ---------- 案子 ---------- */
@@ -2048,7 +2051,7 @@ WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v36');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v37');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();

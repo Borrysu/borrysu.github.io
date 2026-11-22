@@ -1098,3 +1098,8 @@ html:not([data-skin="6"]):not([data-skin="4"]) .groomh .mzdots,html:not([data-sk
 .dslide .dproj{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .band .dslide h2.dq,html[data-skin] .band .dslide h2.dq{font:700 18px/1.45 var(--fb,system-ui),"Noto Sans TC",sans-serif;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;margin-top:8px}
 .band .dslide h2.dq.open{-webkit-line-clamp:unset;display:block}
+
+/* v37 最近做完一句話 */
+.evs{font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+.evd summary{list-style:none;cursor:pointer}.evd summary::-webkit-details-marker{display:none}
+.evf{margin:6px 0 2px;font-size:13px;line-height:1.5;opacity:.8;white-space:pre-wrap;overflow-wrap:anywhere}
