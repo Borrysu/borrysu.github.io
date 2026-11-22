@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v74');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v75');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3297,6 +3297,37 @@ ACT.supcmp=(id,el)=>{const u=DB.sup.find(x=>x.id===id);if(!u)return;if(supCmp(u)
  t.content.querySelectorAll('.rowi[data-card]').forEach(r=>{const b=r.querySelector('[data-act="supcmp"]'),u=b&&DB.sup.find(x=>x.id===r.getAttribute('data-card'));if(!u||supCmp(u)||hasBrand(u))return;
   const sm=r.querySelector('.tx small');if(sm){sm.insertAdjacentHTML('beforeend','<br><span class="cmpst">沒有品牌，萌萌會先問你需求</span>');ch=1}});
  return ch?t.innerHTML:h}}
+/* ---------- v75（2026-11-23）：意見第二批之五，生活待辦「請朋朋安排」 ----------
+   老大原話：「我覺得可以多一個按鈕 是請朋朋預約 或訂位 或看我行事曆幫我安排幾個適合的時間 確定時間後朋朋能代辦的就先處理，譬如說預定或購買訂票等等」
+   按了才送（不自動送）：待辦內容＋老大未來 14 天行事曆空檔（9:00～21:00、至少 1 小時）給朋朋，請她列 2～3 個時段讓老大選；選定後能代辦的（預約、訂位、訂票）先處理，
+   付款一律開付款授權單等老大按，不直接付。朋朋的回覆從她那段對話讀回來，顯示在待辦那一列。 */
+const mm=s=>{const a=String(s||'').split(':');return a.length<2?null:(+a[0])*60+(+a[1])},hm2=n=>String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');
+const WD=['日','一','二','三','四','五','六'];
+function calFree(days){const out=[],now=new Date(),t0=new Date();t0.setHours(0,0,0,0);
+ for(let d=0;d<days;d++){const dt=new Date(t0.getTime()+d*864e5),lab=`${dt.getMonth()+1}/${dt.getDate()}（${WD[dt.getDay()]}）`,ev=CAL.filter(e=>e.d===d);
+  const all=ev.filter(e=>e.all);let lo=540;if(d===0){const n=now.getHours()*60+now.getMinutes();lo=Math.max(540,Math.ceil((n+30)/60)*60)}
+  const bz=ev.filter(e=>!e.all&&mm(e.t)!=null).map(e=>[mm(e.t),mm(e.e)==null?mm(e.t)+60:mm(e.e)]).sort((a,b)=>a[0]-b[0]);
+  const fr=[];let cur=lo;bz.forEach(([s,e])=>{if(s-cur>=60)fr.push([cur,s]);cur=Math.max(cur,e)});if(1260-cur>=60)fr.push([cur,1260]);
+  out.push(`${lab}${all.length?'（整天有：'+all.map(e=>e.n).join('、')+'）':''}${fr.length?' 空：'+fr.map(r=>hm2(r[0])+'-'+hm2(r[1])).join('、'):' 沒有空檔'}`)}
+ return out}
+const LTA='zl_lt_ask';let ltAsks={};try{ltAsks=JSON.parse(localStorage.getItem(LTA)||'{}')}catch(e){}
+let lpMsgs=null,lpKey='',lpAt=0;
+function lpLoad(){if(!LV.api||!LV.api.msgs||Date.now()-lpAt<8000)return;lpAt=Date.now();
+ LV.api.msgs(null,'peng').then(ms=>{const k=JSON.stringify((ms||[]).map(m=>m.id));if(k!==lpKey){lpKey=k;lpMsgs=ms||[];if(S.tab==='life'&&S.sub.life==='todo'&&!S.sheet){LV.sig='';paint()}}}).catch(()=>{})}
+function ltSt(t){const ms=lpMsgs||[];let q=-1;ms.forEach((m,i)=>{if(m.kind==='user'&&m.body.indexOf('【測試】')!==0&&Date.now()-m.at<14*864e5&&m.body.indexOf('待辦編號 '+t.id)>-1)q=i});
+ if(q<0)return ltAsks[t.id]&&Date.now()-ltAsks[t.id]<864e5?{run:1,t:'朋朋安排中・'+LHM(ltAsks[t.id])+' 送出'}:null;
+ const later=ms.slice(q+1).filter(m=>m.kind!=='user'),r=later.find(m=>m.body.indexOf(t.name)>-1)||later[0];
+ return r?{t:'朋朋：'+clip(r.body,40)}:{run:1,t:'朋朋安排中・'+LHM(ms[q].at)+' 送出'}}
+{const f=zoneLife;zoneLife=function(){const h=f();if(S.sub.life!=='todo'||!LV.life)return h;
+ const tp=document.createElement('template');tp.innerHTML=h;let ch=0;
+ tp.content.querySelectorAll('.rowi[data-card]').forEach(r=>{const t=LT(r.getAttribute('data-card'));if(!t||t.done)return;const st=ltSt(t);
+  r.insertAdjacentHTML('beforeend',`<div class="mrow lta">${mb(bm('peng',st&&st.run?'thinking':'','sm')+(st?(st.run?'看朋朋安排進度':'看朋朋的安排'):'請朋朋安排'),'ltask',t.id)}${st?`<span class="cmpst${st.run?' run':''}">${esc(st.t)}</span>`:'<span class="cmpst">預約、訂位、訂票，或排出適合的時間</span>'}</div>`);ch=1});
+ lpLoad();return ch?tp.innerHTML:h}}
+ACT.ltask=(id,el)=>{const t=LT(id);if(!t)return;if(ltSt(t)){openChat('peng','lt:'+id,el,null);return}
+ const free=calFree(14).join('\n'),next=Date.now();ltAsks[id]=next;try{localStorage.setItem(LTA,JSON.stringify(ltAsks))}catch(e){}
+ botAsk('peng',`【請朋朋安排】待辦「${t.name}」（待辦編號 ${id}）${t.note?'，備註：'+t.note:''}。請幫我預約、訂位或訂票，流程這樣：\n1. 先看我未來 14 天的行事曆空檔，列 2 到 3 個適合的時段給我選，我在逐流回你。\n2. 我選定時段後，你能代辦的（預約、訂位、訂票）先處理。\n3. 要付款一律開付款授權單，等我在逐流按付款鈕，不要直接付、不要代按。\n我沒選時段之前先不要訂。\n我的行事曆（空檔是 9:00 到 21:00 之間至少 1 小時）：\n${free}`,'lt:'+id);setTimeout(lpLoad,4000)};
+{const _n=ctxName;ctxName=function(ctx){const a=(ctx||'').split(':');if(a[0]==='lt'){const t=LT(a[1]);return t?'待辦：'+t.name:''}return _n(ctx)}}
+WRITE.push('ltask');
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
