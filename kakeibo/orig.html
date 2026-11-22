@@ -4203,7 +4203,8 @@ var CARD_INTERACT = 'button,a,input,select,textarea,label,summary,details,[data-
 function kkCards(root, sel, faceSel) {
   if (!root) return; var els = root.querySelectorAll(sel);
   for (var i = 0; i < els.length; i++) {
-    var el = els[i]; if (el.getAttribute('data-cx') || el.closest('.th,details.kk-more,.cface')) continue;
+    var el = els[i]; if (el.closest('.th,details.kk-more,.cface')) continue;
+    if (el.getAttribute('data-cx')) { if (!(faceSel && el.matches(faceSel)) || el.querySelector('[data-cask]')) continue; el.removeAttribute('data-ctitle'); }
     el.setAttribute('data-cx', '1'); var title = cardTitle(el), key = cardKey(title); el.setAttribute('data-ctitle', title); el.setAttribute('data-ckey', key);
     var tag = el.tagName; if (tag !== 'BUTTON' && tag !== 'A' && !el.hasAttribute('data-act') && !el.hasAttribute('data-det')) el.setAttribute('data-cardopen', '1');
     if (faceSel && el.matches(faceSel)) {
@@ -4332,7 +4333,7 @@ syncFab = function () {
 function eNextDue(day) { if (!day) return null; var t = new Date(), y = t.getFullYear(), m = t.getMonth() + 1, dd = t.getDate(); if (dd > day) { m++; if (m > 12) { m = 1; y++; } } var last = new Date(y, m, 0).getDate(), d = new Date(y, m - 1, Math.min(day, last)); return { md: (m) + '/' + d.getDate(), days: Math.round((d - new Date(t.getFullYear(), t.getMonth(), dd)) / 864e5) }; }
 function eDebtHtml() {
   var rows = [];
-  (D.accounts || []).filter(function (a) { return a.kind === 'credit_card' && !a.archived && Number(a.computed_balance) < 0; }).forEach(function (a) { var n = eNextDue(a.due_day); rows.push({ t: n ? n.days : 9999, h: '<button type="button" class="cardrow" data-dacct="' + a.id + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(a.name) + ' 卡費</div><div class="t2">' + (n ? n.md + ' 截止，' + (n.days === 0 ? '今天' : n.days + ' 天後') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(-Number(a.computed_balance)) + '</div></button>' }); });
+  (D.accounts || []).filter(function (a) { return a.kind === 'credit_card' && !a.archived && Number(a.computed_balance) < 0; }).forEach(function (a) { var n = eNextDue(a.due_day); rows.push({ t: n ? n.days : 9999, h: '<button type="button" class="cardrow" data-e341="acct:' + a.id + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(a.name) + ' 卡費</div><div class="t2">' + (n ? n.md + ' 截止，' + (n.days === 0 ? '今天' : n.days + ' 天後') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(-Number(a.computed_balance)) + '</div></button>' }); });
   (D.debts || []).forEach(function (db, i) { if (!(Number(db.remaining) > 0)) return; rows.push({ t: 9998, h: '<button type="button" class="cardrow" data-e341="debt:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(db.name) + '</div><div class="t2">沒有日子</div></div><div class="amt num neg">' + nt(db.remaining) + '</div></button>' }); });
   (D.installments || []).filter(function (x) { return x.active; }).forEach(function (it, i) { rows.push({ t: 9997, h: '<button type="button" class="cardrow" data-e341="inst:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(it.name) + '</div><div class="t2">' + (it.next_due_date ? '下次 ' + md(it.next_due_date) + (it.per_period_amount ? '，繳 ' + nt(it.per_period_amount) : '') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(it.outstanding_amount) + '</div></button>' }); });
   if (!rows.length) return '';
@@ -4390,6 +4391,7 @@ var CARD_SEL_E = '#app .card,#app .tile,#app .hero,#app .rp,#app .rv,#app .bgt,#
 function kkCardsE() { kkCards(document.getElementById('app'), CARD_SEL_E, CARD_FACE_E); }
 var _thOrgE341 = thOrgE; thOrgE = function (c) { if (c && c.type === 'card') return { k: 'card:' + c.id, lab: '卡片「' + c.label + '」' }; return _thOrgE341(c); };
 var _thCtxE341 = thCtxE; thCtxE = function (c) { if (c && c.type === 'card') { var cd = CARDS[c.id] || {}; return '（關於卡片「' + c.label + '」' + (cd.sum ? '：' + cd.sum : '') + '）'; } return _thCtxE341(c); };
+(function () { var app = document.getElementById('app'), q = 0; if (!app || !window.MutationObserver) return; new MutationObserver(function () { if (q) return; q = requestAnimationFrame(function () { q = 0; try { kkCardsE(); } catch (e) {} }); }).observe(app, { childList: true, subtree: true }); })();
 
 </script>
 </body></html>

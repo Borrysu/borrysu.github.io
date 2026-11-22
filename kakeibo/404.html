@@ -3655,7 +3655,8 @@ var CARD_INTERACT = 'button,a,input,select,textarea,label,summary,details,[data-
 function kkCards(root, sel, faceSel) {
   if (!root) return; var els = root.querySelectorAll(sel);
   for (var i = 0; i < els.length; i++) {
-    var el = els[i]; if (el.getAttribute('data-cx') || el.closest('.th,details.kk-more,.cface')) continue;
+    var el = els[i]; if (el.closest('.th,details.kk-more,.cface')) continue;
+    if (el.getAttribute('data-cx')) { if (!(faceSel && el.matches(faceSel)) || el.querySelector('[data-cask]')) continue; el.removeAttribute('data-ctitle'); }
     el.setAttribute('data-cx', '1'); var title = cardTitle(el), key = cardKey(title); el.setAttribute('data-ctitle', title); el.setAttribute('data-ckey', key);
     var tag = el.tagName; if (tag !== 'BUTTON' && tag !== 'A' && !el.hasAttribute('data-act') && !el.hasAttribute('data-det')) el.setAttribute('data-cardopen', '1');
     if (faceSel && el.matches(faceSel)) {
@@ -3760,6 +3761,9 @@ function subAskText(x, k) {
 function cardOpenX(title, lines, el) { var key = el.getAttribute('data-ckey'); CARDS[key] = { title: title, lines: lines, sum: lines.filter(function (x) { return x !== title; }).slice(0, 4).join('，').slice(0, 80) }; openSheet('card', key, false); }
 function cardAskX(face, title, key, sum) { CARDS[key] = CARDS[key] || { title: title, lines: [] }; CARDS[key].sum = sum; thAskOpen({ kind: 'card', key: key, m: title, sum: sum }); }
 var CARD_SEL_ABC = '.card,.tile,.msg,.dcard,.strip,.aentry,.recline,.setrow,div.row', CARD_FACE_ABC = '.card,.tile,.msg,.dcard,.strip,.aentry';
+var GRIPT = null;
+document.addEventListener('pointerdown', function (e) { var g = e.target.closest && e.target.closest('.grip'); GRIPT = g ? { x: e.clientX, y: e.clientY, t: Date.now(), g: g } : null; }, true);
+document.addEventListener('pointerup', function (e) { var p = GRIPT; GRIPT = null; if (!p) return; if (Math.abs(e.clientX - p.x) > 6 || Math.abs(e.clientY - p.y) > 6 || Date.now() - p.t > 500) return; var id = p.g.getAttribute('data-grip'); setTimeout(function () { openSheet('acct', id, false); }, 30); }, true);
 
 syncSkin();remountHd();
 if(KEY.length>=20&&kkCacheLoad()){kkApply();KD.loaded=true;S.loading=false}
