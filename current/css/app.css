@@ -585,3 +585,196 @@ html,body{overscroll-behavior-x:none}
 }
 .msum b{white-space:nowrap;font-size:16px}.msum>div{padding:10px}
 @media (min-width:960px){.lanes.one{grid-template-columns:minmax(0,760px)}}
+
+/* ==========================================================================
+   v34（2026-11-22）四個房間 × 暮光色塊（面板工坊 1122 設計 v3，版面 2 × 外觀 6）
+   底取暮光：深夜底、玻璃面板、銀白字。顏色取遊樂色塊：每間房一個主色，只給房間身分與主要動作。
+   急迫只用奶油白（▲＋字），不和房間色撞。只有深色。
+   ========================================================================== */
+:root{color-scheme:dark;
+  --bg:#07060d;--lane:transparent;--ink:#f4f4f7;--mut:#b9bbc6;--line:rgba(255,255,255,.14);--card:#16151f;
+  --rc:#f3efe0;--accent:var(--rc);--accent-ink:#000;--accent-dk:var(--rc);--first:rgba(255,255,255,.08);--stat:#262531;--sheet:#110f19;--dash:rgba(255,255,255,.38);
+  --scrim:rgba(0,0,0,.58);--danger:#ff8a7a;--danger-bg:rgba(255,110,90,.14);--hot:#f3efe0;--warm:#ffd27a;--calm:#b9bbc6;
+  --delc:#ffa597;--delb:rgba(255,165,151,.4);--link:#a9c6ff;--first-h:#f4f4f7;--warn-h:#ffb4a3;--warn-ink:#ffd6cf;
+  --demo-b:#fdcb40;--demo-i:#fdcb40;--demo-bg:rgba(253,203,64,.12);--ringbg:#262531;--ok:#8fd9b0;--ok-bg:rgba(143,217,176,.14);--ok-ink:#8fd9b0;
+  --alert:#f3efe0;--r:22px;--shadow:none;
+  --ff:'Noto Sans TC','PingFang TC','Noto Sans CJK TC','Microsoft JhengHei','Heiti TC',system-ui,-apple-system,sans-serif;
+  --num:'Barlow Condensed','Noto Sans TC','PingFang TC',system-ui,sans-serif;
+  --bot-ink:#0b0a10}
+html[data-g=project]{--rc:#a37aff}html[data-g=opp]{--rc:#4d86ff}html[data-g=money]{--rc:#ff6700}html[data-g=life]{--rc:#00b351}
+body{background:var(--bg)}
+/* 籃子標籤：深底上淡色 */
+.b-personal{--bf:#c9b0ff;--bb:rgba(163,122,255,.18)}.b-funding{--bf:#7fe0a8;--bb:rgba(0,179,81,.18)}.b-achievement{--bf:#ffc489;--bb:rgba(255,103,0,.18)}
+.b-other{--bf:#cfd1da;--bb:rgba(255,255,255,.1)}.b-company{--bf:#a9c6ff;--bb:rgba(77,134,255,.18)}.b-todo{--bf:#c9b0ff;--bb:rgba(163,122,255,.18)}
+.b-doing,.b-archive{--bf:#c9b0ff;--bb:rgba(163,122,255,.18)}.b-money{--bf:#ffb27a;--bb:rgba(255,103,0,.18)}.b-life{--bf:#7fe0a8;--bb:rgba(0,179,81,.18)}.b-today{--bf:#f3efe0;--bb:rgba(243,239,224,.14)}
+
+/* 光場：首頁四色光疊在深藍夜上；進房間換成房間色一層。各動一次 0.4 秒就靜止 */
+.field{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;background:#07060d}
+.field i{position:absolute;left:-20vmax;right:-20vmax;top:-30vmax;height:110vmax;opacity:1;transition:opacity .4s ease,transform .4s ease;
+  background:radial-gradient(38vmax 30vmax at 22% 46%,rgba(255,103,0,.38),transparent 70%),radial-gradient(40vmax 30vmax at 80% 44%,rgba(77,134,255,.42),transparent 70%),
+    radial-gradient(30vmax 24vmax at 46% 30%,rgba(253,203,64,.2),transparent 70%),radial-gradient(34vmax 24vmax at 58% 58%,rgba(0,179,81,.2),transparent 70%),
+    radial-gradient(60vmax 40vmax at 10% 40%,rgba(120,70,200,.4),transparent 70%)}
+.field::after{content:"";position:absolute;inset:0;background:var(--rc);opacity:0;-webkit-mask-image:radial-gradient(130% 40% at 50% 0,#000 0,transparent 72%);mask-image:radial-gradient(130% 40% at 50% 0,#000 0,transparent 72%);transition:opacity .4s ease,background-color .4s ease}
+html[data-g]:not([data-g=today]) .field i{opacity:0;transform:translateY(-12vmax)}
+html[data-g]:not([data-g=today]) .field::after{opacity:.28}
+.app{position:relative;z-index:1;grid-template-rows:auto auto auto auto minmax(0,1fr) auto}
+.top{grid-row:1}.notice{grid-row:2}.hero{grid-row:3}.tabs{grid-row:4}.board{grid-row:5}.bnav{grid-row:6}
+
+/* 頂列：逐流、更新時間、合併提示小字；右邊喇叭與大器的臉 */
+.top{align-items:flex-start;padding:calc(env(safe-area-inset-top) + 10px) 12px 6px 16px}
+.top h1{font-size:24px;font-weight:900;letter-spacing:.02em}
+.top-l{min-width:0;flex:1}
+.live{color:var(--mut)}
+.sum{text-align:left;white-space:normal;color:var(--mut);font-size:12.5px;line-height:1.45;margin-top:1px}
+.sum b{color:var(--ink)}.sum .hotn{color:var(--alert);font-weight:800}.sum .hotn::before{content:"▲ "}
+.top-r{gap:4px;flex:none;align-items:center}
+.sndbtn,.facebtn{position:relative;display:inline-grid;place-items:center;min-width:48px;min-height:48px;border-radius:50%}
+.sndbtn svg{width:24px;height:24px;stroke:var(--mut);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.facebtn .tf{display:block;width:40px;height:40px}
+.facebtn i{position:absolute;top:6px;right:5px;width:12px;height:12px;border-radius:50%;background:#ff5b4a;border:2px solid var(--bg);display:none}
+.facebtn.un i{display:block}
+.daqibtn{display:none}
+
+/* 房間大色卡 */
+.hero{position:relative;margin:2px 12px 8px;min-height:118px;border-radius:24px;background:var(--rc);color:#000;overflow:hidden;display:flex}
+.hero[hidden]{display:none}
+.hero-t{position:relative;z-index:1;padding:14px 18px 14px;max-width:64%;min-width:0}
+.hero h2{font-size:40px;font-weight:900;line-height:1.05;letter-spacing:.02em}
+.hero-who{font-size:14px;font-weight:800;margin-top:6px}
+.hero-l{font-size:14.5px;font-weight:500;line-height:1.45;margin-top:4px;overflow-wrap:anywhere}
+.hero-face{position:absolute;right:-26px;bottom:-40px;width:180px;height:180px;display:block;--bot-ink:#0b0a10}
+.hero-face span{display:block;width:180px;height:180px}
+.hero-face:focus-visible{outline:3px solid #000;outline-offset:-6px;border-radius:24px}
+
+/* 小分頁：膠囊 */
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:2px 12px 10px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;flex-direction:row;gap:6px;min-height:44px;padding:0 16px;border-radius:999px;background:transparent;border:1.5px solid var(--line);font-size:15px;color:var(--ink)}
+.tab b{font-family:var(--num);font-size:19px;font-weight:800;order:2;color:var(--mut)}
+.tab[aria-selected=true]{background:var(--rc);border-color:var(--rc);color:#000;box-shadow:none}
+.tab[aria-selected=true] b{color:#000}
+
+/* 欄與卡片 */
+.lane{background:transparent;border-top:0;border-radius:0}
+.lh{padding:4px 16px 6px}
+.lh h2{font-family:var(--ff);font-size:18px;font-weight:900}
+.lh h2 .ld{background:var(--rc)}
+.lh h2 em{background:transparent;color:var(--mut);border:1px solid var(--line);font-weight:700}
+.lh p{color:var(--mut)}
+.card,.pc,.hc,.mrow,.msum>div{background:rgba(22,21,31,.9);border:1px solid var(--line);border-radius:22px;box-shadow:none}
+.card{border-left:1px solid var(--line);padding:14px 16px 12px}
+.card[data-lvl=hot]{border-color:rgba(243,239,224,.5)}
+.card[data-lvl=hot] .tm{background:var(--alert);color:#000;border-radius:8px;padding:2px 8px}.card[data-lvl=hot] .tm b{color:#000}
+.card[data-lvl=hot] .tm::before{content:"▲";font-size:13px;margin-right:2px}
+.tm b{font-family:var(--num);font-weight:800}
+.amt b{font-family:var(--num);font-weight:800}
+.ca button{background:var(--stat);color:var(--ink);border-radius:999px}
+.ca .del{background:var(--danger-bg);color:var(--delc)}
+.ca .go,.pc .pa .pg,.hopts button.rec,.btn-primary,.steps .s-current i{background:var(--rc);border-color:var(--rc);color:#000}
+.btn{border-radius:999px}
+.btn-ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn-primary:hover{background:var(--rc);filter:brightness(1.08)}
+.zero{background:rgba(22,21,31,.75);border:1px solid var(--line);color:var(--mut)}
+.zero b{color:var(--ink)}
+.zero svg{stroke:var(--mut)}
+.card.skel{border-left-color:var(--line)}
+.sk{background:rgba(255,255,255,.08)!important}
+.notice{background:rgba(255,255,255,.08);color:var(--ink)}.notice.off{background:var(--demo-bg);color:#ffe7a6}
+.hpill,.holdbtn{background:#16151f;color:var(--ink);border-color:var(--dash)}
+.hpill b,.holdbtn b,.bn b{background:var(--alert);color:#000}
+.holdbtn.urgent,.hpill.urgent{background:var(--alert);border-color:var(--alert);color:#000}
+.holdbtn.urgent b,.hpill.urgent b{background:#000;color:var(--alert)}
+.wf .bad,.dnote .bad{background:rgba(255,110,90,.12)}
+.run.r-done{color:#8fd9b0}.steps .s-done i{background:#2f9a5a;border-color:#2f9a5a}
+.dt-crawl.fail b{color:#ffd27a}.dt-crawl.fail small{color:#e8d3a0}
+.pc .nx b{background:var(--stat);color:var(--mut)}
+input,select,textarea{color:var(--ink);background:#0f0e16;border-color:var(--line)}
+input::placeholder,textarea::placeholder{color:#8d8f9b}
+.mrow.soon{border-color:rgba(243,239,224,.5);background:rgba(243,239,224,.06)}
+.msum b,.mam{font-family:var(--num);font-weight:800}
+
+/* 疊層：深色玻璃 */
+.panel{background:#110f19;border:1px solid var(--line)}
+.df{background:#16151f}
+.chat{background:rgba(255,255,255,.04)}
+.msg{background:#201e2b;box-shadow:none}
+.msg.m-user{background:rgba(163,122,255,.22)}
+#toast{background:#f3efe0;color:#000}
+#toast button{background:#000;color:#f3efe0}
+#toast.bad{background:#ffb4a3;color:#000}#toast.bad button{background:#000;color:#ffb4a3}
+
+/* 浮動對話：右下浮起的玻璃窗，大器的臉在標題列 */
+.panel.float{left:auto;right:12px;top:auto;bottom:calc(env(safe-area-inset-bottom) + 84px);width:min(440px,calc(100vw - 24px));height:min(72dvh,600px);border-radius:24px;
+  background:rgba(17,15,25,.94);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 24px 60px -18px rgba(0,0,0,.8);transform:translateY(24px) scale(.96);opacity:0;transform-origin:100% 100%}
+.panel.float.show{transform:none;opacity:1;transition:transform .28s cubic-bezier(.2,.8,.2,1),opacity .2s,visibility 0s}
+.panel.float .dh{gap:10px;justify-content:flex-start;padding:8px 8px 8px 14px}
+.panel.float .dh .chf{display:block;width:34px;height:34px;flex:none}
+.panel.float .dh span:not(.chf){font-size:16px;color:var(--ink);font-weight:800;flex:1}
+.panel.float .db{padding:6px 12px 12px}
+.panel.float .chat{margin:0;background:transparent;padding:0}
+.panel.float .chat h3{display:none}
+.panel.float .msgs{max-height:none;flex:1}
+.panel.float .dt{height:100%}
+.panel.float .chat{height:100%}
+
+/* 首頁：問候、拍板玻璃卡 */
+.hello{padding:8px 4px 6px}
+.hello p{font-size:15px;font-weight:700;color:var(--ink)}
+.hello h2{font-size:44px;font-weight:900;line-height:1.15;letter-spacing:.01em}
+.deck-w{position:relative;border-radius:26px;background:rgba(14,10,26,.42);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid rgba(255,255,255,.22);padding:12px 0 6px;overflow:hidden}
+.deck-h{padding:0 18px 2px;font-size:14px;color:#fff;font-weight:700}
+.deck{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain}
+.deck::-webkit-scrollbar{display:none}
+.deck>.hc{flex:0 0 100%;scroll-snap-align:start;background:transparent;border:0;border-radius:0;margin:0;padding:6px 18px 10px}
+.deck .hc h3{font-size:22px;font-weight:900;line-height:1.4;color:#fff}
+.deck .hproj{background:rgba(255,255,255,.12);color:#fff}
+.deck .hopts button{background:transparent;border-color:rgba(255,255,255,.3);color:#fff;border-radius:22px}
+.deck .hopts button.rec{background:#fff;border-color:#fff;color:#000;text-align:center;align-items:center;padding:10px 14px}
+.deck .hopts button.rec span{font-size:18px;font-weight:900}
+.deck .hmeta,.deck .hd summary{color:#d9dae2}
+.deck .hd p{color:#fff}
+.deck textarea{background:rgba(0,0,0,.28);border-color:rgba(255,255,255,.25);color:#fff}
+.dots{display:flex;justify-content:center;gap:0;padding:2px 0 0}
+.dots button{min-width:44px;min-height:44px;display:grid;place-items:center}
+.dots button i{width:8px;height:8px;border-radius:50%;border:2px solid #fff;display:block}
+.dots button[aria-current=true] i{background:#fff}
+.dots.cnt{align-items:center;gap:6px;color:#fff;font-size:14px}
+.dots.cnt button{font-size:24px;color:#fff;border-radius:50%}
+.dots.cnt button:disabled{opacity:.3}
+.zero.glass{background:rgba(14,10,26,.42);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border-color:rgba(255,255,255,.22)}
+.hh{color:var(--mut)}
+.hl li,.ha{background:rgba(22,21,31,.85);border:1px solid var(--line)}
+.hl li em{background:rgba(255,255,255,.1);color:var(--ink)}
+.hbeat{margin:12px 0 0}
+.hbeat .k{background:rgba(255,255,255,.08);color:var(--mut)}.hbeat .l{background:var(--alert);color:#000}
+.hbeat .l::before{content:"▲ "}
+.lrow{border-top-color:var(--line)}
+.lrow h3 em{background:rgba(143,217,176,.16);color:#8fd9b0}.lrow.l h3 em{background:var(--alert);color:#000}
+.lsum.bad{color:var(--alert)}
+.hc{border-left:1px solid var(--line)}
+
+/* 底部分頁：深色、頭像，現在這間的指示條用房間色 */
+.bnav{background:rgba(7,6,13,.94);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-top:1px solid var(--line);box-shadow:none}
+.bn{color:var(--mut);background:transparent}
+.bn .bnf{display:block;width:30px;height:30px;filter:brightness(.72)}
+.bn svg{stroke:var(--mut)}
+.bn[aria-current=page]{color:var(--ink);background:transparent}
+.bn[aria-current=page]::before{content:"";position:absolute;top:0;left:30%;right:30%;height:3px;border-radius:0 0 3px 3px;background:var(--rc)}
+.bn[aria-current=page] .bnf{filter:none}
+.bn[aria-current=page] svg{stroke:var(--ink)}
+.bn b{left:calc(50% + 8px)}
+
+@media (min-width:960px){
+  .tabs{display:none}
+  .hero{margin:0 16px 10px;min-height:128px}
+  .bnav{background:rgba(16,15,24,.94)}
+  .board::after,.board::before{background:none}
+  .panel.float{bottom:96px;right:24px;border-radius:24px}
+}
+@media (max-width:959px) and (max-height:520px){ .hero{min-height:0}.hero h2{font-size:24px}.hero-who,.hero-l{display:none}.hero-face{width:110px;height:110px;bottom:-40px}.hero-face span{width:110px;height:110px}.hello h2{font-size:28px} }
+@media (max-width:380px){ .hero h2{font-size:34px}.hello h2{font-size:36px}.hero-t{max-width:70%} }
+@media (prefers-reduced-motion:reduce){ .field i,.field::after{transition:none} }
+/* v34 觸控目標補到 44px */
+.ha .btn,.sheet-note .btn,.dnote .btn{min-height:44px}
+.hd summary,.hans summary{min-height:44px}
+.hmeta a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;color:var(--link)}

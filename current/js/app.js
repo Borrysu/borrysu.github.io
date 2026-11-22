@@ -1,6 +1,6 @@
 // 機會雷達主程式：狀態、畫面、事件。只透過 adapter.js 取得與寫入資料。
-import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v33';
-import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v33';
+import { createAdapter, CONFIG, AdapterError, hasKey, keyTag, tokenFrom, saveKey } from './adapter.js?v34';
+import { esc, H, D, URGENT_DAYS, fmtDate, fmtClock, fmtLeft, shortLeft, softBreak, splitAmount } from './util.js?v34';
 
 const $ = s => document.querySelector(s);
 // 個人版不收公司標案（Borry 2026-11-17：「公司標案我機會雷達似乎就不用了」），公司案只留在封存與舊資料的標籤
@@ -22,15 +22,18 @@ const TODAY = { k: 'today', n: '今天', d: '現在要你決定的事，還有�
 const TABS = [TODAY].concat(BASKETS, [DOING, TODO, ARCH]);
 // v33（2026-11-22）：底部五個大分頁（今天、專案、機會、錢、生活），原本的分頁收進各自底下當小分頁
 const MONEY = { k: 'money', n: '訂閱', d: '每月固定要扣的訂閱，只能看，塔塔維護' };
-const LIFE = { k: 'life', n: '生活', d: '日常小事，慢慢長' };
+const LIFE = { k: 'life', n: '生活', d: '日常小事，朋朋管' };
 const ALLTABS = TABS.concat([MONEY, LIFE]);
+// v34（2026-11-22）：四個房間＋首頁（面板工坊 1122 設計 v3：版面 2 × 暮光色塊）。房間主人：案子＝大器、機會＝集集、錢＝塔塔、生活＝朋朋
 const GROUPS = [
-  { k: 'today', n: '今天', tabs: ['today'], ic: '<path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="4"/>' },
-  { k: 'project', n: '專案', tabs: ['doing', 'todo', 'archive'], ic: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' },
-  { k: 'opp', n: '機會', tabs: ['personal', 'funding', 'achievement', 'other'], ic: '<circle cx="12" cy="12" r="9"/><path d="M12 12l4-6M12 12h.01"/>' },
-  { k: 'money', n: '錢', tabs: ['money'], ic: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>' },
-  { k: 'life', n: '生活', tabs: ['life'], ic: '<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>' },
+  { k: 'today', n: '首頁', tabs: ['today'], ic: '<path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6h-6v6H5a1 1 0 0 1-1-1z"/>' },
+  { k: 'project', n: '案子', tabs: ['doing', 'todo', 'archive'], face: 'daqi', who: '大器' },
+  { k: 'opp', n: '機會', tabs: ['personal', 'funding', 'achievement', 'other'], face: 'gig', who: '集集' },
+  { k: 'money', n: '錢', tabs: ['money'], face: 'tata', who: '塔塔' },
+  { k: 'life', n: '生活', tabs: ['life'], face: 'pompom', who: '朋朋' },
 ];
+// 房間色（決策紀錄 v3＋老大 2026-11-22「塔塔的房間色改成橘色」）
+const RC = { project: '#a37aff', opp: '#4d86ff', money: '#ff6700', life: '#00b351' };
 const groupOf = t => GROUPS.find(g => g.tabs.includes(t)) || GROUPS[0];
 const grpTabs = () => groupOf(S.tab).tabs.map(k => ALLTABS.find(b => b.k === k));
 const HOLD_HOUR = 8;      // 暫存後，隔天幾點提醒（由集集傳訊息，不是瀏覽器）
@@ -61,7 +64,7 @@ const S = {
   chatDraft: new Map(), // 還沒送出的話
   sending: new Set(),
   hub: { open: [], answered: [], jobs: [], events: [], beats: [], loaded: false, err: '' },   // 今天頁
-  hubBusy: new Set(), hubAnsOpen: false,
+  hubBusy: new Set(), hubAnsOpen: false, deckI: 0,
 };
 let api, lastFocus = null, sigLast = '', depth = 0, ignorePop = false;
 const locks = new Set(), mutDone = {};
@@ -193,13 +196,23 @@ function card(it) {
 }
 const skel = () => '<div class="card skel"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>';
 
+// 底部分頁只建一次（頭像會動，重建會一直重播），之後只改數字與目前位置
+const FACES = new Map();          // 名字 → BotFace 實例（只建一次）
+const mountFace = (key, host, opt) => { if (!window.BotFace || !host) return null; try { const f = window.BotFace.mount(host, opt); FACES.set(key, f); return f; } catch (e) { return null; } };
 function renderNav(all, loadingEmpty, hide) {
   const n = $('#bnav'); if (!n) return;
   n.hidden = hide;
+  if (!n.dataset.built) {
+    n.innerHTML = GROUPS.map(g => '<button class="bn" type="button" data-g="' + g.k + '">' +
+      (g.face ? '<span class="bnf" data-face="' + g.face + '"></span>' : '<svg viewBox="0 0 24 24" aria-hidden="true">' + g.ic + '</svg>') + '<span>' + g.n + '</span><b hidden></b></button>').join('');
+    n.querySelectorAll('.bnf').forEach(h => mountFace('nav:' + h.dataset.face, h, { preset: h.dataset.face, size: 30, calm: 0.4, label: '' }));
+    n.querySelectorAll('.bnf .bot-face,.bnf svg').forEach(x => x.setAttribute('aria-hidden', 'true'));
+    n.dataset.built = '1';
+  }
   const cnt = { today: S.hub.loaded ? S.hub.open.length : 0, project: loadingEmpty ? 0 : workItems().length, opp: loadingEmpty ? 0 : all.length, money: 0, life: 0 };
   const cur = groupOf(S.tab).k;
-  n.innerHTML = GROUPS.map(g => '<button class="bn" type="button" data-g="' + g.k + '" aria-current="' + (cur === g.k ? 'page' : 'false') + '">' +
-    '<svg viewBox="0 0 24 24" aria-hidden="true">' + g.ic + '</svg><span>' + g.n + '</span>' + (cnt[g.k] ? '<b>' + cnt[g.k] + '</b>' : '') + '</button>').join('');
+  n.querySelectorAll('.bn').forEach(btn => { const k = btn.dataset.g, c = cnt[k], b = btn.querySelector('b');
+    btn.setAttribute('aria-current', cur === k ? 'page' : 'false'); b.hidden = !c; b.textContent = c || ''; });
 }
 const nt = v => Number(v || 0).toLocaleString('en-US', { maximumFractionDigits: 0 });
 const mdTxt = d => { const m = String(d || '').match(/^\d{4}-(\d{2})-(\d{2})/); return m ? (+m[1]) + '/' + (+m[2]) : ''; };
@@ -222,7 +235,7 @@ function moneyLane() {
 }
 function lifeLane() {
   return '<section class="lane b-life' + (S.tab === 'life' ? ' cur' : '') + '" data-l="life"><div class="lh"><h2><i class="ld"></i>' + LIFE.n + '</h2><p>' + LIFE.d + '</p></div><div class="lbody">' +
-    '<div class="zero">' + IC.inbox + '<b>生活頁先放著</b><span>要放什麼（吃藥、家事、待買、行程）由你說了算，說一聲就加。</span></div></div></section>';
+    '<div class="zero">' + IC.inbox + '<b>朋朋的房間還空著</b><span>購物清單、比價、下單、例行小事之後接上。現在想放什麼，點右上角大器說一聲。</span></div></div></section>';
 }
 async function loadMoney(force) {
   if (!api.moneySubs) return;
@@ -231,7 +244,35 @@ async function loadMoney(force) {
   catch (e) { S.money = Object.assign({}, S.money, { loaded: S.money.loaded, err: e instanceof AdapterError ? (e.kind === 'network' || e.kind === 'offline' ? '連不上伺服器' : '這把金鑰不能看錢的資料') : '發生錯誤', at: Date.now() }); }
   if (S.tab === 'money') renderBoard();
 }
-function gotoTab(k) { S.tab = k; renderBoard(); if (k === 'archive' && !S.arch.loaded) loadArchive(); if (k === 'money') loadMoney(); }
+// 房間大色卡：大字房名、誰的房間、一行摘要、反黑大臉（被右下裁切）。點臉＝戳一下（表情＋叫聲），不開別的東西。
+let heroG = '', heroTxt = '';
+function heroLine(k) {
+  const now = tnow(), live = inbox();
+  const near = l => l.filter(i => i.deadline && i.deadline > now).sort((a, b) => a.deadline - b.deadline)[0];
+  if (k === 'project') { const l = workItems(), d = near(l.filter(i => i.status === 'doing'));
+    return l.length ? l.length + ' 件在手上' + (d ? '，最急 ' + esc(nm(d)) + ' 剩 ' + esc(shortLeft(d.deadline - now)) : '') : '手上沒有進行中的案子'; }
+  if (k === 'opp') { const d = near(live); return live.length ? live.length + ' 張待看' + (d ? '，最急剩 ' + esc(shortLeft(d.deadline - now)) + ' 截止' : '') : '這一輪沒有待看的機會'; }
+  if (k === 'money') { const m = S.money; return m.data ? '每月自付訂閱 NT$ ' + nt(m.data.totalActive) : m.err ? esc(m.err) : '讀取中'; }
+  if (k === 'life') return '購物、例行、訂單之後接上';
+  return '';
+}
+function renderHero(loadingEmpty, hide) {
+  const el = $('#hero'), g = groupOf(S.tab);
+  document.documentElement.dataset.g = g.k;
+  el.hidden = hide || !g.face;
+  if (el.hidden) return;
+  if (heroG !== g.k) {
+    const f = FACES.get('hero'); if (f) f.destroy();
+    el.innerHTML = '<div class="hero-t"></div><button class="hero-face" type="button" data-act="poke-hero" aria-label="戳一下' + g.who + '"><span></span></button>';
+    const fh = el.querySelector('.hero-face span');
+    const f2 = mountFace('hero', fh, { preset: g.face, tone: 'ink', label: '' });
+    fh.querySelectorAll('svg').forEach(x => x.setAttribute('aria-hidden', 'true'));
+    heroG = g.k; heroTxt = '';
+  }
+  const t = '<h2>' + g.n + '</h2><p class="hero-who">' + g.who + '的房間</p><p class="hero-l">' + (loadingEmpty ? '讀取中' : heroLine(g.k)) + '</p>';
+  if (t !== heroTxt) { el.querySelector('.hero-t').innerHTML = t; heroTxt = t; }
+}
+function gotoTab(k) { S.tab = k; renderBoard(); renderSheet(); if (k === 'archive' && !S.arch.loaded) loadArchive(); if (k === 'money') loadMoney(); }
 function renderBoard() {
   const lanes = $('#lanes'), board = $('#board');
   const keep = {}; lanes.querySelectorAll('.lane').forEach(l => { keep[l.dataset.l] = l.querySelector('.lbody').scrollTop; });
@@ -253,6 +294,7 @@ function renderBoard() {
   S.last[groupOf(S.tab).k] = S.tab;
   $('#tabs').hidden = !!m || grpTabs().length < 2;
   renderNav(all, loadingEmpty, !!m);
+  renderHero(loadingEmpty, !!m);
   if (!m) lanes.innerHTML = todayLane() + BASKETS.map(b => {
     const list = sortList(all.filter(i => i.basket === b.k));
     const body = loadingEmpty ? skel() + skel() + skel()
@@ -268,6 +310,7 @@ function renderBoard() {
   const st = $('#tabs [aria-selected="true"]'); if (st && st.scrollIntoView) st.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   S.fresh.clear();
   edgeFade();
+  deckSync();
 }
 function scanLine(k) {   // 立即掃描：重新整理小符號＋一行小字，和「上次掃描」同大小放一列（Borry 2026-11-16：畫面簡潔一點）
   if (!api || S.net === 'auth') return '';
@@ -417,23 +460,62 @@ function lightsHTML() {
   return head + rows + '<h3 class="hh">還沒接上報到</h3><ul class="ltodo">' + LIGHTS_TODO.map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>' +
     '<p class="sheet-note">這幾支接上之後會出現在上面。紅燈每天併進 11:00 那則 LINE，也還在接。</p>';
 }
+// 首頁：問候、拍板玻璃卡（左右滑、圓點；超過 4 件改「2／5」加上一件下一件）、你回過的、正在跑、最近做完、燈號
+function greet() { const h = new Date(tnow()).getHours(); return h < 5 ? '晚安' : h < 11 ? '早安' : h < 18 ? '午安' : '晚安'; }
+const WKD = '日一二三四五六';
+function deckNav(n) {
+  const i = Math.min(S.deckI || 0, Math.max(0, n - 1));
+  if (n < 2) return '';
+  if (n <= 4) return '<div class="dots" role="group" aria-label="切換要拍板的事">' + Array.from({ length: n }, (_, j) => '<button type="button" data-act="deck-go" data-i="' + j + '" aria-label="第 ' + (j + 1) + ' 件"' + (j === i ? ' aria-current="true"' : '') + '><i></i></button>').join('') + '</div>';
+  return '<div class="dots cnt"><button type="button" data-act="deck-go" data-i="' + (i - 1) + '" aria-label="上一件"' + (i ? '' : ' disabled') + '>‹</button><span><b>' + (i + 1) + '</b>／' + n + '</span><button type="button" data-act="deck-go" data-i="' + (i + 1) + '" aria-label="下一件"' + (i < n - 1 ? '' : ' disabled') + '>›</button></div>';
+}
 function todayLane() {
-  const h = S.hub, loadingEmpty = !h.loaded && !h.err;
+  const h = S.hub, loadingEmpty = !h.loaded && !h.err, d = new Date(tnow());
   const beat = h.beats.length ? '<button class="hbeat" data-act="lights" type="button" aria-haspopup="dialog" aria-label="看系統燈號">' + h.beats.map(b => '<span class="' + (b.late ? 'l' : 'k') + '">' + esc(b.name) + (b.late ? '：' + esc(agoTxt(b.lastAt)) + '之後沒再報到' : '：正常') + '</span>').join('') + '<span class="go">燈號 ›</span></button>' : '';
-  const dec = loadingEmpty ? skel() + skel()
-    : h.err && !h.loaded ? '<div class="zero"><b>今天頁讀不到</b><span>' + esc(h.err) + '</span></div>'
-    : h.open.length ? h.open.map(hcard).join('')
-    : '<div class="zero">' + IC.inbox + '<b>現在沒有要你決定的事</b><span>AI 做到只剩你能決定的時候，會出現在這裡。</span></div>';
+  const n = h.open.length;
+  const dec = loadingEmpty ? '<div class="deck-w">' + skel() + '</div>'
+    : h.err && !h.loaded ? '<div class="zero"><b>首頁讀不到</b><span>' + esc(h.err) + '</span></div>'
+    : n ? '<section class="deck-w" aria-label="等你拍板"><div class="deck-h"><span>等你拍板・<b>' + n + '</b> 件</span></div><div class="deck" id="deck">' + h.open.map(hcard).join('') + '</div>' + deckNav(n) + '</section>'
+    : '<div class="zero glass">' + IC.inbox + '<b>現在沒有要你拍板的事</b><span>AI 做到只剩你能決定的時候，會出現在這裡。</span></div>';
   const act = h.jobs.filter(j => j.status !== 'done' && j.status !== 'failed');
   const jobs = act.length ? act.map(j => '<li><b>' + esc(j.agent) + '</b>' + (j.machine ? '<small>' + esc(j.machine) + '</small>' : '') + '<span>' + esc(j.title) + '</span><em class="j-' + j.status + '">' + HJ[j.status] + '</em></li>').join('')
-    : '<li class="none">還沒有 AI 回報正在跑的工作。這一塊要等下一步把各個 AI 的開工、收工接進來。</li>';
+    : '<li class="none">還沒有 AI 回報正在跑的工作。</li>';
   const ev = h.events.slice(0, 8).map(e => '<li><b>' + esc(e.actor) + '</b><small>' + esc(agoTxt(e.at)) + '</small><span>' + esc(e.summary) + '</span></li>').join('');
   const ans = h.answered.length ? '<details class="hans"' + (S.hubAnsOpen ? ' open' : '') + '><summary>你回過的 ' + h.answered.length + ' 件（最近七天）</summary>' +
     h.answered.map(d => '<div class="ha"><p class="sbp">' + softBreak(d.question) + '</p><p class="hmeta">你選：<b>' + esc(d.answerLabel) + '</b>' + (d.answerNote ? '，補充：' + esc(d.answerNote) : '') + (d.answerVia ? '。你在 ' + esc(d.answerVia) + ' 說的，大器代記' + (d.answerQuote ? '，原話「' + esc(d.answerQuote) + '」' : '') : '') + '，' + esc(agoTxt(d.answeredAt)) + (d.pickedUp ? '，大器已收到' : '，等大器收') + '</p>' +
       '<button class="btn btn-ghost" data-act="hub-undo" data-id="' + esc(d.id) + '" type="button"' + (S.hubBusy.has(d.id) ? ' disabled' : '') + '>收回，重新決定</button></div>').join('') + '</details>' : '';
-  return '<section class="lane b-today' + (S.tab === 'today' ? ' cur' : '') + '" data-l="today"><div class="lh"><h2><i class="ld"></i>' + TODAY.n + (h.loaded ? '<em>' + h.open.length + '</em>' : '') + '</h2><p>' + TODAY.d + '</p>' + beat + '</div>' +
-    '<div class="lbody"><h3 class="hh">等你決定</h3>' + dec + ans + '<h3 class="hh">正在跑</h3><ul class="hl">' + jobs + '</ul>' + (ev ? '<h3 class="hh">最近做完</h3><ul class="hl">' + ev + '</ul>' : '') + '</div></section>';
+  return '<section class="lane b-today' + (S.tab === 'today' ? ' cur' : '') + '" data-l="today"><div class="lbody">' +
+    '<header class="hello"><p>' + (d.getMonth() + 1) + ' 月 ' + d.getDate() + ' 日　週' + WKD[d.getDay()] + '</p><h2>' + greet() + '，老大。</h2></header>' +
+    dec + ans + beat + '<h3 class="hh">正在跑</h3><ul class="hl">' + jobs + '</ul>' + (ev ? '<h3 class="hh">最近做完</h3><ul class="hl">' + ev + '</ul>' : '') + '</div></section>';
 }
+// 拍板卡左右滑：用原生捲動對齊（scroll-snap），圓點跟著捲到的那一張
+function deckSync() {
+  const dk = $('#deck'); if (!dk) return;
+  const n = dk.children.length; if (!n) return;
+  const want = Math.min(S.deckI || 0, n - 1);
+  dk.scrollLeft = want * dk.clientWidth;
+  [...dk.children].forEach((c, j) => { c.inert = j !== want; });
+}
+function deckGo(i) {
+  const dk = $('#deck'); if (!dk) return; const n = dk.children.length;
+  S.deckI = Math.max(0, Math.min(n - 1, i));
+  [...dk.children].forEach((c, j) => { c.inert = false; });
+  const rm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  dk.scrollTo({ left: S.deckI * dk.clientWidth, behavior: rm ? 'auto' : 'smooth' });
+  paintDots();
+}
+function paintDots() {
+  const w = document.querySelector('.deck-w'), dk = $('#deck'); if (!w || !dk) return;
+  const old = w.querySelector('.dots'); const html = deckNav(dk.children.length);
+  if (old) old.outerHTML = html; else if (html) w.insertAdjacentHTML('beforeend', html);
+}
+let deckT;
+document.addEventListener('scroll', e => {
+  if (e.target.id !== 'deck') return;
+  clearTimeout(deckT);
+  deckT = setTimeout(() => { const dk = e.target, i = Math.round(dk.scrollLeft / Math.max(1, dk.clientWidth));
+    if (i !== S.deckI) { S.deckI = i; paintDots(); } [...dk.children].forEach((c, j) => { c.inert = j !== i; }); }, 90);
+}, true);
 async function loadHub() {
   if (!api.hubToday) return;
   try {
@@ -515,7 +597,7 @@ function paintMsgs(k) { document.querySelectorAll('[data-msgs="' + CSS.escape(k)
 async function loadMsgs(id) {
   const k = chatKey(id); if (!api || !api.msgs) return;
   const m = S.msgs.get(k) || {}; if (m.busy) return; m.busy = true; S.msgs.set(k, m);
-  try { const list = await api.msgs(id || null); const same = m.items && JSON.stringify(m.items) === JSON.stringify(list); m.items = list; m.err = ''; if (!same) paintMsgs(k); }
+  try { const list = await api.msgs(id || null); const same = m.items && JSON.stringify(m.items) === JSON.stringify(list); const prev = m.items; m.items = list; m.err = ''; if (!same) { paintMsgs(k); if (k === '') daqiNews(prev, list); } }
   catch (e) { m.err = reason(e); if (!m.items) paintMsgs(k); }
   finally { m.busy = false; }
 }
@@ -526,6 +608,24 @@ async function sendMsg(k) {
   catch (e) { toast('沒有送出：' + reason(e), { bad: true }); }
   finally { S.sending.delete(k); if (btn) btn.disabled = false; await loadMsgs(k); const b = document.querySelector('[data-msgs="' + CSS.escape(k) + '"]'); if (b) b.scrollTop = b.scrollHeight; }
 }
+// 右上角大器：有新回覆時頭像跳一下、標紅點；打開浮動對話就算看過（記在這支手機）
+const SEEN = 'zl_daqi_seen';
+const lsGet = k => { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+function lastDaqi(list) { const d = (list || []).filter(x => x.kind === 'daqi'); return d.length ? d[d.length - 1].id : 0; }
+function seenNow() { const m = S.msgs.get(''); const id = lastDaqi(m && m.items); if (id) lsSet(SEEN, String(id)); paintUnread(); }
+function paintUnread() {
+  const m = S.msgs.get(''), id = lastDaqi(m && m.items), open = S.drawer && S.drawer.view === 'chat';
+  const un = !!id && !open && id > (+lsGet(SEEN) || 0);
+  const b = $('#facebtn'); if (b) { b.classList.toggle('un', un); b.setAttribute('aria-label', un ? '大器有新回覆，打開對話' : '跟大器說話'); }
+}
+function daqiNews(prev, list) {
+  if (prev && lastDaqi(list) > lastDaqi(prev)) { const f = FACES.get('top'); if (f) f.setMood('logged'); const c = FACES.get('chat'); if (c && S.drawer && S.drawer.view === 'chat') c.setMood('logged'); }
+  if (S.drawer && S.drawer.view === 'chat') seenNow(); else paintUnread();
+}
+function paintSnd() { const b = $('#sndbtn'), v = window.BotVoice; if (!b) return; b.hidden = !v; const on = !!(v && v.isEnabled());
+  b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.setAttribute('aria-label', on ? '叫聲開著，按了關掉' : '叫聲關著，按了打開');
+  b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"/>' + (on ? '<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>' : '<path d="M17 9l5 6M22 9l-5 6"/>') + '</svg>'; }
 function openChat(id) {      // 有卡片就開卡片抽屜並捲到對話；沒有就開整個面板的對話
   if (id) { const it = get(id); if (!it) return; openDrawer(id, isWork(it) || it.basket === 'todo' ? 'folder' : 'full'); }
   else { if (!S.drawer) lastFocus = document.activeElement; S.drawer = { id: '', view: 'chat' }; renderDrawer(); syncOverlay(); }
@@ -581,7 +681,7 @@ function gcard(it) {
 }
 function renderSheet() {
   const h = holdItems(), d = doingItems().filter(i => i.basket !== 'todo'), dv = deliveredItems(), pd = paidItems(), g = goneItems();
-  $('#hpill').hidden = $('#holdbtn').hidden = S.net === 'auth';
+  $('#hpill').hidden = $('#holdbtn').hidden = S.net === 'auth' || groupOf(S.tab).k !== 'opp';   // 待決區是機會的暫存，只在機會房間出現（v34）
   $('#holdbtn').innerHTML = '待決區<b>' + h.length + '</b>';
   $('#hpill').innerHTML = '待決區<b>' + h.length + '</b>';
   const sh = $('#sheet'); const sc = sh.querySelector('.db') ? sh.querySelector('.db').scrollTop : 0;
@@ -796,18 +896,22 @@ function renderDrawer() {
     const dr = $('#drawer');
     dr.innerHTML = '<div class="dh"><span>系統燈號</span><button class="xb" data-act="close-drawer" type="button" aria-label="關閉">×</button></div><div class="db"><div class="dt">' + lightsHTML() + '</div></div>' +
       '<div class="df"><button class="btn btn-primary" data-act="close-drawer" type="button">回到面板</button></div>';
-    dr.dataset.key = 'lights'; dr.classList.add('show');
+    dr.dataset.key = 'lights'; dr.classList.remove('float'); dr.classList.add('show');
     return;
   }
   if (S.drawer && S.drawer.view === 'chat') {    // 整個面板跟大器說
     const dr = $('#drawer');
-    if (editing(dr) && dr.dataset.key === 'chat') return;
-    dr.innerHTML = '<div class="dh"><span>跟大器說</span><button class="xb" data-act="close-drawer" type="button" aria-label="關閉">×</button></div><div class="db"><div class="dt">' + chatHTML('') + '</div></div>';
-    dr.dataset.key = 'chat'; dr.classList.add('show');
+    if (dr.dataset.key === 'chat' && dr.classList.contains('show')) { paintMsgs(''); return; }   // 開著就只更新對話，不重建（頭像才不會一直重播）
+    const fo = FACES.get('chat'); if (fo) fo.destroy();
+    dr.innerHTML = '<div class="dh"><span class="chf" aria-hidden="true"></span><span>大器</span><button class="xb" data-act="close-drawer" type="button" aria-label="關閉">×</button></div><div class="db"><div class="dt">' + chatHTML('') + '</div></div>';
+    mountFace('chat', dr.querySelector('.chf'), { preset: 'daqi', size: 34, calm: 0.5, label: '' });
+    dr.dataset.key = 'chat'; dr.classList.add('show', 'float');
     const b = dr.querySelector('.msgs'); if (b) b.scrollTop = b.scrollHeight;
+    seenNow();
     return;
   }
   const dr = $('#drawer'), it = S.drawer && get(S.drawer.id), view = viewOf();
+  dr.classList.remove('float');
   if (!it || !view) { dr.classList.remove('show'); return; }
   if (editing(dr) && dr.dataset.key === it.id + view) return;   // 正在填案務欄位：輪詢不重畫，免得字不見、游標跳走
   const sc = dr.querySelector('.db') && dr.dataset.key === it.id + view ? dr.querySelector('.db').scrollTop : 0;
@@ -858,7 +962,7 @@ function openDrawer(id, view) {
   const dr = $('#drawer'); if (!dr.contains(document.activeElement)) dr.querySelector('.xb')?.focus({ preventScroll: true });
 }
 function closeDrawer(silent) {
-  S.drawer = null; $('#drawer').classList.remove('show'); syncOverlay();
+  S.drawer = null; const dr = $('#drawer'); dr.classList.remove('show'); dr.dataset.key = ''; const cf = FACES.get('chat'); if (cf) { cf.destroy(); FACES.delete('chat'); } syncOverlay();
   if (!silent) restoreFocus();
 }
 function openSheet() { if (!S.sheet) lastFocus = document.activeElement; S.sheet = true; renderSheet(); syncOverlay(); $('#sheet .xb')?.focus({ preventScroll: true }); }
@@ -1053,7 +1157,7 @@ document.addEventListener('click', e => {
   const act = e.target.closest('[data-act]'), a = act && act.dataset.act, id = act && act.dataset.id;
   if (e.target.id === 'scrim') { S.drawer ? closeDrawer() : closeSheet(); return; }
   const tab = e.target.closest('[data-tab]'); if (tab) { gotoTab(tab.dataset.tab); return; }
-  const gb = e.target.closest('[data-g]'); if (gb) { const g = GROUPS.find(x => x.k === gb.dataset.g); if (g) gotoTab(S.last[g.k] || g.tabs[0]); return; }
+  const gb = e.target.closest('.bn[data-g]'); if (gb) { const g = GROUPS.find(x => x.k === gb.dataset.g); if (g) gotoTab(S.last[g.k] || g.tabs[0]); return; }
   if (e.target.closest('#hpill,#holdbtn')) { openSheet(); return; }
   if (a) {
     switch (a) {
@@ -1077,11 +1181,14 @@ document.addEventListener('click', e => {
           e => { act.disabled = false; toast('沒有叫成：' + reason(e), { bad: true }); }); break; }
       case 'chat': openChat(id); break;
       case 'chat-open': openChat(''); break;
+      case 'deck-go': deckGo(+act.dataset.i); break;
+      case 'poke-hero': { const f = FACES.get('hero'); if (f) f.poke(); break; }
+      case 'snd': { const v = window.BotVoice; if (v) { v.setEnabled(!v.isEnabled()); paintSnd(); toast(v.isEnabled() ? '叫聲開了' : '叫聲關了'); } break; }
       case 'lights': if (!S.drawer) lastFocus = document.activeElement; S.drawer = { id: '', view: 'lights' }; renderDrawer(); syncOverlay(); $('#drawer .xb')?.focus({ preventScroll: true }); break;
       case 'chat-send': sendMsg(id || ''); break;
       case 'run': actRun(id); break;
-      case 'go-doing': closeSheet(); S.tab = 'doing'; renderBoard(); break;
-      case 'open-archive': closeSheet(); S.tab = 'archive'; renderBoard(); loadArchive(); break;
+      case 'go-doing': closeSheet(); gotoTab('doing'); break;
+      case 'open-archive': closeSheet(); gotoTab('archive'); break;
       case 'hub-pick': hubAnswer(id, act.dataset.k); break;
       case 'hub-other': hubAnswer(id, '_other'); break;
       case 'hub-undo': hubAnswer(id, null); break;
@@ -1164,6 +1271,9 @@ function pasteKey() {
 }
 (async function boot() {
   api = await createAdapter();
+  mountFace('top', $('#facebtn .tf'), { preset: 'daqi', size: 40, calm: 0.6, label: '' });
+  $('#facebtn').querySelectorAll('svg').forEach(x => x.setAttribute('aria-hidden', 'true'));
+  paintSnd();
   loadSnapshot();                        // 先用快照立刻畫出來，不等網路
   S.net = 'loading'; renderAll();
   unsub = api.subscribe(ping, on => { S.rt = on; renderLive(); });
@@ -1172,5 +1282,7 @@ function pasteKey() {
   setInterval(tick, 30000);
   setInterval(() => { if (S.drawer && !document.hidden && S.net === 'ok') loadMsgs(S.drawer.view === 'chat' ? '' : S.drawer.id); }, 10000);   // 抽屜開著時每 10 秒看大器回了沒
   setInterval(() => { if (document.querySelector('[data-elapsed]')) tick(); }, 1000);
+  loadMsgs('');                                                                                       // 右上角紅點：開著網頁時每 60 秒看一次大器有沒有回
+  setInterval(() => { if (!document.hidden && S.net === 'ok' && !(S.drawer && S.drawer.view === 'chat')) loadMsgs(''); }, 60000);
   if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
