@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v67');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v68');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3038,6 +3038,68 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  h=h.replace(/aria-pressed="true" data-act="filt" data-id="dec"/,'aria-pressed="false" data-act="filt" data-id="dec"').replace(/(<button aria-pressed="false" data-act="filt" data-id="proj">[^<]*<\/button>)/,`$1<button aria-pressed="true" data-act="filt" data-id="todo">交辦 ${its.length}</button>`);
  const rows=its.map(i=>`<div class="rowi" data-card="${i.card}"><button class="rowb" data-act="sheet" data-id="${esc(i.id)}">${bm(i.b)}<span class="tx"><b>${esc(i.t)}</b><small>${esc(i.s)}</small></span><span class="rt">${chip(i.c)}<span class="chev" aria-hidden="true">›</span></span></button></div>`).join('');
  return h.replace(/(<h2 class="vh">依急迫排序<\/h2>)[\s\S]*?(<\/section>)/,`$1${rows?`<div class="rows stg">${rows}</div>`:emptyBox('沒有交辦','到案子房間的「交辦」新增一件。','')}$2`)}}
+/* ---------- v68（2026-11-23）：標記修改意見 ----------
+   老大：「有對話窗 彈出之後我就可以自己點選想要修改面板會有問題的面板 直接輸入意見 一輪下來，再按送出直接到你這邊來 你再一起修改」
+   上方「✎」進標記模式：點哪裡就框起來、寫一句意見、加進清單；一輪點完按「送出」，整份清單用「跟大器說」那條路送出（開頭【面板修改意見】，櫃台轉給逐流帶頭視窗）。
+   標記中點畫面不會觸發原本的按鈕；清單存在這台手機，沒送出前關掉也不會不見。 */
+{const MK={on:false,list:[],pick:null,box:''},KEY='zl_marks';
+ try{MK.list=JSON.parse(localStorage.getItem(KEY)||'[]')||[]}catch(e){MK.list=[]}
+ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(MK.list))}catch(e){}};
+ const T=s=>String(s||'').replace(/\s+/g,' ').trim();
+ const cut=(s,n)=>{s=T(s);return s.length>n?s.slice(0,n)+'…':s};
+ const mine=e=>e&&e.closest&&e.closest('#mkBar,#mkBox,#mkBtn');
+ function where(el){const R=document.documentElement,a=[];
+  const room=ROOMN[R.dataset.tab||S.tab]||R.dataset.tab||S.tab||'';if(room)a.push(room);
+  try{const sb=S.sub&&S.sub[S.tab];if(sb&&!S.page)a.push(sb)}catch(e){}
+  const lay=el.closest('#chat')?'對話窗':el.closest('#sheet')?'彈出卡':el.closest('#page')?'詳情頁':el.closest('#top')?'最上面那排':el.closest('.tabs')?'下方分頁列':el.closest('#dock')?'下方工具列':'';
+  if(lay)a.push(lay);
+  const ttl=el.closest('#sheet')?$('#sTitle'):el.closest('#chat')?$('#cTitle'):null;if(ttl)a.push('「'+cut(ttl.textContent,20)+'」');
+  const sec=el.closest('section.sec,section,article');const h=sec&&sec.querySelector('h2,h3,.vh');if(h&&!h.contains(el)&&h!==ttl)a.push('區塊「'+cut(h.textContent,20)+'」');
+  return a.join('｜')}
+ function grab(t){const el=t.closest('button,a,input,textarea,select,label,.rowi,.card,li,h2,h3,h4,p,img,svg,.chip,.meta')||t;
+  const txt=cut(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||el.value||'',60);
+  const tag=el.tagName.toLowerCase(),act=el.dataset&&el.dataset.act,id=el.dataset&&el.dataset.id;
+  return {el,where:where(el),txt,code:tag+(el.id?'#'+el.id:'')+(act?`[act=${act}${id?' id='+id:''}]`:'')+(el.className&&typeof el.className==='string'?'.'+el.className.trim().split(/\s+/).slice(0,3).join('.'):'')}}
+ function bar(){let b=$('#mkBar');if(!MK.on){if(b)b.remove();document.documentElement.classList.remove('marking');return}
+  if(!b){b=document.createElement('div');b.id='mkBar';b.className='mkbar';b.setAttribute('role','toolbar');b.setAttribute('aria-label','標記修改意見');document.body.appendChild(b)}
+  document.documentElement.classList.add('marking');const n=MK.list.length;
+  b.innerHTML=`<span class="mkt">${n?`已記 ${n} 則，繼續點或送出`:'點畫面上有問題的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
+ function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
+  MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
+  if(kind==='pick'){const p=MK.pick;x.setAttribute('aria-label','寫修改意見');
+   x.innerHTML=`<p class="mkw">${esc(p.where||'這裡')}</p><p class="mkp">你點的：${p.txt?'「'+esc(p.txt)+'」':'（沒有字的地方）'}</p><textarea id="mkIn" rows="3" placeholder="這裡哪裡怪、想改成怎樣"></textarea><div class="btns"><button class="btn pri" data-mk="add">加進清單</button><button class="btn ghost" data-mk="cancel">取消</button></div>`;
+   setTimeout(()=>{const i=$('#mkIn');if(i)i.focus()},50)}
+  else{x.setAttribute('aria-label','修改意見清單');
+   x.innerHTML=`<p class="mkw">這一輪的修改意見 ${MK.list.length} 則</p><ol class="mkl">${MK.list.map((m,i)=>`<li><b>${esc(m.note)}</b><small>${esc(m.where)}${m.txt?'｜「'+esc(cut(m.txt,24))+'」':''}</small><button class="btn ghost" data-mk="del" data-i="${i}" aria-label="刪掉第 ${i+1} 則">✕</button></li>`).join('')}</ol><div class="btns"><button class="btn pri" data-mk="send"${MK.list.length?'':' disabled'}>全部送出</button><button class="btn ghost" data-mk="cancel">繼續點</button></div>`}}
+ function clearSel(){document.querySelectorAll('.mk-sel').forEach(e=>e.classList.remove('mk-sel'))}
+ function setOn(v){MK.on=v;clearSel();box('');bar();const k=$('#mkBtn');if(k)k.setAttribute('aria-pressed',v?'true':'false');
+  if(v)toast(MK.list.length?`接著上次的 ${MK.list.length} 則繼續`:'點有問題的地方，寫一句意見')}
+ async function send(){if(!MK.list.length)return;const ver=(document.querySelector('link[href*="app.css?v"]')||{}).href||'';const v=(ver.match(/\?v(\d+)/)||[])[1]||'';
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'';
+  const body=`【面板修改意見】逐流 v${v}，${MK.list.length} 則（螢幕 ${innerWidth}×${innerHeight}${/dark/.test(dark)?'，深色':''}）\n`+MK.list.map((m,i)=>`${i+1}. ${m.note}\n   位置：${m.where||'（沒判斷出來）'}${m.txt?'；點的是「'+m.txt+'」':''}\n   元件：${m.code}`).join('\n');
+  const bs=document.querySelectorAll('#mkBar [data-mk="send"],#mkBox [data-mk="send"]');bs.forEach(b=>{b.disabled=true;b.textContent='送出中…'});
+  try{if(!LV.api||!LV.api.say)throw new Error('還沒連上');await LV.api.say(null,body,'daqi');
+   const n=MK.list.length;MK.list=[];save();setOn(false);toast(`${n} 則意見送給大器了，改好會回在「跟大器說」`)}
+  catch(e){bs.forEach(b=>{b.disabled=false;b.textContent=b.closest('#mkBox')?'全部送出':'送出'});toast('沒送出：'+(typeof LERR==='function'?LERR(e):e.message)+'。清單還在，可以再按一次')}}
+ const stop=e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()};
+ ['pointerdown','mousedown','touchstart'].forEach(ev=>window.addEventListener(ev,e=>{if(!MK.on||mine(e.target))return;if(ev!=='touchstart')e.preventDefault();e.stopPropagation()},{capture:true,passive:false}));
+ window.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('#mkBtn');if(k){stop(e);setOn(!MK.on);return}
+  if(!MK.on)return;const m=e.target.closest&&e.target.closest('[data-mk]');
+  if(m){stop(e);if(m.disabled)return;const a=m.dataset.mk;
+   if(a==='end'){setOn(false);if(MK.list.length)toast(`${MK.list.length} 則還沒送，下次按 ✎ 接著寫`)}
+   else if(a==='list'){clearSel();box('list')}
+   else if(a==='cancel'){clearSel();box('')}
+   else if(a==='del'){MK.list.splice(+m.dataset.i,1);save();bar();box(MK.list.length?'list':'')}
+   else if(a==='add'){const i=$('#mkIn'),v=i?i.value.trim():'';if(!v){i&&i.focus();toast('寫一句哪裡要改');return}
+    const p=MK.pick;MK.list.push({note:v,where:p.where,txt:p.txt,code:p.code});save();clearSel();box('');bar();toast(`記下第 ${MK.list.length} 則`)}
+   else if(a==='send')send();return}
+  if(mine(e.target))return;stop(e);const p=grab(e.target);MK.pick=p;clearSel();p.el.classList.add('mk-sel');box('pick')},true);
+ window.addEventListener('keydown',e=>{if(MK.on&&e.key==='Escape'){if(MK.box){clearSel();box('')}else setOn(false)}});
+ function btn(){const top=$('#top');if(!top||$('#mkBtn'))return;const k=document.createElement('button');k.id='mkBtn';k.className='mkbtn';k.type='button';
+  k.setAttribute('aria-label','標記要改的地方');k.setAttribute('aria-pressed','false');k.innerHTML='<span aria-hidden="true">✎</span>';
+  const hv=$('#hav');top.insertBefore(k,hv||null)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',btn);else btn();
+ window.__zlMK=MK}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
