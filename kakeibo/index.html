@@ -1101,6 +1101,30 @@ label.field > .fl{font-size:13px;color:var(--muted)}
   .tk-move { transition: opacity 120ms linear; }
 }
 </style>
+<style id="kk-v33">
+/* v33 全螢幕（2026-11-22）：頂列、底列只留必要高度；安全區只補缺口不重複加；捲動內容時期別列收起。只動外殼與尺寸。 */
+html{height:100%}
+body{position:fixed;top:0;right:0;bottom:0;left:0;height:auto;width:100%}
+@supports (height:100dvh){.stage{min-height:0}}
+.hd{padding:calc(2px + env(safe-area-inset-top,0px)) 10px 0;gap:8px}
+.tata-btn{width:44px;height:44px}
+.tata-btn .tface,.tata-btn .tata-face{width:44px;height:44px;display:grid;place-items:center}
+.tata-btn .tface svg,.tata-btn .tface canvas,.tata-btn .tface img{max-width:38px;max-height:38px}
+.hd-t h1{font-size:18px;line-height:1.2}
+.hd-t p{font-size:12px;line-height:1.3}
+.pnav{height:44px;padding:0 12px;overflow:hidden;transition:height var(--dur) var(--motion-ease),opacity var(--dur)}
+.app.kk-scd .pnav{height:0;opacity:0;pointer-events:none}
+.composer{padding:4px 12px}
+.tabbar{padding:0 6px max(2px,env(safe-area-inset-bottom,0px))}
+.tab{min-height:48px}
+.fab{width:56px;height:56px;margin-top:-8px;transform:translateY(-6px)}
+.fab:active{transform:translateY(-6px) scale(.93)}
+.bub{top:calc(52px + env(safe-area-inset-top,0px))}
+.laymenu{top:calc(env(safe-area-inset-top,0px) + 48px)}
+.toast{bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+.cmp .toast{bottom:calc(116px + env(safe-area-inset-bottom,0px))}
+@media (prefers-reduced-motion: reduce){.pnav{transition:none}}
+</style>
 </head>
 <body>
 <a class="vh" href="#main">跳到內容</a>
@@ -3419,6 +3443,12 @@ if('serviceWorker' in navigator&&window.isSecureContext){
 window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
 
 })();
+</script>
+<script>
+/* v33：內容往下捲超過一段就收起期別列，捲回頂端再出現；內容不夠長時不收，避免來回跳 */
+(function(){var m=document.getElementById('main'),a=m&&m.closest('.app');if(!a)return;var on=false;
+function chk(){var t=m.scrollTop,room=m.scrollHeight-m.clientHeight;if(!on&&t>48&&room>120){on=true;a.classList.add('kk-scd')}else if(on&&(t<8||room<20)){on=false;a.classList.remove('kk-scd')}}
+m.addEventListener('scroll',chk,{passive:true});try{new MutationObserver(function(){requestAnimationFrame(chk)}).observe(m,{childList:true})}catch(e){}})();
 </script>
 </body>
 </html>

@@ -1168,6 +1168,20 @@ button.rcv .chev{flex:none;color:var(--muted)}
 .bgc .amt{flex:none}
 #det_b .af label{width:auto;min-width:92px;white-space:nowrap}
 
+/* v33 全螢幕（2026-11-22）：頂列、期別列、底部分頁只留必要高度；捲動內容時期別列收起。只動外殼與尺寸。 */
+.bar{height:44px}
+.pnav{height:44px;overflow:hidden;transition:height var(--dur) var(--ease),opacity var(--dur)}
+.pnav button{height:44px}
+#shell.kk-scd .pnav{height:0;opacity:0;pointer-events:none;border-bottom-width:0}
+.tabbar .in{height:48px}
+.tb{height:48px}
+.fab{width:48px;height:48px}
+#lay_m{top:calc(env(safe-area-inset-top,0px) + 48px)}
+#msg,#undo{bottom:calc(66px + var(--sab))}
+#err{top:calc(52px + var(--sat))}
+.a2hs{bottom:calc(60px + var(--sab))}
+@media (prefers-reduced-motion: reduce){.pnav{transition:none}}
+
 </style></head><body data-skin="6" data-theme="light">
 <a class="skip" href="#scroll">跳到內容</a>
 <div id="err" role="alert"></div><div id="msg" role="status"></div><div id="undo" role="status"><span id="undo_t"></span><button type="button" id="undo_b">復原</button></div>
@@ -3996,6 +4010,11 @@ bind(); liveBind(); v32Bind(); mountFaces();
   try { var c = JSON.parse(LS.get('kk_cache') || 'null'); if (c && c.v === 3 && c.k === KEY.slice(0, 10) && c.o && c.l) { LIVE.sig = ''; applyData(c.o, c.l); } } catch (e) {}
   load({ force: true });
 })();
+
+/* v33：內容往下捲超過一段就收起期別列，捲回頂端再出現；內容不夠長時不收，避免來回跳 */
+(function(){var m=document.getElementById('scroll'),a=document.getElementById('shell');if(!m||!a)return;var on=false;
+function chk(){var t=m.scrollTop,room=m.scrollHeight-m.clientHeight;if(!on&&t>48&&room>120){on=true;a.classList.add('kk-scd')}else if(on&&(t<8||room<20)){on=false;a.classList.remove('kk-scd')}}
+m.addEventListener('scroll',chk,{passive:true});try{new MutationObserver(function(){requestAnimationFrame(chk)}).observe(m,{childList:true,subtree:true})}catch(e){}})();
 
 </script>
 </body></html>
