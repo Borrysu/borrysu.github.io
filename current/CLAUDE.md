@@ -167,3 +167,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 卡片底部一排（`kfoot`）：左邊卡面鈕（機會：深入了解、暫存到明天或放回清單、不要了；待辦：去執行），右邊負責 Bot 的小臉（集集、大器、定定），「⋯」移到這一排最右（不再在右上角）。點擊區都 44px、垂直置中。
    - 放不下時 `fitFoots()` 從最後一顆往前收起（第一顆一定留著），不換成兩排；收起的動作都在「⋯」裡（例：320 寬時「不要了」收起，「⋯」有「刪掉」）。新加卡面鈕時要確認它在「⋯」裡也有。
    - 程式在 `js/app.js` 檔尾「v56」段（重寫 projCard、oppCard，包一層 zoneProj 處理待辦與封存卡），樣式在 `css/app.css` 檔尾。注意 `.cfoot` 已是對話窗頁尾的 class，不要拿來用。退回：`git revert` v56 的 commit。
+39. **跟大器說直接叫醒 Mac 大器（2026-11-22，v58）**：老大原話「本地排程可以那樣嗎」「我希望能直接打因為只會有我用」。
+   - 前端 `js/adapter.js` 的 `wake()`：live 模式送出「跟大器說」（只限大器，不含朋朋等 Bot）或「去執行」成功後，POST `CONFIG.WAKE_URL`（Tailscale Funnel `/current-wake`，body `{"k":金鑰}`，text/plain 免預檢，3 秒逾時，失敗安靜略過）。示範模式（`?mock=`）走 mock adapter，不會打。
+   - Mac 端 launchd `com.borry.current-daqi-wake`（`~/Claude-Projects/Tools/current-daqi-wake/wake.py`，只聽 127.0.0.1:8795）用 `hub_whoami(p_key)` 驗角色＝Borry 才 `launchctl kickstart` 轉交程式 `com.borry.opportunity-daqi-relay`，其他角色 403、每分鐘 20 次上限、`hub_whoami` 還沒套上一律 503。金鑰不進 log。輪詢與雲端備援照舊。
+   - 退回：見 `/Users/borry/大器工作區/面板工坊/進度與記憶.md`「v58 叫醒入口」。

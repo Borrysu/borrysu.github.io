@@ -26,6 +26,8 @@ export const CONFIG = {
   TIMEOUT_MS: 15000,       // 一般請求逾時
   SLOW_MS: 3000,           // 超過這麼久還沒回來，就顯示「載入比較久」
   GONE_HOURS: 72,
+  // v58：送出「跟大器說」「去執行」後叫醒 Mac 大器（Tailscale Funnel，服務端驗金鑰角色＝Borry 才觸發，其他 403）。失敗安靜略過，照舊靠輪詢。示範模式不打。
+  WAKE_URL: 'https://borrys-macbook-pro-16.tail1f7ef7.ts.net/current-wake', WAKE_MS: 3000,
   RPC: { list: 'opp_list', get: 'opp_get', topic: 'get_opp_realtime_topic',
          dive: 'opp_dive', stash: 'opp_stash', unstash: 'opp_unstash', drop: 'opp_drop', restore: 'opp_restore', build: 'opp_build',
          close: 'opp_close', reopen: 'opp_reopen', archive: 'opp_archive', purge: 'opp_purge',
@@ -71,7 +73,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v57');
+  const { mockAdapter } = await import('./mock.js?v58');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -193,6 +195,10 @@ function liveAdapter() {
   }
   const card = d => { d = Array.isArray(d) ? d[0] : d; return d && typeof d === 'object' && d.id ? normalize(d) : null; };
   const R = CONFIG.RPC, W = { work: true };
+  function wake() {   // 不等、不報錯；text/plain 免預檢
+    try { const ac = new AbortController(); const t = setTimeout(() => ac.abort(), CONFIG.WAKE_MS);
+      fetch(CONFIG.WAKE_URL, { method: 'POST', headers: { 'content-type': 'text/plain' }, body: JSON.stringify({ k: KEY }), signal: ac.signal, cache: 'no-store', credentials: 'omit' }).catch(() => {}).finally(() => clearTimeout(t)); } catch (e) {}
+  }
   return {
     mode: 'live',
     async list() {
@@ -207,7 +213,7 @@ function liveAdapter() {
       return normHistory(r && r.history);
     },
     async msgs(id, bot) { return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80, p_bot: bot || 'daqi' })); },
-    async say(id, body, bot) { return rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); },
+    async say(id, body, bot) { const r = await rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); if (!bot || bot === 'daqi') wake(); return r; },
     async botInbox() { return normInbox(await rpc(R.botInbox, {})); },
     async hubToday() { return normHub(await rpc(R.hubToday, {})); },
     async moneySubs() { return normMoney(await rpc(R.moneySubs, {}, 0, W)); },   // v35：403＝這把金鑰不能看錢（AI協作金鑰），不是金鑰失效，不清金鑰
@@ -253,7 +259,7 @@ function liveAdapter() {
         case 'work': return card(await rpc(R.workUpdate, { p_id: id, p_patch: o.patch || {} }, 0, W));
         case 'deliver': return card(await rpc(R.setStatus, { p_id: id, p_status: 'delivered', ...(o.patch ? { p_patch: o.patch } : {}) }, 0, W));
         case 'paid': return card(await rpc(R.setStatus, { p_id: id, p_status: 'paid', p_patch: o.patch || {} }, 0, W));
-        case 'run': return card(await rpc(R.run, { p_id: id }));
+        case 'run': { const c = card(await rpc(R.run, { p_id: id })); wake(); return c; }
         case 'steps': return card(await rpc(R.progress, { p_id: id, p_steps: o.steps || [] }, 0, W));   // v39：案子「⋯」這步做完／退回上一步，只改步驟，不動 note、blocker
         case 'back': return card(await rpc(R.setStatus, { p_id: id, p_status: o.to === 'delivered' ? 'delivered' : 'doing' }, 0, W));
       }
