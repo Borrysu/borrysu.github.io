@@ -80,3 +80,9 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 
 - 錢房間多一張「收支趨勢」（近 6 個月收入、支出、存下來的線，可展開 12 個月）與「淨資產」列。資料走只讀 `hub_money_trend`，只有老大本人與管理員金鑰讀得到（`tools/rpc.sh` 的 AI協作金鑰會回 28000，正常）。
 - `tools/rpc.sh hub_money_trend '{}'` 回 PGRST202＝v54 遷移還沒套。細節 `CLAUDE.md` 第 36 條。
+
+## v60（2026-11-22）：正式登入、公司卡、肉咖鑰匙
+
+- 老大可以不帶金鑰直接開，用 email 登入碼登入；網址金鑰照常能用。帳號只有一個，要在 Supabase 儀表板建（不要自己登入老大的帳號）。
+- 案子房間「公司」分頁：公司電腦的肉咖同步皮條客的卡過來（`hub_company_summary_write`，肉咖鑰匙），老大點肉咖的臉派公司電腦做、點大器的臉跟大器說。大器收到帶「公司卡」的訊息，做完 `tools/rpc.sh hub_job_set '{"p_title":"…","p_agent":"大器","p_status":"done","p_source_key":"cotask:編號"}'`。
+- 肉咖鑰匙只能用三支：`hub_company_summary_write`、`hub_rouka_take`、`hub_rouka_report`。細節 `CLAUDE.md` 第 41 條。

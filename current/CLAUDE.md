@@ -175,3 +175,9 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - Mac `~/Claude-Projects/Tools/hub-sync/decision_followup.py`：老大回答後，先不要＝待辦打勾；照建議＝先交原案監工／總控（SendMessage），5 分鐘內那件工作沒改成 running 就改背景大器；只能老大做的標 waiting_you 並把步驟寫進工作備註。每件一筆 `hub_jobs`，`source_key`＝`dec-<決定 id>`。
    - 前端：adapter 的 jobs 多帶 `sourceKey`；首頁「正在跑」上方多一區「拍板後續」（5 天內回過、有對應工作的拍板，等你與失敗排前面），點開 `hdecf:<id>` 看你選、誰在做、狀態、做到哪、成果。
    - 退回：`git revert` v59 的 commit（hub_jobs 資料留著不影響舊版）。
+41. **正式登入與公司卡（2026-11-22，v60）**：老大原話「我希望能直接打因為只會有我用」「大不了金鑰 跟正式登入處理 反正公司卡也要弄」「公司卡片可以同步到我面板來嗎 可以的話上面要能派肉咖工作也能派大器」。
+   - 登入：Supabase Auth，只有老大一個帳號（註冊關閉，`create_user:false`）。沒有網址金鑰也沒登入就顯示登入頁：email 收登入碼（打數字），或點信裡的連結。session 存 localStorage `opp_sess`，RPC 送 `Authorization: Bearer` 加 `p_key:null`，資料庫 `_opp_cap` 沒金鑰時認 `auth.uid()`＝`opp_keys.auth_uid` 那一列（老大的 Borry 列）。**網址金鑰照常能用，兩種並存**，等老大說登入穩了再談收金鑰。大器對話「能做什麼」裡有「登出這台」。叫醒入口收到的是 `{t: access_token}`（v58 入口要另外接，見進度與記憶）。
+   - 公司卡：案子房間多一個「公司」分頁。資料走 `hub_company_summary`（只有 Borry 角色讀得到），由公司電腦用肉咖鑰匙寫 `hub_company_summary_write`（重點幾行＋卡片，全量同步，沒出現的卡收起來）。逐流不碰皮條客的鑰匙。
+   - 派工：卡上兩張臉。肉咖的臉＝開「派肉咖做」→ `hub_company_task_add(rouka)`，公司電腦 `hub_rouka_take` 拿單交給肉咖、`hub_rouka_report` 回報；大器的臉＝開大器對話帶這張卡，送出時另記一筆 `hub_company_task_add(daqi)`。兩種都會建一筆 `hub_jobs`（source_key `cotask:編號`），今天頁「正在跑」看得到；大器做完用 `hub_job_set(p_source_key:'cotask:編號', p_status:'done')` 回報。
+   - 肉咖鑰匙（角色「肉咖」，`can_rouka`）：`_opp_cap` 擋掉它的所有其他函式，讀不到老大任何其他資料。金鑰只在 Mac `~/.config/borry-opportunities/rouka.key` 與公司電腦同路徑。對公司群組發訊照肉咖既有規則，不從逐流直接發。
+   - 資料庫：遷移與退回在 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v60_*`；`tools/rpc.sh hub_company_summary '{}'` 回 PGRST202＝還沒套（AI協作金鑰套上後會回 28000，正常）。
