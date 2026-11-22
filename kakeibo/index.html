@@ -1220,7 +1220,10 @@ details.rep .rep-t{font-size:12px;color:var(--muted);font-weight:500;flex:none}
 .updrow .updgo{flex:none;font-weight:600;color:var(--ink2)}
 /* v34.4 補單 4：iPhone 主畫面底部空白。外殼高度用 --kk-vh（主畫面模式短少狀態列時改用螢幕高度），底下若還有縫用分頁列同色 */
 html{background-color:var(--x-surface-solid,var(--surface))}
-html.kk-vhfix body{bottom:auto;height:var(--kk-vh)}
+/* v32.2：外殼不再撐到螢幕高度（kk-vhfix 停用），一律不超過實際可見區 */
+html{height:100%;height:-webkit-fill-available}
+body{max-height:100vh;max-height:-webkit-fill-available;max-height:100svh;max-height:100dvh}
+.phone,.app{max-height:100%}
 .hd{border-bottom:1px solid var(--line)}
 </style>
 </head>
@@ -3747,15 +3750,13 @@ function updAgo(iso) { var t = thMs(iso); return t ? (Date.now() - t) / 864e5 : 
 var UPD = {}; try { UPD = JSON.parse(localStorage.getItem('kk_upd') || '{}') || {}; } catch (e) { UPD = {}; }
 function updMark(id) { UPD[id] = Date.now(); try { localStorage.setItem('kk_upd', JSON.stringify(UPD)); } catch (e) {} }
 function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶] 請登入「' + name + '」的網銀或 App 實查目前真實餘額' + (isCard ? '（信用卡查未出帳與帳單）' : '') + '，查完回報並更新，附查到的時間。帳上目前 ' + bal + '，上次實查 ' + (asof || '沒有資料') + '。查不到就說查不到，不要用推算的。'; }
-/* ---------- v34.4 iPhone 主畫面外殼高度 ----------
- iOS 主畫面模式（black-translucent）有時把可用高度少算一個狀態列，App 底下露出一條空白。
- 只有主畫面模式、直向、寬度等於螢幕寬、短少在 100 以內（不是鍵盤）時，才加 kk-vhfix 讓外殼改用螢幕高度；其他情況外殼照舊貼滿視窗。 */
+/* ---------- v32.2 手機外殼高度（取代 v34.4 的 kk-vhfix） ----------
+ v34.4 在主畫面模式把外殼硬撐到 screen.height；可見區真的比螢幕短時（例如沒蓋到狀態列），外殼比畫面長，底部分頁與＋鈕被切掉。
+ 現在外殼一律貼著實際可見區（position:fixed 四邊 0＋max-height 100dvh），不再超過；--kk-vh 只記錄可見高度給需要的地方用。 */
 function kkVH() {
   try {
-    var de = document.documentElement, sa = navigator.standalone === true || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
-    var h = window.innerHeight, sh = window.screen ? screen.height : 0, sw = window.screen ? screen.width : 0;
-    var fix = sa && h > window.innerWidth && sh && Math.abs(sw - window.innerWidth) < 2 && sh > h && sh - h <= 100;
-    de.style.setProperty('--kk-vh', (fix ? sh : h) + 'px'); de.classList.toggle('kk-vhfix', !!fix);
+    var de = document.documentElement, vv = window.visualViewport, h = Math.round(vv ? Math.min(vv.height, window.innerHeight) : window.innerHeight);
+    de.style.setProperty('--kk-vh', h + 'px'); de.classList.remove('kk-vhfix');
   } catch (e) {}
 }
 kkVH(); window.addEventListener('resize', kkVH); window.addEventListener('orientationchange', function () { setTimeout(kkVH, 300); });
