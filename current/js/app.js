@@ -1860,7 +1860,7 @@ function applyData(){const it=LV.items;applyExtra();
  DB.dec=h.open.map(mapDec);Object.keys(PD).forEach(k=>{delete PD[k]});DB.dec.forEach(d=>{const p=DB.proj.find(x=>x.title===d.proj||x.short===d.proj);if(p)PD[d.id]=p.id});DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
  DB.subs=LV.money?LV.money.items.filter(s=>s.status!=='cancel'||s.cancelBy).map(mapSub).sort((a,b)=>a.in-b.in):[];
  const t=LV.at?LHM(LV.at):'';FRESH.daqi=LV.forced?'示範資料':t?t+' 更新':'讀取中';
- const ls=lastScan();FRESH.jiji=ls?LHM(ls.at)+' 整理':'還沒掃描過';FRESH.tata=LV.mo?t+' 讀取':LV.money?'訂閱 '+t+' 讀取':'看不到帳戶';FRESH.peng='還沒接上';
+ const ls=lastScan();FRESH.jiji=ls?LHM(ls.at)+' 整理':'還沒掃描過';FRESH.tata=LV.mo?t+' 讀取':LV.money?'訂閱 '+t+' 讀取':'看不到帳戶';FRESH.peng=LV.life?t+' 更新':'讀不到';
  const sp=$('#stamp');if(sp)sp.textContent=LV.forced||LV.nokey?'示範資料':t?t+' 更新':'讀取中'}
 function lastScan(){let b=null;Object.values(LV.scan||{}).forEach(v=>{if(v&&v.last&&v.last.at&&(!b||v.last.at>b.at))b=v.last});return b}
 const scanOpen=()=>Object.values(LV.scan||{}).some(v=>v&&v.open&&v.open.status!=='done');
@@ -1910,7 +1910,7 @@ monthSelf=()=>subs().filter(s=>s.payer==='自付').reduce((a,s)=>a+(s.mo||0),0);
 {const _z=zsum;zsum=function(z){const s=_z(z);
  if(z==='opp'){s.b='';const a=opps('all');s.s=a.length?`最急：${a[0].org||a[0].title}，${a[0].due}`:'現在沒有新機會'}
  if(z==='money'&&!LV.mo){s.b='';if(!LV.money){s.n='—';s.sm=0;s.u=LV.moneyErr?'看不到錢的資料':'帳戶還沒接上';s.s='';s.none=false;s.hot=false}else{const d=due7();s.n=nt(monthSelf());s.sm=1;s.u='每月固定支出（自付）';s.s=d.length?`7 天內扣 ${d.length} 筆`:'7 天內沒有要扣的';s.none=false;s.hot=subs().some(x=>x.cancel&&x.in<=3)}}
- if(z==='life'){s.n=0;s.u='生活還沒接上';s.s='';s.none=false;s.hot=false}
+ if(z==='life'&&!LV.life){s.n=0;s.u='生活讀不到';s.s='';s.none=false;s.hot=false}
  if(z==='proj'){const u=urgentProj();s.s=u?`${u.short}${u.due}`:(projs().length?`進行中 ${projs('doing').length} 件`:'沒有急件')}
  return s}}
 errorBox=function(z){const n=ZONE[z]?ZONE[z].n:'逐流';
@@ -2034,7 +2034,7 @@ mzOut=function(){return `<section class="sec">${sh('','要出去的大筆')}<div
  return shHead(esc(s.name))+`<dl class="kv"><div><dt>金額</dt><dd>${nt(s.amt)}</dd></div><div><dt>週期</dt><dd>${esc(s.cyc)}</dd></div><div><dt>下次扣款</dt><dd>${esc(s.next||s.in+' 天後')}</dd></div><div><dt>誰付</dt><dd>${s.payer}</dd></div>${s.acct?`<div><dt>帳戶</dt><dd>${esc(s.acct)}</dd></div>`:''}</dl>${s.cancel?`<p class="err">▲ ${esc(s.cancel)}</p>`:''}${aifs([aiF('tata','sub:'+s.id)])}`}}
 
 /* ---------- 生活：v39 用設計稿的 zoneLife（朋朋還沒綁定、各空狀態與按鈕），會寫的動作沒有後端，按了出現「還沒接上」 ---------- */
-['bindok','unbind','add','done','saverout','buy','bought','wishadd','copy'].forEach(k=>{ACT[k]=()=>toast(k==='bindok'?'綁定朋朋還沒接上':'生活還沒接上，這個動作還沒接上')});
+// v44：生活接上 hub_life_items（見檔尾「生活（v44）」）
 /* 行事曆：建立、改時間、取消、改規則沒有後端 */
 ['synctog','syncyes','syncno','dtedit'].forEach(k=>{ACT[k]=()=>toast('案子日期同步到行事曆還沒接上')});   // v42：建立、改時間、取消、改規則改成交給大器（見檔尾）
 
@@ -2222,11 +2222,60 @@ ACT.pay=id=>toast('還沒接上付款，這筆沒有扣款。自己付好後按�
 document.addEventListener('change',e=>{if(e.target&&e.target.name==='mzsafe'){try{localStorage.setItem(SAFEK,e.target.value)}catch(x){}}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='kkIn'){e.preventDefault();ACT.kkadd()}});
 WRITE.push('kkadd','duepaid','dueundo');
+
+/* ---------- v44（2026-11-22）：生活接上 hub_life_items ----------
+   購物清單（wish）、例行（rout）、備品（sup）都能新增、改、標完成，寫回資料庫（老大本人或可編輯的金鑰）。
+   補資料、比價、值不值、下單交給朋朋、萌萌、金金：經 v40 機器人對話送出，回覆在各自的浮窗；朋朋下單仍要老大當面同意付款。
+   訂單沒有後端，顯示空狀態。塔塔「買不買得起」改用錢總覽的現金與安全線算（看不到錢就寫看不到）。 */
+LV.wishRun={};
+const LCOL=['#5b4a8a','#2f5a7a','#6a4a3a','#3d5a4a','#7a3d5a'];
+function applyLife(){const L=LV.life;if(!L){DB.wish=[];DB.rout=[];DB.sup=[];return}S.bound=true;const it=L.items||[];
+ DB.wish=it.filter(x=>x.kind==='wish').map((x,i)=>{const age=(Date.now()-Date.parse(x.created_at||0))/6e4,np=x.price==null;
+  return {id:x.id,name:x.name,raw:x.name,spec:x.note||'',price:np?0:+x.price,noPrice:np,shop:x.shop||(np?'朋朋還沒補價格':''),url:x.url||'',st:x.status==='done'?'bought':'want',cmp:LV.wishRun[x.id]==='mon'?'run':undefined,kim:LV.wishRun[x.id]==='kim'?'run':undefined,
+   load:np&&!x.note&&!x.shop&&age<20?1:0,ch:CLN(x.name).slice(0,1)||'買',col:LCOL[i%LCOL.length],raw2:x}});
+ DB.rout=it.filter(x=>x.kind==='rout').map(x=>{const cyc=Math.max(1,+x.cycle_days||30),d=DOFF(x.last_date);return {id:x.id,name:x.name,ago:d==null?cyc:Math.max(0,-d),cyc,rem:!!x.remind,last:x.last_date||'',raw2:x}});
+ DB.sup=it.filter(x=>x.kind==='sup').map(x=>({id:x.id,name:x.name,cat:CLN(x.cat)||'其他',buy:!!x.need,last:x.last_date?gDueTxt(x.last_date):'沒記',raw2:x}));
+ DB.orders=[]}
+// 塔塔：買不買得起（現金扣掉安全線還剩多少）
+fin=function(w){if(w.noPrice)return {k:'ok',t:'等朋朋補價格',why:'還沒有價格，朋朋補齊後塔塔才算得出來。'};
+ if(!LV.mo)return {k:'ok',t:'看不到錢的資料',why:LV.moErr||'錢總覽讀不到。'};
+ const room=MZ.cash-MZ.safe*MZ.monthly,p=w.price;
+ return p<=room?{k:'ok',t:'買得起',why:`能花的現金 ${nt(MZ.cash)}，扣掉安全線 ${MZ.safe} 個月（${nt(MZ.safe*MZ.monthly)}）還有 ${nt(room)}，買完剩 ${nt(room-p)}。`}
+  :{k:'over',t:'會低於安全線',why:`能花的現金 ${nt(MZ.cash)}，扣掉安全線 ${MZ.safe} 個月後只剩 ${nt(Math.max(0,room))}，買這個會低於安全線。`}};
+const reloadLife=()=>LV.api.life().then(d=>{LV.life=d;LV.sig='';paint()}).catch(()=>{});
+function lw(id,kind,patch,msg,undo){return LV.api.lifeSet(id,kind,patch).then(r=>{reloadLife();if(msg)toast(msg,undo?()=>LV.api.lifeSet(undo.id||id,kind,undo.patch).then(reloadLife).then(()=>toast('還原了')).catch(e=>toast('沒還原：'+LERR(e))):null);return r}).catch(e=>{toast('沒存上：'+LERR(e));reloadLife()})}
+const today=()=>ISOD(new Date());
+function botAsk(b,text,ctx){openChat(b,ctx||'',null,()=>say(b,text,ctx||''))}
+ACT.bindok=()=>toast(LV.life?'朋朋已經接上了':'生活讀不到，重新整理再試');ACT.unbind=()=>toast('朋朋接在逐流的生活房間，不用解除');
+ACT.add=()=>{const k=S.sub.life==='sup'?'sup':'rout';let n=null;try{n=prompt(k==='rout'?'新增例行事項（例：澆花）':'新增備品（例：防曬乳）')}catch(e){}if(!n||!n.trim())return;
+ let extra={};if(k==='rout'){let c=null;try{c=prompt('多久一次（天）',k==='rout'?'14':'')}catch(e){}const v=Math.max(1,+c||14);extra={cycle_days:v,last_date:today()}}else{let c=null;try{c=prompt('分類（例：保養、超市補貨）','其他')}catch(e){}extra={cat:(c||'其他').trim(),last_date:today()}}
+ lw(null,k,Object.assign({name:n.trim()},extra),'加好了：'+n.trim())};
+ACT.done=id=>{const r=DB.rout.find(x=>x.id===id);if(!r)return;lw(id,'rout',{last_date:today()},`${r.name}做完了，從今天重新算`,{patch:{last_date:r.last||''}})};
+ACT.saverout=id=>{const r=DB.rout.find(x=>x.id===id);if(!r)return;const d=($('#rDate')||{}).value,c=+(($('#rCyc')||{}).value);if(!(c>0)){toast('多久一次要寫天數');return}
+ closeThen(()=>lw(id,'rout',{last_date:d||'',cycle_days:c},'存好了',{patch:{last_date:r.last||'',cycle_days:r.cyc}}))};
+ACT.routdel=id=>{const r=DB.rout.find(x=>x.id===id);if(!r)return;closeThen(()=>lw(id,'rout',{status:'dropped'},'拿掉了：'+r.name,{patch:{status:'active'}}))};
+ACT.buy=id=>{const u=DB.sup.find(x=>x.id===id);if(!u)return;lw(id,'sup',{need:true},`${u.name}排進購物清單`,{patch:{need:false}})};
+ACT.bought=id=>{const u=DB.sup.find(x=>x.id===id);if(!u)return;lw(id,'sup',{need:false,last_date:today()},`${u.name}買好了`,{patch:{need:true,last_date:u.raw2.last_date||''}})};
+ACT.copy=()=>{const t=tobuy().map(u=>'・'+u.name).join('\n');try{navigator.clipboard.writeText(t).then(()=>toast('購物清單複製好了'),()=>toast('複製不了，長按選字'))}catch(e){toast('複製不了，長按選字')}};
+ACT.wishadd=()=>{const t=$('#wishIn'),v=t?t.value.trim():'';if(!v){S.err='wish';render('keep');const x=$('#wishIn');if(x)x.focus();return}S.err='';
+ const url=/^https?:\/\/\S+$/i.test(v),patch=url?{name:v.replace(/^https?:\/\/(www\.)?/i,'').slice(0,40),url:v}:{name:v.slice(0,80)};
+ lw(null,'wish',patch,'加進清單了，請朋朋補資料').then(r=>{const x=$('#wishIn');if(x)x.value='';if(r&&r.id)LV.api.say(null,`【購物清單補資料】老大加了「${v}」（清單編號 ${r.id}）。請補品名、規格、價格、店家，補好回一句；要買要等老大說`,'peng').catch(()=>{})})};
+ACT.wishcmp=id=>{const w=W(id);if(!w)return;LV.wishRun[id]='mon';LV.sig='';paint();botAsk('mon',`請比價「${w.name}」${w.url?'（'+w.url+'）':''}，列三家含運總價與到貨時間，推薦一家`,'wish:'+id)};
+ACT.wishkim=id=>{const w=W(id);if(!w)return;LV.wishRun[id]='kim';LV.sig='';paint();botAsk('kim',`「${w.name}」${w.noPrice?'':nt(w.price)} 值得現在買嗎？`,'wish:'+id)};
+ACT.wishpick=()=>toast('比價結果在萌萌的對話裡，選好跟朋朋說');
+ACT.wishdel=id=>{const w=W(id);if(!w)return;closeThen(()=>lw(id,'wish',{status:'dropped'},'從購物清單拿掉了',{patch:{status:'active'}}))};
+ACT.wishmark=id=>{const w=W(id);if(!w)return;const b=w.st!=='bought';closeThen(()=>lw(id,'wish',{status:b?'done':'active'},b?'標成已買':'改回想買',{patch:{status:b?'active':'done'}}))};
+ACT.ordgot=ACT.ordback=()=>toast('訂單還沒有後端，朋朋下單後會跟你說');
+// 例行的抽屜：設計稿的日期是寫死的，換成真的上次日期，欄位加 id 才存得回去
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='rout'||!LV.life)return _s();const r=DB.rout.find(x=>x.id===a[1]);if(!r)return shHead('這項不在了');
+ return shHead(esc(r.name))+`<p style="margin-top:8px">上次是 <b>${r.ago} 天前</b>，每 ${r.cyc} 天一次。</p><label class="f">上次做的日期<input id="rDate" type="date" value="${esc(r.last)}" max="${today()}"></label><label class="f">多久一次（天）<input id="rCyc" type="number" inputmode="numeric" min="1" value="${r.cyc}"></label><div class="btns">${B('存好這一項','saverout',r.id,'pri wide')}</div><div class="mrow">${mb('✓ 剛做完','done',r.id)}${mb('拿掉這一項','routdel',r.id)}</div>`}}
+{const f=wishCard;wishCard=function(){const h=f.apply(this,arguments);return LV.life?h.replace('<small>示意圖</small>',''):h}}   // 真資料的縮圖是品名首字，不是示意圖
+WRITE.push('add','done','saverout','routdel','buy','bought','wishadd','wishdel','wishmark');
 WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v43');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v44');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
