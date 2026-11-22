@@ -4309,7 +4309,7 @@ window.KKCF_CTX = { o: function () { return LIVE.o; }, txs: function () { return
   host: function () { var t = document.getElementById('tab_list'); return VIEW === 0 && t && !t.hidden ? t : null; },
   editTx: function (rid) { var t = TXALL.concat(KD.prev_tx || []).filter(function (x) { return x.id === Number(rid); })[0]; if (t) openEdit(t); },
   editAcct: function (rid) { var a = acctId(rid); if (a) openAcct(a); }, reload: function () { loadV32(true); try { load({}); } catch (e) {} }, toast: function (m) { showMsg(m); return true; } };
-var KK_VER = 'kk-v35.1', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v35.2', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4708,7 +4708,7 @@ document.addEventListener('click', function (e) {
 .kkcf-zero{margin:2px 0 8px;font-size:14px;color:var(--muted,#666)}
 </style>
 <script id="kkcf-js">
-/* kk-v35.1 塔塔有 N 件要你確認（2026-11-23）
+/* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口）
    監工：「面板主畫面不再顯示任何 AI 推估的數字、差額或推定備註」「AI 的推估一律收進一個地方：記帳本頂部「塔塔有 N 件要你確認」，點進去一件一件給老大按「對／不對／我自己改」，按對才變成正式數字」
    來源五種：待確認交易（kk_pending_confirm）、實查與推算差超過 1,000 的帳戶、帳戶備註裡塔塔寫的推定、交易備註裡的推定、信用卡備註寫的未出帳筆數（只有 A／B／C 版面算得出）。
    按過「不對」或已轉給塔塔的，記在這支手機 kk_cf_done，同一件不再出現；內容變了（新的實查、改過的備註）會重新出現。
@@ -4753,7 +4753,7 @@ document.addEventListener('click', function (e) {
   }
   function items() {
     var o = C('o'); if (!o || C('per') !== 0) return [];
-    var D = done(), L = [], txs = C('txs') || [], cov = C('cov'), accts = o.accounts || [];
+    NOSRC = 0; var D = done(), L = [], txs = C('txs') || [], cov = C('cov'), accts = o.accounts || [];
     var byId = {}; accts.forEach(function (a) { byId[a.id] = a; });
     /* 1. 待確認交易 */
     (C('pend') || []).forEach(function (p) {
@@ -4778,6 +4778,7 @@ document.addEventListener('click', function (e) {
       [['note', '備註'], ['review_note', '核對備註']].forEach(function (f) {
         var s = String(a[f[0]] || ''); if (!EST.test(s)) return;
         var k = 'anote:' + a.id + ':' + f[0] + ':' + h32(s); if (D[k] || blocked('account', a.id)) return;
+        if (window.KKCF && KKCF.hasSource && !KKCF.hasSource({ kind: 'anote', text: s })) { NOSRC++; return; } /* v35.2：沒附交易編號或帳單的推定不列 */
         L.push({ key: k, kind: 'anote', rid: a.id, name: a.name, title: '塔塔在「' + a.name + '」' + f[1] + '寫了推定，對嗎', detail: cut(s, 140), src: '來源：帳戶' + f[1] + '（塔塔寫的）', text: s });
       });
     });
@@ -4807,7 +4808,7 @@ document.addEventListener('click', function (e) {
     });
     return L;
   }
-  var OPEN = false, BUSY = {}, CATX = false;
+  var OPEN = false, BUSY = {}, CATX = false, NOSRC = 0;
   function itemHtml(it) {
     var b = BUSY[it.key];
     var ok = it.kind === 'diff' ? '要對帳' : it.kind === 'unb' ? '請塔塔補' : it.kind === 'cats' ? '都對' : '對', no = it.kind === 'diff' ? '不用' : it.kind === 'unb' ? '不用補' : '不對', ed = it.kind === 'cats' ? '一筆一筆看' : '我自己改';
@@ -4816,9 +4817,11 @@ document.addEventListener('click', function (e) {
   }
   function html(all) {
     var L = items(), n = L.length, show = all || OPEN ? L : L.slice(0, 3);
-    if (!n) return '<section class="kkcf" data-flip="kkcf" aria-label="塔塔要你確認"><p class="kkcf-h">塔塔有 <b>0</b> 件要你確認</p><p class="kkcf-zero">沒有要你看的推估。主畫面的數字都是銀行實查或交易算出來的。</p></section>';
+    var fx = window.KKFX ? '<button type="button" class="kkcf-fx" data-cfa="facts">我確認過的事' + (KKFX.state.st === 'on' ? ' ' + KKFX.state.list.length + ' 件' : KKFX.state.st === 'off' ? '（還沒開）' : '') + ' ›</button>' : '';
+    var ns = NOSRC ? '<p class="kkcf-nosrc">塔塔另有 ' + NOSRC + ' 則推定沒附交易編號或帳單，不列出。</p>' : '';
+    if (!n) return '<section class="kkcf" data-flip="kkcf" aria-label="塔塔要你確認"><p class="kkcf-h">塔塔有 <b>0</b> 件要你確認</p><p class="kkcf-zero">沒有要你看的推估。主畫面的數字都是銀行實查或交易算出來的。</p>' + ns + fx + '</section>';
     return '<section class="kkcf" data-flip="kkcf" aria-label="塔塔要你確認"><p class="kkcf-h">塔塔有 <b>' + n + '</b> 件要你確認</p><p class="kkcf-s">這些是塔塔推估的，按「對」才算數；按「不對」會交回塔塔。</p>' + show.map(itemHtml).join('') +
-      (n > show.length ? '<button type="button" class="kkcf-more" data-cfa="more">還有 ' + (n - show.length) + ' 件，全部展開</button>' : '') + '</section>';
+      (n > show.length ? '<button type="button" class="kkcf-more" data-cfa="more">還有 ' + (n - show.length) + ' 件，全部展開</button>' : '') + ns + fx + '</section>';
   }
   /* ---------- 動作 ---------- */
   function uuid() { try { return crypto.randomUUID(); } catch (e) { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2); } }
@@ -4873,7 +4876,7 @@ document.addEventListener('click', function (e) {
     var t = e.changedTouches[0]; if (t && (Math.abs(t.clientX - tx0) > 10 || Math.abs(t.clientY - ty0) > 10)) return;
     e.preventDefault(); e.stopPropagation(); lastT = Date.now(); if (!b.disabled) fire(b);
   }, { capture: true, passive: false });
-  function fire(b) { if (b.dataset.cfa === 'more') { OPEN = true; paint(); return; } var row = b.closest('[data-cfk]'); if (row) act(row.getAttribute('data-cfk'), b.dataset.cfa); }
+  function fire(b) { if (b.dataset.cfa === 'facts') { if (window.KKFX) KKFX.open(); return; } if (b.dataset.cfa === 'more') { OPEN = true; paint(); return; } var row = b.closest('[data-cfk]'); if (row) act(row.getAttribute('data-cfk'), b.dataset.cfa); }
   window.addEventListener('click', function (e) {
     var b = e.target && e.target.closest && e.target.closest('[data-cfa]'); if (!b || !b.closest('.kkcf')) return;
     if (document.documentElement.classList.contains('kkfb-on')) return; /* 編修模式下由編修模組攔 */
@@ -4885,6 +4888,114 @@ document.addEventListener('click', function (e) {
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', paint); else paint();
 })();
 </script>
+
+<style id="kkfact-css">
+/* kk-v35.2 我確認過的事（老大 2026-11-23：「是可以放，但是重點是你們記憶不可靠啊，有沒有穩妥一點的」） */
+.kkcf-fx{display:block;width:100%;min-height:44px;margin:0 0 8px;border-radius:12px;border:1.5px dashed var(--line,#bbb);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.kkcf-nosrc{margin:4px 0 8px;font-size:12px;color:var(--muted,#666)}
+.kkfx{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 16px);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);z-index:2147482000;max-width:520px;margin:0 auto;overflow:auto;padding:14px;border-radius:16px;background:var(--x-surface-solid,var(--solid,var(--surface,#fff)));color:var(--ink,#1a1a1a);border:2px solid #FF6700;box-shadow:0 14px 40px rgba(0,0,0,.35);font:15px/1.45 system-ui,-apple-system,"PingFang TC",sans-serif}
+.kkfx-h{display:flex;align-items:center;gap:8px;margin:0 0 4px}
+.kkfx-h h3{flex:1;margin:0;font-size:17px}
+.kkfx-s{margin:0 0 8px;font-size:13px;color:var(--muted,#666)}
+.kkfx-i{padding:10px 0;border-top:1px solid var(--line,#ddd)}
+.kkfx-i b{display:block;font-weight:600;word-break:break-word}
+.kkfx-i small{display:block;margin-top:2px;font-size:12px;color:var(--muted,#666);word-break:break-word}
+.kkfx-a{display:flex;gap:8px;margin-top:8px}
+.kkfx button{min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;border:1.5px solid var(--line,#bbb);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}
+.kkfx-a button{flex:1}
+.kkfx button.ok{background:#FF6700;border-color:#FF6700;color:#1F0E00}
+.kkfx button.bad{color:var(--bad,#c62828)}
+.kkfx textarea{display:block;box-sizing:border-box;width:100%;min-height:80px;margin-top:8px;font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line,#ccc);background:transparent;color:inherit}
+</style>
+<script id="kkfact-js">
+/* kk-v35.2 已確認事實（2026-11-23）
+   監工：「任何推估、備註、差額要顯示或送確認之前，先查 kk_facts；跟已確認事實衝突就不准出現。每則推估必須附來源（交易編號或帳單），沒有來源就不顯示。」
+   衝突的判定（保守）：同 topic＋target_id 有有效事實，這個對象的推估一律不出現在確認清單。
+   確認清單按「對」→ 同時寫一筆 kk_facts。編修模式的意見不自動寫事實（那是意見，等大器處理時再寫）。
+   資料庫還沒套（kk_fact_list 不存在）：「我確認過的事」顯示「還沒開」，確認清單照 v35.1 運作。 */
+(function () {
+  'use strict';
+  if (!window.KKCF || window.KKFX) return;
+  var C = function (k, a) { var c = window.KKCF_CTX; try { return c && c[k] ? c[k].apply(null, a || []) : undefined; } catch (e) { return undefined; } };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var F = { st: 'wait', list: [], at: 0, busy: false, edit: null, open: false };
+  async function rpc(name, args) {
+    var url = C('url'), r, t, j = null, ac = typeof AbortController === 'function' ? new AbortController() : null, to = setTimeout(function () { if (ac) ac.abort(); }, 15000);
+    try { r = await fetch(url + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: C('ak'), 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ p_key: C('key') }, args || {})), cache: 'no-store', signal: ac ? ac.signal : undefined }); t = await r.text(); }
+    catch (e) { var ne = new Error('連不上伺服器'); ne.net = true; throw ne; } finally { clearTimeout(to); }
+    try { j = JSON.parse(t); } catch (e) {}
+    if (!r.ok) { var m = (j && j.message) || t || ('HTTP ' + r.status), er = new Error(m); er.missing = r.status === 404 || (j && j.code === 'PGRST202') || /Could not find the function/i.test(m); throw er; }
+    return j;
+  }
+  async function load(force) {
+    if (!C('o') || String(C('key') || '').length < 20) return;
+    if (!force && F.st !== 'wait' && Date.now() - F.at < 60000) return;
+    F.at = Date.now();
+    try { var l = await rpc('kk_fact_list', {}); F.list = Array.isArray(l) ? l : []; F.st = 'on'; }
+    catch (e) { if (e.missing) { F.st = 'off'; F.list = []; } else if (F.st === 'wait') F.st = 'err'; }
+    KKCF.paint(); if (F.open) draw();
+  }
+  /* 確認清單擋：同 topic＋target_id 有有效事實就不出現；持股事實也擋它所在的帳戶 */
+  KKCF.blocked = function (topic, id) {
+    return F.list.some(function (f) { return f.topic === topic && String(f.target_id) === String(id); }) ||
+      (topic === 'account' && F.list.some(function (f) { return f.topic === 'holding' && String(f.account_id || '') === String(id); }));
+  };
+  /* 每則推估要有來源：帳戶備註裡的推定，沒寫交易編號（#數字）或帳單就不列 */
+  KKCF.hasSource = function (it) { return it.kind !== 'anote' || /#\d+|交易\s*\d+|帳單/.test(it.text || ''); };
+  KKCF.onOk = async function (it) {
+    if (F.st !== 'on') return;
+    var rows = [];
+    if (it.kind === 'pend' || it.kind === 'tnote') rows.push({ p_topic: 'transaction', p_target_id: it.rid, p_target_name: (it.title || '').slice(0, 60), p_fact_text: '老大確認：' + it.title + (it.detail ? '（' + it.detail.slice(0, 200) + '）' : ''), p_source_type: 'tx', p_source_ref: '交易 #' + it.rid });
+    else if (it.kind === 'anote') rows.push({ p_topic: 'account', p_target_id: it.rid, p_target_name: it.name, p_fact_text: '老大確認這段是對的：' + (it.text || '').slice(0, 600), p_source_type: 'boss_words', p_source_ref: '老大在面板按「對」' + (/#\d+/.test(it.text || '') ? '，' + (it.text.match(/#\d+/g) || []).join('、') : '') });
+    else if (it.kind === 'cats') (it.ids || []).forEach(function (id) { rows.push({ p_topic: 'transaction', p_target_id: id, p_fact_text: '老大確認分類對', p_source_type: 'tx', p_source_ref: '交易 #' + id }); });
+    for (var i = 0; i < rows.length; i++) { try { await rpc('kk_fact_add', rows[i]); } catch (e) { if (e.missing) { F.st = 'off'; break; } } }
+    load(true);
+  };
+  /* ---------- 我確認過的事 ---------- */
+  function md(iso) { var d = new Date(iso); if (isNaN(d)) return ''; var t = new Date(d.getTime() + 8 * 3600000); return (t.getUTCMonth() + 1) + '/' + t.getUTCDate() + ' ' + String(t.getUTCHours()).padStart(2, '0') + ':' + String(t.getUTCMinutes()).padStart(2, '0'); }
+  var TOP = { account: '帳戶', transaction: '交易', holding: '持股' }, WHO = { Borry: '老大', 'Tal Tal': '塔塔' };
+  function draw() {
+    var d = document.querySelector('.kkfx');
+    if (!F.open) { if (d) d.remove(); return; }
+    if (!d) { d = document.createElement('section'); d.className = 'kkfx kkcf-ui'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', '我確認過的事'); document.body.appendChild(d); }
+    var h = '<div class="kkfx-h"><h3>我確認過的事</h3><button type="button" data-fx="close" aria-label="關掉">關掉</button></div>';
+    if (F.st === 'off') h += '<p class="kkfx-s">還沒開：資料庫還沒套上這個功能，套上後這裡會列出你確認過的事。現在按「對」只記在這支手機。</p>';
+    else if (F.st !== 'on') h += '<p class="kkfx-s">讀不到，等一下再打開一次。</p>';
+    else {
+      h += '<p class="kkfx-s">塔塔和大器寫推估之前都要先讀這裡；跟這裡衝突的推估不會出現。共 ' + F.list.length + ' 件。</p>';
+      h += F.list.map(function (f) {
+        var ed = F.edit === f.id;
+        return '<div class="kkfx-i" data-fxid="' + f.id + '"><b>' + esc(f.fact_text) + '</b><small>' + esc(TOP[f.topic] || f.topic) + (f.target_name ? '「' + esc(f.target_name) + '」' : ' #' + esc(f.target_id)) + '｜來源：' + esc(f.source_ref) + '｜' + esc(WHO[f.confirmed_by] || f.confirmed_by) + ' ' + esc(md(f.confirmed_at)) + '</small>' +
+          (ed ? '<label class="vh" for="kkfxIn" style="position:absolute;left:-9999px">改成</label><textarea id="kkfxIn" maxlength="1000">' + esc(f.fact_text) + '</textarea><div class="kkfx-a"><button type="button" data-fx="cancel">取消</button><button type="button" class="ok" data-fx="save"' + (F.busy ? ' disabled' : '') + '>存好</button></div>'
+              : '<div class="kkfx-a"><button type="button" data-fx="edit">改</button><button type="button" class="bad" data-fx="revoke"' + (F.busy ? ' disabled' : '') + '>撤掉</button></div>') + '</div>';
+      }).join('') || '<p class="kkfx-s">還沒有確認過的事。</p>';
+    }
+    d.innerHTML = h;
+  }
+  async function act(a, id) {
+    if (a === 'close') { F.open = false; F.edit = null; draw(); return; }
+    if (a === 'edit') { F.edit = id; draw(); var i = document.getElementById('kkfxIn'); if (i) i.focus(); return; }
+    if (a === 'cancel') { F.edit = null; draw(); return; }
+    if (F.busy) return; var v = ((document.getElementById('kkfxIn') || {}).value || '').trim(); /* 先讀再重畫，重畫會把輸入框換回舊字 */
+    F.busy = true; draw();
+    try {
+      if (a === 'save') { if (!v) throw new Error('要寫內容'); var n = new Date(), t8 = new Date(n.getTime() + 8 * 3600000); await rpc('kk_fact_revise', { p_id: id, p_fact_text: v, p_source_ref: '老大在面板更正 ' + (t8.getUTCMonth() + 1) + '/' + t8.getUTCDate() }); F.edit = null; C('toast', ['改好了，舊的留著紀錄']); }
+      if (a === 'revoke') { if (!window.confirm('撤掉這件？撤掉後塔塔又可以對這個對象寫推估。紀錄會留著。')) { F.busy = false; draw(); return; } await rpc('kk_fact_revoke', { p_id: id }); C('toast', ['撤掉了']); }
+    } catch (e) { C('toast', ['沒存到：' + (e.message || e)]); }
+    F.busy = false; await load(true); draw();
+  }
+  document.addEventListener('click', function (e) {
+    if (document.documentElement.classList.contains('kkfb-on')) return;
+    var t = e.target; if (!t || !t.closest) return;
+    var b = t.closest('[data-fx]'); if (b && b.closest('.kkfx')) { e.preventDefault(); e.stopPropagation(); var row = b.closest('[data-fxid]'); act(b.dataset.fx, row ? Number(row.dataset.fxid) : null); return; }
+    var o = t.closest('[data-cfa="facts"]'); if (o) { e.preventDefault(); e.stopPropagation(); F.open = true; draw(); load(true); }
+  }, true);
+  window.KKFX = { state: F, load: load, open: function () { F.open = true; draw(); load(true); } };
+  var tries = 0, iv = setInterval(function () { if (C('o')) { clearInterval(iv); load(true); } else if (++tries > 60) clearInterval(iv); }, 1000);
+  setInterval(function () { if (!document.hidden) load(false); }, 60000);
+})();
+</script>
+
 
 <style id="kkfb-css">
 /* kk-v35 編修模式（老大 2026-11-23：「點下去之後會變成編修模式」）。只加不改，class 一律 kkfb- 開頭。 */
