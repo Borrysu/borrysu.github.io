@@ -2032,6 +2032,8 @@ function tokenFrom(s){
 let KEY=tokenFrom(location.pathname)||tokenFrom(location.search)||tokenFrom(location.hash);
 const KEY_FROM_URL=KEY.length>=20;
 if(!KEY_FROM_URL)KEY=LS.get('kk_key')||'';
+/* kk-v35 編修模式：主程式包在函式裡，給編修模組讀鑰匙、版面、版號（只讀） */
+window.KKFB_CTX={key:()=>KEY,lay:()=>S.v,ver:()=>typeof KK_VER!=='undefined'?KK_VER:'',url:URL_,ak:APIKEY};
 const STANDALONE=!!(navigator.standalone||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches));
 function zhErr(m){
   m=String(m||'');
@@ -3795,7 +3797,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v34.9', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v35', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4168,5 +4170,395 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
 
 })();
 </script>
+<style id="kkfb-css">
+/* kk-v35 編修模式（老大 2026-11-23：「點下去之後會變成編修模式」）。只加不改，class 一律 kkfb- 開頭。 */
+.kkfb-pen{flex:none;width:44px;height:44px;min-width:44px;border-radius:50%;display:inline-grid;place-items:center;background:transparent;border:0;color:inherit;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.kkfb-pen svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.kkfb-pen[aria-pressed="true"]{background:#1F0E00;color:#FF6700;box-shadow:0 0 0 2px #fff}
+.kkfb-pen .kkfb-dot{position:absolute;margin:-18px 0 0 18px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#FF6700;color:#1F0E00;font:700 10px/16px system-ui,sans-serif}
+html.kkfb-on,html.kkfb-on *{-webkit-touch-callout:none!important;-webkit-user-select:none!important;user-select:none!important}
+html.kkfb-on .kkfb-ui,html.kkfb-on .kkfb-ui *{-webkit-user-select:text!important;user-select:text!important}
+html.kkfb-on body{cursor:crosshair}
+.kkfb-bar{position:relative;flex:none;z-index:40;padding:4px 8px 4px 12px;background:#FF6700;color:#1F0E00;display:flex;align-items:center;gap:6px;font:600 14px/1.25 system-ui,-apple-system,"PingFang TC",sans-serif;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.kkfb-bar .kkfb-t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kkfb-btn{min-height:44px;min-width:44px;padding:0 12px;border-radius:12px;border:1.5px solid currentColor;background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.kkfb-btn.pri{background:#1F0E00;color:#FF6700;border-color:#1F0E00}
+.kkfb-btn[disabled]{opacity:.45}
+.kkfb-pins{position:fixed;inset:0;pointer-events:none;z-index:2147482990}
+.kkfb-box{position:fixed;border:2.5px solid #FF6700;border-radius:8px;background:rgba(255,103,0,.10);box-shadow:0 0 0 2px #fff,inset 0 0 0 1.5px #1F0E00;pointer-events:none}
+.kkfb-box.cur{border-style:dashed}
+.kkfb-pin{position:fixed;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#FF6700;color:#1F0E00;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);pointer-events:auto;cursor:pointer;padding:0;font:800 13px/1 system-ui,sans-serif}
+.kkfb-pin span{display:block;transform:rotate(45deg)}
+.kkfb-pin::after{content:"";position:absolute;inset:-8px}
+.kkfb-dlg{position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 60px);z-index:2147483001;max-width:520px;margin:0 auto;max-height:calc(100% - env(safe-area-inset-top,0px) - 76px);overflow:auto;padding:14px;border-radius:16px;background:var(--surface,var(--solid,#fff));background:var(--x-surface-solid,var(--solid,var(--surface,#fff)));color:var(--ink,#1a1a1a);border:2px solid #FF6700;box-shadow:0 14px 40px rgba(0,0,0,.35);font:15px/1.45 system-ui,-apple-system,"PingFang TC",sans-serif}
+.kkfb-dlg h3{margin:0 0 4px;font-size:16px}
+.kkfb-dlg .kkfb-w{margin:0 0 8px;font-size:13px;color:var(--muted,#666);word-break:break-all}
+.kkfb-dlg textarea{display:block;box-sizing:border-box;width:100%;min-height:96px;font:inherit;font-size:16px;padding:10px;border-radius:10px;border:1px solid var(--line,#ccc);background:transparent;color:inherit;resize:vertical}
+.kkfb-dlg .kkfb-hint{margin:6px 0 0;font-size:12px;color:var(--muted,#666)}
+.kkfb-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.kkfb-row .kkfb-btn{flex:1}
+.kkfb-dlg .kkfb-btn{border-color:var(--line,#bbb)}
+.kkfb-dlg .kkfb-btn.pri{background:#FF6700;color:#1F0E00;border-color:#FF6700}
+.kkfb-dlg .kkfb-btn.bad{color:var(--bad,#c62828)}
+.kkfb-list{list-style:none;margin:8px 0 0;padding:0}
+.kkfb-list li{padding:10px 0;border-top:1px solid var(--line,#ddd)}
+.kkfb-list li b{display:block;font-weight:600}
+.kkfb-list li small{display:block;color:var(--muted,#666);font-size:12px;word-break:break-all}
+.kkfb-st{display:inline-block;margin-right:6px;padding:1px 8px;border-radius:9px;font-size:12px;font-weight:700;border:1px solid currentColor}
+.kkfb-st.sent{color:var(--muted,#666)}.kkfb-st.doing{color:#E65100}.kkfb-st.fixed{color:var(--good,#2e7d32)}.kkfb-st.local{color:var(--bad,#c62828)}
+.kkfb-toast{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 90px);z-index:2147483002;max-width:480px;margin:0 auto;padding:12px 14px;border-radius:12px;background:#1F0E00;color:#fff;font:600 14px/1.4 system-ui,sans-serif;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+</style>
+<script id="kkfb-js">
+/* kk-v35 編修模式（2026-11-23）
+   老大：「目前記帳板上可不可有個區塊或標記功能 有對話窗 彈出之後我就可以自己點選想要修改面板會有問題的面板 直接輸入意見 一輪下來，再按送出直接到你這邊來 你再一起修改？」
+   頂列鉛筆進編修：點哪裡就框起來、插編號圖釘、寫意見；草稿存這支手機（kk_fb_draft），重新整理不會丟。
+   送出走 kk_feedback_add（資料庫同時在逐流「跟大器說」留一則摘要，只由大器本人回）；資料庫還沒開就存本機（kk_fb_sent，local=true）。
+   編修中所有點擊、長按、左滑、連結都不觸發原功能（window 捕獲階段攔下）。 */
+(function () {
+  'use strict';
+  if (window.KKFB) return;
+  var DK = 'kk_fb_draft', SK = 'kk_fb_sent', OK = 'kk_fb_on';
+  var ls = {
+    get: function (k, d) { try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+    del: function (k) { try { localStorage.removeItem(k); } catch (e) {} }
+  };
+  var F = { on: false, draft: ls.get(DK, []), sent: ls.get(SK, []), cur: null, dlg: '', busy: false, lastTouch: 0 };
+  if (!Array.isArray(F.draft)) F.draft = [];
+  if (!Array.isArray(F.sent)) F.sent = [];
+  var T = function (s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); };
+  var cut = function (s, n) { s = T(s); return s.length > n ? s.slice(0, n) : s; };
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var mine = function (el) { return !!(el && el.closest && el.closest('.kkfb-ui')); };
+  var isE = /orig\.html$/.test(location.pathname);
+  function g(name) { try { return (0, eval)('typeof ' + name + "!=='undefined'?" + name + ':undefined'); } catch (e) { return undefined; } }
+  /* index.html 的主程式包在函式裡，變數由它掛的 window.KKFB_CTX 取；orig.html 是全域變數，直接讀 */
+  function cx(k) { var c = window.KKFB_CTX; try { return c && c[k] ? (typeof c[k] === 'function' ? c[k]() : c[k]) : undefined; } catch (e) { return undefined; } }
+  function ver() { return cx('ver') || g('KK_VER') || ''; }
+  function layout() { if (isE) return 'E'; var v = cx('lay'); if (v) return v; var s = g('S'); return (s && s.v) || '?'; }
+  function vis(el) { if (!el || el.hidden) return false; var r = el.getClientRects(); if (!r.length) return false; var cs = getComputedStyle(el); return cs.visibility !== 'hidden' && cs.display !== 'none' && +cs.opacity !== 0; }
+  function page() {
+    var a = [], t = document.querySelector('.tabbar [aria-current="page"],.tb[aria-current="page"]');
+    if (t) { var sp = t.querySelector('span:not(.bdg)'); a.push(cut((sp || t).textContent, 12)); }
+    var ds = document.querySelectorAll('[role="dialog"],dialog[open]');
+    for (var i = 0; i < ds.length; i++) {
+      var d = ds[i]; if (mine(d) || !vis(d)) continue;
+      if (d.id === 'sheet' && !d.classList.contains('open') && !d.classList.contains('on') && d.getAttribute('aria-hidden') === 'true') continue;
+      var h = d.querySelector('h2,h3,[id$="T"],.ttl'); var n = cut((h && h.textContent) || d.getAttribute('aria-label') || '', 24);
+      if (n) a.push(n);
+    }
+    return a.join('／') || cut(document.title, 20);
+  }
+  /* 區塊辨識：優先 data-flip／data-k／id，沒有就產生穩定 CSS 路徑＋前 40 字可見文字 */
+  var PICK = '[data-flip],[data-k],[id],button,a,input,select,textarea,label,li,section,article,[role="button"],[class*="card"],[class*="row"],h1,h2,h3,p,img,svg';
+  var BIG = /^(HTML|BODY|MAIN)$/;
+  var SKIP_ID = { main: 1, app: 1, shell: 1, scroll: 1, phone: 1, shB: 1 };
+  var ACT = 'button,a,[role="button"],[data-act],input,select,textarea,label,summary';
+  function pickEl(t) {
+    if (t && t.nodeType !== 1) t = t.parentElement;
+    if (t && t.closest && t.closest('svg') && t.tagName.toLowerCase() !== 'svg') t = t.closest('svg');
+    var vw = innerWidth, vh = innerHeight;
+    /* 點在按鈕、連結裡（含圖示），就框整顆按鈕 */
+    var b = t && t.closest && t.closest(ACT);
+    if (b && b !== document.body && !mine(b)) { var rb = b.getBoundingClientRect(); if (rb.width * rb.height < vw * vh * 0.5) return b; }
+    var el = t;
+    while (el && el !== document.body) {
+      if (el.matches && el.matches(PICK) && !BIG.test(el.tagName) && !SKIP_ID[el.id]) {
+        var r = el.getBoundingClientRect();
+        if (r.width * r.height < vw * vh * 0.7) return el;
+      }
+      el = el.parentElement;
+    }
+    return t;
+  }
+  function seg(el) {
+    var tag = el.tagName.toLowerCase(), p = el.parentElement;
+    var cls = (typeof el.className === 'string' ? el.className : '').trim().split(/\s+/).filter(function (c) { return c && !/^(on|open|cur|active|kkfb-)/.test(c); }).slice(0, 2);
+    var s = tag + (cls.length ? '.' + cls.join('.') : '');
+    if (p) { var same = Array.prototype.filter.call(p.children, function (c) { return c.tagName === el.tagName; }); if (same.length > 1) s += ':nth-of-type(' + (same.indexOf(el) + 1) + ')'; }
+    return s;
+  }
+  function cssPath(el) {
+    var a = [];
+    while (el && el.nodeType === 1 && el !== document.body && a.length < 8) {
+      if (el.id) { a.unshift('#' + el.id); return a.join(' > '); }
+      a.unshift(seg(el)); el = el.parentElement;
+    }
+    return a.join(' > ');
+  }
+  function blockId(el) {
+    var d = el.dataset || {};
+    if (d.flip) return 'data-flip=' + d.flip;
+    if (d.k) return 'data-k=' + d.k + (d.act ? ' act=' + d.act : '');
+    if (el.id) return '#' + el.id;
+    if (d.tab) return 'data-tab=' + d.tab;
+    if (d.act) return 'act=' + d.act + (d.c ? ' c=' + d.c : '') + (d.id ? ' id=' + d.id : '');
+    var up = el.parentElement ? el.parentElement.closest('[data-flip],[data-k],[id]') : null;
+    if (up && !SKIP_ID[up.id] && !BIG.test(up.tagName)) { var u = up.dataset || {}; return (u.flip ? 'data-flip=' + u.flip : u.k ? 'data-k=' + u.k : '#' + up.id) + ' 內'; }
+    return '';
+  }
+  function blockName(el) {
+    return cut(el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('placeholder') || el.innerText || el.textContent || el.value || el.tagName.toLowerCase(), 40);
+  }
+  function find(p) {
+    var el = null;
+    try { if (p.block_path) el = document.querySelector(p.block_path); } catch (e) {}
+    if (el && p.block_text && cut(el.innerText || el.textContent || '', 40) !== p.block_text && cut(el.getAttribute('aria-label') || '', 40) !== p.block_text) {
+      /* 路徑找到的元素字不同（重畫過），改用 id 再找 */
+      var m = /^#([^\s]+)$/.exec(p.block_id || ''); var e2 = m ? document.getElementById(m[1]) : null; if (e2) el = e2;
+    }
+    if (!el && p.block_id) {
+      var mm = /^(data-flip|data-k)=([^\s]+)/.exec(p.block_id) || /^#([^\s]+)$/.exec(p.block_id);
+      try { el = mm ? (mm.length === 3 ? document.querySelector('[' + mm[1] + '="' + mm[2].replace(/"/g, '\\"') + '"]') : document.getElementById(mm[1])) : null; } catch (e) {}
+    }
+    return el && vis(el) ? el : null;
+  }
+  function save() { ls.set(DK, F.draft); }
+  function saveSent() { ls.set(SK, F.sent.slice(-200)); }
+  var $u = {};
+  function mk(tag, cls, html) { var e = document.createElement(tag); e.className = cls; if (html != null) e.innerHTML = html; return e; }
+  function toast(msg) {
+    var t = $u.toast; if (!t) { t = $u.toast = mk('div', 'kkfb-toast kkfb-ui'); t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); document.body.appendChild(t); }
+    t.textContent = msg; t.hidden = false; clearTimeout(t._h); t._h = setTimeout(function () { t.hidden = true; }, 3200);
+  }
+  /* ---------- 鉛筆 ---------- */
+  var PEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg>';
+  function mountPen() {
+    if (document.getElementById('kkfbPen')) return;
+    var b = mk('button', 'kkfb-pen kkfb-ui', PEN); b.id = 'kkfbPen'; b.type = 'button';
+    b.setAttribute('aria-label', '編修模式：點畫面標出要改的地方'); b.setAttribute('title', '編修模式'); b.setAttribute('aria-pressed', 'false');
+    var host, before = null;
+    if (isE) { host = document.querySelector('#top .hr'); before = host && host.firstChild; }
+    else { host = document.querySelector('header.hd'); before = document.getElementById('maskBtn'); }
+    if (!host) return;
+    host.insertBefore(b, before && before.parentNode === host ? before : null);
+    penDot();
+  }
+  function penDot() {
+    var b = document.getElementById('kkfbPen'); if (!b) return;
+    b.setAttribute('aria-pressed', F.on ? 'true' : 'false');
+    var d = b.querySelector('.kkfb-dot'), n = F.draft.length;
+    if (n && !F.on) { if (!d) { d = mk('span', 'kkfb-dot'); b.appendChild(d); } d.textContent = n; b.setAttribute('aria-label', '編修模式：還有 ' + n + ' 處草稿沒送'); }
+    else { if (d) d.remove(); b.setAttribute('aria-label', '編修模式：點畫面標出要改的地方'); }
+  }
+  /* ---------- 橘條 ---------- */
+  function bar() {
+    var b = $u.bar;
+    if (!F.on) { if (b) b.remove(); $u.bar = null; return; }
+    if (!b || !b.isConnected) {
+      b = $u.bar = mk('div', 'kkfb-bar kkfb-ui'); b.setAttribute('role', 'toolbar'); b.setAttribute('aria-label', '編修中');
+      /* 放在頂列正下方、跟著版面排（不蓋住頂列，外殼高度做法不動，只是內容區暫時少一條的高度） */
+      var hd = document.querySelector(isE ? '#top' : 'header.hd');
+      if (hd && hd.parentNode) hd.parentNode.insertBefore(b, hd.nextSibling); else document.body.appendChild(b);
+    }
+    var n = F.draft.length;
+    b.innerHTML = '<span class="kkfb-t" aria-live="polite">編修中・已標 ' + n + ' 處</span>' +
+      '<button type="button" class="kkfb-btn" data-fb="mine">我的意見</button>' +
+      '<button type="button" class="kkfb-btn pri" data-fb="send"' + (n && !F.busy ? '' : ' disabled') + '>' + (F.busy ? '送出中…' : '送出') + '</button>' +
+      '<button type="button" class="kkfb-btn" data-fb="quit">取消</button>';
+  }
+  /* ---------- 圖釘 ---------- */
+  function pins() {
+    var L = $u.pins;
+    if (!F.on) { if (L) L.remove(); $u.pins = null; return; }
+    if (!L) { L = $u.pins = mk('div', 'kkfb-pins kkfb-ui'); document.body.appendChild(L); }
+    var html = '';
+    var list = F.draft.slice(); if (F.cur && F.cur.isNew) list.push(F.cur);
+    list.forEach(function (p) {
+      var el = (p === F.cur && F.cur._el) || find(p);
+      if (!el) return;
+      var r = el.getBoundingClientRect(); if (!r.width && !r.height) return;
+      var x = Math.max(16, Math.min(innerWidth - 16, r.left + 4)), y = Math.max(16, r.top + 4);
+      html += '<div class="kkfb-box' + (p === F.cur ? ' cur' : '') + '" style="left:' + (r.left - 3) + 'px;top:' + (r.top - 3) + 'px;width:' + (r.width + 6) + 'px;height:' + (r.height + 6) + 'px"></div>';
+      if (p.pin_no) html += '<button type="button" class="kkfb-pin" data-fb="pin" data-n="' + p.pin_no + '" aria-label="第 ' + p.pin_no + ' 處：' + esc(cut(p.comment, 20)) + '" style="left:' + x + 'px;top:' + y + 'px"><span>' + p.pin_no + '</span></button>';
+    });
+    L.innerHTML = html;
+  }
+  var raf = 0;
+  function rePins() { if (!F.on || raf) return; raf = requestAnimationFrame(function () { raf = 0; pins(); }); }
+  /* ---------- 對話框 ---------- */
+  function closeDlg(keepCur) { if ($u.dlg) $u.dlg.remove(); $u.dlg = null; F.dlg = ''; if (!keepCur) F.cur = null; pins(); }
+  function dlg(kind) {
+    closeDlg(kind === 'pin'); F.dlg = kind;
+    var d = $u.dlg = mk('section', 'kkfb-dlg kkfb-ui'); d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'false');
+    if (kind === 'pin') {
+      var p = F.cur, n = p.pin_no || (F.draft.length + 1);
+      d.setAttribute('aria-label', '第 ' + n + ' 處意見');
+      d.innerHTML = '<h3>第 ' + n + ' 處：' + esc(p.block_text || p.block_name || '（沒有字的地方）') + '</h3>' +
+        '<p class="kkfb-w">' + esc(p.page) + (p.block_id ? '｜' + esc(p.block_id) : '') + '</p>' +
+        '<label for="kkfbIn" class="vh" style="position:absolute;left:-9999px">意見</label><textarea id="kkfbIn" rows="4" maxlength="2000" placeholder="這裡哪裡怪、想改成怎樣（可以按鍵盤上的麥克風用講的）">' + esc(p.comment || '') + '</textarea>' +
+        '<div class="kkfb-row">' + (p.isNew ? '' : '<button type="button" class="kkfb-btn bad" data-fb="del">刪掉這處</button>') +
+        '<button type="button" class="kkfb-btn" data-fb="cancel">取消</button><button type="button" class="kkfb-btn pri" data-fb="ok">' + (p.isNew ? '標上去' : '存好') + '</button></div>';
+      document.body.appendChild(d);
+      setTimeout(function () { var i = document.getElementById('kkfbIn'); if (i) { try { i.focus({ preventScroll: true }); } catch (e) { i.focus(); } } }, 60);
+    } else if (kind === 'quit') {
+      d.setAttribute('aria-label', '離開編修');
+      d.innerHTML = '<h3>還有 ' + F.draft.length + ' 處沒送出</h3><p class="kkfb-w">草稿可以留著，下次按鉛筆接著改。</p>' +
+        '<div class="kkfb-row"><button type="button" class="kkfb-btn pri" data-fb="keep">留著草稿，先離開</button></div>' +
+        '<div class="kkfb-row"><button type="button" class="kkfb-btn bad" data-fb="clear">全部清掉再離開</button><button type="button" class="kkfb-btn" data-fb="cancel">繼續編修</button></div>';
+      document.body.appendChild(d);
+    } else if (kind === 'mine') {
+      d.setAttribute('aria-label', '我的意見');
+      d.innerHTML = mineHtml(); document.body.appendChild(d); refreshMine();
+    }
+    var bb = $u.bar && $u.bar.getBoundingClientRect(); if (bb && bb.bottom > 0) d.style.top = Math.round(bb.bottom + 8) + 'px';
+    pins();
+  }
+  var ST = { sent: '已送出', doing: '處理中', fixed: '已修好', local: '存本機' };
+  function mineHtml() {
+    var dr = F.draft.length, rows = F.sent.slice().reverse().slice(0, 60);
+    var loc = F.sent.filter(function (x) { return x.local; }).length;
+    return '<h3>我的意見</h3><p class="kkfb-w">草稿 ' + dr + ' 處還沒送；已送 ' + F.sent.filter(function (x) { return !x.local; }).length + ' 則' + (loc ? '；存本機 ' + loc + ' 則（資料庫還沒開）' : '') + '</p>' +
+      (rows.length ? '<ul class="kkfb-list">' + rows.map(function (x) {
+        var st = x.local ? 'local' : (x.status || 'sent'), lab = ST[st] + (st === 'fixed' && x.fixed_version ? '（' + esc(x.fixed_version) + '）' : '');
+        return '<li><b><span class="kkfb-st ' + st + '">' + lab + '</span>第 ' + x.pin_no + ' 處：' + esc(cut(x.comment, 60)) + '</b><small>' + esc(x.page) + '｜' + esc(x.block_text || x.block_id || '') + '｜' + esc((x.created_at || '').slice(5, 16).replace('T', ' ')) + '</small></li>';
+      }).join('') + '</ul>' : '<p class="kkfb-w">還沒送過意見。</p>') +
+      '<div class="kkfb-row">' + (loc ? '<button type="button" class="kkfb-btn pri" data-fb="resend">把存本機的再送一次</button>' : '') + '<button type="button" class="kkfb-btn" data-fb="cancel">關掉</button></div>';
+  }
+  async function refreshMine() {
+    if (!F.sent.some(function (x) { return !x.local && x.id; })) return;
+    try {
+      var rows = await call('kk_feedback_list', { p_limit: 200 });
+      if (!Array.isArray(rows)) return;
+      var by = {}; rows.forEach(function (r) { by[r.id] = r; });
+      var ch = false;
+      F.sent.forEach(function (x) { var r = x.id && by[x.id]; if (r && (r.status !== x.status || r.fixed_version !== x.fixed_version)) { x.status = r.status; x.fixed_version = r.fixed_version; ch = true; } });
+      if (ch) { saveSent(); if (F.dlg === 'mine' && $u.dlg) $u.dlg.innerHTML = mineHtml(); }
+    } catch (e) {}
+  }
+  /* ---------- 送出 ---------- */
+  function keyNow() { return cx('key') || g('KEY') || ''; }
+  async function call(name, args) {
+    var url = cx('url') || g('URL_'), ak = cx('ak') || g('APIKEY'), r, t, j = null;
+    var ac = typeof AbortController === 'function' ? new AbortController() : null, to = setTimeout(function () { if (ac) ac.abort(); }, 15000);
+    try { r = await fetch(url + '/rest/v1/rpc/' + name, { method: 'POST', headers: { apikey: ak, 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ p_key: keyNow() }, args || {})), cache: 'no-store', signal: ac ? ac.signal : undefined }); t = await r.text(); }
+    catch (e) { var ne = new Error(e && e.name === 'AbortError' ? '連線逾時' : '連不上伺服器'); ne.net = true; throw ne; }
+    finally { clearTimeout(to); }
+    try { j = JSON.parse(t); } catch (e) { j = null; }
+    if (!r.ok) {
+      var m = (j && (j.message || j.hint)) || t || ('HTTP ' + r.status), er = new Error(m);
+      er.missing = r.status === 404 || (j && j.code === 'PGRST202') || /Could not find the function|does not exist/i.test(m);
+      throw er;
+    }
+    return j;
+  }
+  function uuid() { try { return crypto.randomUUID(); } catch (e) { return 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, function () { return (Math.random() * 16 | 0).toString(16); }); } }
+  function item(p) {
+    return { pin_no: p.pin_no, block_id: p.block_id, block_path: p.block_path, block_text: p.block_text, page: p.page, layout: p.layout, skin: p.skin, version: p.version, vw: p.vw, vh: p.vh, comment: p.comment, created_at: p.created_at };
+  }
+  async function send(list, isResend) {
+    if (F.busy || !list.length) return;
+    F.busy = true; bar();
+    var cb = (isResend && list[0].client_batch) || uuid();
+    var items = list.map(item);
+    try {
+      if (keyNow().length < 20) { var nk = new Error('no key'); nk.missing = true; nk.nokey = true; throw nk; }
+      var res = await call('kk_feedback_add', { p_items: items, p_client_batch: cb });
+      var ids = (res && res.ids) || [];
+      var done = list.map(function (p, i) { return Object.assign(item(p), { id: ids[i] || null, batch_id: res && res.batch_id, client_batch: cb, status: 'sent', local: false }); });
+      if (isResend) F.sent = F.sent.filter(function (x) { return !x.local; });
+      F.sent = F.sent.concat(done); saveSent();
+      if (!isResend) { F.draft = []; save(); }
+      F.busy = false; setOn(false);
+      toast('送出 ' + done.length + ' 則，大器會收到。按鉛筆裡的「我的意見」看進度');
+    } catch (e) {
+      F.busy = false;
+      if (e.missing) {
+        if (!isResend) {
+          var loc = list.map(function (p) { return Object.assign(item(p), { id: null, client_batch: cb, status: 'sent', local: true }); });
+          F.sent = F.sent.concat(loc); saveSent(); F.draft = []; save(); setOn(false);
+          toast(e.nokey ? '已存本機：這支手機還沒有鑰匙，送不出去' : '已存本機，資料庫還沒開。開了以後到「我的意見」再送一次');
+        } else { bar(); if (F.dlg === 'mine' && $u.dlg) $u.dlg.innerHTML = mineHtml(); toast('資料庫還沒開，先留在本機'); }
+      } else {
+        bar(); toast('沒送出：' + cut(e.message || '未知錯誤', 60) + '。草稿還在，可以再按一次送出');
+      }
+    }
+  }
+  /* ---------- 模式 ---------- */
+  function setOn(v) {
+    F.on = !!v; if (F.on) ls.set(OK, 1); else ls.del(OK);
+    document.documentElement.classList.toggle('kkfb-on', F.on);
+    if (F.on) { try { var a = document.activeElement; if (a && !mine(a) && a.blur) a.blur(); } catch (e) {} }
+    if (!F.on) closeDlg();
+    bar(); pins(); penDot();
+  }
+  function choose(target) {
+    var el = pickEl(target); if (!el || mine(el)) return;
+    var hit = F.draft.filter(function (p) { var e = find(p); return e === el; })[0];
+    if (hit) { F.cur = hit; dlg('pin'); return; }
+    var sk = document.documentElement.getAttribute('data-skin') || '', th = document.documentElement.getAttribute('data-theme') || '';
+    F.cur = { isNew: true, _el: el, pin_no: 0, block_id: blockId(el), block_path: cssPath(el), block_text: cut(el.innerText || el.textContent || '', 40) || cut(el.getAttribute('aria-label') || '', 40), block_name: blockName(el),
+      page: page(), layout: layout(), skin: sk + (th ? '/' + th : ''), version: ver(), vw: innerWidth, vh: innerHeight, comment: '', created_at: '' };
+    dlg('pin');
+  }
+  function act(a, b) {
+    if (a === 'pen') { setOn(!F.on); if (F.on) toast(F.draft.length ? '接著上次的 ' + F.draft.length + ' 處' : '點畫面上要改的地方，寫一句意見'); return; }
+    if (a === 'send') { send(F.draft.slice()); return; }
+    if (a === 'quit') { if (F.draft.length) dlg('quit'); else setOn(false); return; }
+    if (a === 'keep') { setOn(false); toast('草稿留著 ' + F.draft.length + ' 處'); return; }
+    if (a === 'clear') { F.draft = []; save(); setOn(false); toast('草稿清掉了'); return; }
+    if (a === 'mine') { dlg('mine'); return; }
+    if (a === 'resend') { send(F.sent.filter(function (x) { return x.local; }), true); return; }
+    if (a === 'cancel') { closeDlg(); return; }
+    if (a === 'pin') { var p = F.draft.filter(function (x) { return String(x.pin_no) === b.dataset.n; })[0]; if (p) { F.cur = p; dlg('pin'); } return; }
+    if (a === 'del') { var c = F.cur; F.draft = F.draft.filter(function (x) { return x !== c; }); F.draft.forEach(function (x, i) { x.pin_no = i + 1; }); save(); closeDlg(); bar(); penDot(); toast('刪掉了，剩 ' + F.draft.length + ' 處'); return; }
+    if (a === 'ok') {
+      var i = document.getElementById('kkfbIn'), v = i ? i.value.trim() : '';
+      if (!v) { if (i) i.focus(); toast('寫一句這裡要怎麼改'); return; }
+      var q = F.cur; q.comment = v.slice(0, 2000);
+      if (q.isNew) { delete q.isNew; delete q._el; q.pin_no = F.draft.length + 1; q.created_at = new Date().toISOString(); F.draft.push(q); }
+      save(); F.cur = null; closeDlg(); bar(); toast('標好第 ' + q.pin_no + ' 處'); return;
+    }
+  }
+  /* ---------- 事件：編修中全部在 window 捕獲階段攔下 ---------- */
+  var stop = function (e) { e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); };
+  var tx = 0, ty = 0, tt = 0;
+  window.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest && e.target.closest('#kkfbPen,[data-fb]');
+    if (b && mine(b)) { e.preventDefault(); stop(e); if (b.disabled) return; act(b.id === 'kkfbPen' ? 'pen' : b.dataset.fb, b); return; }
+    if (!F.on || mine(e.target)) return;
+    e.preventDefault(); stop(e);
+    if (Date.now() - F.lastTouch < 700) return;
+    if (F.dlg && F.dlg !== 'pin') return;
+    choose(e.target);
+  }, true);
+  ['pointerdown', 'pointerup', 'pointermove', 'pointercancel', 'mousedown', 'mouseup', 'dblclick', 'auxclick', 'contextmenu', 'dragstart', 'touchmove', 'touchcancel', 'submit', 'input', 'change', 'focusin', 'wheel'].forEach(function (ev) {
+    window.addEventListener(ev, function (e) {
+      if (!F.on || mine(e.target)) return;
+      if (ev === 'focusin') { try { e.target.blur(); } catch (x) {} stop(e); return; }
+      if (ev === 'wheel' || ev === 'touchmove') { stop(e); return; } /* 捲動照常（不 preventDefault），只是不讓原本的左滑、拖曳收到 */
+      if (ev !== 'pointermove') e.preventDefault();
+      stop(e);
+    }, { capture: true, passive: false });
+  });
+  window.addEventListener('touchstart', function (e) {
+    if (!F.on || mine(e.target)) return;
+    var t = e.touches[0]; tx = t.clientX; ty = t.clientY; tt = Date.now(); stop(e);
+  }, { capture: true, passive: false });
+  window.addEventListener('touchend', function (e) {
+    if (!F.on || mine(e.target)) return;
+    stop(e);
+    var t = e.changedTouches[0];
+    if (Math.abs(t.clientX - tx) < 10 && Math.abs(t.clientY - ty) < 10 && Date.now() - tt < 800) {
+      e.preventDefault(); F.lastTouch = Date.now();
+      if (F.dlg && F.dlg !== 'pin') return;
+      choose(document.elementFromPoint(t.clientX, t.clientY) || e.target);
+    }
+  }, { capture: true, passive: false });
+  window.addEventListener('keydown', function (e) {
+    if (!F.on || mine(e.target)) return;
+    if (e.key === 'Escape') { act('quit'); }
+    stop(e); if (e.key !== 'Tab') e.preventDefault();
+  }, true);
+  window.addEventListener('scroll', rePins, true);
+  window.addEventListener('resize', rePins);
+  if (window.visualViewport) visualViewport.addEventListener('resize', rePins);
+  try { new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) { if (!mine(ms[i].target)) { rePins(); penDot(); if (!document.getElementById('kkfbPen')) mountPen(); return; } } }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+  function init() { mountPen(); if (ls.get(OK, 0)) setOn(true); else penDot(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+  window.KKFB = { state: F, setOn: setOn, send: function () { return send(F.draft.slice()); }, page: page, pickEl: pickEl, cssPath: cssPath, blockId: blockId };
+})();
+</script>
+
 </body>
 </html>
