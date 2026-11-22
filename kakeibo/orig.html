@@ -1212,6 +1212,19 @@ details.kk-more>summary::-webkit-details-marker{display:none}
 details.kk-more>summary::after{content:"›";transform:rotate(90deg);display:inline-block;margin-left:6px}
 details.kk-more[open]>summary::after{transform:rotate(-90deg)}
 .kk-more-p{margin:0 0 6px;font-size:14px;color:var(--ink2,var(--ink));line-height:1.55}
+/* v34.1 */
+.th-cl .th-x{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.th-cl.th-open .th-x{display:block;-webkit-line-clamp:unset}
+.th-tog{display:inline-flex;align-items:center;min-height:44px;margin:-8px 0 -12px;padding:0 4px;border:0;background:none;color:var(--muted);font:inherit;font-size:13px;font-weight:700;text-decoration:underline}
+.kk-debt{margin-top:10px;padding:0 0 4px}
+.kk-debt .cardrow{width:100%}
+.cx-host{position:relative}
+.cface{position:absolute;top:-20px;right:-12px;width:44px;height:44px;display:grid;place-items:center;cursor:pointer;z-index:3}
+.cface i{width:24px;height:24px;border-radius:50%;background:var(--solid);border:1px solid var(--line);box-shadow:var(--shadow);display:block;position:relative}
+.cface i::before,.cface i::after{content:"";position:absolute;top:8px;width:4px;height:7px;border-radius:2px;background:var(--ink)}
+.cface i::before{left:7px}.cface i::after{right:7px}
+[data-cardopen]{cursor:pointer}
+.cline{padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
 
 </style></head><body data-skin="6" data-theme="light">
 <a class="skip" href="#scroll">跳到內容</a>
@@ -4103,17 +4116,21 @@ function thWhere(r) {
 }
 function thTime(s) { var d = new Date(s); if (isNaN(d)) return ''; var md = d.toLocaleDateString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric' }), hm = d.toLocaleTimeString('zh-TW', { timeZone: 'Asia/Taipei', hour: '2-digit', minute: '2-digit', hour12: false }); return md + ' ' + hm; }
 /* ---------- 畫面：每個發話處放一個 data-th 槽，回覆就地出現 ---------- */
+function thA(r, t) { var long = String(r.text || '').length > 60; return '<p class="th-a' + (long ? ' th-cl' : '') + '"><span class="th-w">塔塔</span><span class="th-x">' + thEsc(r.text) + '</span>' + (long ? '<button type="button" class="th-tog" data-th-tog>看全文</button>' : '') + '<small class="th-t">' + thTime(r.at) + (t.how === 'guess' ? '・推定是回這則' : '') + '</small></p>'; }
 function thItem(t) {
-  var h = '<div class="th-i" data-cid="' + t.cid + '"><p class="th-q"><span class="th-w">你</span>' + thEsc(t.q) + '</p>';
+  var h = '<div class="th-i" data-cid="' + t.cid + '"><p class="th-q' + (String(t.q).length > 60 ? ' th-cl' : '') + '"><span class="th-w">你</span><span class="th-x">' + thEsc(t.q) + '</span></p>';
   if (t.st === 'fail') h += '<p class="th-a th-err" role="status">沒傳出去：' + thEsc(t.err) + '</p>';
-  else if (t.reps && t.reps.length) t.reps.forEach(function (r) { h += '<p class="th-a"><span class="th-w">塔塔</span>' + thEsc(r.text) + '<small class="th-t">' + thTime(r.at) + (t.how === 'guess' ? '・推定是回這則' : '') + '</small></p>'; });
+  else if (t.reps && t.reps.length) { var rs = t.reps; if (rs.length > 1) h += '<button type="button" class="th-more" data-th-all="' + t.cid + '">看全串 ' + rs.length + ' 則</button>'; h += (THX.all && THX.all[t.cid] ? rs : rs.slice(-1)).map(function (r) { return thA(r, t); }).join(''); }
   else h += '<p class="th-a th-wait" role="status"><span class="th-w">塔塔</span>' + (t.st === 'sending' ? '傳送中' : (Date.now() - t.at < 120000 ? '傳到了，回了會出現在這裡' : '還沒回，按 ↻ 再看一次')) + '</p>';
   return h + '</div>';
 }
+/* 同一個地方的來回收成一串：只露最後一問一答；已回覆超過 30 分鐘的收成一行 */
 function thBlock(org, max) {
   var L = TH.filter(function (t) { return t.org === org; }); if (!L.length) return '';
-  var open = THX.open[org], more = L.length - max, vis = open || more <= 0 ? L : L.slice(-max);
-  return (more > 0 && !open ? '<button type="button" class="th-more" data-th-more="' + thEsc(org) + '">更早的 ' + more + ' 則</button>' : '') + vis.map(thItem).join('');
+  var open = THX.open[org], more = L.length - 1, vis = open ? L : L.slice(-1), last = L[L.length - 1];
+  var done = !open && last.reps && last.reps.length && Date.now() - thMs(last.reps[last.reps.length - 1].at) > 1800000;
+  if (done) return '<button type="button" class="th-more th-done" data-th-more="' + thEsc(org) + '">跟塔塔說過 ' + L.length + ' 次，最後一次已回 ›</button>';
+  return (more > 0 && !open ? '<button type="button" class="th-more" data-th-more="' + thEsc(org) + '">看更早的 ' + more + ' 則</button>' : '') + vis.map(thItem).join('');
 }
 function thSlot(org, max) { max = max || 3; return '<div class="th" data-th="' + thEsc(org) + '" data-max="' + max + '" aria-live="polite">' + thBlock(org, max) + '</div>'; }
 function thPaint() { var els = document.querySelectorAll('[data-th]'); for (var i = 0; i < els.length; i++) { var el = els[i]; el.innerHTML = thBlock(el.getAttribute('data-th'), +el.getAttribute('data-max') || 3); } }
@@ -4132,7 +4149,11 @@ function thReveal(t, soft) {
 function thPending() { var now = Date.now(); return TH.some(function (t) { return t.st === 'sent' && !(t.reps && t.reps.length) && now - t.at < 120000; }); }
 function thPollStart() { THX.until = Date.now() + 120000; if (!THX.timer) thTick(); }
 function thTick() { THX.timer = setTimeout(function () { THX.timer = 0; thFetch().then(function (rows) { thOnReps(rows); thIngest(rows); }).catch(function () {}).then(function () { if (thPending() && Date.now() < THX.until) thTick(); else thPaint(); }); }, 5000); }
-document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-th-more]'); if (!b) return; THX.open[b.getAttribute('data-th-more')] = 1; thPaint(); });
+document.addEventListener('click', function (e) {
+  if (!e.target.closest) return; var g = e.target.closest('[data-th-tog]');
+  if (g) { e.stopPropagation(); var p = g.parentNode, on = p.classList.toggle('th-open'); g.textContent = on ? '收起' : '看全文'; return; }
+  var a = e.target.closest('[data-th-all]'); if (a) { e.stopPropagation(); THX.all = THX.all || {}; THX.all[a.getAttribute('data-th-all')] = 1; thPaint(); return; }
+  var b = e.target.closest('[data-th-more]'); if (!b) return; e.stopPropagation(); THX.open[b.getAttribute('data-th-more')] = 1; thPaint(); }, true);
 /* ---------- v34 減字：塔塔一張卡只留一句（20 字內），其餘收進「看細節」；長的說明句收進「看說明」 ---------- */
 function tdLen(s) { return String(s).replace(/\s+/g, '').length; }
 function tdCut(text) { /* 回傳要留在卡面的字數（原字串索引） */
@@ -4162,6 +4183,48 @@ function tdHelp(list, host, before) { /* 長說明句：同一區塊收成一個
   if (before && before.parentNode === host) host.insertBefore(d, before); else host.appendChild(d);
 }
 function tdHelpable(p) { if (p.getAttribute('data-td') || p.id || p.getAttribute('role')) return false; if (p.querySelector('button,a,input,select,textarea,[data-act]')) return false; if (p.closest('.th,.kk-more,details,.bub,.facts')) return false; var t = p.textContent || ''; if ((t.match(/\d[\d,]{2,}/g) || []).length >= 2) return false; return tdLen(t) > 20; }
+
+/* ---------- v34.1 卡片都能互動：點卡片＝打開細節；卡上的塔塔小臉＝跟塔塔說這張卡 ----------
+ 各版面要先定義：cardOpenX(title, lines, el)、cardAskX(face, title, key, summary)。 */
+var CARDS = {};
+function cardKey(s) { var h = 0; s = String(s); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return 'c' + (h >>> 0).toString(36); }
+function cardTitle(el) {
+  var t = el.getAttribute('data-ctitle'); if (t) return t;
+  var h = el.querySelector('h2,h3,.lab,.k,.t1,b,.kick'); t = (h ? h.textContent : el.textContent) || '';
+  t = t.replace(/[›‹⌄]/g, '').replace(/\s+/g, ' ').trim(); if (t.length > 16) t = t.slice(0, 16);
+  return t || '這張卡';
+}
+function cardLines(el) {
+  var seen = {}, out = [];
+  String(el.innerText || el.textContent || '').split('\n').forEach(function (x) { x = x.replace(/[›‹⌄]/g, '').trim(); if (!x || seen[x] || x === '看細節' || x === '看說明') return; seen[x] = 1; out.push(x); });
+  return out.slice(0, 24);
+}
+var CARD_INTERACT = 'button,a,input,select,textarea,label,summary,details,[data-act],[data-cask],[role="button"],[data-det],[data-aid],[data-dacct],[data-rv],[data-rvok],[data-rvedit],[data-rvfix],[data-dask],[data-more],[data-more],[data-gk]';
+function kkCards(root, sel, faceSel) {
+  if (!root) return; var els = root.querySelectorAll(sel);
+  for (var i = 0; i < els.length; i++) {
+    var el = els[i]; if (el.getAttribute('data-cx') || el.closest('.th,details.kk-more,.cface')) continue;
+    el.setAttribute('data-cx', '1'); var title = cardTitle(el), key = cardKey(title); el.setAttribute('data-ctitle', title); el.setAttribute('data-ckey', key);
+    var tag = el.tagName; if (tag !== 'BUTTON' && tag !== 'A' && !el.hasAttribute('data-act') && !el.hasAttribute('data-det')) el.setAttribute('data-cardopen', '1');
+    if (faceSel && el.matches(faceSel)) {
+      var ey = el.querySelector(':scope > .eyes');
+      if (ey) { ey.setAttribute('data-cask', ''); ey.setAttribute('role', 'button'); ey.setAttribute('tabindex', '0'); ey.setAttribute('aria-label', '跟塔塔說「' + title + '」'); ey.classList.add('cface-ey'); }
+      else el.insertAdjacentHTML('beforeend', '<span class="cface" role="button" tabindex="0" data-cask aria-label="跟塔塔說「' + thEsc(title) + '」"><i></i></span>');
+      el.classList.add('cx-host');
+      if (TH.some(function (t) { return t.org === 'card:' + key; }) && !(el.nextElementSibling && el.nextElementSibling.getAttribute('data-th') === 'card:' + key)) el.insertAdjacentHTML('afterend', thSlot('card:' + key, 1));
+    }
+  }
+}
+document.addEventListener('click', function (e) {
+  if (!e.target.closest) return;
+  var f = e.target.closest('[data-cask]');
+  if (f) { var host = f.closest('[data-ckey]'); if (!host) return; e.stopPropagation(); e.preventDefault(); var ti = host.getAttribute('data-ctitle'); cardAskX(f, ti, host.getAttribute('data-ckey'), cardLines(host).filter(function (x) { return x !== ti; }).slice(0, 4).join('，').slice(0, 80)); return; }
+  var c = e.target.closest('[data-cardopen]'); if (!c) return;
+  var inner = e.target.closest(CARD_INTERACT); if (inner && c.contains(inner) && inner !== c) return;
+  e.stopPropagation(); cardOpenX(c.getAttribute('data-ctitle'), cardLines(c), c);
+}, true);
+document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-cask]')) { e.preventDefault(); e.target.click(); } });
+function cardTokens(title) { return String(title).split(/[\s·・，、：:（）()\/]+/).filter(function (x) { return x.length >= 2 && !/^[\d,.$NT]+$/.test(x); }).slice(0, 4); }
 
 /* ---------- v34 E 版接線：回覆就地看見、帳戶跟塔塔說、減字（接在 z_live.js 後面，同名函式以這裡為準） ---------- */
 function thEsc(s) { return esc(String(s == null ? '' : s)); }
@@ -4265,6 +4328,68 @@ syncFab = function () {
   var r = fab.getBoundingClientRect(), vh = innerHeight;
   if (r.top < 8 || r.bottom > vh - 8) { var kp = $('keypad'), k = kp ? kp.getBoundingClientRect() : null, b = k && k.height > 0 && k.top > 80 && k.top < vh ? vh - k.top + 12 : 96; fab.style.bottom = Math.max(12, Math.min(vh - 80, b)) + 'px'; }
 };
+/* ---------- v34.1 E 版：欠款卡費分期上首頁、訂閱交給塔塔、回報頁不無限延伸、卡片都能互動 ---------- */
+function eNextDue(day) { if (!day) return null; var t = new Date(), y = t.getFullYear(), m = t.getMonth() + 1, dd = t.getDate(); if (dd > day) { m++; if (m > 12) { m = 1; y++; } } var last = new Date(y, m, 0).getDate(), d = new Date(y, m - 1, Math.min(day, last)); return { md: (m) + '/' + d.getDate(), days: Math.round((d - new Date(t.getFullYear(), t.getMonth(), dd)) / 864e5) }; }
+function eDebtHtml() {
+  var rows = [];
+  (D.accounts || []).filter(function (a) { return a.kind === 'credit_card' && !a.archived && Number(a.computed_balance) < 0; }).forEach(function (a) { var n = eNextDue(a.due_day); rows.push({ t: n ? n.days : 9999, h: '<button type="button" class="cardrow" data-dacct="' + a.id + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(a.name) + ' 卡費</div><div class="t2">' + (n ? n.md + ' 截止，' + (n.days === 0 ? '今天' : n.days + ' 天後') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(-Number(a.computed_balance)) + '</div></button>' }); });
+  (D.debts || []).forEach(function (db, i) { if (!(Number(db.remaining) > 0)) return; rows.push({ t: 9998, h: '<button type="button" class="cardrow" data-e341="debt:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(db.name) + '</div><div class="t2">沒有日子</div></div><div class="amt num neg">' + nt(db.remaining) + '</div></button>' }); });
+  (D.installments || []).filter(function (x) { return x.active; }).forEach(function (it, i) { rows.push({ t: 9997, h: '<button type="button" class="cardrow" data-e341="inst:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(it.name) + '</div><div class="t2">' + (it.next_due_date ? '下次 ' + md(it.next_due_date) + (it.per_period_amount ? '，繳 ' + nt(it.per_period_amount) : '') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(it.outstanding_amount) + '</div></button>' }); });
+  if (!rows.length) return '';
+  rows.sort(function (a, b) { return a.t - b.t; });
+  var first = rows[0].t < 9997 ? '<div class="gh"><span><b>下一筆要繳</b></span></div>' : '';
+  return '<div class="card kk-debt" data-ctitle="欠款、卡費、分期"><div class="gh" style="padding:10px 14px 0"><span><b>欠款、卡費、分期</b></span></div>' + first + '<div class="rows">' + rows.map(function (r) { return r.h; }).join('') + '</div></div>';
+}
+document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-e341]'); if (!b) return; var p = b.getAttribute('data-e341').split(':'); openDet(p[0], Number(p[1])); }, false);
+var _renderV341 = render;
+render = function () {
+  _renderV341.apply(this, arguments);
+  var box = $('e341_debt'); if (!box) { var h = $('hero'); if (h) { h.insertAdjacentHTML('afterend', '<div id="e341_debt"></div>'); box = $('e341_debt'); } }
+  if (box) box.innerHTML = eDebtHtml();
+  try { kkCardsE(); } catch (e) {}
+};
+/* 訂閱詳情：退訂、續訂、改方案請塔塔做；我自己處理了只通知塔塔核對 */
+var SUBL = { cancel: '退訂', renew: '續訂', plan: '改方案', self: '我自己處理了' };
+function eSubText(it, k) {
+  var info = '「' + it.name + '」NT$' + nt(it.amount) + '／' + (it.billing_cycle === 'yearly' ? '年' : '月') + '繳，下次扣款 ' + (it.next_charge_date ? md(it.next_charge_date) : '沒有日子') + (it.cancel_by ? '，取消期限 ' + md(it.cancel_by) : '');
+  return k === 'self' ? '[面板：老大自己處理了] ' + info + '。老大已經自己處理，請你核對後更新記帳。' : '[面板請塔塔' + SUBL[k] + '] ' + info + '。請你執行' + SUBL[k] + '，處理完回報。';
+}
+var _ssDrawV341 = ssDraw;
+ssDraw = function () {
+  _ssDrawV341.apply(this, arguments);
+  if (!SS || SS.view !== 'detail' || !SS.it) return;
+  var bx = document.querySelector('#ss_body .sbtns'); if (!bx || bx.querySelector('[data-ssask]')) return;
+  ['ss_go_plan', 'ss_go_cancel'].forEach(function (id) { var b = $(id); if (b) b.remove(); });
+  bx.insertAdjacentHTML('afterbegin', ['cancel', 'renew', 'plan', 'self'].map(function (k) { return '<button type="button" class="sbtn' + (k === 'self' ? ' g' : '') + '" data-ssask="' + k + '">' + (k === 'self' ? '我自己處理了' : '請塔塔' + SUBL[k]) + '</button>'; }).join(''));
+  bx.insertAdjacentHTML('afterend', thSlot('sub:訂閱 ' + SS.it.name, 1));
+};
+document.addEventListener('click', function (e) {
+  var b = e.target.closest && e.target.closest('[data-ssask]'); if (!b || !SS || !SS.it) return; e.stopPropagation();
+  var it = SS.it, k = b.getAttribute('data-ssask'), text = eSubText(it, k);
+  if (!window.confirm('要把這段話傳給塔塔嗎？\n\n' + text)) return;
+  var t = thNew('sub:訂閱 ' + it.name, '訂閱 ' + it.name, (k === 'self' ? '我自己處理了' : '請塔塔' + SUBL[k]) + '「' + it.name + '」', text); thPaint();
+  kkRefresh({ action: 'message', text: text, client_id: t.cid, test: LS.get('kk_testmsg') === '1' }).then(function (x) { if (x.net) thMark(t, null, '連不上伺服器'); else thMark(t, x.j); thReveal(t); });
+}, true);
+/* 回報頁：最新的在最上面，只露 5 則，其餘收起；每則兩行，長文看全文；標出在回哪裡 */
+var _detModelV341 = detModel;
+detModel = function (d) {
+  if (d.t === 'card') { var c = CARDS[d.arg] || { title: '卡片', lines: [] }, tk = cardTokens(c.title), ts = TXALL.filter(function (t) { return tk.some(function (k) { return String(t.merchant || '').indexOf(k) >= 0 || t.category === k || t.account_name === k; }); }).slice(0, 12);
+    return { title: c.title, html: '<div class="gh"><span><b>這張卡上的數字</b></span></div><div class="card" style="padding:4px 14px">' + c.lines.map(function (x) { return '<div class="cline">' + esc(x) + '</div>'; }).join('') + '</div><div class="gh"><span><b>相關交易</b>' + ts.length + ' 筆</span></div>' + (ts.length ? txList(ts) : '<div class="card">' + emptyBox('🧾', '這期沒有相關交易', '') + '</div>') + '<button type="button" class="dbtn n th-askb" data-cardask="' + d.arg + '">跟塔塔說這張卡</button>' + thSlot('card:' + d.arg, 1) }; }
+  if (d.t !== 'rep') return _detModelV341(d);
+  var open = THX.repAll, vis = open ? REP : REP.slice(0, 5);
+  return { title: '塔塔回報', html: (REP_BUSY ? '<div class="card" style="padding:12px 14px;margin-bottom:10px"><i class="spin" aria-hidden="true"></i>' + esc(REP_BUSY) + '</div>' : '') + '<div class="rows">' + vis.map(function (r) {
+    var q = String(r.request_text || '').replace(/（關於[^）]*）\s*$/, ''), long = r.text.length > 60;
+    return '<div class="rpi rep2' + (long ? ' th-cl' : '') + '"><div class="meta"><span class="chp o" style="margin:0">' + esc(thWhere(r)) + '</span><span class="num">' + repWhen(r.created_at) + '</span></div><div class="tx_"><span class="th-x">' + esc(r.text) + '</span>' + (long ? '<button type="button" class="th-tog" data-th-tog>看全文</button>' : '') + '</div>' + (q ? '<div class="you">你說：' + esc(q.length > 40 ? q.slice(0, 40) + '…' : q) + '</div>' : '') + '</div>'; }).join('') + '</div>'
+    + (REP.length > 5 && !open ? '<button type="button" class="th-more" data-erep-all>看更早的 ' + (REP.length - 5) + ' 則</button>' : '') + '<button type="button" class="dbtn n" id="rep_say">跟塔塔說</button>' };
+};
+document.addEventListener('click', function (e) { if (!e.target.closest) return; if (e.target.closest('[data-erep-all]')) { e.stopPropagation(); THX.repAll = 1; drawDet(true); return; } var c = e.target.closest('[data-cardask]'); if (c) { e.stopPropagation(); var k = c.getAttribute('data-cardask'), cd = CARDS[k] || { title: '這張卡' }; cardAskX(c, cd.title, k, cd.sum || ''); } }, true);
+/* 卡片：點卡片＝細節；小臉＝跟塔塔說 */
+function cardOpenX(title, lines, el) { var key = el.getAttribute('data-ckey'); CARDS[key] = { title: title, lines: lines, sum: lines.filter(function (x) { return x !== title; }).slice(0, 4).join('，').slice(0, 80) }; openDet('card', key); }
+function cardAskX(face, title, key, sum) { CARDS[key] = CARDS[key] || { title: title, lines: [] }; CARDS[key].sum = sum; ttOpen(face, { type: 'card', label: title, id: key }); }
+var CARD_SEL_E = '#app .card,#app .tile,#app .hero,#app .rp,#app .rv,#app .bgt,#app .netcard,#app .rvc,#app .rpi', CARD_FACE_E = '#app .card,#app .tile,#app .hero,#app .rp,#app .bgt,#app .netcard';
+function kkCardsE() { kkCards(document.getElementById('app'), CARD_SEL_E, CARD_FACE_E); }
+var _thOrgE341 = thOrgE; thOrgE = function (c) { if (c && c.type === 'card') return { k: 'card:' + c.id, lab: '卡片「' + c.label + '」' }; return _thOrgE341(c); };
+var _thCtxE341 = thCtxE; thCtxE = function (c) { if (c && c.type === 'card') { var cd = CARDS[c.id] || {}; return '（關於卡片「' + c.label + '」' + (cd.sum ? '：' + cd.sum : '') + '）'; } return _thCtxE341(c); };
 
 </script>
 </body></html>
