@@ -1975,7 +1975,7 @@ function odList(d){return d.per!==0||d.empty?[]:d.bills.filter(b=>!b.paid&&!b.au
 function odBtn(d){const n=odList(d).length;return n?'<button class="odb" id="odBtn" data-act="goOd" aria-label="'+n+' 筆帳單過期，去定期頁處理"><i aria-hidden="true"></i><b class="num">'+n+'</b> 筆帳單過期 ›</button>':''}
 function fxRow(x){const bill=x.type==='bill',pb=canPay(x);
   const st=x.paid?'<span class="tag">'+(bill?'已繳':'已扣')+'</span>':x.tata&&!pb?'<span class="tag act">塔塔處理中</span>':x.cancel?'<span class="tag act">要取消'+(x.cancelBy?' · '+x.cancelBy+' 前':'')+'</span>':x.co?'<span class="tag">公司付</span>':bill&&x.auto?'<span class="tag">自動扣款</span>':'';
-  const inner='<span class="g" aria-hidden="true">'+(bill?G(x.c):'訂')+'</span><span class="row-m"><b>'+esc(x.name)+st+'</b><small>'+(x.paid?x.due+(bill?' 已繳':' 已扣')+(S.paidAc[x.id]?'・'+esc(S.paidAc[x.id]):''):rel(x.rel)+' · '+x.due)+' · '+(bill?(x.auto&&!x.paid?'從'+esc(x.ac)+'扣':'帳單'):'訂閱（'+x.cyc+'繳）')+'</small></span>'+amt(x.amt);
+  const inner='<span class="g" aria-hidden="true">'+(bill?G(x.c):'訂')+'</span><span class="row-m"><b>'+esc(x.name)+st+'</b><small>'+(x.paid?x.due+(bill?' 已繳':' 已扣')+(S.paidAc[x.id]?'・'+esc(S.paidAc[x.id]):''):rel(x.rel)+' · '+x.due)+(pb?'':' · '+(bill?(x.auto&&!x.paid?'從'+esc(x.ac)+'扣':'帳單'):'訂閱（'+x.cyc+'繳）'))+'</small></span>'+amt(x.amt);
   if(!pb)return '<button class="row" data-act="sheet" data-k="fx" data-id="'+x.id+'" data-fx="'+x.id+'">'+inner+'<span class="chev" aria-hidden="true">›</span></button>';
   const lb=x.tata?'塔塔處理中':bill?'去繳費':'去付款';
   return '<div class="row arow" data-fx="'+x.id+'"><button class="rowb" data-act="sheet" data-k="fx" data-id="'+x.id+'">'+inner+'</button><button class="payb'+(x.tata?' u-tata':urg(x)?' '+urg(x):'')+'" data-act="sheet" data-k="pay" data-id="'+x.id+'" aria-label="'+lb+'，'+esc(x.name)+'">'+lb+'</button></div>'}
@@ -2297,7 +2297,7 @@ function gigBlock(d,c){const g=c.gap2;if(d.per!==0||!d.dl||!c.gap)return '';
 const EYES='<span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>';
 const RK={pend:['途','在途，待入帳'],wait:['收','已交件，等收款'],doing:['案','進行中']};
 const rcvStage=x=>RK[x.kind][1]+(x.kind==='doing'?(x.signed?'，已簽約':'，未簽約'):'');
-function rcvRow(x){return '<button class="row" data-act="sheet" data-k="rcvi" data-id="'+x.id+'"><span class="g" aria-hidden="true">'+RK[x.kind][0]+'</span><span class="row-m"><b>'+esc(x.m)+(x.late?'<span class="tag bad">▲ 逾期 '+x.late+' 天</span>':'')+'</b><small>'+rcvStage(x)+' · '+(x.due?'約定 '+x.due:'入帳日未定')+(x.rem?' · 塔塔盯著':'')+'</small></span>'+(x.a==null?'<span class="sub">金額未定</span>':amt(x.a))+CHEV+'</button>'}
+function rcvRow(x){return '<button class="row" data-act="sheet" data-k="rcvi" data-id="'+x.id+'"><span class="g" aria-hidden="true">'+RK[x.kind][0]+'</span><span class="row-m"><b>'+esc(x.m)+(x.late?'<span class="tag bad">▲ 逾期 '+x.late+' 天</span>':'')+'</b><small>'+(x.kind==='pend'?'在途':x.kind==='wait'?'等收款':x.signed?'進行中，已簽約':'進行中，未簽約')+' · '+(x.due?'約定 '+x.due:'入帳日未定')+(x.rem?' · 塔塔盯著':'')+'</small></span>'+(x.a==null?'<span class="sub">金額未定</span>':amt(x.a))+CHEV+'</button>'}
 /* 大筆支出問金金值不值（示意，罐頭字） */
 const kimOk=t=>t.a<0&&!t.transfer&&!t.void&&Math.abs(t.a)>=KIM_BIG;
 function kimBlock(t){const st=S.kim[t.id];if(!kimOk(t)||!st)return '';const hd='<span class="g" aria-hidden="true">金</span>';
