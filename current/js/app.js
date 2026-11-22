@@ -238,7 +238,7 @@ function zoneProj(){const s=S.sub.proj,ps=projs(),sm=zsum('proj');let h=zoneHead
  else{const a=E()?[]:DB[s];h+=a.length?`<section class="sec"><h2 class="vh">${s==='todo'?'待辦':'封存'}</h2><div class="stack stg">${a.map(t=>`<article class="card"><div class="meta">${chip(t.st)}</div><h3>${esc(t.title)}</h3><p>${esc(t.next)}</p></article>`).join('')}</div></section>`:emptyBox(s==='todo'?'沒有待辦':'封存是空的',s==='todo'?'想到要做的事，跟大器說一句就會記在這裡。':'結案的案子會收在這裡，不會自動消失。',s==='todo'?aiF('daqi','new:todo'):'')}
  return h}
 function oppCard(o){const sn=o.st==='snoozed';
- return `<article class="card" data-card="${esc(o.id)}"><div class="meta">${chip(sn?'明天 8:00 回到清單':o.due,!sn&&o.days<=4)}<span class="lbl">${BASK[o.b]}・${esc(o.org)}</span></div><h3>${esc(o.title)}</h3><p class="amt" style="color:var(--ink)">${esc(o.amt)}</p>
+ return `<article class="card" data-card="${esc(o.id)}"><div class="meta">${chip(sn?'明天 8:00 回到清單':o.due,!sn&&o.days<=4)}<span class="lbl">${BASK[o.b]}・${esc(o.org)}</span></div><h3>${esc(o.title)}</h3><p class="amt" style="color:var(--ink)">${esc(oppAmt(o))}</p>
  <div class="btns">${B('深入了解','sheet','opp:'+o.id,'pri')}${sn?B('放回清單','unsnooze',o.id):B('暫存到明天','snooze',o.id)}${B('刪掉','del',o.id,'ghost')}</div></article>`}
 function zoneOpp(){const s=S.sub.opp,all=opps('all'),sn=opps('snoozed');let h=zoneHead('opp',all.length?`${all.length} 張待看，最急 ${esc(all[0].due)}`:'現在沒有新機會');
  h+=scanRow();
@@ -943,8 +943,8 @@ function autoFor(b,ctx){const a=(ctx||'').split(':'),k=a[0],id=a[1];
 ACT.ai=(id,el)=>{const [b,ctx,d,arg]=id.split('|');
  if(d==='askdin')return ACT.askdin(ctx,el);
  if(d&&ACT[d])return ACT[d](arg||ctx,el);
- const t=autoFor(b,ctx);if(t)render('keep');
- openChat(b,ctx,el,t?()=>say(b,t,ctx):null)};
+ // 點臉只打開對話，不代老大送任何一句；要問什麼點下面的快捷或自己打（2026-11-22 老大：點金金會直接送出，這種 bug 要拿掉）
+ openChat(b,ctx,el,null)};
 // 浮窗裡的快捷：跟著這張卡變
 {const _q=quick;quick=function(on){const k=(on.ctx||'').split(':')[0];
  if(on.b==='jiji'&&k==='opp')return['要做，建案子資料夾','讀完整公告給我','值不值得做'];
@@ -2062,7 +2062,7 @@ async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id
  try{const ms=await LV.api.msgs(id,b);if(!S.chat||S.chat.b!==b)return;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
   const last=ms[ms.length-1],waiting=b!=='daqi'&&last&&last.kind==='user';
   const pend=CH[b].filter(m=>m.local);
-  CH[b]=ms.map(m=>({w:m.kind==='user'?'me':'bot',t:m.body,b})).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
+  CH[b]=ms.map(m=>({w:m.kind==='user'?'me':'bot',t:m.kind==='user'?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b})).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
   if(!ms.length&&!pend.length)CH[b]=[{w:'bot',t:HI(b),b}];
   const lb=ms.filter(m=>m.kind==='bot').pop();if(lb)seenMark(b,lb.id);
   if(fresh){logSync();if(had&&last&&last.kind!=='user'){mood(b,'speaking');hop($('#cAv'));setTimeout(()=>{if(S.chat&&S.chat.b===b)mood(b,'idle')},2200)}else mood(b,waiting?'thinking':'idle')}
@@ -2073,7 +2073,17 @@ async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id
  return _o(b,ctx,el,auto)}}
 // 朋朋的對話不用先綁定（綁定是生活房間購物用的，還沒接上）
 {const _l=logSync;logSync=function(){const sb=S.bound;if(S.chat&&S.chat.b==='peng')S.bound=true;try{_l()}finally{S.bound=sb}}}
-function sendTo(b,text,ctx){const a=(ctx||'').split(':'),id=ctxItem(ctx),d=a[0]==='dec'?DB.dec.find(x=>x.id===a[1]):null,body=d?`關於「${d.proj}：${d.q}」：${text}`:text;
+// 傳給機器人時帶上「老大在哪一頁、看著哪張卡」，不然它不知道在回什麼（老大 2026-11-22：「我在上面跟他們溝通結果他們都不知道在回答什麼欸」）
+const ROOMN={today:'首頁',proj:'案子房間',opp:'機會房間',money:'錢房間',life:'生活房間'};
+function ctxTag(b,ctx){const a=(ctx||'').split(':'),k=a[0];let on='';
+ try{if(k==='goal'||k==='gr'){const g=gOf(a[1]);if(g)on=`目標「${g.name}」：${g.label||'進度'} ${g.now}／${g.total} ${g.unit||''}${g.due?`，期限 ${g.due}`:''}${g.stText?`，${g.stText}`:''}`}
+  else if(k==='goals')on='目標總覽頁';
+  else if(k==='opp'){const o=DB.opp.find(x=>x.id===a[1]);if(o)on=`機會卡「${o.title}」（${o.org}，${o.amt}，${o.due}）`}
+  else if(k==='proj'){const p=DB.proj.find(x=>x.id===a[1]);if(p)on=`案子「${p.title}」，下一步：${p.ask||''}`}
+  else{const n=ctxName(ctx);if(n)on=`「${n}」`}}catch(e){}
+ const room=ROOMN[S.tab]||'';if(!on&&!room)return '';
+ return `［老大在逐流${room?'的'+room:''}${on?'，正在看'+on:''}］\n`}
+function sendTo(b,text,ctx){const a=(ctx||'').split(':'),id=ctxItem(ctx),d=a[0]==='dec'?DB.dec.find(x=>x.id===a[1]):null,body=d?`關於「${d.proj}：${d.q}」：${text}`:ctxTag(b,ctx)+text;
  const w={w:'bot',wait:1,local:1,b,fresh:1};CH[b]=CH[b].filter(m=>m.t!==HI(b)&&m.t!=='讀取中…');CH[b].push({w:'me',t:text,fresh:1,local:1},w);mood(b,'thinking');hop($('#cAv'));logSync();
  LV.api.say(id,body,b).then(()=>{CH[b]=CH[b].filter(m=>!m.local);if(b!=='daqi'){WAITB[b]=1;waitFaces()}setTimeout(loadMsgs,800)})
   .catch(e=>{const i=CH[b].indexOf(w);if(i>-1)CH[b].splice(i,1,{w:'bot',t:'沒送出：'+LERR(e)+'。這句還在上面，可以再傳一次。',b,fresh:1});CH[b].forEach(m=>{delete m.local});mood(b,'idle');logSync()})}
@@ -2475,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v48');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v49');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2483,6 +2493,23 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&LV.net!=='auth')reload()});
  addEventListener('online',()=>reload());addEventListener('offline',()=>{if(LV.at){LV.net='offline';S.st='offline';paint()}});
 }catch(e){LV.net='error';LV.err=LERR(e);S.st='error';render()}})();
+// 機會卡（老大 2026-11-22：「應該要有完整標題 以及他是幹嘛的還有他可以拿多少錢」「記得有暫存扭跟深入了解的鈕 還有個不要的鈕吧？」）
+// 卡面＝完整標題、一句在做什麼、能拿多少，下面三顆正式按鈕：深入了解、暫存到明天、不要了
+const oppWhat=o=>{const r=o.raw||{},fs=(o.facts||[]).map(String),q=(r.quick||[]).map(String);
+ const f=fs.find(x=>/^(項目|類別|內容|工作|做什麼|要做)[：:]/.test(x))||q.find(x=>!/截止|押標金|報名費|免費/.test(x))||q[0]||o.why||'';return f.replace(/^(項目|類別|內容|工作|做什麼|要做)[：:]\s*/,'')};
+const oppAmt=o=>{const r=o.raw||{},d=r.amountDisplay||'',l=r.amountLabel||'';return d&&l&&d.indexOf(l)<0?l+' '+d:(o.amt||'')};
+oppCard=function(o){const sn=o.st==='snoozed',w=oppWhat(o);
+ return `<article class="card cardx ocard" data-card="${esc(o.id)}">${mineB('opp:'+o.id,o.title)}<div class="meta">${chip(sn?o.snz:o.due,!sn&&o.days<=4)}<span class="lbl">${esc(brief(BASK[o.b],o.org))}</span></div><h3>${cgo(esc(o.title),'sheet','opp:'+o.id)}</h3>${w?`<p class="owhat">${esc(w)}</p>`:''}<p class="amt" style="color:var(--ink)">${esc(oppAmt(o))}</p>
+ <div class="btns">${B('深入了解','sheet','opp:'+o.id,'pri')}${sn?B('放回清單','unsnooze',o.id):B('暫存到明天','snooze',o.id)}${sn?'':B('不要了','del',o.id,'ghost')}</div>${aifs([aiF('jiji','opp:'+o.id,o.took?'建好了':'')])}</article>`};
+// 拍板卡（老大 2026-11-22：「要我處理事情的卡片 也太省略內容，我哪知道那樣要幹嘛？ 照你的建議做 跟其他做法跟看細節 這些按鈕的位置太不平衡了吧」）
+// 卡面寫完整的問題＋一句為什麼要你定；按鈕：上排「照建議」整列，下排「其他做法」「看細節」等寬並排，定定的臉放同一排右邊
+{const _s=decSlide;decSlide=function(d,n){const r=_s(d,n),raw=d.raw||{};
+ const q=String(d.q||raw.question||d.ask||'').replace(/\s*([\u2460-\u2469])/g,'\n$1').trim();
+ const det=String(raw.detail||'').replace(/\s+/g,' ').trim(),why=det&&det!==q?(det.length>90?det.slice(0,88)+'…':det):'';
+ let h=r.html.replace(/<h2 class="dq"([^>]*)>[\s\S]*?<\/h2>/,`<h2 class="dq dfull"$1>${esc(q)}</h2>${why?`<p class="dwhy">${esc(why)}</p>`:''}`);
+ h=h.replace(/<div class="mrow"><button class="mb" data-act="decopen" data-id="([^"]*)">其他做法・看細節<\/button><\/div>/,(m,id)=>`<div class="drow2"><button class="btn" data-act="decopen" data-id="${id}">其他做法</button><button class="btn" data-act="decopen" data-id="${id}">看細節</button>__DIN__</div>`);
+ if(h.indexOf('__DIN__')>-1){const a=h.lastIndexOf('<div class="aifs');if(a>-1){const e=h.indexOf('</div>',a);const face=h.slice(a,e+6);h=h.slice(0,a)+h.slice(e+6);h=h.replace('__DIN__',face)}else h=h.replace('__DIN__','')}
+ r.html=h;return r}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

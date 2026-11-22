@@ -1104,3 +1104,13 @@ html:not([data-skin="6"]):not([data-skin="4"]) .groomh .mzdots,html:not([data-sk
 .evs{font-weight:500;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
 .evd summary{list-style:none;cursor:pointer}.evd summary::-webkit-details-marker{display:none}
 .evf{margin:6px 0 2px;font-size:13px;line-height:1.5;opacity:.8;white-space:pre-wrap;overflow-wrap:anywhere}
+/* v49 機會卡：完整標題、一句在做什麼 */
+.ocard h3{white-space:normal;overflow:visible;text-overflow:clip;-webkit-line-clamp:unset;display:block}
+.ocard .owhat{margin:4px 0 0;color:var(--ink2,inherit);font-size:.92em;line-height:1.45}
+.ocard .btns{margin-top:10px}
+/* v49 拍板卡：完整問題、為什麼、按鈕兩排平衡 */
+.band .dslide h2.dq.dfull,html[data-skin] .band .dslide h2.dq.dfull{-webkit-line-clamp:unset;display:block;overflow:visible}
+.dslide .dwhy{margin:6px 0 0;font-size:14px;line-height:1.5;opacity:.82}
+.dslide .drow2{display:grid;grid-template-columns:1fr 1fr auto;gap:8px;align-items:center;margin-top:8px}
+.dslide .drow2 .btn{width:100%;justify-content:center;min-height:44px}
+.dslide .drow2 .aifs{margin:0;position:static}
