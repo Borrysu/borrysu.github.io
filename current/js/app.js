@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v73');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v74');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3283,6 +3283,20 @@ ACT.catpick=c=>{const i=$('#le_cat');if(i){i.value=c;i.dispatchEvent(new Event('
  return h.replace(/(<input[^>]*id="le_cat"[^>]*>)/,`$1</label><div class="rcchips">${cs.map(c=>mb(esc(c),'catpick',c)).join('')}</div><label class="vh">`)}}
 WRITE.push('rcask','rcapply');
 window.__zlRC={parse:rcParse};
+/* ---------- v74（2026-11-23）：意見第二批之四，備品請萌萌比價：沒有品牌先問需求 ----------
+   老大原話：「比價的時候如果沒有確切品牌名稱就會先找問我需求找推薦」
+   判斷：品名或備註裡有英文字或數字（型號）、或是常見品牌，算「有指定品牌」；其餘算沒指定。沒指定時送給萌萌的句子帶「沒有指定品牌，先問老大需求再推薦」，畫面也先說萌萌會問你。 */
+const BRANDS=['無印良品','好自在','舒潔','康乃馨','白蘭','好來','黑人','麗仕','多芬','花王','蘭蔻','資生堂','妮維雅','曼秀雷敦','靠得住','蘇菲','佳潔士','高露潔','潘婷','海倫仙度絲','飛利浦','小米','象印','虎牌','大同','日立','三星','蘋果'];
+const hasBrand=u=>{const s=(u.name||'')+' '+((u.raw2&&u.raw2.note)||'');return /[A-Za-z]{2,}|\d{2,}/.test(s)||BRANDS.some(b=>s.includes(b))};
+const NOBR='沒有指定品牌，先問老大需求再推薦';
+ACT.supcmp=(id,el)=>{const u=DB.sup.find(x=>x.id===id);if(!u)return;if(supCmp(u)){openChat('mon','sup:'+id,el,null);return}
+ LV.supRun[id]=1;LV.sig='';const nb=!hasBrand(u);
+ botAsk('mon',`請比價備品「${u.name}」${u.raw2&&u.raw2.note?'（'+u.raw2.note+'）':''}（備品編號 ${id}）。${nb?NOBR+'：先問我預算、用途、偏好，我回了你再推薦兩三個品牌，': ''}列三家含運總價與到貨時間，推薦一家`,'sup:'+id);setTimeout(loadMon,3000)};
+{const f=zoneLife;zoneLife=function(){const h=f();if(S.sub.life!=='sup'||!LV.life)return h;
+ const t=document.createElement('template');t.innerHTML=h;let ch=0;
+ t.content.querySelectorAll('.rowi[data-card]').forEach(r=>{const b=r.querySelector('[data-act="supcmp"]'),u=b&&DB.sup.find(x=>x.id===r.getAttribute('data-card'));if(!u||supCmp(u)||hasBrand(u))return;
+  const sm=r.querySelector('.tx small');if(sm){sm.insertAdjacentHTML('beforeend','<br><span class="cmpst">沒有品牌，萌萌會先問你需求</span>');ch=1}});
+ return ch?t.innerHTML:h}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
