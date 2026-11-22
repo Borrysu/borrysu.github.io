@@ -1091,3 +1091,10 @@ html:not([data-skin="6"]):not([data-skin="4"]) .groomh .mzdots,html:not([data-sk
 .lgoal{min-height:112px!important}
 .lgoal .rgo{min-height:0!important;padding-bottom:12px}
 .dslide>h2{display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+
+/* v35.1 拍板卡減字（老大 2026-11-22：「等我拍版 之類的 那些文字也太亂」） */
+.dslide .bandtop .lbl{font-size:13px;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dslide .bandtop .lbl.who{min-width:0;flex:1}
+.dslide .dproj{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.band .dslide h2.dq,html[data-skin] .band .dslide h2.dq{font:700 18px/1.45 var(--fb,system-ui),"Noto Sans TC",sans-serif;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;margin-top:8px}
+.band .dslide h2.dq.open{-webkit-line-clamp:unset;display:block}

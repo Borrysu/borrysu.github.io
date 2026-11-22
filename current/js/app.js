@@ -146,7 +146,7 @@ function errorBox(z){const n=ZONE[z].n;const why=z==='money'?'這把鑰匙讀不
 function decActs(d){
  if(d.kind==='talk')return `<div data-dec="${esc(d.id)}"><p class="note">這件要登入和按下送件，面板不給按鈕，只能你本人做。資料備好了：AI 自查完成，等你決定。</p><div class="btns">${B('打開申請網站 ↗','ext',d.id,'pri')}${B('到對話回大器一句','talk',d.id)}${B('我已經弄好了','pick',d.id,'ghost',' data-k="_done"')}</div></div>`;
  const rec=d.opts.find(o=>o.rec)||d.opts[0],rest=d.opts.filter(o=>o!==rec);
- let h=`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>推薦${rec.note?'・'+esc(rec.note):''}</small></button></div>`;
+ let h=`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div>`;
  if(S.more[d.id])h+=`<div class="btns">${rest.map(o=>`<button class="btn" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div><label class="f">寫別的做法<textarea rows="2" placeholder="例：先給我聽兩版再說"></textarea></label>${S.err===d.id?'<p class="err" role="alert">▲ 先寫一句你要的做法，再交給大器。</p>':''}<div class="btns">${B('照我寫的做','pickalt',d.id)}</div>`;
  else h+=`<div class="btns">${B(`其他 ${rest.length} 個做法，或自己寫`,'more',d.id,'ghost',' aria-expanded="false"')}</div>`;
  return `<div data-dec="${esc(d.id)}">${h}</div>`}
@@ -189,7 +189,7 @@ function homeL1(){const d=decs(),p=projs().filter(x=>x.g==='need'||x.g==='doing'
 /* ---------- 版面 2：四個房間 ---------- */
 function homeL2(){const d=decs(),f=d[0],l=late().length;let band;
  if(f){const rec=f.kind==='talk'?null:(f.opts.find(o=>o.rec)||f.opts[0]);
-  band=`<section class="band" id="secDec" data-card="${esc(f.id)}"><div class="bandtop"><span class="lbl who">${bm('daqi','thinking')}等你拍板・<span class="tick">${d.length}</span> 件・${esc(f.proj)}</span><span class="lbl">${esc(f.ago)}</span></div><h2>${esc(f.q)}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(f.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>推薦${rec.note?'・'+esc(rec.note):''}</small></button></div><div class="btns">${B('看其他做法與來龍去脈','sheet','dec:'+f.id,'ghost')}${dinB('dec:'+f.id)}</div>`:`<p style="margin-top:6px">只能你本人登入送件，面板不給按鈕。</p><div class="btns">${B('看怎麼處理','sheet','dec:'+f.id,'pri')}</div>`}</section>`}
+  band=`<section class="band" id="secDec" data-card="${esc(f.id)}"><div class="bandtop"><span class="lbl who">${bm('daqi','thinking')}等你拍板・<span class="tick">${d.length}</span> 件・${esc(f.proj)}</span><span class="lbl">${esc(f.ago)}</span></div><h2>${esc(f.q)}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(f.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div><div class="btns">${B('看其他做法與來龍去脈','sheet','dec:'+f.id,'ghost')}${dinB('dec:'+f.id)}</div>`:`<p style="margin-top:6px">只能你本人登入送件，面板不給按鈕。</p><div class="btns">${B('看怎麼處理','sheet','dec:'+f.id,'pri')}</div>`}</section>`}
  else band=`<section class="card" style="margin-top:14px"><h3>都拍完了</h3><p>沒有等你決定的事。有新的會出現在這裡，也會推 LINE。</p></section>`;
  const rooms=['proj','opp','money','life'].map(z=>{const s=zsum(z),b=ZONE[z].b;
   return `<button class="room" data-act="room" data-id="${z}" data-z="${z}" data-hot="${s.hot&&!s.none?1:0}"><span class="rh">${bm(b,'z')}${ZONE[z].n}<small>${BOTS[b].name}</small></span><span class="rn${s.sm?' sm':''}">${s.none?'0':s.n}</span><span class="rs"><b>${s.hot&&!s.none?'▲ ':''}${s.u}</b><br>${s.none?'還沒有資料，進去看怎麼開始':esc(s.s)}</span><small class="rb">${s.none?'':esc(s.b)}</small></button>`}).join('');
@@ -1007,7 +1007,7 @@ WRITE.push('mstep','mstepb','ordgot','ordback','duepaid','dueundo');
 function bigF(b,z){return `<button class="bigf" data-act="poke" data-id="${b}" aria-label="戳${BOTS[b].name}">${bm(b,'z')}</button>`}
 homeL2=function(){const d=decs(),f=d[0],l=late().length;let band;
  if(f){const rec=f.kind==='talk'?null:(f.opts.find(o=>o.rec)||f.opts[0]);
-  band=`<section class="band cardx" id="secDec" data-card="${esc(f.id)}">${mineB('dec:'+f.id,'這件拍板')}<div class="bandtop"><span class="lbl who">${aiF('daqi','dec:'+f.id)}等你拍板・<span class="tick">${d.length}</span> 件・${esc(f.proj)}</span><span class="lbl">${esc(f.ago)}</span></div><h2>${esc(f.q)}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(f.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>推薦${rec.note?'・'+esc(rec.note):''}</small></button></div>`:decActs(f)}${aifs([dinB('dec:'+f.id)])}</section>`}
+  band=`<section class="band cardx" id="secDec" data-card="${esc(f.id)}">${mineB('dec:'+f.id,'這件拍板')}<div class="bandtop"><span class="lbl who">${aiF('daqi','dec:'+f.id)}等你拍板・<span class="tick">${d.length}</span> 件・${esc(f.proj)}</span><span class="lbl">${esc(f.ago)}</span></div><h2>${esc(f.q)}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(f.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div>`:decActs(f)}${aifs([dinB('dec:'+f.id)])}</section>`}
  else band=`<section class="card" style="margin-top:14px"><h3>都拍完了</h3></section>`;
  const rooms=['proj','opp','money','life'].map(z=>{const s=zsum(z),b=ZONE[z].b,hot=s.hot&&!s.none;
   return `<div class="room" data-z="${z}" data-hot="${hot?1:0}"><button class="rgo" data-act="room" data-id="${z}"><span class="rh">${ZONE[z].n}</span><span class="rn${s.sm?' sm':''}">${s.none?'0':s.n}</span><span class="rs"><b>${hot?'▲ ':''}${s.u}</b>${s.none?'':'<br>'+esc(s.s)}</span></button>${bigF(b,z)}</div>`}).join('');
@@ -1025,7 +1025,7 @@ zoneHead=function(z,sum){const b=ZONE[z].b,bot=BOTS[b];
 decActs=function(d){
  if(d.kind==='talk')return `<div data-dec="${esc(d.id)}"><div class="btns">${B('打開申請網站 ↗','ext',d.id,'pri')}${mb('✓ 我已經弄好了','pick',d.id,' data-k="_done"')}</div></div>`;
  const rec=d.opts.find(o=>o.rec)||d.opts[0],rest=d.opts.filter(o=>o!==rec);
- let h=`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>推薦${rec.note?'・'+esc(rec.note):''}</small></button></div>`;
+ let h=`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div>`;
  if(S.more[d.id])h+=`<div class="btns">${rest.map(o=>`<button class="btn" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div><label class="f">寫別的做法<textarea rows="2"></textarea></label>${S.err===d.id?'<p class="err" role="alert">▲ 先寫一句。</p>':''}<div class="btns">${B('照我寫的做','pickalt',d.id)}</div>`;
  else h+=`<div class="mrow">${mb('其他做法','more',d.id,' aria-expanded="false"')}</div>`;
  return `<div data-dec="${esc(d.id)}">${h}</div>`};
@@ -1624,7 +1624,8 @@ ACT.cvstep=id=>{const j=id.lastIndexOf(':'),z=id.slice(0,j);cvGo(z,(S.cv[z]||0)+
 
 /* 拍板：一件一頁 */
 function decSlide(d,n){const rec=d.kind==='talk'?null:(d.opts.find(o=>o.rec)||d.opts[0]);
- return {id:d.id,name:d.proj,html:`<div class="dslide" data-card="${esc(d.id)}">${mineB('dec:'+d.id,'這件拍板')}<div class="bandtop"><span class="lbl who">${aiF('daqi','dec:'+d.id)}等你拍板・<span class="tick">${n}</span> 件・${esc(d.proj)}</span><span class="lbl">${esc(d.ago)}</span></div><h2>${esc(d.q)}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>推薦${rec.note?'・'+esc(rec.note):''}</small></button></div>`:decActs(d)}${aifs([dinB('dec:'+d.id)])}</div>`}}
+ return {id:d.id,name:d.proj,html:`<div class="dslide" data-card="${esc(d.id)}">${mineB('dec:'+d.id,'這件拍板')}<div class="bandtop"><span class="lbl who">${aiF('daqi','dec:'+d.id)}<span class="dproj">${esc(d.proj)}</span></span><span class="lbl">${esc(d.ago)}</span></div><h2 class="dq" data-act="decmore" data-id="${esc(d.id)}">${esc(String(d.q||'').replace(/\s*([\u2460-\u2469])/g,'\n$1').trim())}</h2>${rec?`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div>`:decActs(d)}${aifs([dinB('dec:'+d.id)])}</div>`}}
+ACT.decmore=id=>{const e=document.querySelector(`.dslide[data-card="${CSS.escape(id)}"] .dq`);if(e){e.classList.toggle('open');const v=e.closest('.mzv');if(v)try{cvFit(v)}catch(_){}}};
 function decBand(){const d=decs();if(!d.length)return null;const prev=CV.dec&&CV.dec.ids,gone=prev&&prev.length>d.length;
  const car=cvWrap('dec',d.map(x=>decSlide(x,d.length)),'等你拍板的事');
  return `<section class="band dglass" id="secDec">${gone&&!RM?car.replace('class="mzv"','class="mzv cvin"'):car}</section>`}
@@ -2047,7 +2048,7 @@ WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v35');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v36');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
