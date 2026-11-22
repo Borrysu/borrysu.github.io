@@ -1189,6 +1189,23 @@ details.rep .rep-t{font-size:12px;color:var(--muted);font-weight:500;flex:none}
 [data-cardopen]{cursor:pointer}
 .cline{padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
 .kk-debt .list .row small{color:var(--muted)}
+/* v34.2 補單 3：上下位置 */
+.strip{position:relative;top:auto}
+.pg>.composer{border:1px solid var(--line);border-radius:var(--radius);padding:8px;margin-top:4px;background:var(--surface)}
+.pg>.composer.on{display:flex}
+.fab{width:44px;height:44px;margin-top:0;transform:none;border-width:0;align-self:center}
+.fab:active{transform:scale(.93)}
+.tabbar{align-items:center}
+.cmp .toast{bottom:calc(60px + env(safe-area-inset-bottom,0px))}
+.pnav{align-items:center}
+.pnav button{position:relative;font-size:0;color:var(--ink2)}
+.pnav button::before{content:"";position:absolute;top:50%;left:50%;width:9px;height:9px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:translate(-30%,-33%) rotate(45deg)}
+.pnav #pNext::before{transform:translate(-70%,-33%) rotate(-135deg)}
+.pnav .pl{display:flex;align-items:center;justify-content:center;line-height:1}
+.pnav .pl em{margin-top:0}
+.livebtn{position:relative;top:5px}
+.livebtn .live{position:relative;top:-5px}
+.pnav button[disabled]{opacity:.3}
 </style>
 </head>
 <body>
@@ -2300,7 +2317,7 @@ function homePaid(d){const p=d.bills.filter(b=>b.paid).map(b=>b.name);return p.l
 function homeA(d){
   if(d.err)return errBlock();
   let h='<button class="strip" data-act="sheet" data-k="left">'+leftBlock(d,'big')+'<span class="sub">'+leftSub(d)+' ›</span>'+leftBar(d)+'</button>';
-  h+=thSlot('feed',3);
+  
   if(d.empty)return h+'<div class="empty"><h2>新的一期開始了</h2><p>'+P.label.split('～')[0]+' 起算，還沒有任何支出。銀行通知進來我會自己記。</p>'+B('add','記第一筆',{cls:'pri'})+'</div>';
   const by=dd=>d.inbox.filter(t=>t.d===dd),t0=by(mdAgo(0)),t1=by(mdAgo(1)),t2=by(mdAgo(2));
   h+='<p class="day">今天 '+P.today+'</p>';
@@ -2833,7 +2850,7 @@ function render(dir){
   try{bigFace&&bigFace.destroy()}catch(e){}bigFace=null;
   const pre=(S.tab==='home'||S.tab==='ledger')&&!S.loading&&!d.err?acctEntry(d)+(S.tab==='home'&&!d.prev&&!d.fut?debtCard(d):''):'';
   const body=d.scn==='nokey'?gateHtml():S.loading?skeleton():(S.tab==='home'&&(d.prev||d.fut)&&!d.err)?perHome(d):PAGES[S.tab][S.v](d);
-  {const _pn=$('#pnav');main.innerHTML='<div class="pg'+(dir?' fresh in-'+dir:'')+'">'+pre+body+'</div>';if(_pn)main.insertBefore(_pn,main.firstChild);kkTidyAbc(main)}
+  {const _pn=$('#pnav'),_cm=$('#composer');main.innerHTML='<div class="pg'+(dir?' fresh in-'+dir:'')+'">'+pre+body+'</div>';if(_pn)main.insertBefore(_pn,main.firstChild);kkPlaceComposer(_cm);kkTidyAbc(main)}
   main.scrollTop=dir?(S.scroll[S.tab+S.v]||0):st;
   if(keep)$$('[data-flip]',main).forEach(e=>{const o=keep.get(e.dataset.flip);if(o!=null){const dy=o-e.getBoundingClientRect().top;if(Math.abs(dy)>2)anim(e,[{transform:'translateY('+dy+'px)'},{transform:'none'}])}});
   const bf=$('#bigFace');$('#hdFace').style.visibility=bf?'hidden':'';
@@ -3764,6 +3781,13 @@ var CARD_SEL_ABC = '.card,.tile,.msg,.dcard,.strip,.aentry,.recline,.setrow,div.
 var GRIPT = null;
 document.addEventListener('pointerdown', function (e) { var g = e.target.closest && e.target.closest('.grip'); GRIPT = g ? { x: e.clientX, y: e.clientY, t: Date.now(), g: g } : null; }, true);
 document.addEventListener('pointerup', function (e) { var p = GRIPT; GRIPT = null; if (!p) return; if (Math.abs(e.clientX - p.x) > 6 || Math.abs(e.clientY - p.y) > 6 || Date.now() - p.t > 500) return; var id = p.g.getAttribute('data-grip'); setTimeout(function () { openSheet('acct', id, false); }, 30); }, true);
+/* v34.2：輸入框不常駐，放在今天頁內容最後（捲到底才出現），留言串在它上面 */
+function kkPlaceComposer(cm) {
+  cm = cm || document.getElementById('composer'); if (!cm) return;
+  var pg = main.querySelector('.pg');
+  if (S.v === 'A' && S.tab === 'home' && pg) { if (!pg.querySelector('[data-th="feed"]')) pg.insertAdjacentHTML('beforeend', thSlot('feed', 1)); pg.appendChild(cm); }
+  else if (cm.parentNode !== phone) phone.appendChild(cm);
+}
 
 syncSkin();remountHd();
 if(KEY.length>=20&&kkCacheLoad()){kkApply();KD.loaded=true;S.loading=false}

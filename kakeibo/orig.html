@@ -1225,6 +1225,13 @@ details.kk-more[open]>summary::after{transform:rotate(-90deg)}
 .cface i::before{left:7px}.cface i::after{right:7px}
 [data-cardopen]{cursor:pointer}
 .cline{padding:8px 0;border-bottom:1px solid var(--line);font-size:15px}
+/* v34.2 補單 3 */
+#scroll>.pnav{align-items:center}
+.pnav button{position:relative;font-size:0}
+.pnav button::before{content:"";position:absolute;top:50%;left:50%;width:10px;height:10px;border-left:2.5px solid currentColor;border-bottom:2.5px solid currentColor;transform:translate(-30%,-25%) rotate(45deg)}
+.pnav #p_next::before{transform:translate(-70%,-25%) rotate(-135deg)}
+.pnav .pl{display:flex;align-items:center;justify-content:center;line-height:1}
+.pnav button:disabled{opacity:.3}
 
 </style></head><body data-skin="6" data-theme="light">
 <a class="skip" href="#scroll">跳到內容</a>
