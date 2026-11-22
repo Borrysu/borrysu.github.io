@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v40';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v41';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -164,6 +164,32 @@ export function mockAdapter(modeStr) {
     events: [{ id: 1, at: new Date(Date.now() - 2 * H).toISOString(), actor: flags.has('xss') ? badH : '大器（Claude）', summary: flags.has('xss') ? badH : '總控台亮相交付，等你定名字、櫃台、開工' }],
     beats: [{ name: flags.has('xss') ? badH : 'Mac 同步', machine: 'MacBook', note: '巡查待辦與交接帳同步', expect_every_s: 300, last_at: new Date(Date.now() - 2 * 60e3).toISOString(), late: false }, { name: '大器 LINE 收訊', machine: 'MacBook', note: '8789 埠有在聽', expect_every_s: 300, last_at: new Date(Date.now() - 3 * H).toISOString(), late: true }] };
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }
+  // v41 示範資料
+  const iso = n => { const x = new Date(Date.now() + n * D); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+  const at = (n, h, m) => { const x = new Date(Date.now() + n * D); x.setHours(h, m || 0, 0, 0); return x.toISOString(); };
+  const X = flags.has('xss') ? badH : null;
+  const mgoals = [
+    { id: 'script', name: X || '完成一部長片劇本', why: X || '導演要走精緻路線。', due: iso(129), due_what: '初稿', unit: '場', kind: 'bar', now_val: 38, total: 90, expect: 46, label: '初稿', room: 'proj', bot: 'daqi', status: 'active', focus: true, next_step: X || '這週寫第 39 到 44 場。', src: '案子房間', auto: true, steps: [['故事大綱', 'd', '完成'], ['初稿', 'n', '38／90 場'], ['定稿', '', '']], demo: true, sort: 10, updated_at: new Date().toISOString() },
+    { id: 'crew', name: '進一個劇組待一檔', why: '劇組經驗。', due: iso(312), unit: '步', kind: 'pips', now_val: 0, total: 3, label: '走到', room: 'proj', bot: 'daqi', status: 'active', next_step: '還沒定下一步。', src: '自己打勾', steps: [['列出三個想跟的人', '', ''], ['約一個出來聊', '', ''], ['談到一個位置', '', '']], demo: true, sort: 30, updated_at: new Date(Date.now() - 40 * D).toISOString() },
+    { id: 'fund', name: '緊急預備金存到 6 個月', why: '撐得住才敢挑案子。', due: iso(404), unit: '個月', kind: 'bar', now_val: 2.1, total: 6, label: '存到', room: 'money', bot: 'kim', status: 'active', next_step: '發薪日撥進去。', demo: true, sort: 40, updated_at: new Date().toISOString() },
+    { id: 'move', name: '每週運動三次', why: '腰撐得住才拍得久。', due: null, unit: '次', kind: 'pips', now_val: 1, total: 3, label: '本週', room: 'life', bot: 'peng', status: 'active', next_step: '今天動一次。', week: null, demo: true, sort: 70, updated_at: new Date().toISOString() }];
+  const mcal = [
+    { id: 'me:1', cal: 'me', title: X || 'E.木星 TAPIN 修正', start: at(0, 15), end: at(0, 19), all_day: false, location: X || '家裡' },
+    { id: 'co:1', cal: 'co', title: '【木星 TAPIN】試看帶回饋會議 @Borry', start: at(1, 14), end: at(1, 15), all_day: false, location: 'Google Meet', link: flags.has('xss') ? 'javascript:window.__xss=9' : 'https://example.com/' },
+    { id: 'me:2', cal: 'me', title: 'L.剪頭髮', start: at(2, 14, 30), end: at(2, 15, 30), all_day: false, location: '' },
+    { id: 'co:2', cal: 'co', title: '【投標截止】示意標案 @Borry', start: null, end: null, all_day: true, start_date: iso(3), end_date: iso(4) }];
+  const mlife = [
+    { id: 'l1', kind: 'wish', name: X || '乳清蛋白 2.2 kg', url: flags.has('xss') ? 'javascript:window.__xss=10' : 'https://example.com/whey', note: X || '巧克力口味', price: 1280, shop: '示意商城', status: 'active', created_at: new Date().toISOString() },
+    { id: 'l2', kind: 'rout', name: X || '洗冷氣濾網', cycle_days: 30, last_date: iso(-41), status: 'active' },
+    { id: 'l3', kind: 'rout', name: '換床單', cycle_days: 14, last_date: iso(-9), status: 'active' },
+    { id: 'l4', kind: 'sup', name: X || '防曬乳', cat: '保養', need: true, last_date: iso(-50), status: 'active' },
+    { id: 'l5', kind: 'sup', name: '洗面乳', cat: '保養', need: false, last_date: iso(-17), status: 'active' }];
+  const mmoney = { today: iso(0), cash: 117666, burn: 42000, income: 30000,
+    accounts: [{ name: X || '示意銀行', kind: 'bank', balance: 88459, spendable: true, suffix: '0328' }, { name: '示意信用卡', kind: 'credit_card', balance: -12480, spendable: false }],
+    bills: [{ id: 1, name: X || '示意房租', amount: 17000, kind: 'expense', auto: false, account: '示意銀行', due_date: iso(3), days: 3, paid: false }, { id: 2, name: '示意電信費', amount: 699, kind: 'expense', auto: true, account: '示意銀行', due_date: iso(-2), days: -2, paid: true, paid_at: new Date().toISOString() }],
+    recv: [{ id: 'work-delivered', title: X || '示意已交件案', status: 'delivered', amount: 30000, date: iso(8), terms: '交件後 30 天' }],
+    big: [{ name: '示意壽險年繳', amount: 24600, date: iso(13), how: '年繳訂閱' }],
+    recent: [{ id: 1, at: new Date().toISOString(), amount: 330, type: 'expense', category: '訂閱', merchant: X || '示意訂閱', account: '示意銀行', status: 'posted' }, { id: 2, at: new Date(Date.now() - D).toISOString(), amount: 7000, type: 'income', category: '工作', merchant: '示意講師費', account: '示意銀行', status: 'posted' }] };
   const scans = {};   // 示範：立即掃描叫過的紀錄（示範模式不會真的叫集集）
   const ping = () => listeners.forEach(f => f());
   const find = id => { const r = rows.find(x => x.id === id); if (!r) throw new AdapterError('server', '找不到這筆'); return r; };
@@ -194,6 +220,14 @@ export function mockAdapter(modeStr) {
         { id: '2', name: '示意訂閱 B（年繳）', amount: 2400, billing_cycle: 'yearly', monthly_equiv: 200, status: 'active', payer: 'self', account_name: '示意信用卡', next_charge_date: iso(5), days_until: 5 },
         { id: '3', name: '示意訂閱 C（公司付）', amount: 600, billing_cycle: 'monthly', monthly_equiv: 600, status: 'active', payer: 'company', next_charge_date: iso(12), days_until: 12 },
         { id: '4', name: '示意訂閱 D', amount: 150, billing_cycle: 'monthly', monthly_equiv: 150, status: 'cancel', payer: 'self', next_charge_date: iso(20), days_until: 20, cancel_by: iso(15) } ] }); },
+    // v41 示範：目標、行事曆、生活、錢總覽（xss 旗標會塞惡意字串驗跳脫）
+    async goals() { await wait(100); return { items: mgoals.filter(g => g.status !== 'dropped'), dropped: mgoals.filter(g => g.status === 'dropped').map(g => ({ id: g.id, name: g.name })) }; },
+    async goalSet(id, patch) { await wait(200); sorry(); let g = mgoals.find(x => x.id === id); if (!g) { g = { id: 'mg' + (++nextN), status: 'active', now_val: 0, total: 1, kind: 'pips', unit: '步', label: '走到', room: 'life', bot: 'din', sort: 999, updated_at: new Date().toISOString() }; mgoals.push(g); }
+      if (patch.focus) mgoals.forEach(x => { x.focus = false; }); Object.assign(g, patch, { updated_at: new Date().toISOString() }); return g; },
+    async cal() { await wait(100); return { items: mcal, synced: { me: new Date().toISOString(), co: new Date().toISOString() } }; },
+    async life() { await wait(100); return { items: mlife.filter(x => x.status !== 'dropped') }; },
+    async lifeSet(id, kind, patch) { await wait(200); sorry(); let x = mlife.find(y => y.id === id); if (!x) { x = { id: 'ml' + (++nextN), kind, status: 'active', created_at: new Date().toISOString() }; mlife.push(x); } Object.assign(x, patch); return x; },
+    async moneyOverview() { await wait(150); return mmoney; },
     async hubAnswer(id, k, note) { await wait(300); sorry();
       const d = hub.open.concat(hub.answered).find(x => x.id === id); if (!d) throw new AdapterError('server', '找不到這筆');
       hub.open = hub.open.filter(x => x.id !== id); hub.answered = hub.answered.filter(x => x.id !== id);

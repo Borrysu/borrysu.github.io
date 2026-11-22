@@ -32,7 +32,8 @@ export const CONFIG = {
          scanRequest: 'opp_scan_request', scanStatus: 'opp_scan_status',
          workUpdate: 'opp_work_update', setStatus: 'opp_set_status', workAdd: 'opp_work_add',
          msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', botInbox: 'opp_bot_inbox', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
-         hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer' },   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
+         hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer',
+         goals: 'hub_goals_list', goalSet: 'hub_goal_set', cal: 'hub_cal_list', life: 'hub_life_list', lifeSet: 'hub_life_set', money: 'hub_money_overview' },   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
 
 export class AdapterError extends Error {
@@ -68,7 +69,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v40');
+  const { mockAdapter } = await import('./mock.js?v41');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -208,6 +209,13 @@ function liveAdapter() {
     async botInbox() { return normInbox(await rpc(R.botInbox, {})); },
     async hubToday() { return normHub(await rpc(R.hubToday, {})); },
     async moneySubs() { return normMoney(await rpc(R.moneySubs, {}, 0, W)); },   // v35：403＝這把金鑰不能看錢（AI協作金鑰），不是金鑰失效，不清金鑰
+    // v41：目標、行事曆、生活、錢總覽。回傳原樣，app.js 檔尾轉成設計稿的形狀；寫入與錢的 403 不清金鑰
+    async goals() { return rpc(R.goals, {}); },
+    async goalSet(id, patch) { return rpc(R.goalSet, { p_id: id || null, p_patch: patch || {} }, 0, W); },
+    async cal(days) { return rpc(R.cal, { p_days: days || 14 }); },
+    async life() { return rpc(R.life, {}); },
+    async lifeSet(id, kind, patch) { return rpc(R.lifeSet, { p_id: id || null, p_kind: kind || null, p_patch: patch || {} }, 0, W); },
+    async moneyOverview() { return rpc(R.money, {}, 0, W); },
     async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },
     async workAdd(title) { return card(await rpc(R.workAdd, { p_title: title }, 0, W)); },

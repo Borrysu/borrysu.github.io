@@ -1181,10 +1181,10 @@ function goalsPage(){let h=`<h1 class="pt">目標</h1>`;
  if(S.st==='error')return h+`<div class="card empty" role="alert" style="margin-top:16px"><div class="big">▲ 目標讀不到</div><p>連不上資料庫。上次成功是 14:05。</p><div class="btns">${B('再讀一次','retry',null,'pri')}</div></div>`;
  const a=gAll(),m=gsum();
  if(!a.length)return h+`<div class="card cardx empty" style="margin-top:16px">${mineB('goals:all','目標')}<div class="big">還沒立目標</div><p>立了之後，進度會自己從案子、機會、錢帶進來。</p>${aifs([aiF('din','goals')])}</div>`;
- const pick=a.some(g=>g.id==='grant')&&a.some(g=>g.id==='script');
+ const hot=a.filter(g=>g.st==='late'||g.st==='stall'),cand=hot.concat(a.filter(g=>hot.indexOf(g)<0)).slice(0,2),pick=hot.length>0&&a.length>1;   // v41：原本寫死補助與劇本，改成照真資料（落後、沒動的先列）
  h+=`<div class="card cardx gpick" data-card="gpick">${mineB('goals:all','目標')}<div class="meta"><span class="gsumn num">${m.n}</span><span>個目標</span>${m.l?chip(m.l+' 個落後',1):''}${m.s?`<span class="chip gstall"><span aria-hidden="true">‖ </span>${m.s} 個沒動</span>`:''}${!m.l&&!m.s?chip('都照進度'):''}</div>
- <div class="gsay">${aiF('din','goals')}<p>${pick?'補助 12/15 截止，企劃書還缺預算表；劇本慢了 8 場。這週力氣放哪一個？':'這週照順序推，有落後的我會先講。'}</p></div>
- ${pick?`<div class="btns">${['grant','script'].map(id=>`<button class="btn" data-act="gfocus" data-id="${id}" aria-pressed="${GL.focus===id}">${id==='grant'?'這週推補助':'這週補劇本'}</button>`).join('')}</div>`:''}</div>
+ <div class="gsay">${aiF('din','goals')}<p>${pick?esc(hot.map(g=>g.name.slice(0,10)+g.stText).join('；'))+'。這週力氣放哪一個？':'這週照順序推，有落後的我會先講。'}</p></div>
+ ${pick?`<div class="btns">${cand.map(g=>`<button class="btn" data-act="gfocus" data-id="${esc(g.id)}" aria-pressed="${GL.focus===g.id}">這週推${esc(g.name.slice(0,8))}</button>`).join('')}</div>`:''}</div>
  <section class="sec">${sh('','照你的順序')}<div class="stack glist">${a.map(gcard).join('')}</div></section>`;
  if(GL.dropped.length)h+=`<section class="sec">${sh('','放掉的',GL.dropped.length+' 個')}<div class="rows">${GL.dropped.map(g=>`<div class="rowi"><div class="rowb"><span class="tx"><b>${esc(g.name)}</b></span><span class="rt">${mb('↺ 撿回來','grevive',g.id)}</span></div></div>`).join('')}</div></section>`;
  return h}
@@ -1850,7 +1850,7 @@ function mapArch(c){return {id:c.id,title:c.title,next:(c.closedAt?LMD(c.closedA
 function mapSub(s){return {id:s.id,name:s.name,amt:s.amount,mo:s.monthly,cyc:s.cycle==='yearly'?`每年，月均 ${nt(s.monthly)}`:'每月',in:s.days,payer:s.payer==='self'?'自付':'公司付',
   cancel:s.status==='cancel'?(s.cancelBy?`想取消，${s.cancelBy} 前要處理`:'想取消'):'',idle:s.status==='idle',next:s.next,acct:s.account}}
 
-function applyData(){const it=LV.items;
+function applyData(){const it=LV.items;applyExtra();
  DB.opp=it.filter(c=>BK[c.basket]&&(c.status==='new'||c.status==='snoozed')).map(mapOpp);
  DB.deleted=it.filter(c=>BK[c.basket]&&(c.status==='dropped'||c.status==='expired')).map(c=>({id:c.id,title:c.title,amt:c.amountDisplay||c.amountLabel||''}));
  DB.proj=it.filter(c=>['doing','delivered','paid'].includes(c.status)).map(mapProj).sort((a,b)=>(a.urg?0:1)-(b.urg?0:1));
@@ -1873,6 +1873,7 @@ async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
   LV.items=l.items;LV.hub=h;LV.scan=sc||{};LV.at=Date.now();LV.net='ok';
   if(api.moneySubs&&!LV.moneyNo){try{LV.money=await api.moneySubs();LV.moneyErr=''}catch(e){LV.money=null;LV.moneyNo=!!(e&&e.kind==='forbidden');LV.moneyErr=LV.moneyNo?'這把金鑰不能看錢的資料，只有老大本人的網址能看':LERR(e);if(e&&e.kind==='auth')throw e}}
   if(first&&api.archive){api.archive('',null).then(r=>{LV.arch=r.items||[];paint()}).catch(()=>{})}
+  await loadExtra();
   if(LV.mode==='live')snapSave();
   S.st='ok';S.scan=scanOpen()?1:0;paint(first?'stgroot':'');
   if(first&&S.chat)loadMsgs();pollInbox();
@@ -1883,7 +1884,7 @@ async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
   else if(snapLoad()){LV.net='offline';S.st='offline';paint(first?'stgroot':'')}
   else{LV.net='error';S.st='error';LV.err=LERR(e);paint()}
  }finally{LBUSY=false}}
-function sigOf(){return JSON.stringify([LV.items.map(c=>[c.id,c.status,c.progressNote,c.progressSteps,c.runStatus,c.folderStatus]),LV.hub,LV.money,LV.scan,LV.arch.length,S.st])}
+function sigOf(){return JSON.stringify([LV.items.map(c=>[c.id,c.status,c.progressNote,c.progressSteps,c.runStatus,c.folderStatus]),LV.hub,LV.money,LV.scan,LV.arch.length,S.st,LV.goals,LV.cal,LV.life,LV.mo])}
 function paint(dir){applyData();const s=sigOf();if(!dir&&s===LV.sig&&!LV.dirty)return;
  const a=document.activeElement;if(!dir&&a&&/^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName)&&(a.closest('#view')||a.closest('#sheet')||a.closest('#page'))){LV.dirty=true;return}
  LV.sig=s;LV.dirty=false;keybar();render(dir||'keep')}
@@ -1909,11 +1910,7 @@ calPage=function(){return `<div class="page-in"><div class="phead">${B('‹ 返�
  <div class="seg" role="group" aria-label="怎麼看">${[['day','日'],['week','週（往後 14 天）']].map(x=>`<button aria-pressed="${(S.calv||'week')===x[0]}" data-act="calv" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>
  <div class="seg" role="group" aria-label="看哪邊">${[['all','全部'],['me','只看個人'],['co','只看公司']].map(x=>`<button aria-pressed="${(S.calf||'all')===x[0]}" data-act="calf" data-id="${x[0]}">${x[1]}</button>`).join('')}</div>
  <div class="btns">${B('＋ 新增行程','sheet','calnew','pri')}${mb('規則 ›','sheet','calrules')}</div><div class="card lcard" style="margin-top:12px"><p>行事曆還沒接上</p></div></div>`};
-goalCard=function(){if(S.st==='loading'||S.st==='error')return '';delete CV.goal;
- return `<div class="room groomh lgoal" data-z="goal"><div class="rgo"><span class="rh">目標</span><span class="rs">目標還沒接上</span></div>${bigF('din','goal')}</div>`};
-goalStrip=goalCard;
-goalSlides=function(z){return S.st==='ok'&&(z==='proj'||z==='opp'||z==='life')?[{id:'gnone',name:'目標',html:`<p class="mzhl cvhl">目標還沒接上</p>`}]:[]};
-roomGoals=()=>'';gcNote=()=>'';projSync=()=>'';
+gcNote=()=>'';projSync=()=>'';   // v41：目標接上 hub_goals（見檔尾「目標（v41）」），設計稿的 goalCard、goalSlides、roomGoals 照原樣用
 monthSelf=()=>subs().filter(s=>s.payer==='自付').reduce((a,s)=>a+(s.mo||0),0);
 {const _z=zsum;zsum=function(z){const s=_z(z);
  if(z==='opp'){s.b='';const a=opps('all');s.s=a.length?`最急：${a[0].org||a[0].title}，${a[0].due}`:'現在沒有新機會'}
@@ -2093,11 +2090,76 @@ say=function(b,text,ctx){
 ACT.askdin=(ctx,el)=>openChat('din',ctx,el);
 ACT.cmd=id=>{const i=id.indexOf(':'),b=id.slice(0,i),c=id.slice(i+1);if(b==='jiji'&&/掃描/.test(c))return ACT.scan();if(!NAMES[b])return;openChat(b,'',null,()=>say(b,c,''))};
 
+
+/* ---------- v41（2026-11-22）：目標接上 hub_goals ----------
+   讀 hub_goals_list、寫 hub_goal_set（老大本人或可編輯的金鑰）。初始七個是設計稿的目標，資料庫標 demo＝示意值，老大改過就不再標。
+   設計稿的卡片、整頁、各房間色卡目標頁照原樣；只換資料與會寫回去的動作。 */
+LV.goals=null;LV.goalsErr='';LV.cal=null;LV.life=null;LV.mo=null;LV.moErr='';
+async function loadExtra(){const api=LV.api,jobs=[];
+ if(api.goals)jobs.push(api.goals().then(d=>{LV.goals=d;LV.goalsErr=''}).catch(e=>{LV.goalsErr=LERR(e)}));
+ if(api.cal)jobs.push(api.cal(14).then(d=>{LV.cal=d}).catch(()=>{}));
+ if(api.life)jobs.push(api.life().then(d=>{LV.life=d}).catch(()=>{}));
+ if(api.moneyOverview&&!LV.moNo)jobs.push(api.moneyOverview().then(d=>{LV.mo=d;LV.moErr=''}).catch(e=>{LV.mo=null;LV.moNo=!!(e&&e.kind==='forbidden');LV.moErr=LV.moNo?'這把金鑰不能看錢的資料，只有老大本人的網址能看':LERR(e)}));
+ await Promise.all(jobs)}
+const CLN=s=>String(s==null?'':s).replace(/[<>&"'`]/g,'');
+const ISOD=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const DOFF=iso=>{if(!iso)return null;const a=String(iso).slice(0,10).split('-').map(Number),t=new Date();t.setHours(0,0,0,0);return Math.round((new Date(a[0],a[1]-1,a[2])-t)/864e5)};
+const MON=()=>{const t=new Date();t.setHours(0,0,0,0);t.setDate(t.getDate()-((t.getDay()+6)%7));return ISOD(t)};
+function gDueTxt(iso){if(!iso)return '';const a=String(iso).slice(0,10).split('-').map(Number);return a[0]===new Date().getFullYear()?a[1]+'/'+a[2]:a[0]+'/'+a[1]+'/'+a[2]}
+function gDueIso(t){t=String(t||'').trim();if(!t)return '';let m=t.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/);if(m)return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0');
+ m=t.match(/^(\d{1,2})[\/\-.](\d{1,2})$/);if(m){const n=new Date(),y=n.getFullYear(),d=new Date(y,+m[1]-1,+m[2]);if(d<n)d.setFullYear(y+1);return ISOD(d)}return null}
+function mapGoal(r){const unit=CLN(r.unit),now=+r.now_val||0,total=+r.total||1,ex=r.expect!=null?+r.expect:null,left=DOFF(r.due);
+ let week=null,nowv=now;if(Array.isArray(r.week)||(r.week&&r.week.d)){const w=r.week&&r.week.d?r.week:{mon:MON(),d:[0,0,0,0,0,0,0]};week=w.mon===MON()?w.d.slice(0,7):[0,0,0,0,0,0,0];nowv=week.reduce((a,b)=>a+(b?1:0),0)}
+ const idle=r.updated_at?Math.floor((Date.now()-Date.parse(r.updated_at))/864e5):0;
+ let st='ok',stText='照進度';if(r.status==='done'){stText='達成了'}else if(r.kind==='bar'&&ex!=null&&now<ex){st='late';stText=`慢 ${+(ex-now).toFixed(1)} ${unit}`}else if(!nowv&&idle>=30){st='stall';stText=`${idle} 天沒動`}else if(week&&nowv>=total)stText='這週達標';
+ const nm=CLN(r.name);
+ const base=(r.demo?'示意值，請老大改。':'')+(ex!=null?`照進度今天該到 ${ex} ${unit}${now<ex?`，慢了 ${+(ex-now).toFixed(1)} ${unit}`:''}。`:'')+(left!=null&&r.status!=='done'?`離期限還有 ${left} 天。`:'')||'還沒有進度說明。';
+ return {id:r.id,name:r.name,why:r.why||'還沒寫為什麼。',due:gDueTxt(r.due),dueIso:r.due||'',dueWhat:CLN(r.due_what),left,kind:r.kind==='pips'?'pips':'bar',now:nowv,total,unit,expect:ex,label:CLN(r.label)||'目前',
+  st,stText,short:`${nm.slice(0,8)} ${nowv}／${total}${unit?' '+unit:''}`,extra:r.extra||'',base,next:r.next_step||'還沒定下一步。',src:r.src||'自己改',auto:r.auto?1:0,
+  steps:Array.isArray(r.steps)?r.steps.map(x=>[String(x[0]||''),x[1]==='d'?'d':x[1]==='n'?'n':'',String(x[2]||'')]):null,week,room:r.room,bot:r.bot||'daqi',money:r.room==='money'?1:0,demo:!!r.demo,sort:r.sort,raw:r}}
+function applyExtra(){
+ if(LV.goals){GL.list=(LV.goals.items||[]).map(mapGoal);GL.dropped=(LV.goals.dropped||[]).map(d=>({id:d.id,name:d.name}));const f=GL.list.find(g=>g.raw.focus);GL.focus=f?f.id:null}else{GL.list=[];GL.dropped=[];GL.focus=null}
+ if(typeof applyCal==='function')applyCal();if(typeof applyLife==='function')applyLife();if(typeof applyMoney==='function')applyMoney()}
+const reloadGoals=()=>LV.api.goals().then(d=>{LV.goals=d;LV.sig='';paint()}).catch(()=>{});
+// 寫一筆目標：成功後重讀；undo 給「復原」用
+function gw(id,patch,msg,undo){return LV.api.goalSet(id,patch).then(r=>{reloadGoals();if(msg)toast(msg,undo?()=>LV.api.goalSet(undo.id||id,undo.patch).then(reloadGoals).then(()=>toast('還原了')).catch(e=>toast('沒還原：'+LERR(e))):null);return r}).catch(e=>{toast('沒存上：'+LERR(e));reloadGoals()})}
+ACT.gsave=id=>{const n=$('#gName'),v=n?n.value.trim():'';if(!v){S.err='gform';render('keep');const x=$('#gName');if(x)x.focus();return}
+ const why=$('#gWhy').value.trim(),dt=$('#gDue').value.trim(),due=gDueIso(dt);if(due===null){toast('期限看不懂，寫成 2027/3/31 或 3/31');return}S.err='';
+ if(id){const g=gOf(id);if(!g)return;const o={name:g.name,why:g.raw.why||'',due:g.dueIso||''};S.gk=null;closeThen(()=>gw(id,{name:v,why,due},'存好了',{patch:o}));return}
+ const k=S.gk||'self',bot={proj:'daqi',opp:'jiji',money:'kim',self:'din'}[k],room=k==='self'?'life':k;S.gk=null;
+ const src={proj:'案子房間，連到哪個案子由大器問你',opp:'機會房間，連到哪類機會由集集問你',money:'錢房間，連到哪個帳戶由塔塔問你',self:'自己打勾'}[k];
+ closeThen(()=>gw(null,{name:v,why,due,room,bot,auto:k!=='self',src,kind:'pips',total:1,unit:'步',label:'走到',steps:[['第一步','','']],sort:900},'立好了：'+v).then(r=>{if(r&&r.id){window.__lastGoal=r.id}}))};
+ACT.gfocus=id=>{const pf=GL.focus,on=pf!==id;closeThen(()=>gw(on?id:pf,{focus:on},on?'這週主推：'+(gOf(id)||{}).name:'取消這週主推',pf&&on?{id:pf,patch:{focus:true}}:{id:on?id:pf,patch:{focus:!on}}))};
+function gmv2(id,d){const a=GL.list,i=a.findIndex(x=>x.id===id),j=i+d;if(i<0||j<0||j>=a.length)return;const x=a[i],y=a[j],sx=x.raw.sort,sy2=y.raw.sort;
+ let nx=sy2,ny=sx;if(nx===ny){nx=(j+1)*10;ny=(i+1)*10}   // 一樣的排序值先拉開
+ closeThen(()=>Promise.all([LV.api.goalSet(x.id,{sort:nx}),LV.api.goalSet(y.id,{sort:ny})]).then(()=>{reloadGoals();toast(d<0?'往上排了':'往下排了',()=>Promise.all([LV.api.goalSet(x.id,{sort:sx}),LV.api.goalSet(y.id,{sort:sy2})]).then(reloadGoals))}).catch(e=>toast('沒排好：'+LERR(e))))}
+ACT.gup=id=>gmv2(id,-1);ACT.gdn=id=>gmv2(id,1);
+ACT.gdrop=id=>{const g=gOf(id);if(!g)return;const onGoal=S.page==='goal:'+id;closeThen(()=>{const go=()=>gw(id,{status:'dropped',focus:false},'放掉了：'+g.name,{patch:{status:'active'}});if(onGoal){after=go;back()}else go()})};
+ACT.grevive=id=>gw(id,{status:'active'},'撿回來了',{patch:{status:'dropped'}});
+ACT.gcheck=id=>{const g=gOf(id);if(!g)return;const d=(g.week||[0,0,0,0,0,0,0]).slice(),i=(new Date().getDay()+6)%7,old={mon:MON(),d:d.slice()};
+ if(d[i]){toast('今天已經記過了');return}d[i]=1;const n=d.reduce((a,b)=>a+(b?1:0),0);gw(id,{week:{mon:MON(),d},now_val:n},`記下了，本週 ${n}／${g.total}`,{patch:{week:old,now_val:n-1}})};
+ACT.gstep=id=>{const g=gOf(id);if(!g||!g.steps)return;const o=JSON.parse(JSON.stringify(g.raw.steps)),st=JSON.parse(JSON.stringify(g.raw.steps)),k=Math.min(Math.round(g.now),st.length-1);
+ if(g.now>=g.total){toast('都做完了');return}st[k][1]='d';st[k][2]=LMD(Date.now())+' 完成';if(st[k+1])st[k+1][1]='n';
+ gw(id,{steps:st,now_val:g.now+1,next_step:st[k+1]?st[k+1][0]+'。':'都做完了。'},'往前一步',{patch:{steps:o,now_val:g.now,next_step:g.raw.next_step}})};
+ACT.gfix=arg=>{const [id,how]=arg.split('|'),g=gOf(id);if(!g)return;if(how==='move'){ACT.sheet('gform:'+id);return}
+ openChat('daqi','goal:'+id,null,()=>say('daqi',`目標「${g.name}」${g.stText}，請幫我排追趕的每週量，排好寫回目標的下一步。`,'goal:'+id))};
+ACT.gnum=id=>{const g=gOf(id);if(!g)return;let v=null;try{v=prompt(`「${g.name}」現在到多少？（目標 ${g.total} ${g.unit}）`,String(g.now))}catch(e){}if(v==null)return;const n=+String(v).replace(/[^\d.]/g,'');if(!isFinite(n)||String(v).trim()===''){toast('要寫數字');return}
+ gw(id,{now_val:n},`改成 ${n}／${g.total} ${g.unit}`,{patch:{now_val:g.raw.now_val}})};
+ACT.gnext=id=>{const g=gOf(id);if(!g)return;let v=null;try{v=prompt('下一步寫什麼？',g.raw.next_step||'')}catch(e){}if(v==null)return;gw(id,{next_step:v.trim()},'下一步改好了',{patch:{next_step:g.raw.next_step}})};
+ACT.gtotal=id=>{const g=gOf(id);if(!g)return;let v=null;try{v=prompt(`「${g.name}」的總數（單位：${g.unit||'沒寫'}）`,String(g.total))}catch(e){}if(v==null)return;const n=+String(v).replace(/[^\d.]/g,'');if(!(n>0)){toast('要寫大於 0 的數字');return}gw(id,{total:n},'總數改好了',{patch:{total:g.raw.total}})};
+// 「⋯」多三項：改目前進度、改總數、改下一步（初始資料是示意值，要能直接改）
+{const _ms=mineSheet;mineSheet=function(id){const h=_ms(id),i=id.indexOf(':'),k=id.slice(0,i),x=id.slice(i+1);if(k!=='goal')return h;const g=gOf(x);if(!g)return h;
+ const add=mi('#',`改目前進度（現在 ${g.now}／${g.total}${g.unit?' '+esc(g.unit):''}）`,'gnum',x)+mi('#','改總數','gtotal',x)+mi('✎','改下一步','gnext',x)+(g.demo?`<p class="note" style="padding:6px 4px">這是示意值，改過任一項就不再標示意。</p>`:'');
+ const j=h.indexOf('<div class="mlist">');return j<0?h:h.slice(0,j+19)+add+h.slice(j+19)}}
+// 定定的建議套用：設計稿只改畫面，這裡把主推與下一步寫回去
+{const _d=ACT.dinapply;ACT.dinapply=function(mid){const before=GL.list.map(g=>[g.id,g.next]),pf=GL.focus;const r=_d.apply(this,arguments);
+ setTimeout(()=>{if(GL.focus!==pf&&GL.focus)LV.api.goalSet(GL.focus,{focus:true}).then(reloadGoals).catch(()=>{});GL.list.forEach(g=>{const b=before.find(x=>x[0]===g.id);if(b&&b[1]!==g.next)LV.api.goalSet(g.id,{next_step:g.next}).catch(()=>{})})},50);return r}}
+WRITE.push('gsave','gfocus','gup','gdn','gdrop','grevive','gcheck','gstep','gnum','gtotal','gnext');
 WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v40');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v41');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2105,7 +2167,7 @@ WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclo
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&LV.net!=='auth')reload()});
  addEventListener('online',()=>reload());addEventListener('offline',()=>{if(LV.at){LV.net='offline';S.st='offline';paint()}});
 }catch(e){LV.net='error';LV.err=LERR(e);S.st='error';render()}})();
-window.__zl=Object.assign(window.__zl||{},{LV});
+window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}

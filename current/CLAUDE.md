@@ -112,3 +112,8 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - Gig Gig、Kim Kim 自己的金鑰也能用 `opp_msg_add(p_bot:'jiji'／'kim')` 直接回。
    - 前端：檔尾「對話（v40）」段；送出後頭像轉「思考中」、浮窗顯示「○○處理中」並每 8 秒看一次，回覆到了臉跳一下；沒開浮窗時未讀紅點標在右上角或浮動頭像（已讀位置存 localStorage `opp_bot_seen`）。集集的「要做建資料夾」「立即掃描」「讀完整公告」仍是直接動作。
    - 退回：`launchctl bootout gui/$(id -u)/com.borry.current-bot-relay`；重跑 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_Bot對話接通前.sql`（先 `drop function public.opp_msg_add(text,uuid,text,text), public.opp_msg_list(text,uuid,integer,text)`，再 drop 新的 `opp_bot_*` 函式與 `opp_bot_tickets`）；前端 `git revert` v40 的 commit。新欄位留著不影響舊版。
+27. **目標接上後端（2026-11-22，v41）**：老大原話「請問一下 你可以比對設計 跟現在正式版 把缺漏的都補齊嗎」。缺漏清單在 `/Users/borry/大器工作區/面板工坊/AI工作夾/06_紀錄/1122_逐流v40/缺漏清單.md`。
+   - 資料庫只加不刪（遷移與退回 SQL 在 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v41_新後端_*.sql`）：新表 `hub_goals`、`hub_cal_events`、`hub_cal_sync_log`、`hub_life_items`（都開 RLS、沒有 policy，只能經函式）；新函式 `hub_goals_list`、`hub_goal_set(p_id,p_patch)`、`hub_cal_list(p_days)`、`hub_cal_sync`（只給 Mac 同步用）、`hub_life_list`、`hub_life_set(p_id,p_kind,p_patch)`、`hub_money_overview`（只讀，跟 `hub_money_subs` 同一道門：老大本人或管理員金鑰）。讀＝can_read；寫＝老大本人或 can_edit（AI協作可寫，沒有放大其他權限、沒有發新鑰匙）。
+   - 目標：初始七個照設計稿（劇本、補助、劇組、預備金、器材基金、報稅預留、運動），`demo=true` 畫面寫「示意值，請老大改」；老大本人改過任一項就變 false。「⋯」多了改目前進度、改總數、改下一步。這週主推、往上下排、放掉與撿回、運動打勾（`week={mon,d[7]}`，換週自動歸零）、步驟往前一步都寫回資料庫，提示條可復原。
+   - 目標頁「這週力氣放哪一個」原本寫死補助與劇本，改成照真資料列落後、沒動的目標。
+   - 退回：`git revert` v41 的 commit；資料庫照退回 SQL drop 新函式（新表留著不影響舊版）。
