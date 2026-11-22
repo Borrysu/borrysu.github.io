@@ -51,3 +51,9 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 - 要問 Borry 事情：`tools/rpc.sh hub_decision_add '{"p_question":"…","p_project":"案名","p_options":[{"key":"a","label":"…","note":"一句理由","recommended":true},{"key":"b","label":"…"}]}'`。付款、刪檔、對外發訊用 `"p_kind":"talk"`。
 - 收答案、回報工作、記紀錄、常駐程式報到的函式與規矩，見 `CLAUDE.md` 第 22 條。
 - 回答會同步追加到 `/Users/borry/Claude projects/handoff/通告板回覆.md`，開工讀交接帳時一起看。
+
+## v46（2026-11-22）：卡面一句、點開、編輯刪除封存
+
+- 寫卡片一定附「卡面一句」：動詞開頭、約 20 字、說要老大做什麼（例：`hub_decision_add` 帶 `"p_ask":"選要不要接木星加價 3 萬"`；`hub_job_set`、`hub_event_add`、`opp_todo_add` 同樣帶 `p_ask`；案子與機會用 `tools/rpc.sh opp_card_edit '{"p_id":"…","p_patch":{"ask":"確認 11/30 前寄發票"}}'`）。原文照舊放細節欄位。
+- **資料庫 v46 遷移套上之前不要帶 p_ask**，先把那一句寫成 question／title／summary 的第一句。套上沒有：`tools/rpc.sh hub_shelf_list '{}'` 回陣列＝已套上，回找不到函式＝還沒。
+- 編輯、封存、刪除（72 小時可救回）：`hub_card_edit`、`hub_card_shelf`、`hub_shelf_list`，規則細節看 `CLAUDE.md` 第 32 條。

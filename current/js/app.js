@@ -1857,7 +1857,7 @@ function applyData(){const it=LV.items;applyExtra();
  DB.todo=it.filter(c=>c.basket==='todo'&&c.status==='new').map(mapTodo);
  DB.arch=LV.arch.map(mapArch);
  const h=LV.hub||{open:[],jobs:[],events:[],beats:[]};
- DB.dec=h.open.map(mapDec);Object.keys(PD).forEach(k=>{delete PD[k]});DB.dec.forEach(d=>{const p=DB.proj.find(x=>x.title===d.proj||x.short===d.proj);if(p)PD[d.id]=p.id});DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
+ DB.dec=h.open.map(mapDec);Object.keys(PD).forEach(k=>{delete PD[k]});DB.dec.forEach(d=>{const pj=d.projFull||d.proj,p=DB.proj.find(x=>x.title===pj||x.short===pj);if(p)PD[d.id]=p.id});DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
  DB.subs=LV.money?LV.money.items.filter(s=>s.status!=='cancel'||s.cancelBy).map(mapSub).sort((a,b)=>a.in-b.in):[];
  const t=LV.at?LHM(LV.at):'';FRESH.daqi=LV.forced?'示範資料':t?t+' 更新':'讀取中';
  const ls=lastScan();FRESH.jiji=ls?LHM(ls.at)+' 整理':'還沒掃描過';FRESH.tata=LV.mo?t+' 讀取':LV.money?'訂閱 '+t+' 讀取':'看不到帳戶';FRESH.peng=LV.life?t+' 更新':'讀不到';
@@ -2286,9 +2286,148 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.classList||!t.clas
   .catch(er=>{toast('沒存上：'+LERR(er));reload()})});
 WRITE.push('pdeliver','ppaid','pback','pback2','run','scan','build','dive','pclosedo','preopen','ppurge');
 
+/* ---------- v46（2026-11-22）：卡面只寫「要你做什麼」、每張卡點得開、能編輯刪除封存 ----------
+   老大原話：「卡片條目的字實在太多，所以卡片的時會應該是"要我幹麻"的精準描述，點開才是細節，過去已經做完也都可以點開看細節 希望每個卡片都能夠點開 反正所有東西都要能互動 編輯或者是刪除或者是封存懂嗎」
+   追加：「我印象中機會卡片，應該會在卡面上直接顯示按鈕有基本操作？」
+   卡面一句：資料庫 ask 欄（AI 寫卡時帶 p_ask）；沒填就從原文摘一句（第一個動作句、去掉人名括號與路徑、約 20 字）。原文放細節。
+   後端：hub_card_edit／hub_card_shelf／hub_shelf_list／opp_card_edit；資料庫還沒更新時按了只寫「資料庫還沒更新」，不假裝成功。 */
+const ASKN=20;
+function askCut(t,n,noComma){n=n||ASKN;let s=String(t||'').replace(/\r/g,'');
+ s=s.replace(/https?:\/\/\S+/g,'').replace(/(~|\/Users)\/[^\s，。；、）)]*/g,'').replace(/`[^`]*`/g,'');
+ let a=s.split(/[｜\n]/).map(x=>x.trim()).filter(Boolean);if(a.length>1&&/^[^：]{0,30}（[^）]*）$/.test(a[0]))a=a.slice(1);s=a[0]||'';
+ s=s.replace(/\b[0-9a-f]{7,40}\b/g,'').replace(/\bcommit\b\s*/gi,'').replace(/（[^）]{0,80}）|\([^)]{0,80}\)/g,'').replace(/[（(][^）)]*$/,'').replace(/【[^】]{0,12}】/g,'').replace(/^(狀態|結果|下一步|待辦|問題|決定)：/,'').replace(/^[\s・\-–—*#>]+/,'');
+ s=s.replace(/\s+([：，])/g,'$1');const m=s.search(/[。；！？!?]/);if(m>4)s=s.slice(0,m);s=s.replace(/[，、：\s]+$/,'').trim();
+ if(s.length>n&&!noComma){const k=s.slice(0,n).lastIndexOf('，');if(k>=8)return s.slice(0,k)}
+ return s.length>n?s.slice(0,n-1)+'…':s}
+const askOwn=x=>{const s=String(x||'').trim();return s?(s.length>ASKN+6?s.slice(0,ASKN+5)+'…':s):''};
+function askDec(d){if(d.raw&&d.raw.ask)return askOwn(d.raw.ask);let q=String(d.q||'').replace(/[？?]\s*$/,''),P=String(d.projFull||'');
+ if(P&&(/^[（(]?[^，：\s]{0,4}(已試|已做|已完成|已建|已讀|已辦|已備好|已確認)/.test(q)||!askCut(q)))q=P;   // 巡查待辦同步進來的：問題欄是「已試過什麼」，要決定的事在案子欄
+ if(/①/.test(q)&&/^(要你決定|[一二三四五兩]題)/.test(q)){const n=(q.match(/[\u2460-\u2469]/g)||[]).length,f=q.split(/[\u2460-\u2469]/)[1]||'';return askCut(`決定 ${n} 件：${f}`,ASKN+4)}
+ const c=askCut(q,ASKN,1)||askCut(P);
+ if(d.kind==='talk')return askCut('本人處理：'+c,ASKN+2);return /^(要不要|是否|要|該不該|可不可以|能不能)/.test(c)?askCut('選'+c.replace(/^是否/,'要不要'),ASKN+1):c}
+function askJob(j){if(j.raw&&j.raw.ask)return askOwn(j.raw.ask);return askCut(`${WHN[j.who]||String(j.who||'大器').replace(/（[^）]*）/,'')}在做${String(j.raw&&j.raw.title||j.title).replace(/^在?做/,'')}`,ASKN+2)}
+function askEvt(e){if(e.raw&&e.raw.ask)return askOwn(e.raw.ask);const t=askCut(e.raw?e.raw.summary:e.text);return /^(做完|完成|已)/.test(t)?t:askCut('做完：'+t,ASKN+3)}
+const OPV={fund:'申請',honor:'報名',personal:'接',other:'接'};
+function askOpp(o){const c=o.raw||{};if(c.ask)return askOwn(c.ask);return askCut(`看要不要${OPV[o.b]||'接'}：${c.shortTitle||o.title}`,ASKN+4)}
+function askProj(p){const c=p.raw||{};if(c.ask)return askOwn(c.ask);
+ if(c.status==='delivered')return '確認對方付款'+(c.expectedPayDate?`，${c.expectedPayDate.slice(5).replace('-','/')} 前`:'');
+ if(c.status==='paid')return '已收款，看要不要結案';
+ if(c.progressBlocker){const b=String(c.progressBlocker),m=b.match(/^等\s*(Borry|老大|你)\s*/);return m?askCut(b.slice(m[0].length)):askCut('解決：'+b,ASKN+3)}
+ const n=c.progressNote||c.firstStep||'';return n?askCut(n):'決定下一步'}
+const askTodo=t=>t.raw&&t.raw.ask?askOwn(t.raw.ask):askCut(t.title);
+
+// 資料形狀：保留原文，加 ask
+const WHN={'Gig Gig':'集集','Kim Kim':'金金','Tal Tal':'塔塔','Tom Tom':'通通','Pom Pom':'朋朋','AI協作':'大器'};
+{const _d=mapDec;mapDec=function(r){const x=_d(r);x.raw=r;x.projFull=x.proj;x.ask=askDec(x);if(String(x.proj).length>16)x.proj=askCut(x.proj,14);return x}}
+{const _j=mapJob;mapJob=function(r){const x=_j(r);x.raw=r;x.ask=askJob(x);return x}}
+{const _e=mapEvt;mapEvt=function(r){const x=_e(r);x.id=r.id;x.raw=r;x.ask=askEvt(x);return x}}
+{const _o=mapOpp;mapOpp=function(c){const x=_o(c);x.ask=askOpp(x);return x}}
+{const _p=mapProj;mapProj=function(c){const x=_p(c);x.ask=askProj(x);return x}}
+{const _t=mapTodo;mapTodo=function(c){const x=_t(c);x.ask=askTodo(x);return x}}
+{const _a=mapArch;mapArch=function(c){const x=_a(c);x.raw=c;x.ask=c.ask?askOwn(c.ask):askCut(String(c.title).replace(/｜/g,' '));return x}}
+const brief=(a,b)=>[a,b].filter(Boolean).join('・');
+
+// 卡面：拍板（首頁玻璃帶、卡、列）
+{const _s=decSlide;decSlide=function(d,n){const r=_s(d,n);r.html=r.html.replace(/<h2 class="dq"([^>]*)>[\s\S]*?<\/h2>/,`<h2 class="dq"$1>${esc(d.ask)}</h2>`);return r}}
+decCard=function(d){return `<article class="card cardx" data-card="${esc(d.id)}">${mineB('dec:'+d.id,'這件拍板')}<div class="meta">${aiF('daqi','dec:'+d.id)}${chip(d.proj)}<span class="lbl">${esc(d.ago)}</span></div><h3>${cgo(esc(d.ask),'decopen',d.id)}</h3>${decActs(d)}${aifs([dinB('dec:'+d.id)])}</article>`};
+decRow=function(d){return `<div class="rowi" data-card="${esc(d.id)}"><button class="rowb" data-act="decopen" data-id="${esc(d.id)}">${bm('daqi','thinking')}<span class="tx"><b>${esc(d.ask)}</b><small>${esc(brief(d.proj,d.ago))}</small></span><span class="rt"><span class="chev" aria-hidden="true">›</span></span></button></div>`};
+// 正在跑、最近做完：一句話，點開看全文
+jobList=function(){const j=jobs();if(!j.length)return `<div class="card"><p>現在沒有在跑的工作。</p></div>`;
+ return `<div class="rows">`+j.map(x=>`<div class="rowi" data-card="${esc(x.id)}"><div class="rowb">${aiF(x.bot,'job:'+x.id)}<button class="tx" data-act="sheet" data-id="hjob:${esc(x.id)}" style="min-height:44px;text-align:left"><b>${esc(x.ask)}</b><small>${esc(brief(x.raw&&x.raw.project,x.ago))}</small></button><span class="rt">${chip(x.st,x.wait)}</span></div></div>`).join('')+`</div>`};
+evtList=function(n){const e=evts().slice(0,n);if(!e.length)return `<div class="card"><p>還沒有做完的紀錄。</p></div>`;
+ return `<div class="rows">`+e.map(x=>`<div class="rowi" data-card="${esc(x.id)}"><div class="rowb">${aiF(x.bot,'evt:'+DB.events.indexOf(x))}<button class="tx" data-act="sheet" data-id="hevt:${esc(x.id)}" style="min-height:44px;text-align:left"><b class="evs">${esc(x.ask)}</b><small>${esc(brief(x.who,x.at))}</small></button></div></div>`).join('')+`</div>`};
+// 案子
+projCard=function(p){return `<article class="card cardx" data-card="${esc(p.id)}" data-act="copen" data-id="page|proj:${esc(p.id)}">${mineB('proj:'+p.id,p.title)}<div class="meta">${chip(p.due,p.urg)}<span class="lbl">${esc(askCut(p.short||p.title,16))}</span></div><h3>${cgo(esc(p.ask),'page','proj:'+p.id)}</h3><div class="steps" role="img" aria-label="${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步">${p.steps.map((s,i)=>`<i class="${i<p.cur?'d':i===p.cur?'c':''}"></i>`).join('')}</div><p class="note">${esc(p.money)}</p>${aifs([aiF(WHO[p.id]||'daqi','proj:'+p.id),p.g==='need'||p.g==='doing'?dinB('proj:'+p.id):''])}</article>`};
+// 機會：卡面兩顆基本操作（老大 2026-11-22 追加）
+const oppFace=o=>o.st==='snoozed'?mb('↺ 放回清單','unsnooze',o.id):mb('⏸ 暫存到明天','snooze',o.id)+mb('🗑 不要了','del',o.id);
+oppCard=function(o){const sn=o.st==='snoozed';
+ return `<article class="card cardx" data-card="${esc(o.id)}" data-act="copen" data-id="sheet|opp:${esc(o.id)}">${mineB('opp:'+o.id,o.title)}<div class="meta">${chip(sn?o.snz:o.due,!sn&&o.days<=4)}<span class="lbl">${esc(brief(BASK[o.b],askCut(o.org,10)))}</span></div><h3>${cgo(esc(o.ask),'sheet','opp:'+o.id)}</h3><p class="amt" style="color:var(--ink)">${esc(o.amt)}</p><div class="mrow">${oppFace(o)}</div>${aifs([aiF('jiji','opp:'+o.id,o.took?'建好了':'')])}</article>`};
+oppRow=function(o){return `<div class="rowi" data-card="${esc(o.id)}"><button class="rowb" data-act="sheet" data-id="opp:${o.id}">${bm('jiji')}<span class="tx"><b>${esc(o.ask)}</b><small>${esc(brief(o.amt,BASK[o.b]))}</small></span><span class="rt">${chip(o.due,o.days<=4)}<span class="chev" aria-hidden="true">›</span></span></button></div>`};
+{const _r=riverItems;riverItems=function(){const ix={};DB.dec.forEach(d=>ix['dec:'+d.id]=d.ask);DB.proj.forEach(p=>ix['proj:'+p.id]=p.ask);DB.opp.forEach(o=>ix['opp:'+o.id]=o.ask);return _r().map(i=>ix[i.id]?Object.assign(i,{t:ix[i.id]}):i)}}
+// 待辦、封存：一句話＋最常用的一顆
+{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj;if(s==='proj')return _zp();const h=_zp(),k=s==='todo'?'待辦':'封存',i=h.indexOf(`<section class="sec"><h2 class="vh">${k}</h2>`);if(i<0)return h;const a=DB[s];
+ return h.slice(0,i)+`<section class="sec"><h2 class="vh">${k}</h2><div class="stack stg">${a.map(t=>`<article class="card cardx" data-card="${esc(t.id)}" data-act="copen" data-id="sheet|cview:${s}:${esc(t.id)}">${mineB(s+':'+t.id,t.title)}<div class="meta">${chip(t.st)}</div><h3>${cgo(esc(t.ask),'sheet','cview:'+s+':'+t.id)}</h3>${s==='todo'&&!t.run?`<div class="mrow">${mb('▶ 去執行','run',t.id)}</div>`:''}</article>`).join('')}</div></section>`}}
+
+// 整張卡點下去＝打開（卡上的按鈕照舊各做各的）
+ACT.copen=(v,el)=>{const i=v.indexOf('|'),how=v.slice(0,i),id=v.slice(i+1);const a=document.activeElement;if(a&&el.contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))return;if(how==='page')ACT.page(id);else ACT.sheet(id)};
+
+// ---------- 細節抽屜 ----------
+const HK={hjob:'job',hevt:'event'};
+const hubRow=(k,id)=>k==='decision'?(LV.hub&&LV.hub.open||[]).find(x=>x.id===id):k==='job'?(LV.hub&&LV.hub.jobs||[]).find(x=>x.id===id):(LV.hub&&LV.hub.events||[]).find(x=>String(x.id)===String(id));
+const shelfRow=(k,id)=>(LV.shelf||[]).find(s=>s.kind===k&&String(s.row.id)===String(id));
+const editRow=(k,id)=>`<div class="mrow">${mb('✎ 編輯','sheet','hedit:'+k+':'+id)}${mb('▣ 封存','hshelf',k+'|'+id+'|archive')}${mb('🗑 刪掉','hshelf',k+'|'+id+'|delete')}</div><p class="note">刪掉的 72 小時內可在「封存與刪掉的」救回。</p>`;
+const kvs=a=>`<dl class="kv">${a.filter(x=>x[1]).map(x=>`<div><dt>${x[0]}</dt><dd>${esc(x[1])}</dd></div>`).join('')}</dl>`;
+const fullP=(lab,t)=>t?`<p class="h4">${lab}</p><p style="white-space:pre-wrap;word-break:break-word">${esc(t)}</p>`:'';
+const tstr=t=>t?`${LMD(t)} ${LHM(t)}`:'';
+function hubSheet(t,id){
+ if(t==='hjob'){const j=DB.jobs.find(x=>String(x.id)===id),r=j&&j.raw||hubRow('job',id);if(!r)return shHead('這件不在了');const s=(JST[r.status]||['進行中'])[0];
+  return shHead(esc(j?j.ask:askCut(r.title)))+kvs([['誰',r.agent],['狀態',s],['案子',r.project],['機器',r.machine],['更新',tstr(r.updatedAt)]])+fullP('在做什麼',r.title)+fullP('備註',r.note)+(r.resultPath?`<p class="h4">成果</p><p class="note" style="word-break:break-all">${esc(r.resultPath)}</p>`:'')+editRow('job',id)}
+ if(t==='hevt'){const e=DB.events.find(x=>String(x.id)===id),r=e&&e.raw||hubRow('event',id);if(!r)return shHead('這筆不在了');
+  return shHead(esc(e?e.ask:askCut(r.summary)))+kvs([['誰',r.actor],['案子',r.project],['時間',tstr(r.at)]])+fullP('做完了什麼',r.summary)+(r.path?`<p class="h4">檔案</p><p class="note" style="word-break:break-all">${esc(r.path)}</p>`:'')+editRow('event',id)}
+ if(t==='hedit'){const [k,x]=id.split(/:(.*)/);const r=hubRow(k,x)||((shelfRow(k,x)||{}).row);if(!r)return shHead('這件不在了');
+  const F={decision:['問題','question','細節','detail'],job:['在做什麼','title','備註','note'],event:['做完了什麼','summary','檔案或路徑','path']}[k];
+  const cur=k==='decision'?(DB.dec.find(d=>d.id===x)||{}).ask:k==='job'?(DB.jobs.find(d=>String(d.id)===x)||{}).ask:(DB.events.find(d=>String(d.id)===x)||{}).ask;
+  return shHead('編輯')+`<label class="f">卡面一句（要你做什麼，約 20 字）<input id="heAsk" maxlength="80" value="${esc(r.ask||'')}" placeholder="${esc(cur||'')}"></label><label class="f">${F[0]}<textarea id="heText" rows="4">${esc(r[F[1]]||'')}</textarea></label><label class="f">${F[2]}<textarea id="heDetail" rows="3">${esc(r[F[3]]||'')}</textarea></label><label class="f">案子<input id="heProj" maxlength="120" value="${esc(r.project||'')}"></label>${S.err==='hedit'?'<p class="err" role="alert">▲ 內容不能空白。</p>':''}<div class="btns">${B('存好','hsave',k+'|'+x,'pri wide')}</div>`}
+ if(t==='cview'){const [k,x]=id.split(/:(.*)/);const it=(DB[k]||[]).find(q=>q.id===x);if(!it)return shHead('這件不在了');const c=it.raw||{};
+  return shHead(esc(it.ask))+`<p style="margin-top:8px">${esc(c.title||it.title)}</p>`+kvs([['狀態',it.st],['截止',c.deadline?LMD(c.deadline):''],['結案',c.closedAt?LMD(c.closedAt):'']])+fullP('說明',c.why||it.next)+fullP('大器寫的進度',c.progressNote)+`<div class="mrow">${k==='todo'&&!it.run?mb('▶ 去執行','run',x):''}${mb('✎ 改卡面一句','sheet','cedit:'+x)}${k==='todo'?mb('🗑 刪掉','tdel',x):mb('↶ 放回進行中','preopen',x)+mb('🗑 徹底刪除','ppurge',x)}</div>`}
+ if(t==='cedit'){const c=LV.items.find(q=>q.id===id)||(LV.arch||[]).find(q=>q.id===id);if(!c)return shHead('這張不在了');
+  const cur=(DB.opp.find(q=>q.id===id)||DB.proj.find(q=>q.id===id)||DB.todo.find(q=>q.id===id)||DB.arch.find(q=>q.id===id)||{}).ask;
+  return shHead('改卡面')+`<label class="f">卡面一句（要你做什麼，約 20 字）<input id="ceAsk" maxlength="80" value="${esc(c.ask||'')}" placeholder="${esc(cur||'')}"></label><p class="note">留空＝照原文自動摘一句。</p><label class="f">名稱<input id="ceTitle" maxlength="300" value="${esc(c.title||'')}"></label><div class="btns">${B('存好','csave',id,'pri wide')}</div>`}
+ if(t==='shelfv'){const [k,x]=id.split(/:(.*)/);const s=shelfRow(k,x);if(!s)return shHead('這件不在了');const r=s.row,txt=r.question||r.title||r.summary||'';
+  return shHead(esc(r.ask||askCut(txt)))+kvs([['狀態',s.gone?'刪掉了（72 小時內可救回）':'封存中'],['案子',r.project],['時間',tstr(Date.parse(s.t))]])+fullP('內容',txt)+fullP('細節',r.detail||r.note||r.path)+`<div class="mrow">${s.gone?mb('↺ 救回來','hshelf',k+'|'+x+'|restore'):mb('↺ 放回','hshelf',k+'|'+x+'|unarchive')+mb('🗑 刪掉','hshelf',k+'|'+x+'|delete')}</div>`}
+ return null}
+{const _s=sheetHTML;sheetHTML=function(){const a=S.sheet.split(':'),t=a[0],id=S.sheet.slice(t.length+1);
+ if(t==='hjob'||t==='hevt'||t==='hedit'||t==='cview'||t==='cedit'||t==='shelfv'){const h=hubSheet(t,id);if(h)return h}
+ let h=_s();
+ {const d=(t==='dec'||t==='why')&&DB.dec.find(x=>x.id===a[1]);if(d)h+=(d.projFull&&d.projFull!==d.proj?`<p class="h4">完整內容</p><p style="white-space:pre-wrap">${esc(d.projFull)}</p>`:'')+editRow('decision',a[1])}
+ if(t==='opp'&&DB.opp.find(o=>o.id===a[1]))h=h.replace(/<div class="mrow">([\s\S]*?)<\/div>$/,`<div class="mrow">$1${mb('✎ 改卡面一句','sheet','cedit:'+a[1])}</div>`);
+ return h}}
+// 拍板抽屜：標題換回全文（卡面是一句話）
+// （原本 sheet 'dec' 的標題就是 d.q 全文，不用改）
+
+// 「⋯」加上：改卡面一句、刪除、封存
+{const _ms=mineSheet;mineSheet=function(id){const i=id.indexOf(':'),k=id.slice(0,i),x=id.slice(i+1);let h=_ms(id);const add=s=>h.replace(/<\/div>$/,s+'</div>');
+ if(k==='proj'&&DB.proj.find(q=>q.id===x))h=add(mi('✎','改卡面一句、名稱','sheet','cedit:'+x)+mi('🗑','徹底刪除（要輸入完整案名）','pkill',x));
+ else if(k==='opp'&&DB.opp.find(q=>q.id===x))h=add(mi('✎','改卡面一句、名稱','sheet','cedit:'+x));
+ else if(k==='todo'&&DB.todo.find(q=>q.id===x))h=add(mi('✎','改卡面一句、名稱','sheet','cedit:'+x)+mi('🗑','刪掉（72 小時內可救回）','tdel',x));
+ else if(k==='arch'&&DB.arch.find(q=>q.id===x))h=add(mi('✎','改卡面一句、名稱','sheet','cedit:'+x));
+ else if(k==='dec'&&DB.dec.find(q=>q.id===x))return h;
+ return h}}
+
+// ---------- 動作 ----------
+const NOFN=e=>e&&(e.status===404||/Could not find the function|PGRST202/i.test(String(e.message||'')));
+const hubErr=e=>NOFN(e)?'資料庫還沒更新，這個動作還沒接上':LERR(e);
+const SHN={archive:'封存了',unarchive:'放回了',delete:'刪掉了，72 小時內可救回',restore:'救回來了'},SHU={archive:'unarchive',unarchive:'archive',delete:'restore',restore:'delete'};
+async function loadShelf(){if(!LV.api||!LV.api.shelf)return;try{LV.shelf=await LV.api.shelf();LV.shelfNo=0}catch(e){LV.shelf=[];LV.shelfNo=NOFN(e)?1:2}}
+async function hubAfter(){try{LV.hub=await LV.api.hubToday()}catch(e){}await loadShelf();LV.sig='';paint();render('keep')}
+ACT.hshelf=v=>{const [k,id,act]=v.split('|');if(!LV.api.hubShelf)return toast('這個動作還沒接上');
+ closeThen(async()=>{try{await LV.api.hubShelf(k,id,act);await hubAfter();toast(SHN[act],async()=>{try{await LV.api.hubShelf(k,id,SHU[act]);await hubAfter();toast('還原了')}catch(e){toast('沒還原：'+hubErr(e))}})}catch(e){toast('沒有成功：'+hubErr(e))}})};
+ACT.hsave=v=>{const [k,id]=v.split('|');const g=s=>{const e=document.getElementById(s);return e?e.value:''};const text=g('heText').trim();if(!text){S.err='hedit';render('keep');return}S.err='';
+ const r=hubRow(k,id)||((shelfRow(k,id)||{}).row)||{};const F={decision:['question','detail'],job:['title','note'],event:['summary','path']}[k];
+ const patch={ask:g('heAsk').trim(),text,detail:g('heDetail'),project:g('heProj').trim()},old={ask:r.ask||'',text:r[F[0]]||'',detail:r[F[1]]||'',project:r.project||''};
+ closeThen(async()=>{try{await LV.api.hubEdit(k,id,patch);await hubAfter();toast('改好了',async()=>{try{await LV.api.hubEdit(k,id,old);await hubAfter();toast('還原了')}catch(e){toast('沒還原：'+hubErr(e))}})}catch(e){toast('沒存上：'+hubErr(e))}})};
+ACT.csave=id=>{const g=s=>{const e=document.getElementById(s);return e?e.value:''};const c=LV.items.find(q=>q.id===id)||(LV.arch||[]).find(q=>q.id===id)||{};const patch={ask:g('ceAsk').trim()},t=g('ceTitle').trim();if(t&&t!==c.title)patch.title=t;const old={ask:c.ask||''};if(patch.title)old.title=c.title;
+ if(!LV.api.cardEdit)return toast('這個動作還沒接上');
+ closeThen(async()=>{try{await LV.api.cardEdit(id,patch);if(LV.api.archive){try{const a=await LV.api.archive('',null);LV.arch=a.items||[]}catch(e){}}await reload();toast('改好了',async()=>{try{await LV.api.cardEdit(id,old);reload();toast('還原了')}catch(e){toast('沒還原：'+hubErr(e))}})}catch(e){toast('沒存上：'+hubErr(e))}})};
+ACT.tdel=id=>closeThen(async()=>{try{await LV.api.act(id,'deleted');await reload();toast('刪掉了，72 小時內可在「最近刪掉的」救回',()=>ACT.restore(id))}catch(e){toast('沒有成功：'+LERR(e))}});
+ACT.pkill=id=>{const p=DB.proj.find(q=>q.id===id);if(!p)return;let v=null;try{v=prompt('徹底刪除後面板和封存都找不回來（電腦裡的資料夾不會動），只有老大本人的網址能刪。\n要刪就輸入完整案名：\n'+p.title)}catch(e){}if(v==null)return;if(v.trim()!==p.title){toast('案名不對，沒有刪');return}
+ closeThen(async()=>{try{await LV.api.act(id,'purge',{confirm:v.trim()});toast('徹底刪除了');reload()}catch(e){toast('沒有刪：'+LERR(e))}})};
+WRITE.push('hshelf','hsave','csave','tdel','pkill');
+
+// 最近刪掉的：待辦也列進來；封存與刪掉的（拍板、正在跑、最近做完）
+{const _ad=applyData;applyData=function(){_ad();DB.deleted=DB.deleted.concat(LV.items.filter(c=>c.basket==='todo'&&(c.status==='dropped'||c.status==='expired')&&!DB.deleted.some(d=>d.id===c.id)).map(c=>({id:c.id,title:c.title,amt:'待辦'})))}}
+{const _p=pageHTML;pageHTML=function(){if(S.page!=='shelf'){const h=_p();if(S.page==='events')return h.replace(/<\/div>$/,`<div class="btns" style="margin-top:20px">${mb('封存與刪掉的 ›','page','shelf')}</div></div>`);return h}
+ if(LV.shelf===undefined&&LV.api&&!LV.shelfLoading){LV.shelfLoading=1;loadShelf().then(()=>{LV.shelfLoading=0;render('keep')})}
+ const a=LV.shelf||[];let h=`<div class="page-in"><div class="phead">${B('‹ 返回','back',null,'ghost',' id="pBack"')}</div><h1 class="pt">封存與刪掉的</h1><p class="note">拍板、正在跑、最近做完收起來的都在這裡。刪掉的留 72 小時，之後才真的收走。</p>`;
+ if(LV.shelfNo===1)return h+emptyBox('資料庫還沒更新','封存與刪除要等資料庫更新後才能用。')+'</div>';
+ const KN={decision:'拍板',job:'正在跑',event:'做完'};
+ return h+(a.length?`<div class="rows" style="margin-top:14px">${a.map(s=>{const r=s.row,txt=r.ask||askCut(r.question||r.title||r.summary);return `<div class="rowi"><button class="rowb" data-act="sheet" data-id="shelfv:${s.kind}:${esc(r.id)}"><span class="tx"><b>${esc(txt)}</b><small>${KN[s.kind]}・${s.gone?'刪掉了':'封存'}・${esc(tstr(Date.parse(s.t)))}</small></span><span class="rt"><span class="chev" aria-hidden="true">›</span></span></button></div>`}).join('')}</div>`:emptyBox('這裡是空的','在卡片點開按「封存」或「刪掉」，就會收到這裡。'))+'</div>'}}
+{const _pg=ACT.page;ACT.page=function(id){const r=_pg.apply(this,arguments);if(id==='shelf')loadShelf().then(()=>render('keep'));return r}}
+{const _h=homeL2;homeL2=function(){return _h().replace(/(<section class="sec">[^]*?最近做完[^]*?)(<\/section><\/div>)$/,`$1<div class="mrow">${mb('封存與刪掉的 ›','page','shelf')}</div>$2`)}}
+
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v45');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v46');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();

@@ -33,7 +33,8 @@ export const CONFIG = {
          workUpdate: 'opp_work_update', setStatus: 'opp_set_status', workAdd: 'opp_work_add',
          msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', botInbox: 'opp_bot_inbox', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
          hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer',
-         goals: 'hub_goals_list', goalSet: 'hub_goal_set', cal: 'hub_cal_list', life: 'hub_life_list', lifeSet: 'hub_life_set', money: 'hub_money_overview' },   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
+         goals: 'hub_goals_list', goalSet: 'hub_goal_set', cal: 'hub_cal_list', life: 'hub_life_list', lifeSet: 'hub_life_set', money: 'hub_money_overview',
+         hubEdit: 'hub_card_edit', hubShelf: 'hub_card_shelf', shelf: 'hub_shelf_list', cardEdit: 'opp_card_edit' },   // v46：卡面一句 ask、hub 卡片編輯封存刪除、案子機會待辦改卡面一句   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
 
 export class AdapterError extends Error {
@@ -69,7 +70,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v45');
+  const { mockAdapter } = await import('./mock.js?v46');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -99,15 +100,15 @@ export function normMoney(d) {
 export function normHub(d) {
   d = d && typeof d === 'object' ? d : {};
   const arr = v => (Array.isArray(v) ? v : []);
-  const dec = r => ({ id: str(r.id), project: str(r.project), question: str(r.question), detail: str(r.detail), kind: r.kind === 'talk' ? 'talk' : 'choice',
+  const dec = r => ({ id: str(r.id), project: str(r.project), question: str(r.question), detail: str(r.detail), ask: str(r.ask), kind: r.kind === 'talk' ? 'talk' : 'choice',
     options: arr(r.options).slice(0, 8).map(o => ({ key: str(o && o.key), label: str(o && o.label), note: str(o && o.note), recommended: !!(o && o.recommended) })).filter(o => o.key && o.label),
     link: /^https:\/\//i.test(str(r.link)) ? str(r.link) : '', askedBy: str(r.asked_by), origin: str(r.origin), createdAt: ts(r.created_at),
     answerKey: str(r.answer_key), answerLabel: str(r.answer_label), answerNote: str(r.answer_note), answerVia: str(r.answer_via), answerQuote: str(r.answer_quote), answeredAt: ts(r.answered_at), pickedUp: !!r.picked_up_at });
   return {
     open: arr(d.open).map(dec), answered: arr(d.answered).map(dec),
-    jobs: arr(d.jobs).map(r => ({ id: str(r.id), agent: str(r.agent), machine: str(r.machine), project: str(r.project), title: str(r.title), note: str(r.note),
+    jobs: arr(d.jobs).map(r => ({ id: str(r.id), agent: str(r.agent), machine: str(r.machine), project: str(r.project), title: str(r.title), note: str(r.note), ask: str(r.ask), resultPath: str(r.result_path),
       status: ['queued', 'running', 'waiting_mac', 'waiting_you', 'done', 'failed'].includes(r.status) ? r.status : 'running', updatedAt: ts(r.updated_at) })),
-    events: arr(d.events).map(r => ({ id: str(r.id), at: ts(r.at), actor: str(r.actor), project: str(r.project), summary: str(r.summary) })),
+    events: arr(d.events).map(r => ({ id: str(r.id), at: ts(r.at), actor: str(r.actor), project: str(r.project), summary: str(r.summary), ask: str(r.ask), path: str(r.path) })),
     beats: arr(d.beats).map(r => ({ name: str(r.name), machine: str(r.machine), note: str(r.note), every: num(r.expect_every_s), lastAt: ts(r.last_at), late: !!r.late })),
   };
 }
@@ -137,7 +138,7 @@ function normEarn(e) {
 }
 export function normalize(r) {
   return {
-    id: str(r.id), title: str(r.title), shortTitle: str(r.short_title), org: str(r.org),
+    id: str(r.id), title: str(r.title), shortTitle: str(r.short_title), org: str(r.org), ask: str(r.ask),
     basket: BASKET[r.basket] || 'other',
     status: r.status === 'stashed' ? 'snoozed' : (['new', 'doing', 'delivered', 'paid', 'dropped', 'expired', 'closed'].includes(r.status) ? r.status : 'new'),
     closeResult: ['won', 'lost', 'submitted', 'void'].includes(r.close_result) ? r.close_result : '', closedAt: ts(r.closed_at), decidedAt: ts(r.decided_at),
@@ -216,6 +217,11 @@ function liveAdapter() {
     async life() { return rpc(R.life, {}); },
     async lifeSet(id, kind, patch) { return rpc(R.lifeSet, { p_id: id || null, p_kind: kind || null, p_patch: patch || {} }, 0, W); },
     async moneyOverview() { return rpc(R.money, {}, 0, W); },
+    // v46：卡片編輯、封存、刪除。kind＝decision｜job｜event；action＝archive｜unarchive｜delete｜restore（刪除 72 小時內可救回）
+    async hubEdit(kind, id, patch) { return rpc(R.hubEdit, { p_kind: kind, p_id: String(id), p_patch: patch || {} }, 0, W); },
+    async hubShelf(kind, id, action) { return rpc(R.hubShelf, { p_kind: kind, p_id: String(id), p_action: action }, 0, W); },
+    async shelf() { const d = await rpc(R.shelf, {}, 0, W); return Array.isArray(d) ? d : []; },
+    async cardEdit(id, patch) { return card(await rpc(R.cardEdit, { p_id: id, p_patch: patch || {} }, 0, W)); },
     async hubAnswer(id, k, note) { return rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },
     async workAdd(title) { return card(await rpc(R.workAdd, { p_title: title }, 0, W)); },

@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v45';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v46';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -228,6 +228,14 @@ export function mockAdapter(modeStr) {
     async life() { await wait(100); return { items: mlife.filter(x => x.status !== 'dropped') }; },
     async lifeSet(id, kind, patch) { await wait(200); sorry(); let x = mlife.find(y => y.id === id); if (!x) { x = { id: 'ml' + (++nextN), kind, status: 'active', created_at: new Date().toISOString() }; mlife.push(x); } Object.assign(x, patch); return x; },
     async moneyOverview() { await wait(150); return mmoney; },
+    // v46 示範：卡片編輯、封存、刪除（72 小時可救回）
+    async hubEdit(kind, id, patch) { await wait(200); sorry(); const L = kind === 'decision' ? hub.open.concat(hub.answered) : kind === 'job' ? hub.jobs : hub.events; const x = L.find(r => String(r.id) === String(id)) || (hub.shelf || []).map(s => s.row).find(r => String(r.id) === String(id)); if (!x) throw new AdapterError('server', 'not found');
+      const F = { decision: ['question', 'detail'], job: ['title', 'note'], event: ['summary', 'path'] }[kind]; if ('ask' in patch) x.ask = patch.ask || null; if ('text' in patch) x[F[0]] = patch.text; if ('detail' in patch) x[F[1]] = patch.detail; if ('project' in patch) x.project = patch.project || null; return x; },
+    async hubShelf(kind, id, action) { await wait(200); sorry(); hub.shelf = hub.shelf || []; const key = kind === 'decision' ? 'open' : kind === 'job' ? 'jobs' : 'events';
+      if (action === 'archive' || action === 'delete') { const L = kind === 'decision' ? (hub.open.some(r => String(r.id) === String(id)) ? 'open' : 'answered') : key; const i = hub[L].findIndex(r => String(r.id) === String(id)); if (i < 0) throw new AdapterError('server', 'not found'); const row = hub[L].splice(i, 1)[0]; row._from = L; hub.shelf.unshift({ kind, t: new Date().toISOString(), gone: action === 'delete', row }); return row; }
+      const j = hub.shelf.findIndex(s => s.kind === kind && String(s.row.id) === String(id)); if (j < 0) throw new AdapterError('server', 'not found or too late'); const s = hub.shelf.splice(j, 1)[0]; hub[s.row._from || key].unshift(s.row); return s.row; },
+    async shelf() { await wait(100); return JSON.parse(JSON.stringify(hub.shelf || [])); },
+    async cardEdit(id, patch) { await wait(200); sorry(); const r = find(id); ['ask', 'title', 'short_title', 'why', 'first_step'].forEach(k => { if (k in patch) r[k] = patch[k] || (k === 'title' ? r.title : null); }); return normalize(view(r)); },
     async hubAnswer(id, k, note) { await wait(300); sorry();
       const d = hub.open.concat(hub.answered).find(x => x.id === id); if (!d) throw new AdapterError('server', '找不到這筆');
       hub.open = hub.open.filter(x => x.id !== id); hub.answered = hub.answered.filter(x => x.id !== id);
