@@ -1925,8 +1925,6 @@ function nowISO() { var d = new Date(); function p(n) { return (n < 10 ? '0' : '
 function rm() { return document.documentElement.classList.contains('rm') || (window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches); }
 
 /* 點了什麼、開到什麼：每個動作留一行，給點擊清單測試讀 */
-window.__log = [];
-function LOG(what) { window.__log.push(what); }
 
 /* ---------- 狀態 ---------- */
 var D = {
@@ -1992,16 +1990,16 @@ function recalc() {
 
 /* ---------- 提示：訊息、錯誤、復原 ---------- */
 var msgT, errT, undoT;
-function showMsg(m) { hideUndo(); var e = $('msg'); e.textContent = m; e.classList.add('on'); clearTimeout(msgT); msgT = setTimeout(function () { e.classList.remove('on'); }, 4200); LOG('訊息：' + m); }
-function showErr(m) { var e = $('err'); e.textContent = m || ''; e.classList.toggle('on', !!m); clearTimeout(errT); if (m) { errT = setTimeout(function () { e.classList.remove('on'); }, 7000); LOG('錯誤提示：' + m); } }
+function showMsg(m) { hideUndo(); var e = $('msg'); e.textContent = m; e.classList.add('on'); clearTimeout(msgT); msgT = setTimeout(function () { e.classList.remove('on'); }, 4200); void 0; }
+function showErr(m) { var e = $('err'); e.textContent = m || ''; e.classList.toggle('on', !!m); clearTimeout(errT); if (m) { errT = setTimeout(function () { e.classList.remove('on'); }, 7000); void 0; } }
 function hideUndo() { $('undo').classList.remove('on'); clearTimeout(undoT); }
-function showUndo(m, fn) { $('msg').classList.remove('on'); var e = $('undo'); $('undo_t').textContent = m; e.classList.add('on'); e._fn = fn; clearTimeout(undoT); undoT = setTimeout(function () { e.classList.remove('on'); }, 8000); LOG('完成並可復原：' + m); }
+function showUndo(m, fn) { $('msg').classList.remove('on'); var e = $('undo'); $('undo_t').textContent = m; e.classList.add('on'); e._fn = fn; clearTimeout(undoT); undoT = setTimeout(function () { e.classList.remove('on'); }, 8000); void 0; }
 function ask(html, yes, danger) {
   return new Promise(function (res) {
     var d = $('dlg'); $('dlg_body').innerHTML = html; $('dlg_yes').textContent = yes; $('dlg_yes').classList.toggle('danger', !!danger);
     function done(v) { d.close(); res(v); }
     $('dlg_yes').onclick = function () { done(true); }; $('dlg_no').onclick = function () { done(false); }; d.oncancel = function () { res(false); };
-    d.showModal(); LOG('確認對話框：' + $('dlg_body').textContent.slice(0, 30));
+    d.showModal(); void 0;
   });
 }
 
@@ -2041,7 +2039,7 @@ function showTab(t, noAnim) {
   $('scroll').scrollTop = 0;
   if (t === 'stats') renderStats(); if (t === 'bills') renderBills(); if (t === 'assets') renderAssets();
   if (!noAnim && !same) replay($('tab_' + t), dir);
-  LOG('切到分頁：' + TITLES[t].replace('塔塔記帳', '記帳本'));
+  void 0;
 }
 function render() {
   recalc();
@@ -2296,7 +2294,7 @@ function moveAcct(id, dir) {
   var all = curOrderIds(), a = all.indexOf(vis[i]), b = all.indexOf(vis[j]); all[a] = vis[j]; all[b] = vis[i];
   ORDER = all; LS.set('kkE_order', JSON.stringify(ORDER)); renderAssets();
   var el = document.querySelector('[data-mid="' + id + '"][data-mv="' + dir + '"]'); if (el && !el.disabled) el.focus(); else { el = document.querySelector('[data-mid="' + id + '"]:not([disabled])'); if (el) el.focus(); }
-  LOG('帳戶順序：' + acctId(id).name + (dir < 0 ? ' 上移' : ' 下移') + '，已存（正式版呼叫 set_account_order）');
+  void 0;
 }
 function setArchived(a, to) {
   a.archived = to; if (to) MORE.delete(a.id); render();
@@ -2326,7 +2324,7 @@ function dragBind() {
     var vis = Array.prototype.map.call($('accts').querySelectorAll('.grp[data-gid]'), function (e) { return Number(e.dataset.gid); });
     var all = curOrderIds(), slots = vis.map(function (i) { return all.indexOf(i); }).filter(function (i) { return i >= 0; }).sort(function (a, b) { return a - b; });
     if (slots.length === vis.length) slots.forEach(function (sl, i) { all[sl] = vis[i]; });
-    ORDER = all; LS.set('kkE_order', JSON.stringify(ORDER)); renderAssets(); showMsg('順序已存好'); LOG('帳戶順序：拖曳「' + acctId(d.id).name + '」，已存');
+    ORDER = all; LS.set('kkE_order', JSON.stringify(ORDER)); renderAssets(); showMsg('順序已存好'); void 0;
   }
   $('accts').addEventListener('pointerup', end); $('accts').addEventListener('pointercancel', end);
 }
@@ -2357,9 +2355,9 @@ function drawAcctSheet(focusActual) {
 function openAcct(a, focusActual) {
   aMode = a ? 'edit' : 'add'; aEdit = a || null; akind = a ? a.kind : 'bank'; aAssets = a ? !!a.counts_in_assets : true; aSpend = a ? !!a.spendable : true;
   $('as_body').innerHTML = ''; drawAcctSheet(focusActual);
-  openSheetEl('asheet'); LOG('開帳戶抽屜：' + (a ? '修改「' + a.name + '」' + (focusActual ? '（設定餘額）' : '') : '新增帳戶'));
+  openSheetEl('asheet'); void 0;
 }
-function aErr(m) { $('a_err').textContent = m; if (m) LOG('帳戶表單提示：' + m); }
+function aErr(m) { $('a_err').textContent = m; if (m) void 0; }
 function saveAcct() {
   var liab = LIAB.indexOf(akind) >= 0, name = $('a_name').value.trim(), open = numOf($('a_open').value);
   if (isNaN(open)) return aErr('餘額要填數字。');
@@ -2389,7 +2387,7 @@ function acctHasRecords(a) { return !a.fresh || TXALL.some(function (t) { return
 function deleteAcct() {
   var a = aEdit; if (!a || a.is_system) return;
   ask('<b>刪除帳戶「' + esc(a.name) + '」？</b><div class="mut" style="margin-top:8px">只有完全沒有交易、分期、持股的帳戶能刪。刪了無法從面板復原。</div>', '刪除帳戶', true).then(function (ok) {
-    if (!ok) { LOG('取消刪除帳戶'); return; }
+    if (!ok) { void 0; return; }
     if (acctHasRecords(a)) { aErr('這個帳戶還有紀錄，不能刪除，請改用停用。'); return; }
     D.accounts.splice(D.accounts.indexOf(a), 1); if (ORDER) { ORDER = ORDER.filter(function (i) { return i !== a.id; }); LS.set('kkE_order', JSON.stringify(ORDER)); }
     closeSheetEl('asheet'); DET.length = 0; drawDet(); render(); showMsg('已刪除「' + a.name + '」（正式版呼叫 delete_account）');
@@ -2445,10 +2443,10 @@ function ssDraw() {
   $('ss_body').innerHTML = h; $('ss_body').scrollTop = 0;
   if ($('ss_cyc')) ssDyn();
 }
-function ssOpen(it, view) { SS = { it: it, view: view || 'detail' }; ssDraw(); openSheetEl('ssheet'); LOG('開訂閱抽屜：' + (it ? ssTitles[SS.view] + '「' + it.name + '」' : '新增訂閱')); syncFab(); }
+function ssOpen(it, view) { SS = { it: it, view: view || 'detail' }; ssDraw(); openSheetEl('ssheet'); void 0; syncFab(); }
 function ssClose() { if (!SS) return; SS = null; closeSheetEl('ssheet'); syncFab(); }
-function ssView(v) { SS.view = v; ssDraw(); LOG('訂閱抽屜換成：' + ssTitles[v]); var f = $('ss_body').querySelector('input,select,textarea,button'); if (f) f.focus({ preventScroll: true }); }
-function ssErr(m) { $('ss_err').textContent = m || ''; if (m) LOG('訂閱表單提示：' + m); }
+function ssView(v) { SS.view = v; ssDraw(); void 0; var f = $('ss_body').querySelector('input,select,textarea,button'); if (f) f.focus({ preventScroll: true }); }
+function ssErr(m) { $('ss_err').textContent = m || ''; if (m) void 0; }
 function ssReadExtra() {
   var cur = $('ss_cur').value.trim().toUpperCase(), oa = $('ss_oamt').value.trim().replace(/,/g, ''), oamt = null;
   if (cur) { if (!/^[A-Z]{3}$/.test(cur)) return { err: '原幣幣別要是 3 碼英文，例如 USD。' }; if (cur === 'TWD') return { err: '台幣不用填原幣。' }; if (!/^\d+(\.\d{1,2})?$/.test(oa) || !(Number(oa) > 0)) return { err: '原幣金額要大於 0，小數最多 2 位。' }; oamt = Number(oa); }
@@ -2488,7 +2486,7 @@ function ssSave() {
 function ssArchive() {
   var it = SS.it;
   ask('封存「' + esc(it.name) + '」？<div class="mut" style="margin-top:6px">封存後不出現在清單，塔塔用同名新增可以找回。</div>', '封存訂閱', true).then(function (ok) {
-    if (!ok) { LOG('取消封存'); return; }
+    if (!ok) { void 0; return; }
     var i = SUBS.indexOf(it); SUBS.splice(i, 1); ssClose(); renderBills();
     showUndo('已封存「' + it.name + '」', function () { SUBS.splice(i, 0, it); renderBills(); showMsg('已復原'); });
   });
@@ -2496,9 +2494,9 @@ function ssArchive() {
 
 /* ===== 詳細頁（右滑入、可一層層進去）：數字組成、分類、帳戶與走勢、股票、目標與找外快、回報、等你看、外觀設定 ===== */
 var DET = [], DLIST = [];
-function openDet(t, arg) { DET.push({ t: t, arg: arg }); try { history.pushState({ kkd: DET.length }, '', location.href); } catch (e) {} drawDet(); var m = $('det_t').textContent; LOG('開詳細頁：' + m); setTimeout(function () { if (DET.length) $('det_back').focus({ preventScroll: true }); }, 60); }
+function openDet(t, arg) { DET.push({ t: t, arg: arg }); try { history.pushState({ kkd: DET.length }, '', location.href); } catch (e) {} drawDet(); var m = $('det_t').textContent; void 0; setTimeout(function () { if (DET.length) $('det_back').focus({ preventScroll: true }); }, 60); }
 function closeDetAll() { DET.length = 0; drawDet(); }
-function detBack() { if (!DET.length) return; DET.pop(); drawDet(); LOG(DET.length ? '回上一層：' + $('det_t').textContent : '關閉詳細頁'); }
+function detBack() { if (!DET.length) return; DET.pop(); drawDet(); void 0; }
 window.addEventListener('popstate', function () { if (DET.length && !anySheet()) { DET.pop(); drawDet(); } });
 function dsum(k, v, m, cls) { return '<div class="card dsum"><div class="dk">' + k + '</div><div class="dv num ' + (cls || '') + '">' + v + '</div>' + (m ? '<div class="dm">' + m + '</div>' : '') + '</div>'; }
 function rowA(a) { return '<button type="button" class="cardrow" data-dacct="' + a.id + '">' + ico(esc(a.icon || KIND_E[a.kind] || '🏦'), 'var(--accent2)') + '<div style="flex:1;min-width:0"><div class="t1">' + esc(a.name) + '</div><div class="t2">' + kindName(a.kind) + '</div></div><div class="amt num' + (Number(a.computed_balance) < 0 ? ' neg' : '') + '">' + (a.computed_balance == null ? '<span class="tg o">待對帳</span>' : sg(a.computed_balance)) + '</div></button>'; }
@@ -2656,8 +2654,8 @@ function applyLook(save) {
   drawSide();
 }
 if (DARKMQ) { var _f = function () { if (LOOK.theme === 'system') { applyLook(false); if (DET.length) drawDet(true); } }; if (DARKMQ.addEventListener) DARKMQ.addEventListener('change', _f); else if (DARKMQ.addListener) DARKMQ.addListener(_f); }
-function pickSkin(n) { LOOK.skin = Number(n); applyLook(true); if (DET.length) drawDet(true); LOG('外觀換成：' + SKINS.filter(function (s) { return s[0] === LOOK.skin; })[0][1]); }
-function pickTheme(t) { LOOK.theme = t; applyLook(true); if (DET.length) drawDet(true); LOG('明暗換成：' + ({ light: '淺', dark: '深', system: '跟系統' })[t]); }
+function pickSkin(n) { LOOK.skin = Number(n); applyLook(true); if (DET.length) drawDet(true); void 0; }
+function pickTheme(t) { LOOK.theme = t; applyLook(true); if (DET.length) drawDet(true); void 0; }
 function drawSide() {
   var s = $('side'); if (!s) return;
   s.innerHTML = '<h2>原型比較列</h2><p>只在寬螢幕出現。平常換外觀走頂列齒輪。</p><div class="sk6" role="group" aria-label="外觀">' + SKINS.map(function (k) { return '<button type="button" data-skin-pick="' + k[0] + '" aria-pressed="' + (LOOK.skin === k[0]) + '">' + k[1] + '</button>'; }).join('') + '</div><div class="th3" role="group" aria-label="明暗">' + [['light', '淺'], ['dark', '深'], ['system', '跟系統']].map(function (t) { return '<button type="button" data-theme-pick="' + t[0] + '" aria-pressed="' + (LOOK.theme === t[0]) + '">' + t[1] + '</button>'; }).join('') + '</div><p style="margin-top:12px">原型示範</p>' + demoBtns();
@@ -2694,7 +2692,7 @@ function calcKey(k) {
   var last = CE[CE.length - 1];
   if (k === 'C') CE = [];
   else if (k === 'del') { if (!CE.length) return; if (isOp(last) || last.length <= 1) CE.pop(); else CE[CE.length - 1] = last.slice(0, -1); }
-  else if (k === '=') { var r = calcEval(CE); if (!r.empty && !r.err && r.v > 0) { CE = [String(r.v)]; LOG('計算機：按等於，收成 ' + r.v); } }
+  else if (k === '=') { var r = calcEval(CE); if (!r.empty && !r.err && r.v > 0) { CE = [String(r.v)]; void 0; } }
   else if (isOp(k)) { if (!CE.length) return; if (isOp(last)) CE[CE.length - 1] = k; else { if (last.slice(-1) === '.') CE[CE.length - 1] = last.slice(0, -1); CE.push(k); } }
   else if (k === '.') { if (!CE.length || isOp(last)) CE.push('0.'); else if (last.indexOf('.') < 0) CE[CE.length - 1] = last + '.'; }
   else {   // 數字與 00
@@ -2711,7 +2709,7 @@ function calcShow() {
   el.classList.toggle('z', r.empty || !!r.err);
   if (r.err === 'div0') hint = '不能除以 0';
   else if (!r.empty && r.v <= 0 && hasOp) hint = '金額要大於 0，收入或支出請用上方分段選方向';
-  if ($('c_hint').textContent !== hint) { $('c_hint').textContent = hint; if (hint) LOG('計算機提示：' + hint); }
+  if ($('c_hint').textContent !== hint) { $('c_hint').textContent = hint; if (hint) void 0; }
   $('f_submit').disabled = !ok; $('f_submit_n').textContent = ok ? 'NT$' + r.v.toLocaleString('en-US') : '';
   var last = CE[CE.length - 1];
   $('keypad').querySelectorAll('.ops button').forEach(function (b) { b.classList.toggle('on', isOp(last) && b.dataset.k === last); });
@@ -2749,7 +2747,7 @@ function openAdd() {
   var A = pickAccts().map(function (a) { return a.name; }), last = LS.get('kkE_acct'); facct = A.indexOf(last) >= 0 ? last : (A.indexOf('現金') >= 0 ? '現金' : (A[0] || null));
   fto = null; fstream = '未分類'; fpend = false;
   $('f_date').value = TODAY; ['f_merchant', 'f_note', 'f_fee', 'f_cur', 'f_oamt'].forEach(function (i) { $(i).value = ''; }); $('f_dup').innerHTML = '';
-  $('sheet').setAttribute('aria-label', '記一筆'); syncSheet(); calcShow(); $('sh_body').scrollTop = 0; openSheetEl('sheet'); LOG('開抽屜：記一筆'); setTimeout(function () { if ($('sheet').classList.contains('on')) $('sh_body').focus({ preventScroll: true }); }, 60);
+  $('sheet').setAttribute('aria-label', '記一筆'); syncSheet(); calcShow(); $('sh_body').scrollTop = 0; openSheetEl('sheet'); void 0; setTimeout(function () { if ($('sheet').classList.contains('on')) $('sh_body').focus({ preventScroll: true }); }, 60);
 }
 function openEdit0(t) {
   if (t.voided_at) { showUndo('這筆已作廢（' + (t.void_reason || '沒寫原因') + '）', function () { applyVoid(t, false); showMsg('已取消作廢'); }); $('undo_b').textContent = '取消作廢'; return; }
@@ -2759,14 +2757,14 @@ function openEdit0(t) {
   $('f_date').value = dayKey(t.occurred_at); $('f_merchant').value = t.merchant || ''; $('f_note').value = t.note || ''; $('f_fee').value = ''; $('f_cur').value = t.orig_currency || ''; $('f_oamt').value = t.orig_amount || ''; $('f_dup').innerHTML = '';
   var v = txView(t);
   $('e_info').innerHTML = ico(v.emoji, v.color) + '<div style="flex:1;min-width:0"><div class="t1">' + esc(v.title) + '</div><span class="chp">' + esc(t.source) + ' 記的</span><span class="chp num">' + md(dayKey(t.occurred_at)) + ' ' + hm(t.occurred_at) + '</span>' + (t.orig_currency ? '<span class="chp num">' + esc(t.orig_currency) + ' ' + t.orig_amount + '</span>' : '') + (t.edit_count > 0 ? '<span class="chp">改過 ' + t.edit_count + ' 次</span>' : '') + (t.review ? '<span class="chp o">等你看</span>' : '') + '</div>';
-  $('sheet').setAttribute('aria-label', '編輯'); syncSheet(); calcShow(); $('sh_body').scrollTop = 0; openSheetEl('sheet'); LOG('開抽屜：編輯「' + v.title + '」（可改金額、分類、帳戶、日期、店家、備註' + (t.type === 'income' ? '、來源' : '') + '，可作廢）');
+  $('sheet').setAttribute('aria-label', '編輯'); syncSheet(); calcShow(); $('sh_body').scrollTop = 0; openSheetEl('sheet'); void 0;
 }
 function applyVoid(t, on) {
   if (on) { applyTx(t, -1); t.voided_at = nowISO(); t.void_reason = '面板手動作廢'; } else { t.voided_at = null; t.void_reason = null; applyTx(t, 1); }
   render();
 }
 function voidTx(t) { var v = txView(t); applyVoid(t, true); showUndo('已作廢「' + v.title + '」', function () { applyVoid(t, false); showMsg('已復原「' + v.title + '」'); }); $('undo_b').textContent = '復原'; }
-function flashIn(m) { var f = $('flash'); f.textContent = '✓ ' + m; f.classList.add('on'); var b = $('amtbox'); b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); setTimeout(function () { f.classList.remove('on'); }, 1800); LOG('連續記帳：' + m); }
+function flashIn(m) { var f = $('flash'); f.textContent = '✓ ' + m; f.classList.add('on'); var b = $('amtbox'); b.classList.remove('pulse'); void b.offsetWidth; b.classList.add('pulse'); setTimeout(function () { f.classList.remove('on'); }, 1800); void 0; }
 function submitTx0() {
   var r = calcEval(CE); if (r.empty || r.err || !(r.v > 0)) return;
   var amount = r.v, add = mode === 'add', isTr = add ? (ftype === 'transfer' && fsub === 'transfer') : editing.type === 'transfer';
@@ -2793,7 +2791,7 @@ function submitTx0() {
   var type = ftype === 'transfer' ? fsub : ftype;
   if (!DUPOK) {
     var dup = TXALL.filter(function (x) { return !x.voided_at && dayKey(x.occurred_at) === d && Number(x.amount) === amount; })[0];
-    if (dup) { $('f_dup').innerHTML = '<div class="dupq" role="alert"><b>可能重複了</b>：' + md(d) + ' 已有一筆 ' + nt(dup.amount) + '（' + esc(dup.merchant || '沒填店家') + '，' + esc(dup.source) + ' 記的）。<div><button type="button" id="dup_no">不記了</button><button type="button" class="p" id="dup_yes">不是同一筆，照記</button></div></div>'; $('sh_body').scrollTop = 0; LOG('重複交易偵測：同日同金額，先問'); return; }
+    if (dup) { $('f_dup').innerHTML = '<div class="dupq" role="alert"><b>可能重複了</b>：' + md(d) + ' 已有一筆 ' + nt(dup.amount) + '（' + esc(dup.merchant || '沒填店家') + '，' + esc(dup.source) + ' 記的）。<div><button type="button" id="dup_no">不記了</button><button type="button" class="p" id="dup_yes">不是同一筆，照記</button></div></div>'; $('sh_body').scrollTop = 0; void 0; return; }
   }
   var nt_ = { id: ++NEXT_ID, type: type, amount: amount, category: type === 'expense' ? fcat : null, merchant: mer, note: note, occurred_at: when, account_name: facct, to_account_name: isTr ? fto : null, payment_method: facct, source: '老大', status: fpend ? 'pending' : 'posted', voided_at: null, void_reason: null, edit_count: 0, income_stream: type === 'income' ? fstream : null, orig_currency: cur || null, orig_amount: cur ? oa : null, review: null };
   var feeTx = null;
@@ -2812,7 +2810,7 @@ function sheetDragBind() {
   var y0 = null, dy = 0, sh = $('sheet');
   function start(ev) { y0 = ev.touches[0].clientY; dy = 0; sh.style.transition = 'none'; }
   function move(ev) { if (y0 == null) return; dy = Math.max(0, ev.touches[0].clientY - y0); sh.style.transform = 'translateY(' + dy + 'px)'; $('scrim').style.opacity = String(Math.max(0, 1 - dy / 500)); }
-  function end() { if (y0 == null) return; var d = dy; y0 = null; sh.style.transition = ''; sh.style.transform = ''; $('scrim').style.opacity = ''; if (d > 110) { closeSheetEl('sheet'); LOG('往下滑關閉抽屜'); } }
+  function end() { if (y0 == null) return; var d = dy; y0 = null; sh.style.transition = ''; sh.style.transform = ''; $('scrim').style.opacity = ''; if (d > 110) { closeSheetEl('sheet'); void 0; } }
   ['sh_head', 'amtbox'].forEach(function (id) { var el = $(id); el.addEventListener('touchstart', start, { passive: true }); el.addEventListener('touchmove', move, { passive: true }); el.addEventListener('touchend', end); el.addEventListener('touchcancel', end); });
 }
 /* 長按帳戶列約 0.35 秒：進入調整順序（原版是長按直接拖） */
@@ -2823,7 +2821,7 @@ function longPressBind() {
     cancel(); if (SORTING || tab !== 'assets' || ev.touches.length !== 1) return;
     var g = ev.target.closest ? ev.target.closest('#accts .grp[data-gid]') : null; if (!g || ev.target.closest('.swact,.inf,.swt,.hrow')) return;
     s = { x: ev.touches[0].clientX, y: ev.touches[0].clientY };
-    t = setTimeout(function () { t = null; if (!s) return; SORTING = true; renderAssets(); swBlock = Date.now() + 600; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} showMsg('可以調整順序了：按 ▲▼ 或拖 ≡'); LOG('長按帳戶列：進入調整順序'); }, 350);
+    t = setTimeout(function () { t = null; if (!s) return; SORTING = true; renderAssets(); swBlock = Date.now() + 600; try { if (navigator.vibrate) navigator.vibrate(12); } catch (e) {} showMsg('可以調整順序了：按 ▲▼ 或拖 ≡'); void 0; }, 350);
   }, { passive: true });
   document.addEventListener('touchmove', function (ev) { if (t && s) { var p = ev.touches[0]; if (Math.abs(p.clientX - s.x) > 8 || Math.abs(p.clientY - s.y) > 8) cancel(); } }, { passive: true });
   document.addEventListener('touchend', cancel); document.addEventListener('touchcancel', cancel);
@@ -2850,7 +2848,7 @@ function swBind() {
   function end() {
     var s = swS; swS = null; if (!s || s.lock !== 'h') return;
     var x = s.cur == null ? s.base : s.cur, open = s.base === 0 ? x < -SWW * 0.4 : x < -SWW * 0.6; swBlock = Date.now() + 400;
-    if (open) { if (swOpen && swOpen !== s.r) swClose(); swOpen = s.r; s.r.classList.add('open'); swSet(s.r, -SWW, true); LOG('左滑露出動作鍵'); }
+    if (open) { if (swOpen && swOpen !== s.r) swClose(); swOpen = s.r; s.r.classList.add('open'); swSet(s.r, -SWW, true); void 0; }
     else { s.r.classList.remove('open'); if (swOpen === s.r) swOpen = null; swSet(s.r, 0, true); setTimeout(function () { if (!s.r.classList.contains('open')) s.r.classList.remove('drag'); }, 230); }
   }
   document.addEventListener('touchend', end); document.addEventListener('touchcancel', end);
@@ -2908,7 +2906,7 @@ function ttOpen(anch, opt) {
   var b = $('ttb'); b.hidden = false; b.style.animation = 'none'; void b.offsetWidth; b.style.animation = '';
   anch.setAttribute('aria-expanded', 'true'); growTA($('kkm_in')); ttPlace();
   setTimeout(function () { if (!$('ttb').hidden) { $('kkm_in').focus({ preventScroll: true }); ttPlace(); } }, 40);
-  LOG('塔塔泡泡打開' + (ttCur ? '（關於：' + ttCur.label + '）' : '（可輸入、看回報、換外觀）') + (opt && opt.text ? '，已先填好訊息' : ''));
+  void 0;
 }
 function ttClose() { clearTimeout(ttCloseT); if ($('ttb').hidden) return; $('ttb').hidden = true; ['kkm_t', 'tt_fab'].forEach(function (i) { $(i).setAttribute('aria-expanded', 'false'); }); if (ttAnch && ttAnch.isConnected) try { ttAnch.focus({ preventScroll: true }); } catch (e) {} ttAnch = null; ttCur = null; }
 function growTA(el) { el.style.height = 'auto'; el.style.height = Math.min(Math.max(44, el.scrollHeight + 2), 120) + 'px'; }
@@ -2916,13 +2914,13 @@ function addReport(kind, sum, text, you) { REP.forEach(function (r) { r.hl = fal
 function kkmGo() {
   var inp = $('kkm_in'), text = inp.value.trim(), s = $('kkm_s');
   if (kkmBusy) return;
-  if (!text) { s.textContent = '先寫點什麼再傳'; s.className = 'err'; LOG('泡泡提示：先寫點什麼再傳'); ttPlace(); return; }
-  if (OFFLINE) { s.textContent = '連不上伺服器，文字還在，等網路回來再傳'; s.className = 'err'; LOG('泡泡提示：離線，文字保留'); ttPlace(); return; }
+  if (!text) { s.textContent = '先寫點什麼再傳'; s.className = 'err'; void 0; ttPlace(); return; }
+  if (OFFLINE) { s.textContent = '連不上伺服器，文字還在，等網路回來再傳'; s.className = 'err'; void 0; ttPlace(); return; }
   kkmBusy = true; $('kkm_send').disabled = true; $('kkm_send').textContent = '傳送中';
   var goal = ttCur && ttCur.type === 'goal', ctx = ttCur ? ttCur.label : '';
   setTimeout(function () {
     kkmBusy = false; $('kkm_send').disabled = false; $('kkm_send').textContent = '傳給塔塔'; inp.value = ''; growTA(inp);
-    s.textContent = '已傳給塔塔'; s.className = 'ok'; REP_BUSY = '已傳給塔塔，等他回覆'; renderRep(); LOG('已傳給塔塔：' + text.slice(0, 24));
+    s.textContent = '已傳給塔塔'; s.className = 'ok'; REP_BUSY = '已傳給塔塔，等他回覆'; renderRep(); void 0;
     if (goal) { GOALASK = true; if (DET.length) drawDet(true); }
     ttPlace();
     setTimeout(function () {
@@ -2954,9 +2952,9 @@ function demo(k) {
     var t = { id: ++NEXT_ID, type: 'expense', amount: p[1], category: null, merchant: p[0], note: null, occurred_at: nowISO(), account_name: '回饋卡', to_account_name: null, payment_method: '回饋卡', source: '塔塔', status: 'posted', voided_at: null, void_reason: null, edit_count: 0, review: { guess: p[2], why: p[3] } };
     TXALL.unshift(t); applyTx(t, 1); HL_ID = t.id; VIEW = 0; render(); faceLogged('+1'); showMsg('塔塔剛記了「' + p[0] + '」' + p[1]); }
   else if (k === 'off') { OFFLINE = !OFFLINE; $('live').classList.toggle('on', !OFFLINE); $('live').setAttribute('aria-label', OFFLINE ? '離線' : '即時連線中'); if (OFFLINE) showErr('連不上伺服器，先顯示上次的資料。'); else { showErr(''); showMsg('連線回來了'); } }
-  else if (k === 'a2hs') { $('a2hs').hidden = false; LOG('顯示加入主畫面提示'); }
+  else if (k === 'a2hs') { $('a2hs').hidden = false; void 0; }
   else if (k === 'rm') { document.documentElement.classList.toggle('rm'); var on = document.documentElement.classList.contains('rm'); if (FACE) { FACE.destroy(); FACE2.destroy(); MOOD = ''; mountFaces(); syncMood(); } showMsg(on ? '已減少動態' : '動態已恢復'); }
-  else if (k === 'reset') { LOG('資料重來，重新載入'); ['kkE_order', 'kkE_exc', 'kkE_acct', 'kkE_inv', 'kkE_aview', 'kkE_acg', 'kkE_tray'].forEach(function (x) { try { localStorage.removeItem(x); } catch (e) {} }); location.reload(); return; }
+  else if (k === 'reset') { void 0; ['kkE_order', 'kkE_exc', 'kkE_acct', 'kkE_inv', 'kkE_aview', 'kkE_acg', 'kkE_tray'].forEach(function (x) { try { localStorage.removeItem(x); } catch (e) {} }); location.reload(); return; }
   if (DET.length) drawDet(true); drawSide();
 }
 /* ---------- 事件 ---------- */
@@ -2964,19 +2962,19 @@ function bind() {
   $('tabbar').addEventListener('click', function (ev) { var b = ev.target.closest('.tb'); if (b) showTab(b.dataset.tab); });
   $('fab').onclick = openAdd; $('refresh').onclick = doRefresh;
   $('gear').onclick = function () { openDet('skin'); };
-  $('p_prev').onclick = function () { if (VIEW < D.recent_periods.length - 1) { VIEW++; LIST_FIRST = true; render(); replay($('tab_' + tab), 'in-l'); LOG('切到上一期：' + periodText()); } };
-  $('p_next').onclick = function () { if (VIEW > 0) { VIEW--; LIST_FIRST = true; render(); replay($('tab_' + tab), 'in-r'); LOG('切到下一期：' + periodText()); } };
-  $('showvoid').onclick = function () { voidOn = !voidOn; $('showvoid').setAttribute('aria-pressed', String(voidOn)); renderList(); LOG(voidOn ? '顯示作廢的交易' : '隱藏作廢的交易'); };
+  $('p_prev').onclick = function () { if (VIEW < D.recent_periods.length - 1) { VIEW++; LIST_FIRST = true; render(); replay($('tab_' + tab), 'in-l'); void 0; } };
+  $('p_next').onclick = function () { if (VIEW > 0) { VIEW--; LIST_FIRST = true; render(); replay($('tab_' + tab), 'in-r'); void 0; } };
+  $('showvoid').onclick = function () { voidOn = !voidOn; $('showvoid').setAttribute('aria-pressed', String(voidOn)); renderList(); void 0; };
   $('rv').onclick = function () { openDet('rv'); }; $('rep').onclick = function () { openDet('rep'); };
-  function setHide(v) { HIDE = v; LS.set('kkE_hide', v ? '1' : '0'); $('hide_b').setAttribute('aria-pressed', String(v)); $('hide_x').hidden = !v; document.querySelectorAll('.num').forEach(function (e) { if (e._fmt) e.textContent = e._fmt(e._v); }); render(); LOG(v ? '金額已隱藏' : '金額已顯示'); }
+  function setHide(v) { HIDE = v; LS.set('kkE_hide', v ? '1' : '0'); $('hide_b').setAttribute('aria-pressed', String(v)); $('hide_x').hidden = !v; document.querySelectorAll('.num').forEach(function (e) { if (e._fmt) e.textContent = e._fmt(e._v); }); render(); void 0; }
   $('hide_b').onclick = function () { setHide(!HIDE); };
   $('hide_b').setAttribute('aria-pressed', String(HIDE)); $('hide_x').hidden = !HIDE;
-  $('tray_h').onclick = function () { var h = $('hero'), on = !h.classList.contains('open'); h.classList.toggle('open', on); $('tray_h').setAttribute('aria-expanded', String(on)); LS.set('kkE_tray', on ? '1' : '0'); renderNet(); LOG(on ? '主卡展開：可動用現金、淨資產、收入、結餘、距離目標' : '主卡收起'); };
+  $('tray_h').onclick = function () { var h = $('hero'), on = !h.classList.contains('open'); h.classList.toggle('open', on); $('tray_h').setAttribute('aria-expanded', String(on)); LS.set('kkE_tray', on ? '1' : '0'); renderNet(); void 0; };
   if (LS.get('kkE_tray') === '1') { $('hero').classList.add('open'); $('tray_h').setAttribute('aria-expanded', 'true'); }
-  $('q').addEventListener('input', function () { Q = $('q').value; renderList(); }); $('q').addEventListener('change', function () { LOG('搜尋：' + Q); });
-  $('q_x').onclick = function () { Q = ''; $('q').value = ''; renderList(); $('q').focus(); LOG('清除搜尋'); };
+  $('q').addEventListener('input', function () { Q = $('q').value; renderList(); }); $('q').addEventListener('change', function () { void 0; });
+  $('q_x').onclick = function () { Q = ''; $('q').value = ''; renderList(); $('q').focus(); void 0; };
   document.addEventListener('click', function (ev) {
-    var b = ev.target.closest('.seg button[data-inv]'); if (b) { LS.set('kkE_inv', b.dataset.inv); render(); LOG('淨資產改成' + (b.dataset.inv === '1' ? '含投資' : '不含投資')); return; }
+    var b = ev.target.closest('.seg button[data-inv]'); if (b) { LS.set('kkE_inv', b.dataset.inv); render(); void 0; return; }
     var sp = ev.target.closest('[data-skin-pick]'); if (sp) { pickSkin(sp.dataset.skinPick); return; }
     var tp = ev.target.closest('[data-theme-pick]'); if (tp) { pickTheme(tp.dataset.themePick); return; }
     var dm = ev.target.closest('[data-demo]'); if (dm) { demo(dm.dataset.demo); return; }
@@ -2990,30 +2988,30 @@ function bind() {
     var s2 = ev.target.closest('[data-cia]'); if (s2) { setFlag(s2.dataset.cia, 'counts_in_assets', s2.getAttribute('aria-checked') !== 'true'); return; }
   });
   $('list').addEventListener('click', function (ev) { var row = ev.target.closest('.tx'); if (!row) return; var t = curTX().filter(function (x) { return x.id === Number(row.dataset.id); })[0]; if (t) openEdit(t); });
-  $('utabs').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; stab = b.dataset.s; Array.prototype.forEach.call($('utabs').children, function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }); $('stat_cat').hidden = stab !== 'cat'; $('stat_trend').hidden = stab !== 'trend'; renderStats(); replay($(stab === 'cat' ? 'stat_cat' : 'stat_trend'), stab === 'cat' ? 'in-l' : 'in-r'); LOG('統計子頁：' + b.textContent); });
-  $('btabs').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; btab = b.dataset.b; Array.prototype.forEach.call($('btabs').children, function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }); renderBills(); replay($(btab === 'bill' ? 'bill_p' : 'sub_p'), btab === 'bill' ? 'in-l' : 'in-r'); LOG('帳單頁換段：' + (btab === 'bill' ? '帳單' : '訂閱')); });
+  $('utabs').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; stab = b.dataset.s; Array.prototype.forEach.call($('utabs').children, function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }); $('stat_cat').hidden = stab !== 'cat'; $('stat_trend').hidden = stab !== 'trend'; renderStats(); replay($(stab === 'cat' ? 'stat_cat' : 'stat_trend'), stab === 'cat' ? 'in-l' : 'in-r'); void 0; });
+  $('btabs').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; btab = b.dataset.b; Array.prototype.forEach.call($('btabs').children, function (x) { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); }); renderBills(); replay($(btab === 'bill' ? 'bill_p' : 'sub_p'), btab === 'bill' ? 'in-l' : 'in-r'); void 0; });
   $('tab_stats').addEventListener('click', function (ev) {
-    if (ev.target.closest('#exc_all')) { EXC.clear(); saveExc(); renderStats(); LOG('統計：全部分類加回'); return; }
-    var eye = ev.target.closest('[data-eye]'); if (eye) { var c = eye.dataset.eye; if (EXC.has(c)) EXC.delete(c); else EXC.add(c); saveExc(); renderStats(); LOG('統計：' + (EXC.has(c) ? '排除' : '加回') + '「' + c + '」'); var n = document.querySelector('[data-eye="' + c + '"]'); if (n) n.focus(); return; }
+    if (ev.target.closest('#exc_all')) { EXC.clear(); saveExc(); renderStats(); void 0; return; }
+    var eye = ev.target.closest('[data-eye]'); if (eye) { var c = eye.dataset.eye; if (EXC.has(c)) EXC.delete(c); else EXC.add(c); saveExc(); renderStats(); void 0; var n = document.querySelector('[data-eye="' + c + '"]'); if (n) n.focus(); return; }
     var dc = ev.target.closest('[data-dcat]'); if (dc) { openDet('cat', dc.dataset.dcat); return; }
-    var pk = ev.target.closest('[data-pk]'); if (pk) { PICK = Number(pk.dataset.pk); renderStats(); LOG('近 6 期：看 ' + md(D.recent_periods[PICK].period_start) + ' 那期的收入、支出、結餘'); var f = document.querySelector('[data-pk="' + PICK + '"]'); if (f) f.focus(); }
+    var pk = ev.target.closest('[data-pk]'); if (pk) { PICK = Number(pk.dataset.pk); renderStats(); void 0; var f = document.querySelector('[data-pk="' + PICK + '"]'); if (f) f.focus(); }
   });
-  $('stat_trend').addEventListener('toggle', function (ev) { if (ev.target.open) LOG('展開六期表格'); }, true);
+  $('stat_trend').addEventListener('toggle', function (ev) { if (ev.target.open) void 0; }, true);
   $('tab_bills').addEventListener('click', function (ev) {
     var b = ev.target.closest('[data-bill]'); if (b) { markPaid(b.dataset.bill); return; }
     if (ev.target.closest('#sub_add')) { ssOpen(null, 'add'); return; }
     var s = ev.target.closest('[data-sub]'); if (s) { var it = SUBS.filter(function (x) { return String(x.id) === s.dataset.sub; })[0]; if (it) ssOpen(it); }
   });
   $('accts').addEventListener('click', function (ev) {
-    var g = ev.target.closest('[data-gk]'); if (g) { var m = {}; try { m = JSON.parse(LS.get('kkE_acg') || '{}'); } catch (e) {} m[g.dataset.gk] = g.getAttribute('aria-expanded') === 'true' ? 1 : 0; LS.set('kkE_acg', JSON.stringify(m)); renderAssets(); LOG('帳戶分組' + (m[g.dataset.gk] ? '收起' : '展開') + '：' + KIND_N[g.dataset.gk]); var f = document.querySelector('[data-gk="' + g.dataset.gk + '"]'); if (f) f.focus(); return; }
-    var mb = ev.target.closest('[data-more]'); if (mb) { var id = Number(mb.dataset.more); if (MORE.has(id)) MORE.delete(id); else MORE.add(id); renderAssets(); LOG((MORE.has(id) ? '展開' : '收起') + '「' + acctId(id).name + '」的可動用、計入資產開關與說明'); var f2 = document.querySelector('[data-more="' + id + '"]'); if (f2) f2.focus(); return; }
+    var g = ev.target.closest('[data-gk]'); if (g) { var m = {}; try { m = JSON.parse(LS.get('kkE_acg') || '{}'); } catch (e) {} m[g.dataset.gk] = g.getAttribute('aria-expanded') === 'true' ? 1 : 0; LS.set('kkE_acg', JSON.stringify(m)); renderAssets(); void 0; var f = document.querySelector('[data-gk="' + g.dataset.gk + '"]'); if (f) f.focus(); return; }
+    var mb = ev.target.closest('[data-more]'); if (mb) { var id = Number(mb.dataset.more); if (MORE.has(id)) MORE.delete(id); else MORE.add(id); renderAssets(); void 0; var f2 = document.querySelector('[data-more="' + id + '"]'); if (f2) f2.focus(); return; }
     var mv = ev.target.closest('[data-mv]'); if (mv) { moveAcct(mv.dataset.mid, Number(mv.dataset.mv)); return; }
     var a = ev.target.closest('[data-aid]'); if (a) openDet('acct', Number(a.dataset.aid));
   });
-  $('fchips').addEventListener('click', function (ev) { var b = ev.target.closest('[data-af]'); if (!b) return; AFILTER = b.dataset.af; renderAssets(); replay($('accts'), 'in-f'); LOG('帳戶類型篩選：' + b.textContent.replace(/\d+$/, '')); var f = document.querySelector('[data-af="' + AFILTER + '"]'); if (f) f.focus(); });
-  $('acct_view').onclick = function () { LS.set('kkE_aview', aview() === 'flat' ? 'grp' : 'flat'); renderAssets(); replay($('accts'), 'in-f'); LOG('帳戶顯示改成：' + (aview() === 'flat' ? '依常用' : '依類型分組')); };
+  $('fchips').addEventListener('click', function (ev) { var b = ev.target.closest('[data-af]'); if (!b) return; AFILTER = b.dataset.af; renderAssets(); replay($('accts'), 'in-f'); void 0; var f = document.querySelector('[data-af="' + AFILTER + '"]'); if (f) f.focus(); });
+  $('acct_view').onclick = function () { LS.set('kkE_aview', aview() === 'flat' ? 'grp' : 'flat'); renderAssets(); replay($('accts'), 'in-f'); void 0; };
   $('acct_add').onclick = function () { openAcct(null); };
-  $('ord_edit').onclick = function () { SORTING = !SORTING; renderAssets(); LOG(SORTING ? '進入調整順序：每列出現上移、下移與拖曳把手' : '結束調整順序'); if (!SORTING && ORDER) showMsg('順序已存好'); };
+  $('ord_edit').onclick = function () { SORTING = !SORTING; renderAssets(); void 0; if (!SORTING && ORDER) showMsg('順序已存好'); };
   $('ord_reset').onclick = function () { var old = ORDER; ORDER = null; LS.set('kkE_order', 'null'); renderAssets(); showUndo('已還原成依常用排', function () { ORDER = old; LS.set('kkE_order', JSON.stringify(old)); renderAssets(); showMsg('已復原'); }); };
   dragBind(); swBind(); sheetDragBind(); longPressBind();
   /* 詳細頁 */
@@ -3029,36 +3027,36 @@ function bind() {
     if ((x = ev.target.closest('[data-did]'))) { var t = TXALL.concat(KD.prev_tx).filter(function (y) { return y.id === Number(x.dataset.did); })[0]; if (t) openEdit(t); return; }
     if (ev.target.closest('#rv_all')) { rvConfirm(rvList().map(function (t) { return t.id; })); return; }
     if ((x = ev.target.closest('[data-rvok]'))) { rvConfirm([x.dataset.rvok]); return; }
-    if ((x = ev.target.closest('[data-rvfix]'))) { RV_EDIT = RV_EDIT === Number(x.dataset.rvfix) ? null : Number(x.dataset.rvfix); drawDet(true); LOG(RV_EDIT ? '展開 10 個分類讓你改' : '收起分類'); var f = document.querySelector('[data-rvfix="' + x.dataset.rvfix + '"]'); if (f) f.focus(); return; }
+    if ((x = ev.target.closest('[data-rvfix]'))) { RV_EDIT = RV_EDIT === Number(x.dataset.rvfix) ? null : Number(x.dataset.rvfix); drawDet(true); void 0; var f = document.querySelector('[data-rvfix="' + x.dataset.rvfix + '"]'); if (f) f.focus(); return; }
     if ((x = ev.target.closest('[data-rvcat]'))) { rvConfirm([x.dataset.rvid], x.dataset.rvcat); return; }
     if ((x = ev.target.closest('[data-rvedit]'))) { var t2 = TXALL.filter(function (y) { return y.id === Number(x.dataset.rvedit); })[0]; if (t2) openEdit(t2); return; }
-    if ((x = ev.target.closest('[data-rpx]'))) { var id = x.dataset.rpx; if (REP_OPEN.has(id)) REP_OPEN.delete(id); else REP_OPEN.add(id); drawDet(true); LOG(REP_OPEN.has(id) ? '展開這則回報全文' : '收起這則回報'); var f3 = document.querySelector('[data-rpx="' + id + '"]'); if (f3) f3.focus(); return; }
+    if ((x = ev.target.closest('[data-rpx]'))) { var id = x.dataset.rpx; if (REP_OPEN.has(id)) REP_OPEN.delete(id); else REP_OPEN.add(id); drawDet(true); void 0; var f3 = document.querySelector('[data-rpx="' + id + '"]'); if (f3) f3.focus(); return; }
     if (ev.target.closest('#rep_say')) { ttOpen($('rep_say')); return; }
     if (ev.target.closest('#set_hide')) { setHide(!HIDE); return; }
     if (ev.target.closest('#gl_retry')) { if (OFFLINE) showErr('還是連不上，等網路回來再試。'); else showMsg('應收清單讀到了'); drawDet(true); return; }
-    if (ev.target.closest('#gl_link')) { LOG('外部連結：逐流 https://borrysu.github.io/current/（另開分頁）'); return; }
+    if (ev.target.closest('#gl_link')) { void 0; return; }
     if ((x = ev.target.closest('#gl_ask'))) {
       if (!$('ttb').hidden && ttAnch && ttAnch.id === 'gl_ask') { ttClose(); return; }
       var c = goalCalc(), lb = '本期缺口 ' + Math.round(c.gap) + ' 元（到 ' + D.period_end + '）';
       ttOpen(x, { type: 'goal', label: lb, text: '面板提醒：本期（' + D.period_start + ' 到 ' + D.period_end + '）月收入目標 ' + c.tgt + '，目前收入 ' + c.inc + '，還差 ' + c.gap + ' 元；還剩 ' + c.left + ' 天。幫我找外快補這 ' + c.gap + ' 元的缺口。' });
     }
   });
-  $('det_b').addEventListener('toggle', function (ev) { if (ev.target.open) LOG('展開：怎麼算的'); }, true);
+  $('det_b').addEventListener('toggle', function (ev) { if (ev.target.open) void 0; }, true);
   /* 記一筆 */
-  $('sh_close').onclick = function () { closeSheetEl('sheet'); LOG('關閉抽屜'); };
-  $('scrim').onclick = function () { if ($('ssheet').classList.contains('on')) ssClose(); else if ($('asheet').classList.contains('on')) closeSheetEl('asheet'); else closeSheetEl('sheet'); LOG('點背景關閉抽屜'); };
-  $('f_type').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; ftype = b.dataset.v; syncSheet(); LOG('方向：' + b.textContent); });
-  $('f_cats').addEventListener('click', function (ev) { var b = ev.target.closest('.cat'); if (!b) return; fcat = b.dataset.cat; syncSheet(); LOG('分類選：' + fcat); var f = $('f_cats').querySelector('[data-cat="' + fcat + '"]'); if (f) f.focus(); });
-  $('f_sub').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; fsub = b.dataset.v; syncSheet(); LOG('轉帳種類：' + (fsub === 'transfer' ? '自己帳戶互轉' : '代收代付')); });
-  $('f_acct_wrap').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; var k, v; if (b.dataset.from !== undefined) { facct = b.dataset.from; k = 'from'; v = facct; LOG('帳戶選：' + facct); } else if (b.dataset.to !== undefined) { fto = b.dataset.to; k = 'to'; v = fto; LOG('轉入選：' + fto); } else if (b.dataset.stream !== undefined) { fstream = b.dataset.stream; k = 'stream'; v = fstream; LOG('收入來源選：' + fstream); } syncSheet(); var f = $('f_acct_wrap').querySelector('[data-' + k + '="' + v + '"]'); if (f) f.focus(); });
-  $('f_pend').onclick = function () { fpend = !fpend; syncSheet(); LOG(fpend ? '標成待入帳' : '取消待入帳'); };
-  $('d_today').onclick = function () { $('f_date').value = TODAY; syncSheet(); LOG('日期：今天'); };
-  $('d_yest').onclick = function () { $('f_date').value = addDays(TODAY, -1); syncSheet(); LOG('日期：昨天'); };
-  $('f_date').addEventListener('input', function () { if (!$('f_date').value) $('f_date').value = TODAY; syncSheet(); LOG('日期：' + $('f_date').value); });
-  $('d_pick').addEventListener('click', function () { LOG('開日期選擇器'); try { $('f_date').showPicker(); } catch (e) {} });
-  $('f_more').onclick = function () { more = !more; syncSheet(); LOG(more ? '連續記帳：記完不關' : '取消連續記帳'); };
+  $('sh_close').onclick = function () { closeSheetEl('sheet'); void 0; };
+  $('scrim').onclick = function () { if ($('ssheet').classList.contains('on')) ssClose(); else if ($('asheet').classList.contains('on')) closeSheetEl('asheet'); else closeSheetEl('sheet'); void 0; };
+  $('f_type').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; ftype = b.dataset.v; syncSheet(); void 0; });
+  $('f_cats').addEventListener('click', function (ev) { var b = ev.target.closest('.cat'); if (!b) return; fcat = b.dataset.cat; syncSheet(); void 0; var f = $('f_cats').querySelector('[data-cat="' + fcat + '"]'); if (f) f.focus(); });
+  $('f_sub').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; fsub = b.dataset.v; syncSheet(); void 0; });
+  $('f_acct_wrap').addEventListener('click', function (ev) { var b = ev.target.closest('button'); if (!b) return; var k, v; if (b.dataset.from !== undefined) { facct = b.dataset.from; k = 'from'; v = facct; void 0; } else if (b.dataset.to !== undefined) { fto = b.dataset.to; k = 'to'; v = fto; void 0; } else if (b.dataset.stream !== undefined) { fstream = b.dataset.stream; k = 'stream'; v = fstream; void 0; } syncSheet(); var f = $('f_acct_wrap').querySelector('[data-' + k + '="' + v + '"]'); if (f) f.focus(); });
+  $('f_pend').onclick = function () { fpend = !fpend; syncSheet(); void 0; };
+  $('d_today').onclick = function () { $('f_date').value = TODAY; syncSheet(); void 0; };
+  $('d_yest').onclick = function () { $('f_date').value = addDays(TODAY, -1); syncSheet(); void 0; };
+  $('f_date').addEventListener('input', function () { if (!$('f_date').value) $('f_date').value = TODAY; syncSheet(); void 0; });
+  $('d_pick').addEventListener('click', function () { void 0; try { $('f_date').showPicker(); } catch (e) {} });
+  $('f_more').onclick = function () { more = !more; syncSheet(); void 0; };
   $('f_note').addEventListener('input', function () { growTA($('f_note')); });
-  $('keypad').addEventListener('click', function (ev) { var b = ev.target.closest('button[data-k]'); if (b) { showErr(''); calcKey(b.dataset.k); if (!/^[0-9.]+$/.test(b.dataset.k)) LOG('計算機按鍵：' + (b.getAttribute('aria-label') || b.dataset.k)); else LOG('計算機輸入：' + b.dataset.k); } });
+  $('keypad').addEventListener('click', function (ev) { var b = ev.target.closest('button[data-k]'); if (b) { showErr(''); calcKey(b.dataset.k); if (!/^[0-9.]+$/.test(b.dataset.k)) void 0; else void 0; } });
   $('f_submit').onclick = submitTx;
   $('sh_void').onclick = function () { var t = editing; if (!t) return; closeSheetEl('sheet'); voidTx(t); };
   $('f_dup').addEventListener('click', function (ev) { if (ev.target.closest('#dup_no')) { $('f_dup').innerHTML = ''; closeSheetEl('sheet'); showMsg('沒有記'); } else if (ev.target.closest('#dup_yes')) { DUPOK = true; $('f_dup').innerHTML = ''; submitTx(); } });
@@ -3068,31 +3066,31 @@ function bind() {
     var tg = ev.target, tn = tg.tagName; if (tn === 'INPUT' || tn === 'TEXTAREA' || tn === 'SELECT' || ev.metaKey || ev.ctrlKey || ev.altKey) return;
     var map = { '+': '+', '-': '-', '*': '×', 'x': '×', 'X': '×', '/': '÷', 'Enter': '=', '=': '=', 'Backspace': 'del', '.': '.', 'c': 'C', 'C': 'C', 'Delete': 'C' }, k = /^[0-9]$/.test(ev.key) ? ev.key : map[ev.key];
     if (!k) return; if (ev.key === 'Enter' && tn === 'BUTTON' && !tg.closest('#keypad')) return;
-    ev.preventDefault(); calcKey(k); LOG('計算機實體鍵：' + ev.key);
+    ev.preventDefault(); calcKey(k); void 0;
   });
   /* 帳戶抽屜 */
-  $('as_close').onclick = function () { closeSheetEl('asheet'); LOG('關閉帳戶抽屜'); }; $('as_save').onclick = saveAcct;
+  $('as_close').onclick = function () { closeSheetEl('asheet'); void 0; }; $('as_save').onclick = saveAcct;
   $('as_body').addEventListener('click', function (ev) {
     var b = ev.target.closest('button'); if (!b || b.disabled) return;
-    if (b.dataset.kind) { akind = b.dataset.kind; if (aMode === 'add') aSpend = SPEND_DEF.indexOf(akind) >= 0; drawAcctSheet(); LOG('帳戶類型選：' + KIND_N[akind]); var f = $('as_body').querySelector('[data-kind="' + akind + '"]'); if (f) f.focus(); }
-    else if (b.id === 'sw_assets') { aAssets = !aAssets; drawAcctSheet(); $('sw_assets').focus(); LOG('帳戶表單：計入資產 ' + (aAssets ? '開' : '關')); }
-    else if (b.id === 'sw_spend') { aSpend = !aSpend; drawAcctSheet(); $('sw_spend').focus(); LOG('帳戶表單：可動用 ' + (aSpend ? '開' : '關')); }
+    if (b.dataset.kind) { akind = b.dataset.kind; if (aMode === 'add') aSpend = SPEND_DEF.indexOf(akind) >= 0; drawAcctSheet(); void 0; var f = $('as_body').querySelector('[data-kind="' + akind + '"]'); if (f) f.focus(); }
+    else if (b.id === 'sw_assets') { aAssets = !aAssets; drawAcctSheet(); $('sw_assets').focus(); void 0; }
+    else if (b.id === 'sw_spend') { aSpend = !aSpend; drawAcctSheet(); $('sw_spend').focus(); void 0; }
     else if (b.id === 'a_archive') { var a = aEdit; closeSheetEl('asheet'); setArchived(a, !a.archived); }
     else if (b.id === 'a_delete') deleteAcct();
   });
   /* 訂閱抽屜 */
-  $('ss_close').onclick = function () { ssClose(); LOG('關閉訂閱抽屜'); };
+  $('ss_close').onclick = function () { ssClose(); void 0; };
   $('ss_body').addEventListener('click', function (ev) {
     var b = ev.target.closest('button'); if (!b || b.disabled) return;
     if (b.id === 'ss_go_card') ssView('card'); else if (b.id === 'ss_go_plan') ssView('plan'); else if (b.id === 'ss_go_other') ssView('other'); else if (b.id === 'ss_go_cancel') ssView('cancel'); else if (b.id === 'ss_go_archive') ssArchive();
-    else if (b.id === 'ss_dismiss') { ssClose(); LOG('關閉訂閱抽屜'); } else if (b.id === 'ss_back') { if (SS.it) ssView('detail'); else { ssClose(); LOG('不新增，關閉'); } } else if (b.id === 'ss_save') ssSave();
-    else if (b.id === 'ss_payer') { var on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', String(on)); LOG('公司付 ' + (on ? '開' : '關')); }
+    else if (b.id === 'ss_dismiss') { ssClose(); void 0; } else if (b.id === 'ss_back') { if (SS.it) ssView('detail'); else { ssClose(); void 0; } } else if (b.id === 'ss_save') ssSave();
+    else if (b.id === 'ss_payer') { var on = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', String(on)); void 0; }
   });
   $('ss_body').addEventListener('change', function (ev) { if (ev.target.id === 'ss_cyc') ssDyn(); });
   /* 提示與泡泡 */
   $('undo_b').onclick = function () { var e = $('undo'), fn = e._fn; hideUndo(); $('undo_b').textContent = '復原'; if (fn) fn(); };
-  $('a2hs_ok').onclick = function () { $('a2hs').hidden = true; LS.set('kkE_hint', '1'); LOG('關閉加入主畫面提示'); };
-  ['kkm_t', 'tt_fab'].forEach(function (id) { $(id).addEventListener('click', function () { var a = $(id); if (id === 'kkm_t' && FACE) FACE.poke(); if (!$('ttb').hidden && ttAnch === a) { ttClose(); LOG('塔塔泡泡收起'); } else ttOpen(a); }); });
+  $('a2hs_ok').onclick = function () { $('a2hs').hidden = true; LS.set('kkE_hint', '1'); void 0; };
+  ['kkm_t', 'tt_fab'].forEach(function (id) { $(id).addEventListener('click', function () { var a = $(id); if (id === 'kkm_t' && FACE) FACE.poke(); if (!$('ttb').hidden && ttAnch === a) { ttClose(); void 0; } else ttOpen(a); }); });
   document.addEventListener('pointerdown', function (ev) { if ($('ttb').hidden) return; if ($('ttb').contains(ev.target) || ev.target.closest('#kkm_t,#tt_fab,#gl_ask,#rep_say')) return; ttClose(); }, true);
   $('kkm_send').onclick = kkmGo;
   $('kkm_in').addEventListener('keydown', function (ev) { if (ev.key === 'Enter' && !ev.shiftKey && !ev.isComposing) { ev.preventDefault(); kkmGo(); } });
@@ -3602,9 +3600,9 @@ async function startRealtime() {
     if (!window.supabase) await new Promise(function (res, rej) { var e = document.createElement('script'); e.src = 'supabase.js'; e.async = true; e.onload = res; e.onerror = rej; document.head.appendChild(e); });
     var topic = await rpc('get_realtime_topic', {}); if (!topic) return;
     sb = supabase.createClient(URL_, APIKEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, realtime: { params: { eventsPerSecond: 5 } } });
-    sb.channel(topic, { config: { broadcast: { self: false } } }).on('broadcast', { event: 'changed' }, function () { window.__pings = (window.__pings || 0) + 1; scheduleRefresh(); repLoad(); loadSubs(); })
-      .subscribe(function (st) { var on = st === 'SUBSCRIBED'; setLive(on); window.__rt = st; if (on) scheduleRefresh(); });
-  } catch (e) { window.__rterr = String(e && e.message || e); }
+    sb.channel(topic, { config: { broadcast: { self: false } } }).on('broadcast', { event: 'changed' }, function () { scheduleRefresh(); repLoad(); loadSubs(); })
+      .subscribe(function (st) { var on = st === 'SUBSCRIBED'; setLive(on); if (on) scheduleRefresh(); });
+  } catch (e) {  }
 }
 document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { scheduleRefresh(); loadPrefs(); } });
 addEventListener('focus', scheduleRefresh); addEventListener('pageshow', scheduleRefresh); addEventListener('online', scheduleRefresh);
@@ -3983,7 +3981,7 @@ function v32Bind() {
     else if (k === 'rcvi') openDet('rcvi', ref);
     else if (k === 'rcvrem') rcvRemSet(ref);
     else return;
-    LOG('v32：' + k + (ref ? ' ' + ref : ''));
+    void 0;
   });
   $('det_b').addEventListener('click', function (ev) { var b = ev.target.closest('[data-bill]'); if (b) markPaid(b.dataset.bill); });
   $('bgt').onclick = function () { openDet('budget', 'budget'); };
@@ -3998,7 +3996,6 @@ bind(); liveBind(); v32Bind(); mountFaces();
   try { var c = JSON.parse(LS.get('kk_cache') || 'null'); if (c && c.v === 3 && c.k === KEY.slice(0, 10) && c.o && c.l) { LIVE.sig = ''; applyData(c.o, c.l); } } catch (e) {}
   load({ force: true });
 })();
-window.__E = { showTab: showTab, openDet: openDet, openAdd: openAdd, state: function () { return { tab: tab, det: DET.map(function (d) { return d.t + ':' + d.arg; }), look: LOOK, theme: effTheme(), totals: D.totals, summary: D.summary, tx: TXALL.length, subs: SUBS.length, rep: REP.length, view: VIEW, period: viewPeriod() }; } };
 
 </script>
 </body></html>

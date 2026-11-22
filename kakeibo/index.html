@@ -2045,9 +2045,9 @@ function scheduleRefresh(){clearTimeout(refT);refT=setTimeout(()=>{if(S.per===0&
 async function startRealtime(){
   try{await needSupabase();const topic=await rpc('get_realtime_topic',{});if(!topic)return;
     sbc=supabase.createClient(URL_,APIKEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false},realtime:{params:{eventsPerSecond:5}}});
-    sbch=sbc.channel(topic,{config:{broadcast:{self:false}}}).on('broadcast',{event:'changed'},()=>{window.__pings=(window.__pings||0)+1;scheduleRefresh()})
-      .subscribe(st=>{window.__rt=st;KD.rt=st==='SUBSCRIBED';const lv=$('#live');lv&&lv.classList.toggle('off',!KD.rt&&S.scn!=='normal');if(KD.rt)scheduleRefresh()});
-  }catch(e){window.__rterr=String(e&&e.message||e)}
+    sbch=sbc.channel(topic,{config:{broadcast:{self:false}}}).on('broadcast',{event:'changed'},()=>{scheduleRefresh()})
+      .subscribe(st=>{KD.rt=st==='SUBSCRIBED';const lv=$('#live');lv&&lv.classList.toggle('off',!KD.rt&&S.scn!=='normal');if(KD.rt)scheduleRefresh()});
+  }catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')scheduleRefresh()});
 window.addEventListener('focus',scheduleRefresh);window.addEventListener('pageshow',scheduleRefresh);window.addEventListener('online',scheduleRefresh);
@@ -3339,7 +3339,6 @@ Object.assign(ACT,{
   kkDo(()=>rpc('kk_budget_set',{p_period_start:ps,p_total:tot,p_categories:cs}),'預算存好了：'+fmt(tot)+(ps?'（只有這期）':'（每期通用）'),{err:'budErr'})},
  budClear(){const b=V32.bud;if(!b)return;const ps=b.scope==='period'?b.period_start:null;kkDo(()=>rpc('kk_budget_set',{p_period_start:ps,p_total:null,p_categories:{}}),'預算清除了，回到只看支出')}
 });
-window.__kk2={busy:()=>kkBusy,rcvAll:()=>rcvAll(),ACT:ACT,rcvTestDue:(md)=>{const x=RCV0[0];if(x){x.due=md;return x.id}return null}};
 
 function keepAdd(){const a=S.add;if(!a)return;const c=$('#adAgain');if(c)a.again=c.checked;[['m','adM'],['note','adNote'],['fee','adFee'],['cur','adCur'],['oamt','adOamt'],['cp','adCp']].forEach(p=>{const x=$('#'+p[1]);if(x)a[p[0]]=x.value.trim()})}
 function keepEd(){const e=S.ed;if(!e)return;[['a','edAmt'],['d','edDate'],['m','edM'],['note','edNote'],['fee','edFee']].forEach(p=>{const x=$('#'+p[1]);if(x)e[p[0]]=x.value.trim()});const l=$('#edLearn');if(l)e.learn=l.checked;const to=$('#edTo');if(to)e.to=to.value;const pn=$('#edPend');if(pn)e.pend=pn.checked}
@@ -3418,7 +3417,7 @@ if('serviceWorker' in navigator&&window.isSecureContext){
   {const had=!!navigator.serviceWorker.controller;let done=false;navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!had||done)return;done=true;if(sheet.classList.contains('on'))return;location.reload()})}
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{try{r.update().catch(()=>{})}catch(e){}}).catch(()=>{})}
 window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
-window.__kk={S:S,D:D,KD:KD,reload:kkReload,totals:totals,setLayout:setLayout,go:t=>{closeBub();closeSheet();closeLay();if(S.tab===t)render();else go(t)},closeAll:()=>{closeBub();closeSheet();closeLay()},openSheet:(k,id)=>openSheet(k,id,false),render:()=>render()};
+
 })();
 </script>
 </body>
