@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v58';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v59';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -160,7 +160,7 @@ export function mockAdapter(modeStr) {
         options: [{ key: 'ok', label: flags.has('xss') ? badH : '接受，不變速', note: flags.has('xss') ? badH : '聽感自然', recommended: true }, { key: 'speed', label: '改成變速對拍' }] },
       { id: 'h2', project: '青年創作補助', question: '線上申請系統要你本人登入送出', detail: '', kind: 'talk', link: flags.has('xss') ? 'javascript:window.__xss=8' : 'https://example.com/', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - 26 * H).toISOString(), options: [] }],
     answered: [{ id: 'h0', project: '生活', question: '週末外拍要不要改到週日', kind: 'choice', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - 2 * D).toISOString(), options: [{ key: 'ok', label: '照你建議的做' }], status: 'answered', answer_key: 'ok', answer_label: '照你建議的做', answer_note: flags.has('xss') ? badH : '', answer_via: flags.has('xss') ? badH : 'LINE', answer_quote: flags.has('xss') ? badH : '照建議', answered_at: new Date(Date.now() - 20 * H).toISOString(), picked_up_at: new Date(Date.now() - 19 * H).toISOString() }],
-    jobs: [{ id: 'j1', agent: flags.has('xss') ? badH : '大器（Claude）', machine: 'Mac', title: flags.has('xss') ? badH : '藍鯨 NOVA 試看帶', status: 'waiting_mac', updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }],
+    jobs: [{ id: 'j1', agent: flags.has('xss') ? badH : '大器（Claude）', machine: 'Mac', title: flags.has('xss') ? badH : '藍鯨 NOVA 試看帶', status: 'waiting_mac', updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }, { id: 'j2', agent: flags.has('xss') ? badH : '【監工】外拍', machine: 'Borry 的 MacBook', title: '拍板後續｜週末外拍要不要改到週日', status: 'running', source_key: 'dec-h0', note: flags.has('xss') ? badH : '決定 h0｜老大選「照你建議的做」｜已交給【監工】外拍，開工了', updated_at: new Date(Date.now() - 5 * 60e3).toISOString() }],
     events: [{ id: 1, at: new Date(Date.now() - 2 * H).toISOString(), actor: flags.has('xss') ? badH : '大器（Claude）', summary: flags.has('xss') ? badH : '品牌短片分鏡第二版交出去了，等你看' }, { id: 2, at: new Date(Date.now() - 5 * H).toISOString(), actor: '金金', summary: '這週花得比平常少一成。12 月底現金會低於安全線，比賽代製那筆 3 萬尾款要盯緊，大筆的先不要買。' }],
     beats: [{ name: flags.has('xss') ? badH : 'Mac 同步', machine: 'MacBook', note: '待辦與紀錄同步', expect_every_s: 300, last_at: new Date(Date.now() - 2 * 60e3).toISOString(), late: false }, { name: '大器 收訊', machine: 'MacBook', note: '訊息收件有在聽', expect_every_s: 300, last_at: new Date(Date.now() - 3 * H).toISOString(), late: true }] };
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }

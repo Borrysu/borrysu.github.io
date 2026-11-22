@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v58');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v59');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2798,6 +2798,20 @@ addEventListener('resize',fitFoots);try{document.fonts&&document.fonts.ready.the
  else if(p.g==='delivered')a+=B('收到款了','ppaid',p.id,'pri sm');
  a+=mb('看細節','page','proj:'+p.id);
  return h.replace('<div class="kfoot"><div class="cf-l"></div>',`<div class="kfoot"><div class="cf-l">${a}</div>`)}}
+// 拍板後續（2026-11-22，老大：「拍版需要派正確視窗執行 or 另有視窗執行 背景code也可以 但面板要可以追蹤」）
+// 你回過的拍板，靠 hub_jobs 的 source_key＝dec-<決定 id> 顯示誰在做、做到哪；點開看問題、步驟與成果。
+const decJob=id=>((LV.hub&&LV.hub.jobs)||[]).find(j=>j.sourceKey==='dec-'+id);
+const decFollow=()=>{const a=((LV.hub&&LV.hub.answered)||[]).filter(d=>decJob(d.id)&&d.answeredAt&&Date.now()-d.answeredAt<5*864e5);
+ const rank=d=>{const s=decJob(d.id).status;return s==='waiting_you'||s==='failed'?0:s==='done'?2:1};
+ return a.sort((x,y)=>rank(x)-rank(y)||(y.answeredAt-x.answeredAt))};
+function decFollowSec(){const a=decFollow();if(!a.length)return '';const live=a.filter(d=>decJob(d.id).status!=='done').length,show=a.slice(0,Math.max(6,live));
+ return `<section class="sec" id="secDecF">${sh('','拍板後續',live?live+' 件還在做':'都做完了')}<div class="rows">`+show.map(d=>{const j=decJob(d.id),s=JST[j.status]||['進行中',0];
+  return `<div class="rowi" data-card="${esc(d.id)}"><div class="rowb">${aiF(LBOT(j.agent),'dec:'+d.id)}<button class="tx" data-act="sheet" data-id="hdecf:${esc(d.id)}" style="min-height:44px;text-align:left"><b>${esc(askCut(d.question,26))}</b><small>${esc((j.agent||'大器')+'・'+LAGO(j.updatedAt))}</small></button><span class="rt">${chip(s[0],s[1])}</span></div></div>`}).join('')+`</div></section>`}
+{const _h=homeL2;homeL2=function(){const h=_h(),f=decFollowSec();if(!f)return h;const i=h.lastIndexOf('<div class="cols">');return i<0?h+f:h.slice(0,i)+f+h.slice(i)}}
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='hdecf')return _s();const id=a.slice(1).join(':');
+ const d=((LV.hub&&LV.hub.answered)||[]).find(x=>x.id===id),j=d&&decJob(id);if(!d||!j)return shHead('這件不在了');const s=(JST[j.status]||['進行中'])[0];
+ const note=String(j.note||'').replace(/^決定 [^｜]+｜(老大選「[^」]*」｜)?/,'');
+ return shHead(esc(askCut(d.question,40)))+kvs([['你選',d.answerLabel],['誰在做',j.agent],['狀態',s],['案子',d.project],['更新',tstr(j.updatedAt)]])+fullP('問題',d.question)+fullP('做到哪',note)+(j.resultPath?`<p class="h4">成果</p><p class="note" style="word-break:break-all">${esc(j.resultPath)}</p>`:'')}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

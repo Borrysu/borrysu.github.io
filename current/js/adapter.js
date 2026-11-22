@@ -73,7 +73,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v58');
+  const { mockAdapter } = await import('./mock.js?v59');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -109,7 +109,7 @@ export function normHub(d) {
     answerKey: str(r.answer_key), answerLabel: str(r.answer_label), answerNote: str(r.answer_note), answerVia: str(r.answer_via), answerQuote: str(r.answer_quote), answeredAt: ts(r.answered_at), pickedUp: !!r.picked_up_at });
   return {
     open: arr(d.open).map(dec), answered: arr(d.answered).map(dec),
-    jobs: arr(d.jobs).map(r => ({ id: str(r.id), agent: str(r.agent), machine: str(r.machine), project: str(r.project), title: str(r.title), note: str(r.note), ask: str(r.ask), resultPath: str(r.result_path),
+    jobs: arr(d.jobs).map(r => ({ id: str(r.id), agent: str(r.agent), machine: str(r.machine), project: str(r.project), title: str(r.title), note: str(r.note), ask: str(r.ask), resultPath: str(r.result_path), sourceKey: str(r.source_key),
       status: ['queued', 'running', 'waiting_mac', 'waiting_you', 'done', 'failed'].includes(r.status) ? r.status : 'running', updatedAt: ts(r.updated_at) })),
     events: arr(d.events).map(r => ({ id: str(r.id), at: ts(r.at), actor: str(r.actor), project: str(r.project), summary: str(r.summary), ask: str(r.ask), path: str(r.path) })),
     beats: arr(d.beats).map(r => ({ name: str(r.name), machine: str(r.machine), note: str(r.note), every: num(r.expect_every_s), lastAt: ts(r.last_at), late: !!r.late })),

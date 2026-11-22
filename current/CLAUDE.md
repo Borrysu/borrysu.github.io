@@ -171,3 +171,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 前端 `js/adapter.js` 的 `wake()`：live 模式送出「跟大器說」（只限大器，不含朋朋等 Bot）或「去執行」成功後，POST `CONFIG.WAKE_URL`（Tailscale Funnel `/current-wake`，body `{"k":金鑰}`，text/plain 免預檢，3 秒逾時，失敗安靜略過）。示範模式（`?mock=`）走 mock adapter，不會打。
    - Mac 端 launchd `com.borry.current-daqi-wake`（`~/Claude-Projects/Tools/current-daqi-wake/wake.py`，只聽 127.0.0.1:8795）用 `hub_whoami(p_key)` 驗角色＝Borry 才 `launchctl kickstart` 轉交程式 `com.borry.opportunity-daqi-relay`，其他角色 403、每分鐘 20 次上限、`hub_whoami` 還沒套上一律 503。金鑰不進 log。輪詢與雲端備援照舊。
    - 退回：見 `/Users/borry/大器工作區/面板工坊/進度與記憶.md`「v58 叫醒入口」。
+40. **拍板後續追蹤（2026-11-22，v59）**：老大原話「原本要我拍版的那些，我做了決定，然後到哪裡去了為什麼我沒看到後續」「以上 拍版需要派正確視窗執行 or 另有視窗執行 背景code也可以 但面板要可以追蹤」。
+   - Mac `~/Claude-Projects/Tools/hub-sync/decision_followup.py`：老大回答後，先不要＝待辦打勾；照建議＝先交原案監工／總控（SendMessage），5 分鐘內那件工作沒改成 running 就改背景大器；只能老大做的標 waiting_you 並把步驟寫進工作備註。每件一筆 `hub_jobs`，`source_key`＝`dec-<決定 id>`。
+   - 前端：adapter 的 jobs 多帶 `sourceKey`；首頁「正在跑」上方多一區「拍板後續」（5 天內回過、有對應工作的拍板，等你與失敗排前面），點開 `hdecf:<id>` 看你選、誰在做、狀態、做到哪、成果。
+   - 退回：`git revert` v59 的 commit（hub_jobs 資料留著不影響舊版）。
