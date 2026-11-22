@@ -486,7 +486,7 @@ label.field > .fl{font-size:13px;color:var(--muted)}
 .gate .paste{display:flex;gap:8px;margin-top:18px}.gate .paste input{flex:1;min-width:0;min-height:48px;padding:0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-size:16px}
 .gate .paste button{min-height:48px;padding:0 18px;border:0;border-radius:12px;background:var(--accent);color:var(--on-accent,#fff);font-weight:700;font-size:16px}.gate .gerr{color:var(--bad);margin-top:10px;font-size:14px}
 .phone.gated .tabbar,.phone.gated .pnav,.phone.gated .composer,.phone.gated #refBtn,.phone.gated #maskBtn,.phone.gated #layBtn,.phone.gated #liveBtn{display:none !important}
-[data-act="payAuto"],[data-act="rcvRem"],[data-act="unvoid"],[data-act="unpaid"],[data-act="payUnreq"],[data-act="payTataDone"],[data-act="kim"]{display:none !important}
+[data-act="payAuto"],[data-act="rcvRem"],[data-act="unvoid"],[data-act="unpaid"],[data-act="payUnreq"],[data-act="payTataDone"]{display:none !important}
 </style>
 <style id="themes">
 /* 塔塔記帳設計提案｜themes.css｜單 B｜20261122
@@ -2215,7 +2215,7 @@ function homeA(d){
   if(d.empty)return h+'<div class="empty"><h2>新的一期開始了</h2><p>'+P.label.split('～')[0]+' 起算，還沒有任何支出。銀行通知進來我會自己記。</p>'+B('add','記第一筆',{cls:'pri'})+'</div>';
   const by=dd=>d.inbox.filter(t=>t.d===dd),t0=by(mdAgo(0)),t1=by(mdAgo(1)),t2=by(mdAgo(2));
   h+='<p class="day">今天 '+P.today+'</p>';
-  h+=msg('sum',d.left<0?'超支 <b>'+fmt(-d.left)+'</b>。'+homeOver(d):'花了 <b>'+pc(d.pS)+'</b>，時間過了 <b>'+pc(d.pT)+'</b>。'+homePaid(d),[B('sheet','看算法',{k:'left'})]);
+  h+=msg('sum','這期花了 <b>'+fmt(d.spent)+'</b>，時間過了 <b>'+pc(d.pT)+'</b>。'+homePaid(d),[B('sheet','看算法',{k:'left'})]);
   if(d.inbox.length)h+=msg('inbox','我記了 <b>'+d.inbox.length+' 筆</b>要你看。'+(t0.length?'今天 '+t0.length+' 筆。':''),d.inbox.length>5?[B('okAll',d.inbox.length+' 筆都對，全部確認',{cls:'pri'})]:null)+t0.map(cfCard).join('');
   else h+=msg('inbox','帳都對過了。沒事。',null,'quiet');
   if(d.nb&&d.nb.rel<=3)h+=msg('bill',d.nb.name+' <b>'+fmt(d.nb.amt)+'</b>，'+(d.nb.rel<0?rel(d.nb.rel):rel(d.nb.rel)+'要繳')+'。',[B('paid','標成已繳',{id:d.nb.id}),B('sheet','看帳單',{k:'fx',id:d.nb.id})]);
@@ -2255,7 +2255,7 @@ function homeC(d){
   if(c.k==='left')b='<article class="dcard swipe in" data-flip="d-left"><span class="kick">'+P.label+' · 第 '+d.day+' 天</span>'+leftBlock(d,'huge')+'<span class="sub">'+leftSub(d)+'</span>'+leftBar(d,true)+'<div class="acts" style="margin-top:28px">'+B('sheet','看算法',{k:'left'})+(d.empty?B('add','記第一筆',{cls:'pri'}):B('cnext',cs.length>2?'看 '+(cs.length-2)+' 件事':'下一張',{cls:'pri'}))+'</div></article>';
   else if(c.k==='cf'){const t=c.t;b='<article class="dcard swipe in" data-flip="d-'+t.id+'" data-cf="'+t.id+'"><span class="kick">塔塔記的 · '+t.d+' '+t.t+' · '+t.ac+'</span><span class="g" role="img" aria-label="分類：'+t.c+'" title="分類：'+t.c+'">'+G(t.c)+'</span><h2 class="ttl">'+esc(t.m)+'</h2><span class="huge">'+amt(t.a,{plus:1})+'</span>'+cfWhy(t)+'<div class="acts">'+cfActs(t)+'</div>'+B('sheet','看這筆的來源',{k:'tx',id:t.id})+'</article>'}
   else if(c.k==='bill'){const x=c.b;b='<article class="dcard swipe in" data-flip="d-bill"><span class="kick">帳單 · '+x.due+'</span><h2 class="ttl">'+esc(x.name)+' '+rel(x.rel)+'要繳</h2><span class="huge" data-main>'+amt(x.amt)+'</span><span class="sub">從'+x.ac+'付</span><div class="acts">'+B('cnext','晚點再說')+B('paid','標成已繳',{cls:'pri',id:x.id})+'</div>'+B('sheet','看帳單',{k:'fx',id:x.id})+'</article>'}
-  else b='<article class="dcard swipe in center" data-flip="d-done"><span class="tface" id="bigFace"></span><h2 class="ttl">'+(d.empty?'新的一期，還沒有事':d.inbox.length?'看過一輪了':'看完了，今天沒事')+'</h2><span class="sub">'+(d.inbox.length?'還有 '+d.inbox.length+' 筆沒確認。':'')+(d.left<0?'超支 '+fmt(-d.left)+'。':'還能花 '+fmt(d.left)+'，每天 '+fmt(d.perDay)+'。')+(d.nb&&d.nb.rel<=3?d.nb.name+' '+rel(d.nb.rel)+'要繳。':'')+'</span><div class="acts">'+B('cgo','回第一張',{k:'0'})+B('tab','看帳本',{cls:'pri',tab:'ledger'})+'</div></article>';
+  else b='<article class="dcard swipe in center" data-flip="d-done"><span class="tface" id="bigFace"></span><h2 class="ttl">'+(d.empty?'新的一期，還沒有事':d.inbox.length?'看過一輪了':'看完了，今天沒事')+'</h2><span class="sub">'+(d.inbox.length?'還有 '+d.inbox.length+' 筆沒確認。':'')+('這期花了 '+fmt(d.spent)+'，收入目標'+goalNums(d).txt+'。')+(d.nb&&d.nb.rel<=3?d.nb.name+' '+rel(d.nb.rel)+'要繳。':'')+'</span><div class="acts">'+B('cgo','回第一張',{k:'0'})+B('tab','看帳本',{cls:'pri',tab:'ledger'})+'</div></article>';
   return '<div class="deck"><div class="segs" role="progressbar" aria-label="今天的事" aria-valuemin="1" aria-valuemax="'+cs.length+'" aria-valuenow="'+(i+1)+'" aria-valuetext="第 '+(i+1)+' 張，共 '+cs.length+' 張">'+cs.map((_,j)=>'<i class="'+(j<i?'done':j===i?'on':'')+'"></i>').join('')+'</div><div class="deck-stage">'+b+'</div><div class="deck-nav">'+B('cprev','‹ 上一張',{dis:i===0})+'<span class="num">'+(i+1)+' / '+cs.length+'</span>'+B('cnext','下一張 ›',{dis:i===cs.length-1})+'</div></div>';
 }
 
@@ -2266,8 +2266,8 @@ const IC={wallet:'<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 
 const CHEV='<span class="chev" aria-hidden="true">›</span>';
 function acctEntry(d){return '<button class="aentry" id="acctEntry" data-act="acct" data-flip="aentry">'+IC.wallet+'<b>帳戶</b><span class="v">可動用 '+amt(d.cash)+'</span>'+CHEV+'</button>'}
 function perHome(d){
-  if(d.fut)return '<div class="empty"><h2>下一期還沒開始</h2><p>'+PLf(1)[0].split('～')[0]+' 起算。預算 '+fmt(BUDGET)+'，到時候塔塔會從頭記。</p>'+B('per0','回到本期',{cls:'pri'})+'</div>';
-  return '<section class="card"><span class="lab">上一期 '+P.label+'，已經結束</span><p class="lead" style="margin-top:6px"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>花了 '+fmt(d.spent)+'，'+(d.left>=0?'在預算內，剩 '+fmt(d.left):'超支 '+fmt(-d.left))+'。收入 '+fmt(d.income)+'。</p>'+leftBar(d,true)+'<div class="acts" style="margin-top:18px">'+B('tab','看這期的帳',{tab:'ledger'})+B('tab','看分類',{tab:'budget'})+B('per0','回到本期',{cls:'pri'})+'</div></section>';
+  if(d.fut)return '<div class="empty"><h2>下一期還沒開始</h2><p>'+PLf(1)[0].split('～')[0]+' 起算。到時候塔塔會從頭記。</p>'+B('per0','回到本期',{cls:'pri'})+'</div>';
+  return '<section class="card"><span class="lab">上一期 '+P.label+'，已經結束</span><p class="lead" style="margin-top:6px"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>花了 '+fmt(d.spent)+'。收入 '+fmt(d.income)+'。</p>'+leftBar(d,true)+'<div class="acts" style="margin-top:18px">'+B('tab','看這期的帳',{tab:'ledger'})+B('tab','看分類',{tab:'budget'})+B('per0','回到本期',{cls:'pri'})+'</div></section>';
 }
 
 /* ---------- 帳本（三版共用）：搜尋、篩選、顯示作廢 ---------- */
@@ -2323,14 +2323,14 @@ const holdRow=h=>'<button class="row" data-act="sheet" data-k="holding" data-id=
 function numBtn(k,label,v,o){o=o||{};return '<button class="card tile" data-act="sheet" data-k="comp" data-id="'+k+'"><span class="lab">'+label+' ›</span><span class="'+(o.cls||'mid')+'">'+amt(v,{c:o.neg?'neg':'',abs:o.neg})+'</span>'+(o.sub?'<span class="sub">'+o.sub+'</span>':'')+'</button>'}
 function acctPage(d){
   if(d.err)return errBlock();
-  const T=totals(),L=acctSorted(),arch=S.accts.filter(a=>a.arch),pd=pendList(),mon=(T.cash/BUDGET).toFixed(1);
+  const T=totals(),L=acctSorted(),arch=S.accts.filter(a=>a.arch),pd=pendList(),mon=(T.cash/Math.max(1,Number((KD.o&&KD.o.summary||{}).expense)||1)).toFixed(1);
   const invSeg='<div class="seg" role="group" aria-label="淨資產要不要含投資"><button data-act="inv" data-c="1" aria-pressed="'+S.inv+'">含投資</button><button data-act="inv" data-c="0" aria-pressed="'+!S.inv+'">不含投資</button></div>';
   let h;
   if(S.v==='A'){
     h=msg('asum','可動用現金 <b>'+fmt(T.cash)+'</b>，照這期預算可以撐 <b>'+mon+'</b> 個月。淨資產 <b>'+sgn(T.net)+'</b>'+(S.inv?'':'（不含投資）')+'。',[B('sheet','看怎麼算的',{k:'comp',id:'net'})])
      +'<section class="card"><div class="list">'+[['spend','可動用現金',T.cash],['net','淨資產',T.net],['assets','總資產',T.assets],['invest','投資帳戶',T.invest],['liab','負債',-T.liab],['pend','在途／待入帳',T.pend]].map(r=>'<button class="row" data-act="sheet" data-k="comp" data-id="'+r[0]+'"><span class="row-m"><b>'+r[1]+'</b></span>'+amt(r[2],{c:r[2]<0?'neg':''})+CHEV+'</button>').join('')+'</div></section>'+invSeg;
   }else if(S.v==='B'){
-    h='<div class="two">'+numBtn('spend','可動用現金',T.cash,{sub:'撐 '+mon+' 個月'})+numBtn('net','淨資產',T.net,{sub:S.inv?'含投資':'不含投資'})+'</div>'+invSeg
+    h='<div class="two">'+numBtn('spend','可動用現金',T.cash,{sub:'照本期支出撐 '+mon+' 個月'})+numBtn('net','淨資產',T.net,{sub:S.inv?'含投資':'不含投資'})+'</div>'+invSeg
      +'<div class="three">'+numBtn('assets','總資產',T.assets)+numBtn('liab','負債',T.liab,{neg:1})+numBtn('pend','在途',T.pend)+'</div>'
      +'<button class="setrow" data-act="sheet" data-k="comp" data-id="invest"><b>投資帳戶</b><span class="v" style="color:var(--ink)">'+amt(T.invest)+'</span>'+CHEV+'</button>';
   }else{
@@ -2515,7 +2515,7 @@ const RK={pend:['途','在途，待入帳'],wait:['收','已交件，等收款']
 const rcvStage=x=>RK[x.kind][1]+(x.kind==='doing'?(x.signed?'，已簽約':'，未簽約'):'');
 function rcvRow(x){return '<button class="row" data-act="sheet" data-k="rcvi" data-id="'+x.id+'"><span class="g" aria-hidden="true">'+RK[x.kind][0]+'</span><span class="row-m"><b>'+esc(x.m)+(x.late?'<span class="tag bad">▲ 逾期 '+x.late+' 天</span>':'')+'</b><small>'+(x.kind==='pend'?'在途':x.kind==='wait'?'等收款':x.signed?'進行中，已簽約':'進行中，未簽約')+' · '+(x.due?'約定 '+x.due:'入帳日未定')+(x.rem?' · 塔塔盯著':'')+'</small></span>'+(x.a==null?'<span class="sub">金額未定</span>':amt(x.a))+CHEV+'</button>'}
 /* 大筆支出問金金值不值（示意，罐頭字） */
-const kimOk=t=>false&&t.a<0&&!t.transfer&&!t.void&&Math.abs(t.a)>=KIM_BIG;
+const kimOk=t=>t.a<0&&!t.transfer&&!t.void&&Math.abs(t.a)>=KIM_BIG;
 function kimBlock(t){const st=S.kim[t.id];if(!kimOk(t)||!st)return '';const hd='<span class="g" aria-hidden="true">金</span>';
   if(st==='ask')return '<div class="cfm" id="kimBox" role="group" aria-label="問金金"><p>'+hd+'<span>把「'+esc(t.m)+' '+fmt(t.a)+'」傳給金金看值不值？</span></p><div class="acts">'+B('kim','先不要',{id:t.id,c:'no'})+B('kim','傳給金金',{cls:'pri',id:t.id,c:'go'})+'</div></div>';
   if(st==='busy')return '<div class="cfm" id="kimBox" role="status" tabindex="-1"><p>'+hd+'<span>金金在看。</span></p></div>';
@@ -2654,8 +2654,8 @@ Object.assign(SH,{
   return{t:(bill?'去繳費：':'訂閱付款：')+x.name,h:head
    +'<span class="flab" id="lpayAc">從哪裡扣</span><div class="chips" role="group" aria-labelledby="lpayAc">'+ns.map(n=>'<button class="chip" data-act="payAc" data-c="'+esc(n)+'" aria-pressed="'+(n===acn)+'">'+esc(n)+'</button>').join('')+'</div>'+balLine
    +'<span class="flab" id="lpayCh">繳費管道</span><div class="seg" role="group" aria-labelledby="lpayCh">'+CH.map(k=>'<button data-act="payCh" data-c="'+k[0]+'" aria-pressed="'+(c===k[0])+'">'+k[1]+'</button>').join('')+'</div><div class="paych" id="payPanel">'+panel+'</div>'
-   +(p.cf?'<div class="cfm" id="payCfm" role="group" aria-label="確認請塔塔付款"><p><span>請塔塔從「'+esc(acn)+'」付 <b class="num">NT$'+fmt(x.amt)+'</b>。</span></p><p class="sub">'+esc(x.name)+'。按同意會傳一則訊息給塔塔，她付完會回報。</p><div class="acts">'+B('payCf','先不要',{id:id,c:'0'})+B('payCf','同意，請塔塔付',{cls:'pri',id:id,c:'1'})+'</div></div>'
-     :B('payTata','請塔塔付款',{cls:'pri wide',id:id,dis:sh>0})+(sh?'<p class="hint">餘額不夠，先換一個帳戶</p>':''))
+   +(p.cf?'<div class="cfm" id="payCfm" role="group" aria-label="確認提醒我付"><p><span>請塔塔提醒你付「'+esc(x.name)+'」<b class="num">NT$'+fmt(x.amt)+'</b>，回你繳費管道與期限。</span></p><p class="sub">塔塔不會代付。</p><div class="acts">'+B('payCf','先不要',{id:id,c:'0'})+B('payCf','送出提醒',{cls:'pri',id:id,c:'1'})+'</div></div>'
+     :B('payTata','提醒我付',{cls:'pri wide',id:id})+'')
    +self}},
  legend(){const L=(k,sm,t,x)=>'<div class="s" data-lg="'+k+'" aria-hidden="true">'+sm+'</div><div class="d"><b>'+t+'</b>'+x+'</div>';
   const MO=[['idle','沒事'],['thinking','有帳等你看'],['alert','帳單 3 天內到期'],['over','超支'],['sleepy','離線或還沒開始'],['logged','剛記好一筆']];
@@ -2782,7 +2782,7 @@ function askProto(q,into){q=q.trim();if(!q)return;const log=into==='feed'?S.chat
   if(rx&&into!=='feed'){rollOn=false;render()}
   setTimeout(()=>{const a=gig?'收到，缺口我記下了，已經請集集去翻有沒有外快機會，找到會列在逐流。':rx?(rx.late?'好，我盯著，「'+rx.m+'」入帳了馬上跟你說。':'好，'+rx.due+' 沒入帳我就提醒你。'):reply(q,D()),m=++S.seq;moodT=0;if(into==='feed'){log.unshift({t:esc(a),n:m});rollOn=false;render()}else{log.push({t:a,n:m});renderBub()}setMood(tata(D()).mood)},900)}
 function renderBub(){const d=D(),tt=tata(d),cx=S.ctx;
-  bub.innerHTML='<p class="say">'+(tt.idle?'沒事。還能花 <b class="num">'+fmt(Math.max(d.left,0))+'</b>。':tt.line)+'</p>'+(d.err?'':'<div class="acts" style="margin:0">'+B('sheet','看回報全文',{k:'report'})+B('q','還能花多少')+B('q','下一筆要繳什麼')+B('q','幫我補分類')+B('sheet','記號說明',{k:'legend'})+'</div>')+(S.gigDraft?'<p class="ctx" id="gigDraft"><b style="color:var(--ink)">要送給塔塔的話，還沒送：</b><br>'+esc(S.gigDraft)+'<br>看過沒問題再按「傳給塔塔」，也可以在下面的框裡改。不想送就收起塔塔。</p>':'')+(S.gig?'<p class="ctx" id="bubGig">集集在找外快。<a href="'+GIG_URL+'" target="_blank" rel="noopener">看找到的機會 ›</a></p>':'')+(cx?'<p class="ctx">在問這一筆：'+esc(cx.m||cx.name)+' '+fmt(cx.a||cx.amt)+'</p>':'')+'<div class="log" aria-live="polite">'+S.bchat.map(c=>'<div class="msg'+(c.me?' me':'')+'">'+(c.me?'':'<span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>')+'<div class="msg-b"><p>'+esc(c.t)+'</p></div></div>').join('')+'</div><form id="bubF" autocomplete="off" aria-label="跟塔塔說"><input id="bubIn" aria-label="跟塔塔說" placeholder="跟塔塔說" maxlength="500" enterkeyhint="send"><button class="btn pri" type="submit">傳給塔塔</button></form>'+B('closeBub','收起塔塔',{cls:'wide'});
+  bub.innerHTML='<p class="say">'+(tt.idle?'沒事。這期花了 <b class="num">'+fmt(d.spent)+'</b>，收入目標'+goalNums(d).txt+'。':tt.line)+'</p>'+(d.err?'':'<div class="acts" style="margin:0">'+B('sheet','看回報全文',{k:'report'})+B('q','還能花多少')+B('q','下一筆要繳什麼')+B('q','幫我補分類')+B('sheet','記號說明',{k:'legend'})+'</div>')+(S.gigDraft?'<p class="ctx" id="gigDraft"><b style="color:var(--ink)">要送給塔塔的話，還沒送：</b><br>'+esc(S.gigDraft)+'<br>看過沒問題再按「傳給塔塔」，也可以在下面的框裡改。不想送就收起塔塔。</p>':'')+(S.gig?'<p class="ctx" id="bubGig">集集在找外快。<a href="'+GIG_URL+'" target="_blank" rel="noopener">看找到的機會 ›</a></p>':'')+(cx?'<p class="ctx">在問這一筆：'+esc(cx.m||cx.name)+' '+fmt(cx.a||cx.amt)+'</p>':'')+'<div class="log" aria-live="polite">'+S.bchat.map(c=>'<div class="msg'+(c.me?' me':'')+'">'+(c.me?'':'<span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>')+'<div class="msg-b"><p>'+esc(c.t)+'</p></div></div>').join('')+'</div><form id="bubF" autocomplete="off" aria-label="跟塔塔說"><input id="bubIn" aria-label="跟塔塔說" placeholder="跟塔塔說" maxlength="500" enterkeyhint="send"><button class="btn pri" type="submit">傳給塔塔</button></form>'+B('closeBub','收起塔塔',{cls:'wide'});
   bub.scrollTop=bub.scrollHeight}
 function openBub(){if(sheet.classList.contains('on'))closeSheet();renderBub();bub.classList.add('on');scrim.classList.add('on');$('#tataBtn').setAttribute('aria-expanded','true')}
 function closeBub(){if(!bub.classList.contains('on'))return;bub.classList.remove('on');if(!sheet.classList.contains('on'))scrim.classList.remove('on');$('#tataBtn').setAttribute('aria-expanded','false');S.ctx=null;S.gigDraft=false;S.draftRcv=null}
@@ -3158,6 +3158,67 @@ function prevSameCalc(){const o=KD.o,L=KD.prevL;if(!o||!L){KD.ps=null;return}
   KD.ps={tot:tot,cat:cat,n:n,label:mdShort(ps0)+'～'+mdShort(addDays(ps0,n-1))}}
 function cmpBlock(cur,prev,lab){if(prev==null)return '<p class="sub">上一期的資料還沒讀到。</p>';const df=cur-prev,p=prev?Math.round(df/prev*100):null;
   return facts([['這期到今天',amt(cur)],['上期同一段（'+lab+'）',amt(prev)],['差',(df>0?'▲ 多 ':df<0?'▼ 少 ':'一樣 ')+(df?fmt(df):'')+(p!=null&&df?'（'+(df>0?'+':'−')+Math.abs(p)+'%）':'')]])}
+
+/* ================= v31 補單 2：預算口徑改回原版（沒有預算，不推算） =================
+   首頁主數字＝本期支出；副標＝收入、目標、還差（原版：gap=target-income，>0 寫「還差」，否則「已達標」；進度＝income/target）。
+   預算頁＝各類本期支出＋與上期比（同天數），沒有預算條、沒有超支判斷。d.left 固定 0，任何超支分支都不會觸發。 */
+const D_v31=D;D=function(){const d=D_v31();d.left=0;d.pS=0;d.perDay=0;return d};
+const goalNums=d=>{const tgt=TARGET||0,inc=d.income||0,gap=tgt-inc,pct=tgt>0?Math.min(100,inc/tgt*100):0;return{tgt,inc,gap,pct,txt:gap>0?'還差 '+fmt(gap):'已達標',pctTxt:(pct>=10||pct===0?Math.round(pct):pct.toFixed(1))+'%'}};
+function leftBlock(d,cls){return '<span class="lab">'+(d.prev?'上一期支出':'這期支出')+'</span><span class="'+cls+'" data-main>'+amt(d.spent,{abs:1,roll:'spent'})+'</span>'}
+function leftSub(d){const g=goalNums(d);return '收入 '+fmt(g.inc)+' · 目標 '+fmt(g.tgt)+' '+g.txt}
+function leftBar(d,big){const g=goalNums(d);return bul(g.tgt>0?g.inc/g.tgt:0,null,{big:big,lab:'收入到目標'})}
+function tata(d){
+  if(d.err)return{line:'讀不到資料。',mood:'idle'};
+  if(d.prev)return{line:'上一期，已經結束。',mood:'idle'};
+  if(d.fut)return{line:'下一期，還沒開始。',mood:'sleepy'};
+  if(d.scn==='offline')return{line:'離線中。先給你看 <b>'+(KD.atTxt||'上次')+'</b> 的。',mood:'sleepy'};
+  if(d.inbox.length)return{line:'<b>'+d.inbox.length+' 筆</b>等你看。',mood:'thinking'};
+  if(d.nb&&d.nb.rel<=3)return{line:d.nb.name+' <b>'+fmt(d.nb.amt)+'</b>，'+(d.nb.rel<0?rel(d.nb.rel)+'。':rel(d.nb.rel)+'繳。'),mood:'alert'};
+  if(d.empty)return{line:'新的一期，還沒花。',mood:'idle'};
+  return{line:KD.atTxt?'更新於 '+KD.atTxt:'讀取中',mood:'idle',idle:1};
+}
+/* 預算頁：各類本期支出＋與上期比（同天數） */
+const prevNone=()=>!!(KD.prevL&&!KD.prevL.some(t=>!t.voided_at&&t.type==='expense'));
+function catCmpTag(k,s){if(S.per!==0||!KD.ps||prevNone())return '';const p=KD.ps.cat[k]||0,df=s-p;return '<span class="sub">上期同一段 '+fmt(p)+(df?'，'+(df>0?'▲ 多 ':'▼ 少 ')+fmt(df):'，一樣')+'</span>'}
+function catList(d){const cs=d.cats.filter(c=>c.s>0||c.n>0).sort((a,b)=>b.s-a.s),zero=d.cats.filter(c=>!c.s&&!c.n);
+  return '<section class="card"><div class="list">'+(cs.length?cs.map(c=>'<button class="row" data-act="sheet" data-k="cat" data-id="'+esc(c.k)+'" style="flex-wrap:wrap"><span class="g" aria-hidden="true">'+c.g+'</span><span class="row-m"><b>'+esc(c.k)+'</b><small>'+c.n+' 筆 · 占 '+pc(d.spent?c.s/d.spent:0)+'</small>'+catCmpTag(c.k,c.s)+'</span>'+amt(c.s)+CHEV+'</button>').join(''):'<p class="gray-line">這期還沒有支出。</p>')+'</div>'+(zero.length?'<p class="sub">還沒花：'+zero.map(c=>c.k).join('、')+'</p>':'')+'</section>'}
+function budgetHead(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null;const bk=' style="display:block"';return '<section class="card"><span class="lab"'+bk+'>'+P.label+' 支出</span><span class="big"'+bk+'>'+amt(d.spent,{abs:1,roll:'spent'})+'</span>'
+  +(ps==null?'':prevNone()?'<span class="sub"'+bk+'>上一期（'+PLf(-1)[0]+'）沒有支出紀錄，還不能比</span>':'<span class="sub"'+bk+'>上期同一段（'+KD.ps.label+'）'+fmt(ps)+'，'+(d.spent>=ps?'多 ':'少 ')+fmt(Math.abs(d.spent-ps))+'</span>')
+  +'<span class="sub"'+bk+'>收入 '+fmt(d.income)+' · 目標 '+fmt(TARGET)+' '+goalNums(d).txt+'</span></section>'}
+function budgetTail(){return B('toast','設定預算（即將推出）',{cls:'wide',dis:1})+B('sheet','看收入目標',{cls:'wide',k:'income'})}
+function budgetA(d){if(d.err)return errBlock();return budgetHead(d)+'<h2 class="h3">各類支出'+(prevNone()?'':' <span class="sub">與上期同天數比</span>')+'</h2>'+catList(d)+budgetTail()}
+function budgetB(d){return budgetA(d)}
+function budgetC(d){return budgetA(d)}
+SH.left=function(d){const g=goalNums(d),ps=S.per===0&&KD.ps?KD.ps.tot:null;
+  return{t:'這期的數字怎麼算',h:'<p class="lead"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>這期支出 '+fmt(d.spent)+'，收入 '+fmt(g.inc)+'，目標 '+fmt(g.tgt)+'，'+g.txt+'。</p>'
+   +facts([['期間',P.label],['支出（只算支出，轉帳與代收代付不算）',amt(d.spent)],['收入',amt(g.inc)],['收入目標',amt(g.tgt)],[g.gap>0?'還差':'超過目標',amt(Math.abs(g.gap))],['達成',g.pctTxt],ps==null?null:['上期同一段（'+KD.ps.label+'）支出',amt(ps)]].filter(Boolean))
+   +leftBar(d,true)+'<p class="sub">預算還沒有設定的地方，這裡不算「還能花」。</p>'+B('toast','設定預算（即將推出）',{cls:'wide',dis:1})}};
+function reply(q,d){if(S.ctx&&/這筆|為什麼|哪/.test(q))return '這筆是照'+(S.ctx.ev||'清單')+'記的。金額 '+fmt(S.ctx.a||S.ctx.amt)+'。';
+  const g=goalNums(d);
+  if(/花|剩|預算|超/.test(q))return '這期花了 '+fmt(d.spent)+'。收入 '+fmt(g.inc)+'，目標'+g.txt+'。預算還沒設定。';
+  if(/繳|帳單|扣/.test(q))return d.nb?d.nb.name+' '+fmt(d.nb.amt)+'，'+rel(d.nb.rel)+'。':'這期的帳單都繳了。';
+  if(/分類|補/.test(q))return d.un.n?'未分類 '+d.un.n+' 筆，共 '+fmt(d.un.s)+'。':'沒有未分類的。';
+  if(/待收|收款|應收/.test(q)){const c=goalCalc(d);return c.n?'待收款 '+c.n+' 筆，'+P.end+' 前會進來 '+fmt(c.pin)+'。':'目前沒有待收款。'}
+  if(/收入|賺/.test(q))return '收入 '+fmt(g.inc)+'，目標'+g.txt+'。';
+  return '這題我得看資料再回你。用下面的框直接傳給我。'}
+
+/* ================= v31 補單 2：三顆 Bot 按鈕（照霸霸 11/22 回覆）：都經 kk-refresh 傳給塔塔轉送，送前確認一次，面板不顯示結論 ================= */
+Object.assign(ACT,{
+ async askGig(){const d=D(),c=goalCalc(d),g=c.gap2;
+  const tx='轉集集：找外快，金額缺口 '+fmt(g)+' 元（本期 '+P.label+'，收入目標 '+fmt(TARGET)+'，已入帳 '+fmt(d.income)+'，'+P.end+' 前待收款 '+fmt(c.pin)+'，還剩 '+d.dl+' 天）';
+  if(!window.confirm('要送出嗎？\n\n'+tx))return;
+  try{await sendTata(tx);S.gigSent=1;closeSheet();toast('已送出，集集結果回到你的聊天')}catch(e){toast(e.message)}},
+ async kim(el){const id=el.dataset.id,t=D().every.find(x=>x.id===id);if(!t||el.dataset.c!=='ask')return;
+  const a=S.accts.find(x=>x.n===t.ac),bal=a?'（'+(a.bal<0?'目前欠 ':'餘額 ')+fmt(a.bal)+'）':'';
+  const tx='轉金金：大筆支出，品項「'+t.m+'」，金額 '+fmt(Math.abs(t.a))+' 元，帳戶 '+(t.ac||'未填')+bal+'，'+t.d+'，分類 '+t.c;
+  if(!window.confirm('要送出嗎？\n\n'+tx))return;
+  try{await sendTata(tx);S.kim[id]='sent';renderSheetBody();toast('已送出')}catch(e){toast(e.message)}},
+ async payCf(el){const id=el.dataset.id,x=fxFind(id);if(el.dataset.c!=='1'||!x||!S.pay){if(S.pay)S.pay.cf=false;renderSheetBody();reFocus('[data-act="payTata"]');return}
+  const tx='提醒我付：「'+x.name+'」NT$'+fmt(x.amt)+'，'+(x.rel<0?rel(x.rel):(x.due||'')+' 到期')+'。請回我繳費管道與期限，不用代付。';
+  if(!window.confirm('要送出嗎？\n\n'+tx))return;
+  if(kkBusy)return;kkBusy=true;try{await sendTata(tx);S.pay=null;closeSheet();toast('已送出，塔塔會回你繳費管道與期限')}catch(e){toast(e.message)}finally{kkBusy=false}},
+});
+function kimBlock(t){return S.kim[t.id]==='sent'?'<div class="cfm" id="kimBox" role="status"><p>已送出</p></div>':''}
 
 function keepAdd(){const a=S.add;if(!a)return;const c=$('#adAgain');if(c)a.again=c.checked;[['m','adM'],['note','adNote'],['fee','adFee'],['cur','adCur'],['oamt','adOamt'],['cp','adCp']].forEach(p=>{const x=$('#'+p[1]);if(x)a[p[0]]=x.value.trim()})}
 function keepEd(){const e=S.ed;if(!e)return;[['a','edAmt'],['d','edDate'],['m','edM'],['note','edNote'],['fee','edFee']].forEach(p=>{const x=$('#'+p[1]);if(x)e[p[0]]=x.value.trim()});const l=$('#edLearn');if(l)e.learn=l.checked;const to=$('#edTo');if(to)e.to=to.value;const pn=$('#edPend');if(pn)e.pend=pn.checked}
