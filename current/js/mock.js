@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v75';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v76';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -190,6 +190,7 @@ export function mockAdapter(modeStr) {
     { id: 'l15', kind: 'todo', name: '換機車機油', note: '上次是 8 月', status: 'active', created_at: new Date().toISOString() },
     { id: 'l4', kind: 'sup', name: X || '防曬乳', cat: '保養', need: true, last_date: iso(-50), status: 'active' },
     { id: 'l5', kind: 'sup', name: '洗面乳', cat: '保養', need: false, last_date: iso(-17), status: 'active' },
+    { id: 'lw15', kind: 'wish', name: '示意藍牙耳機', note: '通勤用', price: null, shop: null, status: 'active', created_at: new Date(Date.now() - 5 * 864e5).toISOString() },
     { id: 'l6', kind: 'wish', name: '示意鏡頭 35mm', note: '拍長片用', price: 62000, shop: '示意相機店', status: 'active', created_at: new Date(Date.now() - 864e5).toISOString() },
     { id: 'l7', kind: 'todo', name: X || '預約牙醫洗牙', note: '上次洗牙是半年前', status: 'active', created_at: new Date().toISOString() },
     { id: 'l8', kind: 'todo', name: '寄回保固卡', status: 'done', created_at: new Date(Date.now() - 2 * 864e5).toISOString() }];

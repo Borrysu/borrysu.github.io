@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v75');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v76');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3328,6 +3328,56 @@ ACT.ltask=(id,el)=>{const t=LT(id);if(!t)return;if(ltSt(t)){openChat('peng','lt:
  botAsk('peng',`【請朋朋安排】待辦「${t.name}」（待辦編號 ${id}）${t.note?'，備註：'+t.note:''}。請幫我預約、訂位或訂票，流程這樣：\n1. 先看我未來 14 天的行事曆空檔，列 2 到 3 個適合的時段給我選，我在逐流回你。\n2. 我選定時段後，你能代辦的（預約、訂位、訂票）先處理。\n3. 要付款一律開付款授權單，等我在逐流按付款鈕，不要直接付、不要代按。\n我沒選時段之前先不要訂。\n我的行事曆（空檔是 9:00 到 21:00 之間至少 1 小時）：\n${free}`,'lt:'+id);setTimeout(lpLoad,4000)};
 {const _n=ctxName;ctxName=function(ctx){const a=(ctx||'').split(':');if(a[0]==='lt'){const t=LT(a[1]);return t?'待辦：'+t.name:''}return _n(ctx)}}
 WRITE.push('ltask');
+/* ---------- v76（2026-11-23）：意見第二批之六，想買卡有縮圖、點開看價格通路付款方式，沒比過價的卡有「萌萌先找」 ----------
+   老大原話：「這邊應該有縮圖 點開要有找到的價格跟詳細資訊還有通路以及付費方式 我正在考慮 我加入想要買的時候是不是萌萌先找？」
+   - 縮圖：資料裡有圖片網址（卡片備註「圖片：https://…」或萌萌回覆裡的「圖片：https://…」）就用圖，沒有就是品名首字的色塊。
+   - 點開（整張卡）：大圖、價格、通路、付款方式、連結，來自卡片本身與萌萌最近一次回覆（她回「價格：…／通路：…／付款方式：…／連結：…／圖片：…」每行一項）。
+     有新資訊可以按「存到這張卡」，寫進 price、shop、url、note（付款方式與圖片網址存在備註的「付款方式：」「圖片：」行），不加資料庫欄位。
+   - 「萌萌先找」：想買卡還沒價格、沒比過價時卡上多這顆，按了才送給萌萌（不自動送）。 */
+const WFK=/^(價格|通路|付款方式|付費方式|連結|網址|圖片)\s*[：:]\s*(.+)$/;
+function wfParse(txt){const o={};String(txt||'').split(/\n+/).forEach(l=>{const m=l.trim().replace(/^[\-•*\d.、)）]+\s*/,'').match(WFK);if(!m)return;const k={價格:'price',通路:'shop',付款方式:'pay',付費方式:'pay',連結:'url',網址:'url',圖片:'img'}[m[1]],v=m[2].trim();if(!o[k])o[k]=v});
+ if(o.url){const u=(o.url.match(/https:\/\/[^\s)）」]+/)||[])[0];if(u)o.url=u;else delete o.url}
+ if(o.img){const u=(o.img.match(/https:\/\/[^\s)）」]+/)||[])[0];if(u)o.img=u;else delete o.img}
+ return o}
+const wfNote=n=>{const o={};String(n||'').split('\n').forEach(l=>{const m=l.match(/^(付款方式|圖片)：(.+)$/);if(m)o[m[1]==='圖片'?'img':'pay']=m[2].trim()});return o};
+const wfStrip=n=>String(n||'').split('\n').filter(l=>!/^(付款方式|圖片)：/.test(l)).join('\n').trim();
+const wfNum=s=>{const m=String(s||'').replace(/,/g,'').match(/\d+(?:\.\d+)?/);return m?+m[0]:null};
+const okImg=u=>/^https:\/\/[^\s"'<>]+$/i.test(u||'');
+let wfAt=0;function wfLoad(){if(Date.now()-wfAt<8000)return;wfAt=Date.now();loadMon()}
+function wfReply(w){const ms=LV.monMsgs||[];let q=-1;ms.forEach((m,i)=>{if(m.kind==='user'&&m.body.indexOf('【測試】')!==0&&Date.now()-m.at<14*864e5&&m.body.indexOf('想買編號 '+w.id)>-1)q=i});
+ if(q<0)return null;const later=ms.slice(q+1).filter(m=>m.kind!=='user');if(!later.length)return{run:1,at:ms[q].at};
+ const r=later.slice().reverse().find(m=>Object.keys(wfParse(m.body)).length)||later[0];return{msg:r,info:wfParse(r.body)}}
+function wfInfo(w){const x=w.raw2||{},nt0=wfNote(x.note),rp=wfReply(w),i=rp&&rp.info||{};
+ return {price:w.noPrice?(i.price||''):nt(w.price),shop:w.shop&&!/還沒補/.test(w.shop)?w.shop:(i.shop||''),pay:nt0.pay||i.pay||'',url:w.url||i.url||'',img:okImg(nt0.img)?nt0.img:(okImg(i.img)?i.img:''),rp,
+  fresh:{price:i.price&&wfNum(i.price)!=null&&(w.noPrice||wfNum(i.price)!==w.price),shop:i.shop&&i.shop!==w.shop,pay:i.pay&&i.pay!==nt0.pay,url:i.url&&i.url!==w.url,img:okImg(i.img)&&i.img!==nt0.img}}}
+const wimgH=(w,big)=>{const f=wfInfo(w);return `<div class="wimg${big?' wbig':''}" aria-hidden="true" style="background:${w.col}">${f.img?`<img src="${esc(f.img)}" alt="" referrerpolicy="no-referrer" loading="lazy" onerror="this.remove()">`:''}<span>${esc(w.ch)}</span></div>`};
+{const _w=wishCard;wishCard=function(w,i,n){let h=_w.apply(this,arguments);if(!LV.life||w.load)return h;
+ h=h.replace(/<div class="wimg"[^>]*>[\s\S]*?<\/div><div class="wtx">/,()=>wimgH(w)+'<div class="wtx">');
+ h=h.replace(/^<div class="card cardx" data-card="([^"]*)">/,(m,id)=>`<div class="card cardx" data-card="${id}" data-act="copen" data-id="sheet|wdet:${id}">`);
+ const st=w.st!=='bought'?wfReply(w):null,need=w.st!=='bought'&&w.noPrice&&!st&&!Array.isArray(w.cmp);
+ const row=need?`<div class="mrow">${mb(bm('mon')+'萌萌先找','wishfind',w.id)}<span class="cmpst">價格、通路、付款方式，沒指定品牌她會先問你</span></div>`:st?`<div class="mrow">${mb(bm('mon',st.run?'thinking':'','sm')+(st.run?'看萌萌找的進度':'看萌萌找到的'),'sheet','wdet:'+w.id)}<span class="cmpst${st.run?' run':''}">${st.run?'萌萌找資料中':'萌萌回了，點開看'}</span></div>`:'';
+ wfLoad();return row?h.replace(/<\/div>$/,row+'</div>'):h}}
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='wdet')return _s();const w=W(a.slice(1).join(':'));if(!w)return shHead('這項不在了');
+ const f=wfInfo(w),fr=f.fresh,any=fr.price||fr.shop||fr.pay||fr.url||fr.img;
+ const kv=[['價格',f.price||'還沒找到'],['通路',f.shop||'還沒找到'],['付款方式',f.pay||'還沒找到']];
+ const link=f.url?`<p class="h4">連結</p><p style="word-break:break-all"><a href="${esc(f.url)}" target="_blank" rel="noopener noreferrer">${esc(f.url)}</a></p>`:'';
+ const rp=f.rp;
+ return shHead(esc(w.name))+`<div class="wdh">${wimgH(w,1)}<div><p class="amt" style="color:var(--ink);font-size:22px">${esc(f.price||'還沒有價格')}</p><p class="note">${esc(f.shop||'通路還沒找到')}</p></div></div>`+kvs(kv)+link
+  +(rp&&rp.msg?`<p class="h4">${bm('mon','','sm')}萌萌最近回的</p><p style="white-space:pre-wrap;word-break:break-word">${esc(clip(rp.msg.body,600))}</p>`:rp&&rp.run?`<p class="note">萌萌找資料中，回來會出現在這裡。</p>`:`<p class="note">還沒請萌萌找。按下面「萌萌先找」，她會找價格、通路、付款方式；沒指定品牌會先問你需求。</p>`)
+  +`<div class="mrow">${any?B('存到這張卡','wfsave',w.id,'pri'):''}${rp?mb('開萌萌的對話','wfchat',w.id):mb(bm('mon')+'萌萌先找','wishfind',w.id)}${mb('✎ 編輯','ledit',w.id)}</div>${any?'<p class="note">「存到這張卡」會把價格、通路、連結寫進這張卡，付款方式與圖片網址存在備註裡。</p>':''}`}}
+ACT.wfchat=(id,el)=>openChat('mon','wish:'+id,el,null);
+ACT.wishfind=id=>{const w=W(id);if(!w)return;LV.wishRun[id]='mon';LV.sig='';
+ botAsk('mon',`【萌萌先找】老大想買「${w.name}」（想買編號 ${id}）${w.url?'，來源 '+w.url:''}${w.spec?'，備註：'+w.spec:''}。先幫我找：價格、通路、付款方式（信用卡、貨到付款、分期、超商等）、商品連結、商品圖片網址。每行一項，格式：\n價格：NT$ …\n通路：…\n付款方式：…\n連結：https://…\n圖片：https://…\n沒有指定品牌的話，先問我預算、用途、偏好，我回了你再推薦。`,'wish:'+id);setTimeout(loadMon,3000)};
+ACT.wishcmp=ACT.wishfind;
+ACT.wfsave=id=>{const w=W(id);if(!w)return;const f=wfInfo(w),fr=f.fresh,p={},old={},x=w.raw2||{};
+ if(fr.price){const n=wfNum(f.rp.info.price);if(n!=null){p.price=n;old.price=x.price==null?null:x.price}}
+ if(fr.shop){p.shop=f.rp.info.shop;old.shop=x.shop||''}
+ if(fr.url&&/^https:\/\//.test(f.rp.info.url)){p.url=f.rp.info.url;old.url=x.url||''}
+ if(fr.pay||fr.img){const n0=wfNote(x.note),pay=fr.pay?f.rp.info.pay:n0.pay,img=fr.img?f.rp.info.img:n0.img;p.note=(wfStrip(x.note)+(pay?'\n付款方式：'+pay:'')+(img?'\n圖片：'+img:'')).trim();old.note=x.note||''}
+ if(!Object.keys(p).length){toast('沒有新的資料可存');return}
+ closeThen(()=>lw(id,'wish',p,'存到這張卡了',{patch:old}))};
+WRITE.push('wishfind','wfsave');
+window.__zlWF={parse:wfParse};
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
