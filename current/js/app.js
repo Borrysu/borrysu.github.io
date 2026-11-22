@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v72');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v73');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3233,6 +3233,56 @@ WRITE.push('stsave','stadd','stdel');
  return h.replace(/(data-id="pedit:[^"]*">✎ 編輯<\/button>)/,'$1'+mb('🧩 步驟卡','sheet','stepx:'+p.id))}}
 {const _ms=mineSheet;mineSheet=function(id){const i=id.indexOf(':'),k=id.slice(0,i),x=id.slice(i+1);const h=_ms(id);
  return k==='todo'&&DB.todo.find(q=>q.id===x)?h.replace(/<\/div>$/,mi('🧩','步驟卡、模型、技能','sheet','stepx:'+x)+'</div>'):h}}
+/* ---------- v73（2026-11-23）：意見第二批之三，生活例行事項可分類、分類可收合、請朋朋幫忙分類 ----------
+   老大原話：「是否應該新增制定分類或AI幫我分類然後可以收合？」
+   分類存在既有欄位 cat（hub_life_set 本來就收），不加資料庫欄位。沒分類的放「其他」。收合狀態記在這支手機（localStorage zl_rcoll）。
+   請朋朋分類：按了才送一句給朋朋（不自動送），她回「名稱：分類」每行一項，面板讀得懂就出現「套用朋朋的分類」，老大按了才寫入，可復原。 */
+LF.rout.push(['cat','分類（例：家務、身體、車子）','text']);
+const RCK='zl_rcoll',RCA='zl_rcat_ask';let RC=new Set();try{RC=new Set(JSON.parse(localStorage.getItem(RCK)||'[]'))}catch(e){}
+const rcSave=()=>{try{localStorage.setItem(RCK,JSON.stringify([...RC]))}catch(e){}};
+const rcat=r=>String((r.raw2&&r.raw2.cat)||'').trim()||'其他';
+const rcNorm=s=>String(s||'').replace(/[\s「」『』（）()]/g,'').toLowerCase();
+function rcParse(txt,list){const map={};String(txt||'').split(/\n+/).forEach(l=>{const m=l.match(/^[\s\-•*\d.、)）]*(.+?)\s*(?:[：:]|→|->|＝|=)\s*([^：:\s→]{1,10})\s*$/);if(!m)return;
+  const n=rcNorm(m[1]),c=m[2].trim().replace(/[。.，,]$/,'');const r=list.find(x=>rcNorm(x.name)===n)||list.find(x=>n.length>=2&&(rcNorm(x.name).includes(n)||n.includes(rcNorm(x.name))));if(r&&c&&c!=='其他')map[r.id]=c});return map}
+let rcMsgs=null,rcKey='',rcAt=0;
+function rcLoad(){const ask=+(()=>{try{return localStorage.getItem(RCA)}catch(e){return 0}})()||0;if(!ask||!LV.api||!LV.api.msgs||Date.now()-rcAt<6000)return;rcAt=Date.now();
+ LV.api.msgs(null,'peng').then(ms=>{const k=JSON.stringify((ms||[]).map(m=>m.id));if(k!==rcKey){rcKey=k;rcMsgs=ms||[];if(S.tab==='life'&&S.sub.life==='rout'&&!S.sheet){LV.sig='';paint()}}}).catch(()=>{})}
+function rcReply(){const ask=+(()=>{try{return localStorage.getItem(RCA)}catch(e){return 0}})()||0;if(!ask||!rcMsgs)return null;
+ const later=rcMsgs.filter(m=>m.kind!=='user'&&m.at>=ask-1000);if(!later.length)return{wait:1};
+ for(const m of later.slice().reverse()){const map=rcParse(m.body,DB.rout);if(Object.keys(map).length)return{map}}return{wait:0,none:1}}
+{const f=zoneLife;zoneLife=function(){const h=f();if(S.sub.life!=='rout'||!LV.life||!DB.rout.length)return h;
+ const t=document.createElement('template');t.innerHTML=h;const box=t.content.querySelector('.rows.stg');if(!box)return h;
+ const rows=[...box.querySelectorAll(':scope>.rowi[data-card]')];if(!rows.length)return h;
+ const byId={};DB.rout.forEach(r=>byId[r.id]=r);const cats=[],g={};
+ rows.forEach(r=>{const x=byId[r.getAttribute('data-card')],c=x?rcat(x):'其他';if(!g[c]){g[c]=[];cats.push(c)}g[c].push({el:r,x})});
+ cats.sort((a,b)=>(a==='其他')-(b==='其他'));
+ const none=(g['其他']||[]).length,grouped=cats.length>1||cats[0]!=='其他';
+ if(grouped){box.innerHTML='';cats.forEach(c=>{const a=g[c],open=!RC.has(c),ov=a.filter(o=>o.x&&o.x.ago>=o.x.cyc).length;
+  box.insertAdjacentHTML('beforeend',`<div class="rowi rcat"><button class="rowb" data-act="rcoll" data-id="${esc(c)}" aria-expanded="${open}"><span class="tx"><b>${esc(c)}</b><small>${a.length} 項${ov?`・${ov} 項該做了`:''}</small></span><span class="rt"><span class="chev" aria-hidden="true">${open?'⌃':'⌄'}</span></span></button></div>`);
+  if(open)a.forEach(o=>box.appendChild(o.el))})}
+ const rp=rcReply();let bar='';
+ if(rp&&rp.map){const n=Object.keys(rp.map).length;bar=`<div class="rcbar"><span>朋朋分好了：${n} 項</span>${B('套用朋朋的分類','rcapply',null,'pri sm')}</div>`}
+ else if(rp&&rp.wait)bar=`<div class="rcbar"><span>朋朋還在分，回來會出現在這裡</span></div>`;
+ else if(rp&&rp.none)bar=`<div class="rcbar"><span>朋朋回了，但我讀不出「名稱：分類」</span>${mb('再請一次','rcask')}</div>`;
+ else if(none)bar=`<div class="rcbar"><span>${none} 項還沒分類</span>${mb(bm('peng')+'請朋朋幫我分類','rcask')}</div>`;
+ else bar=`<div class="rcbar"><span>都分好類了</span>${mb(bm('peng')+'請朋朋重新分','rcask')}</div>`;
+ const sec=t.content.querySelector('section.sec');if(sec)sec.insertAdjacentHTML('afterbegin',bar);
+ if(rp===null||rp.wait)rcLoad();else if(!rcMsgs)rcLoad();
+ return t.innerHTML}}
+ACT.rcoll=c=>{if(RC.has(c))RC.delete(c);else RC.add(c);rcSave();render('keep')};
+ACT.rcask=()=>{const list=DB.rout.map(r=>r.name+(rcat(r)!=='其他'?'（現在：'+rcat(r)+'）':''));if(!list.length)return;
+ try{localStorage.setItem(RCA,String(Date.now()))}catch(e){}rcMsgs=null;rcKey='';
+ botAsk('peng',`【請朋朋分類】老大要把例行事項分類，方便收合。請幫這 ${list.length} 項各分一類，只回這個格式，每行一項：名稱：分類。分類用 2 到 3 個字（例：家務、身體、車子、植物、財務、工作、其他）。\n${list.join('\n')}`,'rout:cat');
+ setTimeout(rcLoad,4000)};
+ACT.rcapply=()=>{const rp=rcReply();if(!rp||!rp.map)return;const ids=Object.keys(rp.map),old={};ids.forEach(id=>{const r=DB.rout.find(x=>x.id===id);old[id]=(r&&r.raw2&&r.raw2.cat)||''});
+ (async()=>{try{for(const id of ids)await LV.api.lifeSet(id,'rout',{cat:rp.map[id]});try{localStorage.removeItem(RCA)}catch(e){}rcMsgs=null;rcKey='';await reloadLife();
+  toast(`分好了 ${ids.length} 項`,async()=>{try{for(const id of ids)await LV.api.lifeSet(id,'rout',{cat:old[id]});await reloadLife();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}catch(e){toast('沒套完：'+LERR(e));reloadLife()}})()};
+ACT.catpick=c=>{const i=$('#le_cat');if(i){i.value=c;i.dispatchEvent(new Event('input',{bubbles:true}))}};
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');if(a[0]!=='ledit')return h;const li=LI(a.slice(1).join(':'));if(!li||li.k!=='rout')return h;
+ const cs=[...new Set(DB.rout.map(rcat).filter(c=>c!=='其他').concat(['家務','身體','車子','植物','財務','工作']))].slice(0,10);
+ return h.replace(/(<input[^>]*id="le_cat"[^>]*>)/,`$1</label><div class="rcchips">${cs.map(c=>mb(esc(c),'catpick',c)).join('')}</div><label class="vh">`)}}
+WRITE.push('rcask','rcapply');
+window.__zlRC={parse:rcParse};
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

@@ -1228,3 +1228,6 @@ html.marking main,html.marking .tabs,html.marking .dock{cursor:crosshair}
 .stlist li small.d2{display:block}
 label.f select{width:100%;min-height:48px;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--line2);background:var(--sf2);color:var(--ink);font:inherit}
 label.f input:not([type]){width:100%;min-height:48px;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--line2);background:var(--sf2);color:var(--ink);font:inherit}
+.rcbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px;font-size:13px;color:var(--ink2)}
+.rcat .rowb{min-height:44px}
+.rcchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
