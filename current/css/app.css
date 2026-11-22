@@ -1123,7 +1123,7 @@ html:not([data-skin="6"]):not([data-skin="4"]) .groomh .mzdots,html:not([data-sk
 label.f textarea{margin-top:6px;resize:vertical}
 
 /* v52：生活條目左滑出現編輯、刪除 */
-.sw{position:relative;overflow:hidden;touch-action:pan-y}
+.sw{position:relative;overflow:hidden;touch-action:pan-y;-webkit-user-select:none;user-select:none}
 .swrap{border-radius:var(--r)}
 .sw>.swf{position:relative;z-index:1;transition:transform .2s ease;will-change:transform}
 .rowi.sw>.swf{background:var(--solid)}
