@@ -1135,3 +1135,33 @@ label.f textarea{margin-top:6px;resize:vertical}
 .swm{min-width:36px;justify-content:center;font-weight:700;letter-spacing:1px;padding:0 6px}
 .cartst{display:flex;gap:8px;align-items:center;margin-top:8px}
 @media (prefers-reduced-motion:reduce){.sw>.swf{transition:none}}
+/* v54：錢頁收支趨勢（收入實心、支出斜線，跟「這三個月」同一套；存下來的線用房間色） */
+.mtCard{padding:14px 14px 10px}
+.mtSay{display:flex;gap:10px;align-items:flex-start;margin:0 0 8px;font-size:14px;line-height:1.55}
+.mtSay>span{flex:1;min-width:0}
+.mtSvg{display:block;width:100%;height:auto;max-width:560px;overflow:visible}
+.mtSvg .mtI{fill:var(--ink)}
+.mtSvg .mtE{fill:var(--ink2);fill-opacity:.42;stroke:var(--ink2);stroke-width:1}
+.mtSvg .mtLn{fill:none;stroke:var(--rc,var(--acc));stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.mtSvg .mtD{fill:var(--rc,var(--acc));stroke:var(--solid);stroke-width:1.5}
+.mtSvg .mtZ{stroke:var(--line2);stroke-width:1}
+.mtSvg .mtX,.mtSvg .mtY{fill:var(--ink2);font:500 10px/1 var(--zh)}
+.mtSvg .mtNo{fill:var(--ink2);font:400 9px/1 var(--zh)}
+.mtSvg .mtHit{fill:transparent}
+.mtSvg .mtG:hover .mtHit{fill:var(--sf2)}
+.mtSvg .mtP rect.mtI,.mtSvg .mtP rect.mtE,.mtSvg .mtD.mtP{opacity:.5}
+.mtLg{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 0;font-size:12px;color:var(--ink2)}
+.mtLg span{display:inline-flex;align-items:center;gap:5px}
+.mtLg i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.mtLg .mtKI{background:var(--ink)}
+.mtLg .mtKE{background:var(--ink2);opacity:.6}
+.mtLg .mtKL{height:3px;width:14px;border-radius:2px;background:var(--rc,var(--acc))}
+.mtTbl{margin-top:10px;border-top:1px solid var(--line);font-size:13px}
+.mtTr{display:grid;grid-template-columns:1.25fr 1fr 1fr 1fr;gap:6px;padding:7px 0;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+.mtTr>span:not(:first-child){text-align:right}
+.mtTr small{color:var(--ink2);font-size:11px}
+.mtTh{color:var(--ink2);font-size:12px}
+.mtTr .neg{color:var(--urg)}
+.mtTr .mtNoC{color:var(--ink2);grid-column:2/5;text-align:left!important}
+.mtNet b{font-weight:700}
+.mtNet .amt{font-weight:700}

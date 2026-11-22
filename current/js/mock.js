@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v53';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v54';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -232,6 +232,12 @@ export function mockAdapter(modeStr) {
     async lifeSet(id, kind, patch) { await wait(200); sorry(); let x = mlife.find(y => y.id === id); if (!x) { x = { id: 'ml' + (++nextN), kind, status: 'active', created_at: new Date().toISOString() }; mlife.push(x); } Object.assign(x, patch); return x; },
     async lifeGone() { await wait(80); return mlife.filter(x => x.status === 'dropped').map(x => ({ id: x.id, kind: x.kind, name: x.name, cat: x.cat, at: new Date().toISOString() })); },
     async moneyOverview() { await wait(150); return mmoney; },
+    async moneyTrend(n) { await wait(120); n = n || 12; const now = new Date(), inc = [52000, 61000, 48000, 70000, 55000, 66000, 58000, 72000, 64000, 50000, 41000, 18000], exp = [44000, 47000, 45000, 49000, 43000, 46000, 48000, 42000, 34000, 45000, 36000, 21000];
+      const months = []; for (let k = n - 1; k >= 0; k--) { const d = new Date(now.getFullYear(), now.getMonth() - k, 1), j = 11 - k, i = inc[j] == null ? 0 : inc[j], e = exp[j] == null ? 0 : exp[j];
+        months.push({ m: d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'), income: i, expense: e, saved: i - e, n: j < 0 ? 0 : 30 + j, partial: k === 0, before_data: j < 0 }) }
+      return { months, assets: 182000, liab_accounts: [{ name: '玉山信用卡', kind: 'credit_card', amount: 18600 }, { name: '跟家裡借的', kind: 'loan_in', amount: 30000 }],
+        installments: [{ name: '筆電 12 期', per: 4200, left: 5, amount: 21000, on_card: true }, { name: '機車 24 期', per: 3100, left: 9, amount: 27900, on_card: false }],
+        liab_total: 76500, net_worth: 105500 } },
     // v46 示範：卡片編輯、封存、刪除（72 小時可救回）
     async hubEdit(kind, id, patch) { await wait(200); sorry(); const L = kind === 'decision' ? hub.open.concat(hub.answered) : kind === 'job' ? hub.jobs : hub.events; const x = L.find(r => String(r.id) === String(id)) || (hub.shelf || []).map(s => s.row).find(r => String(r.id) === String(id)); if (!x) throw new AdapterError('server', 'not found');
       const F = { decision: ['question', 'detail'], job: ['title', 'note'], event: ['summary', 'path'] }[kind]; if ('ask' in patch) x.ask = patch.ask || null; if ('text' in patch) x[F[0]] = patch.text; if ('detail' in patch) x[F[1]] = patch.detail; if ('project' in patch) x.project = patch.project || null; return x; },

@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v53');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v54');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!LV.forced;
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
@@ -2709,6 +2709,71 @@ function kmLedger2(){const all=E()?[]:DB.due.filter(d=>!d.paid),hand=all.filter(
  <section class="sec" id="secLedger"><div class="rows mztata"><div class="rowi"><a class="rowb" href="https://borrysu.github.io/kakeibo/" target="_blank" rel="noopener"><span class="tx"><b>打開塔塔記帳</b><small>記帳、帳單、訂閱在那裡</small></span><span class="rt"><span class="chev" aria-hidden="true">↗</span></span></a></div></div></section>`}
 zoneMoney=function(){if(!LV.mo)return mzHero()+kmLedger2();
  return mzHero()+`<div id="mz2">${mz2HTML()}</div>`+kmAssets()+kmBig()+mzIn()+mzOut()+kmLedger2()};
+/* ---------- v54（2026-11-22）：錢頁收支趨勢、負債算進淨資產 ----------
+   老大原話：「另外錢頁會有現金流？收入？or負債支出？跟收支分析嗎？不確定」「我說的收支分系不是細項 是類似.. hmm 趨勢嗎？這種不確定」
+   金金看往後、塔塔看過去；錢頁不放分類細項。大色卡下面、資產與配置上面放一張小圖：近 6 個月每月收入、支出兩根柱並排，
+   上面一條「每月存下來多少」的線，旁邊金金一句（由資料算出的規則句）；「看 12 個月」展開 12 個月與各月數字。
+   資料：hub_money_trend（只讀，跟 hub_money_overview 同一道門：老大本人或管理員金鑰）。資料庫還沒套 v54 遷移時寫「還沒接上」，不放假數字。
+   資產與配置：負債（卡債、借款、分期）放進去，算出淨資產；掛在信用卡上的分期已含在卡債裡，不重複扣。 */
+const MTW=n=>{const a=Math.abs(n),s=n<0?'負 ':'';if(a>=10000)return s+(Math.round(a/1000)/10).toFixed(1).replace(/\.0$/,'')+' 萬';if(a>=1000)return s+Math.round(a/1000)+' 千';return s+Math.round(a)};
+const MTM=m=>{const k=+String(m).slice(5,7);return k+'月'};
+function mtOk(m){return m&&!m.before_data&&+m.n>0}
+function mtDir(a,n){const zn=k=>['零','一','兩','三','四'][k]||k,f=a[0],l=a[a.length-1],d=a.slice(1).map((v,i)=>v-a[i]);
+ if(Math.abs(l-f)<=Math.max(Math.abs(f),1)*0.1)return '持平';
+ if(d.every(x=>x<0))return zn(n)+'個月往下';if(d.every(x=>x>0))return zn(n)+'個月往上';
+ return l>f?`比${zn(n-1)}個月前多`:`比${zn(n-1)}個月前少`}
+function mtSay(ms){const done=ms.filter(m=>!m.partial&&mtOk(m)),a=done.slice(-3);
+ if(a.length<2)return done.length?`記帳資料才 ${done.length} 個完整月，趨勢還看不出來。`:'塔塔記帳還沒有完整一個月的收支，趨勢還看不出來。';
+ const n=a.length,inc=a.map(m=>+m.income||0),exp=a.map(m=>+m.expense||0),sv=a.map(m=>(+m.income||0)-(+m.expense||0)),s0=sv[0],s1=sv[n-1];
+ let t=`收入${mtDir(inc,n)}，支出${mtDir(exp,n)}，存下來的從 ${MTW(s0)}${s1>=s0?'升到':'掉到'} ${MTW(s1)}。`;
+ if(s1<0)t+=`${MTM(a[n-1].m)}花的比賺的多 ${MTW(-s1)}。`;return t}
+function mtChart(ms){const n=ms.length,W=360,H=176,L=34,R=6,T=14,B=24,gw=(W-L-R)/n,bw=Math.max(4,Math.min(16,gw*0.3)),ok=ms.map(mtOk);
+ const vals=[0];ms.forEach((m,i)=>{if(ok[i])vals.push(+m.income||0,+m.expense||0,(+m.income||0)-(+m.expense||0))});
+ let hi=Math.max(...vals),lo=Math.min(...vals);if(hi<=0)hi=1;const sp=hi-lo||1,y=v=>T+(hi-v)/sp*(H-T-B),y0=y(0);
+ const g=ms.map((m,i)=>{const cx=L+gw*i+gw/2,inc=+m.income||0,exp=+m.expense||0,lbl=MTM(m.m)+(m.partial?'*':'');
+  const tl=`${m.m}${m.partial?'（到今天）':''}：${ok[i]?`收入 ${nt(inc)}，支出 ${nt(exp)}，存下 ${nt(inc-exp)}`:'沒資料'}`;
+  const bars=ok[i]?`<rect class="mtI" x="${(cx-bw-1).toFixed(1)}" y="${y(inc).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,y0-y(inc)).toFixed(1)}" rx="2"/><rect class="mtE" x="${(cx+1).toFixed(1)}" y="${y(exp).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(1,y0-y(exp)).toFixed(1)}" rx="2"/>`
+   :`<text class="mtNo" x="${cx.toFixed(1)}" y="${(y0-6).toFixed(1)}" text-anchor="middle">沒資料</text>`;
+  return `<g class="mtG${m.partial?' mtP':''}"><title>${esc(tl)}</title><rect class="mtHit" x="${(L+gw*i).toFixed(1)}" y="0" width="${gw.toFixed(1)}" height="${H}"/>${bars}<text class="mtX" x="${cx.toFixed(1)}" y="${H-7}" text-anchor="middle">${lbl}</text></g>`}).join('');
+ // 存下來的線：沒資料的月份斷開
+ let path='',pen=false,dots='';ms.forEach((m,i)=>{if(!ok[i]){pen=false;return}const cx=L+gw*i+gw/2,v=(+m.income||0)-(+m.expense||0);path+=(pen?'L':'M')+cx.toFixed(1)+' '+y(v).toFixed(1)+' ';pen=true;
+  dots+=`<circle class="mtD${m.partial?' mtP':''}" cx="${cx.toFixed(1)}" cy="${y(v).toFixed(1)}" r="3"/>`});
+ const ax=`<line class="mtZ" x1="${L}" x2="${W-R}" y1="${y0.toFixed(1)}" y2="${y0.toFixed(1)}"/><text class="mtY" x="${L-5}" y="${(y(hi)+4).toFixed(1)}" text-anchor="end">${MTW(hi)}</text><text class="mtY" x="${L-5}" y="${(y0+4).toFixed(1)}" text-anchor="end">0</text>${lo<0&&y(lo)-y0>12?`<text class="mtY" x="${L-5}" y="${(y(lo)+4).toFixed(1)}" text-anchor="end">${MTW(lo)}</text>`:''}`;
+ return `<svg class="mtSvg" viewBox="0 0 ${W} ${H}" role="img" aria-label="近 ${n} 個月每月收入、支出與存下來多少">${ax}${g}<path class="mtLn" d="${path}"/>${dots}</svg>`}
+function mtTable(ms){return `<div class="mtTbl" role="table" aria-label="各月收入支出"><div class="mtTr mtTh" role="row"><span role="columnheader">月份</span><span role="columnheader">收入</span><span role="columnheader">支出</span><span role="columnheader">存下</span></div>${ms.slice().reverse().map(m=>{const ok=mtOk(m),i=+m.income||0,e=+m.expense||0;
+ return `<div class="mtTr" role="row"><span role="cell">${esc(m.m)}${m.partial?'*':''}</span>${ok?`<span role="cell">${Math.round(i).toLocaleString('en-US')}</span><span role="cell">${Math.round(e).toLocaleString('en-US')}</span><span role="cell"${i-e<0?' class="neg"':''}>${(i-e<0?'−':'')+Math.abs(Math.round(i-e)).toLocaleString('en-US')}</span>`:'<span role="cell" class="mtNoC">沒資料</span><span role="cell"></span><span role="cell"></span>'}</div>`}).join('')}</div>`}
+function kmTrend(){if(!LV.mo)return '';
+ if(LV.mtrNo==='nofn')return `<section class="sec" id="secTrend">${sh('kim','收支趨勢','')}<div class="card"><p>收支趨勢還沒接上。</p><p class="note">資料庫還沒更新（v54），接上後這裡會畫近 6 個月每月收入、支出和存下來多少。</p></div></section>`;
+ if(LV.mtrErr&&!LV.mtr)return `<section class="sec" id="secTrend">${sh('kim','收支趨勢','')}<div class="card"><p>收支趨勢沒讀到：${esc(LV.mtrErr)}</p></div></section>`;
+ if(!LV.mtr)return '';
+ const all=(LV.mtr.months||[]).slice(-12),op=!!S.open.mztr12,ms=op?all:all.slice(-6);if(!ms.length)return '';
+ const pt=ms.some(m=>m.partial&&mtOk(m));
+ return `<section class="sec" id="secTrend">${sh('kim','收支趨勢',`近 ${ms.length} 個月`)}<div class="card mtCard">
+  <p class="mtSay">${aiF('kim','mtrend')}<span>${esc(mtSay(all))}</span></p>
+  ${mtChart(ms)}
+  <p class="mtLg"><span><i class="mtKI"></i>收入</span><span><i class="mtKE"></i>支出</span><span><i class="mtKL"></i>存下來</span>${pt?'<span class="mtKP">* 本月到今天</span>':''}</p>
+  ${op?mtTable(ms):''}
+  <div class="mrow">${mb(op?'收起 ⌃':'看 12 個月與各月數字 ⌄','open','mztr12',` aria-expanded="${op}"`)}</div></div>
+  <p class="note mzfoot">只看趨勢，不分類。每一筆在塔塔記帳。</p></section>`}
+// 資產與配置：負債放進去、算出淨資產
+{const f=kmAssets;kmAssets=function(){let h=f();const t=LV.mtr;
+ const debtRe=/<div class="rowi"><div class="rowb"><span class="tx"><b>負債<\/b>[\s\S]*?<\/span><\/span><\/div><\/div>/;
+ const ac=(LV.mo&&LV.mo.accounts)||[],isInv=x=>x.kind==='stock'||x.kind==='investment'||/00\d{3}|證券|ETF|基金|股票|投資/i.test(x.name||''),isDebt=x=>x.kind==='credit_card'||x.kind==='loan_in';
+ const pos=a=>a.reduce((s,x)=>s+Math.max(0,+x.balance||0),0),tot=Math.max(0,MZ.cash||pos(ac.filter(x=>x.spendable&&!isDebt(x)&&!isInv(x))))+pos(ac.filter(x=>!x.spendable&&!isDebt(x)&&!isInv(x)&&x.kind!=='loan_out'))+pos(ac.filter(isInv));
+ let card=0,loan=0,inst=0,instN=0,instOn=0,src='';
+ if(t){(t.liab_accounts||[]).forEach(x=>{if(x.kind==='credit_card')card+=+x.amount||0;else loan+=+x.amount||0});(t.installments||[]).forEach(x=>{if(x.on_card)instOn++;else{inst+=+x.amount||0;instN++}})}
+ else{ac.filter(isDebt).forEach(x=>{const v=Math.abs(+x.balance||0);if(x.kind==='credit_card')card+=v;else loan+=v});src=LV.mtrNo==='nofn'?'分期還沒算進來（資料庫還沒更新）':''}
+ const debt=card+loan+inst,net=tot-debt,parts=[card?`卡債 ${MTW(card)}`:'',loan?`借款 ${MTW(loan)}`:'',inst?`分期 ${MTW(inst)}（${instN} 筆）`:''].filter(Boolean).join('・')||'沒有負債';
+ const rows=`<div class="rowi"><div class="rowb"><span class="tx"><b>負債</b><small>${esc(parts)}${instOn?`・另有 ${instOn} 筆分期掛在信用卡，已含在卡債`:''}${src?'・'+src:''}</small></span><span class="rt"><span class="amt">${debt?'−':''}${nt(Math.round(debt))}</span></span></div></div>
+  <div class="rowi mtNet"><div class="rowb"><span class="tx"><b>淨資產</b><small>上面三項合計，扣掉負債</small></span><span class="rt"><span class="amt">${net<0?'−':''}${nt(Math.abs(Math.round(net)))}</span></span></div></div>`;
+ h=debtRe.test(h)?h.replace(debtRe,()=>rows):h.replace(/(<div class="rows kmas">[\s\S]*?)(<\/div>\s*(?:<div class="aifs">|<p class="note mzfoot">))/,(m,a,b)=>a+rows+b);
+ return h}}
+{const _q=quick;quick=function(on){const k=(on.ctx||'').split(':')[0];if(on.b==='kim'&&k==='mtrend')return['收入為什麼往下','下個月要省嗎','存下來的夠不夠'];return _q(on)}}
+{const _n=ctxName;ctxName=function(ctx){return (ctx||'').split(':')[0]==='mtrend'?'收支趨勢':_n(ctx)}}
+{const _x=loadExtra;loadExtra=async function(){await _x();const api=LV.api;
+ if(api.moneyTrend&&LV.mo&&!LV.mtrNo)await api.moneyTrend(12).then(d=>{LV.mtr=d&&Array.isArray(d.months)?d:null;LV.mtrErr=''}).catch(e=>{if(NOFN(e))LV.mtrNo='nofn';else if(e&&e.kind==='forbidden')LV.mtrNo='forbidden';else LV.mtrErr=LERR(e)})}}
+zoneMoney=function(){if(!LV.mo)return mzHero()+kmLedger2();
+ return mzHero()+`<div id="mz2">${mz2HTML()}</div>`+kmTrend()+kmAssets()+kmBig()+mzIn()+mzOut()+kmLedger2()};
 window.__zl=Object.assign(window.__zl||{},{loadMon});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 

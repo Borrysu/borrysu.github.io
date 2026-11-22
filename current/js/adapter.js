@@ -33,7 +33,7 @@ export const CONFIG = {
          workUpdate: 'opp_work_update', setStatus: 'opp_set_status', workAdd: 'opp_work_add',
          msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', botInbox: 'opp_bot_inbox', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
          hubToday: 'hub_today', moneySubs: 'hub_money_subs', hubAnswer: 'hub_decision_answer',
-         goals: 'hub_goals_list', goalSet: 'hub_goal_set', cal: 'hub_cal_list', life: 'hub_life_list', lifeSet: 'hub_life_set', lifeGone: 'hub_life_gone', money: 'hub_money_overview',
+         goals: 'hub_goals_list', goalSet: 'hub_goal_set', cal: 'hub_cal_list', life: 'hub_life_list', lifeSet: 'hub_life_set', lifeGone: 'hub_life_gone', money: 'hub_money_overview', moneyTrend: 'hub_money_trend',
          hubEdit: 'hub_card_edit', hubShelf: 'hub_card_shelf', shelf: 'hub_shelf_list', cardEdit: 'opp_card_edit',
          payAuthorize: 'hub_pay_authorize', payCancel: 'hub_pay_cancel', payList: 'hub_pay_list', calRefresh: 'hub_cal_refresh_request' },   // v48：付款鈕＝授權單（交給塔塔／朋朋／集集付）、行事曆現在更新   // v46：卡面一句 ask、hub 卡片編輯封存刪除、案子機會待辦改卡面一句   // v41（2026-11-22）：目標、行事曆（唯讀同步）、生活、錢總覽（只讀）   // 2026-11-17：跟大器說、待辦、去執行   // 案務：報價收款欄位、doing→delivered→paid（Borry 與集集的金鑰可用）
 };
@@ -71,7 +71,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if (hasKey() && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v53');
+  const { mockAdapter } = await import('./mock.js?v54');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -219,6 +219,7 @@ function liveAdapter() {
     async lifeSet(id, kind, patch) { return rpc(R.lifeSet, { p_id: id || null, p_kind: kind || null, p_patch: patch || {} }, 0, W); },
     async lifeGone() { return rpc(R.lifeGone, {}, 0, W); },   // v50：最近 72 小時刪掉的（資料庫遷移套上前會回找不到函式，前端退回本機記的）
     async moneyOverview() { return rpc(R.money, {}, 0, W); },
+    async moneyTrend(n) { return rpc(R.moneyTrend, { p_months: n || 12 }, 0, W); },   // v54：每月收入、支出、存下與負債（只讀，跟錢總覽同一道門；資料庫還沒套遷移會回找不到函式）
     // v46：卡片編輯、封存、刪除。kind＝decision｜job｜event；action＝archive｜unarchive｜delete｜restore（刪除 72 小時內可救回）
     async hubEdit(kind, id, patch) { return rpc(R.hubEdit, { p_kind: kind, p_id: String(id), p_patch: patch || {} }, 0, W); },
     async hubShelf(kind, id, action) { return rpc(R.hubShelf, { p_kind: kind, p_id: String(id), p_action: action }, 0, W); },
