@@ -2274,7 +2274,7 @@ function D(){
   else if(scn==='over'){put('吃',6220,9);put('娛樂與社交',9650,6);put('購物',7950,4)}
   if(empty){cats.forEach(c=>{c.s=0;c.n=0});un={s:0,n:0};income=0}
   const src=empty?[]:TX;
-  src.forEach(t=>{if(t.transfer)return;const f=S.fix[t.id]||{},cur=f.c||t.c,na=f.a!=null?f.a:t.a,gone=S.voided.has(t.id)||!!t.exc;/* v35.3：老大按不對的待確認交易先不算 */
+  src.forEach(t=>{if(t.transfer)return;const f=S.fix[t.id]||{},cur=f.c||t.c,na=f.a!=null?f.a:t.a,gone=S.voided.has(t.id);
     if(t.v0){if(!gone)put(cur,-na,1);return}
     if(t.a>0){income+=(gone?0:na)-t.a;return}
     if(gone||cur!==t.c||na!==t.a){put(t.c,t.a,-1);if(!gone)put(cur,-na,1)}});
@@ -2345,7 +2345,7 @@ function cfActs(t,big){const un=t.c==='未分類';
            :B('fix','改分類',{id:t.id})+B('ok','對，記成'+catName(t),{cls:'pri',id:t.id})}
 function cfWhy(t){return '<p class="cf-why"><span class="eyes" role="img" aria-label="塔塔說" title="塔塔說"></span>'+(t.c==='未分類'?'我分不出來。':'我推定是'+catName(t)+'。')+t.why+'。</p>'}
 function cfCard(t){return '<article class="cf" data-flip="cf-'+t.id+'" data-cf="'+t.id+'"><button class="row" data-act="sheet" data-k="tx" data-id="'+t.id+'"><span class="g" role="img" aria-label="分類：'+t.c+'" title="分類：'+t.c+'">'+G(t.c)+'</span><span class="row-m"><b>'+esc(t.m)+'</b><small>'+t.d+' '+t.t+' · '+t.ac+'</small></span>'+amt(t.a,{plus:1})+'<span class="chev" aria-hidden="true">›</span></button>'+cfWhy(t)+'<div class="acts">'+cfActs(t)+'</div></article>'}
-function txRow(t){const tc=txCred(t),ct=tc==='est'?'<span class="cred cred-est">推估</span>':tc==='cat'?'<span class="cred cred-cat">分類推估</span>':tc==='part'?'<span class="cred cred-cat">含推估</span>':'',tg=(t.exc?'<span class="tag">已排除</span>':'')+(t.void?'<span class="tag">作廢</span>':t.pend?'<span class="tag act">待確認</span>':t.pending?'<span class="tag">'+(t.a<0&&!t.transfer?'待扣款':'待入帳')+'</span>':t.queued?'<span class="tag">等待上傳</span>':'');
+function txRow(t){const tc=txCred(t),ct=tc==='est'?'<span class="cred cred-est">推估</span>':tc==='cat'?'<span class="cred cred-cat">分類推估</span>':tc==='part'?'<span class="cred cred-cat">含推估</span>':'',tg=(t.void?'<span class="tag">'+(/老大判定不對/.test((t.raw&&t.raw.void_reason)||'')?'已作廢（老大判定不對）':'作廢')+'</span>':t.pend?'<span class="tag act">待確認</span>':t.pending?'<span class="tag">'+(t.a<0&&!t.transfer?'待扣款':'待入帳')+'</span>':t.queued?'<span class="tag">等待上傳</span>':'');
   return '<button class="row'+(t.void?' void':'')+'" data-act="sheet" data-k="tx" data-id="'+t.id+'"><span class="g" role="img" aria-label="分類：'+t.c+'" title="分類：'+t.c+'">'+G(t.c)+'</span><span class="row-m"><b>'+esc(t.m)+tg+'</b><small>'+ct+t.t+' · '+esc(t.ac)+(t.to?' 到 '+esc(t.to):'')+' · '+t.by+'記'+(t.note&&!KK_EST_RE.test(t.note)?' · '+esc(t.note):'')+'</small></span>'+amt(t.a,{plus:1,c:(t.a>0?'pos':'')+(tc==='est'?' kk-est':'')})+'<span class="chev" aria-hidden="true">›</span></button>'}
 /* 單 F2（E2b）：定期頁的一列。要自己繳的帳單、到期（3 天內或已過）的訂閱，右邊多一顆「去繳費／去付款」；其餘維持 D 版的一整列。 */
 const urg=x=>x.rel<0?'u-od':x.rel<=3?'u-soon':'';
@@ -3414,12 +3414,6 @@ async function v32Load(){if(KEY.length<20||!KD.loaded)return;
   kkApply();if(!sheet.classList.contains('on'))render();else renderSheetBody()}
 const kkLoad_v31=kkLoad;kkLoad=async function(o){await kkLoad_v31(o);await v32Load().catch(()=>{})};
 const kkApply_v31=kkApply;kkApply=function(){kkApply_v31();v32Apply()};
-/* v35.3：老大按「不對」的待確認交易，面板先扣掉（本期支出走 D() 的 gone，帳戶餘額在這裡扣）；那筆不再待確認或金額變了就以資料庫為準 */
-const kkApply_v352=kkApply;kkApply=function(){kkApply_v352();v353Apply()};
-function v353Apply(){if(S.per!==0||!window.KKCF)return;const ids=new Set(KKCF.excl().map(p=>Number(p.id)));if(!ids.size)return;
-  TX.forEach(t=>{if(ids.has(Number(t.rid))&&!t.v0)t.exc=1});
-  TX.filter(t=>t.exc).forEach(t=>{const v=Math.abs(Number(t.a)||0),fa=S.accts.find(x=>x.n===t.ac),ta=t.to?S.accts.find(x=>x.n===t.to):null;
-    if(t.transfer){if(fa)fa.bal+=v;if(ta)ta.bal-=v}else if(fa)fa.bal-=Number(t.a)||0})}
 function v32Apply(){
   /* 塔塔記的、還沒確認（本期才有） */
   if(S.per===0){const m=new Map(V32.pend.map(r=>[Number(r.id),r]));TX.forEach(t=>{const r=m.get(Number(t.rid));if(r&&!t.v0){t.st='guess';t.why=r.guess_reason?String(r.guess_reason):'照'+(t.ev||'通知')+'記的'}})}
@@ -3803,7 +3797,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v35.3', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v35.4', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4188,7 +4182,7 @@ window.KKCF_CTX={o:()=>KD.o,txs:()=>(KD.l||[]).concat(KD.prevL||[]),txsCur:()=>K
   pend:()=>V32.pend||[],per:()=>S.per,unb:()=>unbList(),key:()=>KEY,url:()=>URL_,ak:()=>APIKEY,
   host:()=>S.tab==='ledger'&&!S.loading&&S.per===0?$('#main .pg'):null,
   editTx:rid=>openSheet('edit','x'+rid),editAcct:rid=>openSheet('acctEdit','a'+rid),reload:()=>kkLoad({}),toast:m=>{toast(m);return true},
-  goLedger:()=>{if(sheet.classList.contains('on'))closeSheet();go('ledger')},reapply:()=>{kkApply();if(!sheet.classList.contains('on'))render();else renderSheetBody()}};
+  goLedger:()=>{if(sheet.classList.contains('on'))closeSheet();go('ledger')},toastUndo:(m,fn)=>{toast(m,fn);return true}};/* v35.4：不對＝資料庫作廢，合計照資料庫；復原走 kk_tx_unvoid */
 syncSkin();remountHd();
 if(KEY.length>=20&&kkCacheLoad()){kkApply();KD.loaded=true;S.loading=false}
 render('f');kkLoad({dir:'f'});
@@ -4215,13 +4209,12 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
 .kkcf-a button[disabled]{opacity:.45}
 .kkcf-more{display:block;width:100%;margin:6px 0 8px}
 .kkpd{display:inline-block;margin:2px 0 0;padding:2px 8px;min-height:24px;border-radius:10px;border:1px dashed #E65100;color:#E65100;font-size:12px;font-weight:600;line-height:20px;cursor:pointer;white-space:nowrap;-webkit-tap-highlight-color:transparent}
-.kkpd.ex{border-color:var(--muted,#888);color:var(--muted,#666)}
 .kkpd::after{content:" ›"}
 .kkcf-i.hit{background:rgba(255,103,0,.12);border-radius:10px;box-shadow:0 0 0 2px #FF6700}
 .kkcf-zero{margin:2px 0 8px;font-size:14px;color:var(--muted,#666)}
 </style>
 <script id="kkcf-js">
-/* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字、按不對的待確認交易先從面板合計扣掉）
+/* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字；v35.4 改：待確認交易按不對＝資料庫作廢，可復原，合計都照資料庫）
    監工：「面板主畫面不再顯示任何 AI 推估的數字、差額或推定備註」「AI 的推估一律收進一個地方：記帳本頂部「塔塔有 N 件要你確認」，點進去一件一件給老大按「對／不對／我自己改」，按對才變成正式數字」
    來源五種：待確認交易（kk_pending_confirm）、實查與推算差超過 1,000 的帳戶、帳戶備註裡塔塔寫的推定、交易備註裡的推定、信用卡備註寫的未出帳筆數（只有 A／B／C 版面算得出）。
    按過「不對」或已轉給塔塔的，記在這支手機 kk_cf_done，同一件不再出現；內容變了（新的實查、改過的備註）會重新出現。
@@ -4236,33 +4229,24 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
   var fmt = function (v) { v = Math.round(Number(v) || 0); return (v < 0 ? '−' : '') + 'NT$' + Math.abs(v).toLocaleString('en-US'); };
   var C = function (k, a) { var c = window.KKCF_CTX; try { return c && c[k] ? c[k].apply(null, a || []) : undefined; } catch (e) { return undefined; } };
   function done() { try { return JSON.parse(localStorage.getItem(DK) || '{}') || {}; } catch (e) { return {}; } }
-  /* v35.3 排除：老大對待確認交易按「不對」，面板合計與帳戶餘額先扣掉；資料庫變了（那筆不再待確認、或金額改了）就以資料庫為準 */
-  var XK = 'kk_cf_excl';
+  /* v35.4：按「不對」改走資料庫作廢（void_transaction），所有合計由資料庫算；v35.3 存在手機的排除紀錄（kk_cf_excl）只用來提示「上次按過不對，要作廢嗎」，不再扣 */
+  var XK = 'kk_cf_excl', VR = '老大判定不對，待塔塔重看（面板 kk-v35.4）';
   function exLocal() { try { return JSON.parse(localStorage.getItem(XK) || '{}') || {}; } catch (e) { return {}; } }
-  function exSave(id, p) { var x = exLocal(); x[id] = { amt: Number(p.amount) || 0, at: new Date().toISOString() }; try { localStorage.setItem(XK, JSON.stringify(x)); } catch (e) {} }
-  function excl() {
-    var pend = C('pend') || [], x = exLocal(), fx = (window.KKCF && KKCF.factEx) ? KKCF.factEx() : {}, out = [];
-    pend.forEach(function (p) { var l = x[p.id], f = fx[p.id]; if ((l && Number(l.amt) === Number(p.amount)) || f) out.push(p); });
-    return out;
-  }
-  function isExcl(id) { return excl().some(function (p) { return String(p.id) === String(id); }); }
+  function exRemove(id) { var x = exLocal(); delete x[id]; try { localStorage.setItem(XK, JSON.stringify(x)); } catch (e) {} }
+  function unmark(key) { var d = done(); delete d[key]; try { localStorage.setItem(DK, JSON.stringify(d)); } catch (e) {} }
+  function excl() { return []; }
+  function isExcl() { return false; }
   function pendSum() {
-    var ex = excl(), exIds = {}; ex.forEach(function (p) { exIds[p.id] = 1; });
-    var S = { all: { n: 0, amt: 0 }, ex: { n: 0, amt: 0 }, acct: {}, exAcct: {} };
-    var add = function (o, p) { o.n++; o.amt += Number(p.amount) || 0; };
+    var S = { all: { n: 0, amt: 0 }, acct: {} }, add = function (o, p) { o.n++; o.amt += Number(p.amount) || 0; };
     (C('pend') || []).forEach(function (p) {
-      var isx = exIds[p.id], names = [p.account_name, p.to_account_name].filter(Boolean);
-      if (p.type === 'expense') add(isx ? S.ex : S.all, p);
-      names.forEach(function (nm) { var b = isx ? S.exAcct : S.acct; b[nm] = b[nm] || { n: 0, amt: 0 }; add(b[nm], p); });
+      if (p.type === 'expense') add(S.all, p);
+      [p.account_name, p.to_account_name].filter(Boolean).forEach(function (nm) { S.acct[nm] = S.acct[nm] || { n: 0, amt: 0 }; add(S.acct[nm], p); });
     });
     return S;
   }
   function pdHtml(scope, name) {
-    var s = pendSum(), a = scope === 'all' ? s.all : s.acct[name], x = scope === 'all' ? s.ex : s.exAcct[name], h = '';
-    var sc = scope === 'all' ? 'all' : 'acct:' + name;
-    if (a && a.n) h += '<span class="kkpd" role="button" tabindex="0" data-kkpend="' + esc(sc) + '">含待確認 ' + a.n + ' 筆 ' + fmt(a.amt) + '</span>';
-    if (x && x.n) h += ' <span class="kkpd ex" role="button" tabindex="0" data-kkpend="' + esc(sc) + '">已排除 ' + x.n + ' 筆 ' + fmt(x.amt) + '</span>';
-    return h;
+    var s = pendSum(), a = scope === 'all' ? s.all : s.acct[name], sc = scope === 'all' ? 'all' : 'acct:' + name;
+    return a && a.n ? '<span class="kkpd" role="button" tabindex="0" data-kkpend="' + esc(sc) + '">含待確認 ' + a.n + ' 筆 ' + fmt(a.amt) + '</span>' : '';
   }
   function mark(key, v) { var d = done(); d[key] = { v: v, at: new Date().toISOString() }; try { localStorage.setItem(DK, JSON.stringify(d)); } catch (e) {} }
   function h32(s) { var h = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
@@ -4296,9 +4280,15 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
     var o = C('o'); if (!o || C('per') !== 0) return [];
     NOSRC = 0; var D = done(), L = [], txs = C('txs') || [], cov = C('cov'), accts = o.accounts || [];
     var byId = {}; accts.forEach(function (a) { byId[a.id] = a; });
+    /* 0. v35.3 時按過「不對」、還在待確認的：問要不要作廢（不自動作廢） */
+    var X = exLocal(); (C('pend') || []).forEach(function (p) {
+      if (!X[p.id] || p.voided_at) return; var amt0 = Number(p.amount) || 0, sg = p.type === 'income' ? amt0 : -amt0;
+      L.push({ key: 'oldno:' + p.id, kind: 'oldno', rid: p.id, acct: p.account_name, title: '上次按過「不對」：' + (p.merchant || p.note || '一筆帳') + ' ' + fmt(sg) + '，要作廢嗎',
+        detail: md(p.occurred_at) + (p.account_name ? '・' + p.account_name : '') + '。舊版只在手機上扣掉；現在要作廢才會從所有合計拿掉，作廢後可以復原。', src: '來源：交易 #' + p.id });
+    });
     /* 1. 待確認交易 */
     (C('pend') || []).forEach(function (p) {
-      var k = 'pend:' + p.id; if (D[k] || blocked('transaction', p.id)) return;
+      var k = 'pend:' + p.id; if (D[k] || X[p.id] || blocked('transaction', p.id)) return;
       var amt = Number(p.amount) || 0, sign = p.type === 'income' ? amt : -amt;
       L.push({ key: k, kind: 'pend', rid: p.id, acct: p.account_name, title: (p.merchant || p.note || '一筆帳') + ' ' + fmt(sign),
         detail: md(p.occurred_at) + (p.account_name ? '・' + p.account_name : '') + (p.category ? '・分類 ' + p.category : '') + (p.guess_reason ? '。塔塔的理由：' + cut(p.guess_reason, 80) : ''),
@@ -4352,8 +4342,8 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
   var OPEN = false, BUSY = {}, CATX = false, NOSRC = 0;
   function itemHtml(it) {
     var b = BUSY[it.key];
-    var ok = it.kind === 'diff' ? '要對帳' : it.kind === 'unb' ? '請塔塔補' : it.kind === 'cats' ? '都對' : '對', no = it.kind === 'diff' ? '不用' : it.kind === 'unb' ? '不用補' : '不對', ed = it.kind === 'cats' ? '一筆一筆看' : '我自己改';
-    var hit = FOCUS && it.kind === 'pend' && (FOCUS === 'all' || FOCUS === 'acct:' + it.acct);
+    var ok = it.kind === 'diff' ? '要對帳' : it.kind === 'unb' ? '請塔塔補' : it.kind === 'cats' ? '都對' : it.kind === 'oldno' ? '作廢' : '對', no = it.kind === 'diff' ? '不用' : it.kind === 'unb' ? '不用補' : it.kind === 'oldno' ? '不用' : '不對', ed = it.kind === 'cats' ? '一筆一筆看' : '我自己改';
+    var hit = FOCUS && (it.kind === 'pend' || it.kind === 'oldno') && (FOCUS === 'all' || FOCUS === 'acct:' + it.acct);
     return '<div class="kkcf-i' + (hit ? ' hit' : '') + '" data-cfk="' + esc(it.key) + '"><div class="kkcf-t">' + esc(it.title) + '</div>' + (it.detail ? '<div class="kkcf-d">' + esc(it.detail) + '</div>' : '') + '<div class="kkcf-src">' + esc(it.src) + '</div>' +
       '<div class="kkcf-a"><button type="button" class="ok" data-cfa="ok"' + (b ? ' disabled' : '') + '>' + ok + '</button><button type="button" data-cfa="no"' + (b ? ' disabled' : '') + '>' + no + '</button><button type="button" data-cfa="edit"' + (b ? ' disabled' : '') + '>' + ed + '</button></div></div>';
   }
@@ -4380,11 +4370,12 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
   async function act(key, a) {
     var it = items().filter(function (x) { return x.key === key; })[0]; if (!it || BUSY[key]) return;
     if (a === 'edit' && it.kind === 'cats') { CATX = true; OPEN = true; paint(); return; }
-    if (a === 'edit') { if (it.kind === 'pend' || it.kind === 'tnote') C('editTx', [it.rid]); else C('editAcct', [it.rid]); return; }
+    if (a === 'edit') { if (it.kind === 'pend' || it.kind === 'tnote' || it.kind === 'oldno') C('editTx', [it.rid]); else C('editAcct', [it.rid]); return; }
     BUSY[key] = 1; paint();
     try {
       if (a === 'ok') {
         if (it.kind === 'pend') { await rpc('kk_tx_confirm', { p_ids: [it.rid] }); say('確認了，算進正式數字'); await hook('ok', it); C('reload'); }
+        else if (it.kind === 'oldno') { await voidIt(it); }
         else if (it.kind === 'diff') { await tata('［面板：塔塔要你確認］老大要對帳：' + it.text + '。請查網銀後更新實查餘額，處理完回報。'); mark(key, 'tata'); say('交給塔塔對帳了'); }
         else if (it.kind === 'unb') { await tata('［面板：塔塔要你確認］老大要補記：' + it.text + '。請補記漏的交易，處理完回報。'); mark(key, 'tata'); say('交給塔塔補記了'); }
         else if (it.kind === 'cats') { await tata('［面板：塔塔要你確認］老大確認這 ' + it.text + '都對。'); it.keys.forEach(function (k) { mark(k, 'yes'); }); mark(key, 'yes'); say(it.keys.length + ' 筆分類都確認了'); await hook('ok', it); }
@@ -4392,16 +4383,28 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
       } else if (a === 'no') {
         if (it.kind === 'diff' || it.kind === 'unb') { mark(key, 'skip'); say('好，這件先不處理'); }
         else if (it.kind === 'cats') { CATX = true; OPEN = true; say('哪幾筆不對？下面一筆一筆列出來了'); }
-        else {
-          await tata('［面板：塔塔要你確認］老大說這段不對，請重看並改正：' + (it.text || it.title + '（' + it.src + '）'));
-          if (it.kind === 'pend') { var pr = (C('pend') || []).filter(function (p) { return String(p.id) === String(it.rid); })[0]; if (pr) exSave(it.rid, pr); }
-          mark(key, 'no');
-          if (it.kind === 'pend') { say('交回塔塔重看了；這筆先從面板的合計扣掉'); C('reapply'); try { if (window.KKCF && KKCF.onNo) await KKCF.onNo(it); } catch (e) {} }
-          else say('交回塔塔重看了');
-        }
+        else if (it.kind === 'pend') { await voidIt(it); }
+        else if (it.kind === 'oldno') { exRemove(it.rid); unmark('pend:' + it.rid); say('好，不作廢；這筆回到待確認'); }
+        else { await tata('［面板：塔塔要你確認］老大說這段不對，請重看並改正：' + (it.text || it.title + '（' + it.src + '）')); mark(key, 'no'); say('交回塔塔重看了'); }
       }
     } catch (e) { say('沒送出：' + (e.message || e) + '。這件還留著，可以再按一次'); }
     delete BUSY[key]; paint();
+  }
+  function voidWhy(e) { var m = String((e && e.message) || e || ''); return /cannot write|permission|only Borry|forbidden/i.test(m) ? '這支鑰匙不能作廢交易（要老大的鑰匙）' : /not found|already void/i.test(m) ? '這筆找不到，或已經作廢了，重新整理看看' : /連不上|Failed to fetch|timeout|逾時/i.test(m) ? '連不上伺服器' : m.slice(0, 60); }
+  async function voidIt(it) {
+    try { await rpc('void_transaction', { p_id: it.rid, p_reason: VR }); }
+    catch (e) { say('沒作廢：' + voidWhy(e) + '。數字都沒動，這件還留著'); return false; }
+    exRemove(it.rid); mark('pend:' + it.rid, 'void');
+    var undo = function () { unvoid(it.rid); };
+    if (!C('toastUndo', ['已作廢，等塔塔重看；所有合計照資料庫重算', undo])) say('已作廢，等塔塔重看；所有合計照資料庫重算');
+    C('reload');
+    try { await tata('［面板：塔塔要你確認］老大說這筆不對，已先作廢（可復原），請重看：' + (it.text || it.title + '（' + it.src + '）')); } catch (e) { say('已作廢，但沒傳到塔塔：' + (e.message || e)); }
+    try { if (window.KKCF && KKCF.onNo) await KKCF.onNo(it); } catch (e) {}
+    return true;
+  }
+  async function unvoid(id) {
+    try { await rpc('kk_tx_unvoid', { p_id: id }); unmark('pend:' + id); say('取消作廢，這筆算回來了'); C('reload'); }
+    catch (e) { say('沒取消作廢：' + voidWhy(e)); }
   }
   async function hook(kind, it) { try { if (window.KKCF && KKCF.onOk) await KKCF.onOk(it); } catch (e) {} }
   /* ---------- 掛到記帳本頂部 ---------- */
@@ -4422,7 +4425,7 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
       paint(); var host = document.querySelector('.kkcf:not(.kkcf-sheet)');
       if (host || ++n > 20) {
         clearInterval(iv); if (!host) return;
-        var nm = FOCUS.indexOf('acct:') === 0 ? FOCUS.slice(5) : null, ids = (C('pend') || []).filter(function (p) { return !nm || p.account_name === nm || p.to_account_name === nm; }).map(function (p) { return 'pend:' + p.id; });
+        var nm = FOCUS.indexOf('acct:') === 0 ? FOCUS.slice(5) : null, ids = []; (C('pend') || []).filter(function (p) { return !nm || p.account_name === nm || p.to_account_name === nm; }).forEach(function (p) { ids.push('pend:' + p.id, 'oldno:' + p.id); });
         var rows = [].slice.call(host.querySelectorAll('.kkcf-i')).filter(function (r) { return ids.indexOf(r.getAttribute('data-cfk')) >= 0; });
         rows.forEach(function (r) { r.classList.add('hit'); });
         var go = function () { var h2 = document.querySelector('.kkcf:not(.kkcf-sheet)'); if (!h2) return; var r2 = h2.querySelector('.kkcf-i.hit') || h2; scrollIn(r2); };
@@ -4528,12 +4531,12 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
   KKCF.hasSource = function (it) { return it.kind !== 'anote' || /#\d+|交易\s*\d+|帳單/.test(it.text || ''); };
   /* v35.2 實套：只有老大（bot_name=Borry）的鑰匙能寫事實，其他鑰匙會被擋（only Borry can confirm facts） */
   function why(e) { var m = String((e && e.message) || e || ''); return /only Borry|cannot write|cannot confirm|permission/i.test(m) ? '這支鑰匙不能寫「我確認過的事」，只有老大的鑰匙可以' : e && e.net ? '連不上伺服器' : m.slice(0, 60); }
-  /* v35.3：老大判定不對的交易，也記成事實（topic transaction） */
+  /* v35.3 起：老大判定不對的交易也記成事實（topic transaction）；v35.4 起那筆同時在資料庫作廢 */
   KKCF.factEx = function () { var o = {}; F.list.forEach(function (f) { if (f.topic === 'transaction' && /^老大判定不對/.test(f.fact_text || '')) o[f.target_id] = f; }); return o; };
   KKCF.onNo = async function (it) {
-    if (F.st !== 'on' || it.kind !== 'pend') return;
-    try { await rpc('kk_fact_add', { p_topic: 'transaction', p_target_id: it.rid, p_target_name: (it.title || '').slice(0, 60), p_fact_text: '老大判定不對：' + it.title + '。先不算進面板合計，等塔塔重看。', p_source_type: 'tx', p_source_ref: '交易 #' + it.rid }); }
-    catch (e) { if (e.missing) F.st = 'off'; else C('toast', ['已從面板合計扣掉，但' + why(e) + '；這筆排除先只記在這支手機']); }
+    if (F.st !== 'on' || (it.kind !== 'pend' && it.kind !== 'oldno')) return;
+    try { await rpc('kk_fact_add', { p_topic: 'transaction', p_target_id: it.rid, p_target_name: (it.title || '').slice(0, 60), p_fact_text: '老大判定不對：' + it.title + '。已作廢（可復原），等塔塔重看。', p_source_type: 'tx', p_source_ref: '交易 #' + it.rid }); }
+    catch (e) { if (e.missing) F.st = 'off'; else C('toast', ['已作廢，但' + why(e) + '；「我確認過的事」沒記這筆']); }
     load(true);
   };
   KKCF.onOk = async function (it) {
@@ -4592,6 +4595,7 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
   setInterval(function () { if (!document.hidden) load(false); }, 60000);
 })();
 </script>
+
 
 
 
