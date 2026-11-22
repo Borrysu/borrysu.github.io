@@ -1232,6 +1232,13 @@ details.kk-more[open]>summary::after{transform:rotate(-90deg)}
 .pnav #p_next::before{transform:translate(-70%,-25%) rotate(-135deg)}
 .pnav .pl{display:flex;align-items:center;justify-content:center;line-height:1}
 .pnav button:disabled{opacity:.3}
+/* v34.3 */
+.updl{font-size:12px;color:var(--muted);margin-top:2px}
+.updl.old{color:var(--warn,#b7791f);font-weight:700}
+.cper{margin-top:10px;padding:10px 12px}
+.cper-h{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:700;font-size:15px;margin-bottom:6px}
+.cst{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid var(--line);flex:none}
+.cst-due{color:var(--bad);border-color:currentColor}.cst-part{color:var(--warn,#b7791f);border-color:currentColor}.cst-paid{color:var(--good);border-color:currentColor}
 
 </style></head><body data-skin="6" data-theme="light">
 <a class="skip" href="#scroll">跳到內容</a>
@@ -4110,7 +4117,7 @@ function thIngest(rows) {
   THX.rows = rows; var before = {}; TH.forEach(function (t) { before[t.cid] = (t.reps || []).length; });
   thMatchAll(rows); thSave();
   var fresh = TH.filter(function (t) { return (t.reps || []).length > before[t.cid]; });
-  thPaint(); if (fresh.length) thReveal(fresh[fresh.length - 1], true);
+  thPaint(); if (fresh.length) { thReveal(fresh[fresh.length - 1], true); if (typeof thOnFresh === 'function') try { thOnFresh(fresh); } catch (e) {} }
 }
 /* 這則回報是在回哪裡（給回報全文用） */
 function thWhere(r) {
@@ -4233,6 +4240,32 @@ document.addEventListener('click', function (e) {
 }, true);
 document.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-cask]')) { e.preventDefault(); e.target.click(); } });
 function cardTokens(title) { return String(title).split(/[\s·・，、：:（）()\/]+/).filter(function (x) { return x.length >= 2 && !/^[\d,.$NT]+$/.test(x); }).slice(0, 4); }
+/* ---------- v34.3 信用卡按帳單期分開（兩套版面共用）----------
+ txs：[{iso:'YYYY-MM-DD', spend:刷卡金額（退款為負）, pay:繳進這張卡的金額, ref:原物件}]，stmt＝結帳日（沒有就 null），due＝繳款日（沒有就 null）。
+ 每段：未出帳＝最近一次結帳日之後；之前每一期＝(上次結帳日, 這次結帳日]。某期的「已繳」＝下一段期間繳進來的錢（結帳後才繳）。 */
+function cpISO(y, m, d) { var last = new Date(y, m, 0).getDate(); return y + '-' + String(m).padStart(2, '0') + '-' + String(Math.min(d, last)).padStart(2, '0'); }
+function cpPrevClose(iso, stmt) { var y = +iso.slice(0, 4), m = +iso.slice(5, 7), d = +iso.slice(8, 10), c = cpISO(y, m, stmt); if (+c.slice(8, 10) <= d) return c; m--; if (m < 1) { m = 12; y--; } return cpISO(y, m, stmt); }
+function cpBack(close, stmt) { var y = +close.slice(0, 4), m = +close.slice(5, 7) - 1; if (m < 1) { m = 12; y--; } return cpISO(y, m, stmt); }
+function cpAddDay(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+function cpDue(close, due) { if (!due) return null; var y = +close.slice(0, 4), m = +close.slice(5, 7) + 1; if (m > 12) { m = 1; y++; } return cpISO(y, m, due); }
+function cardPeriods(txs, stmt, due, today) {
+  if (!stmt) return { noStmt: true, segs: [{ kind: 'all', label: '全部交易（沒有結帳日資料，分不出帳單期）', from: null, to: null, txs: txs, spend: txs.reduce(function (s, t) { return s + t.spend; }, 0), paid: 0, status: '沒有資料' }] };
+  var minIso = txs.reduce(function (m, t) { return t.iso < m ? t.iso : m; }, today), segs = [], close = cpPrevClose(today, stmt);
+  segs.push({ kind: 'open', from: cpAddDay(close, 1), to: null, close: null });
+  var c = close; while (true) { var prev = cpBack(c, stmt); segs.push({ kind: 'bill', from: cpAddDay(prev, 1), to: c, close: c }); if (prev < minIso) break; c = prev; if (segs.length > 14) break; }
+  segs.forEach(function (s) { s.txs = txs.filter(function (t) { return t.iso >= s.from && (!s.to || t.iso <= s.to); }); s.spend = s.txs.reduce(function (a, t) { return a + t.spend; }, 0); s.payIn = s.txs.reduce(function (a, t) { return a + t.pay; }, 0); });
+  for (var i = 0; i < segs.length; i++) { var s = segs[i]; if (s.kind === 'open') { s.status = '未出帳'; s.paid = 0; continue; } s.paid = segs[i - 1].payIn; s.dueDate = cpDue(s.close, due);
+    s.status = s.spend <= 0 ? '沒有刷卡' : s.paid >= s.spend ? '已繳' : s.paid > 0 ? '部分繳' : '待繳'; s.unpaid = Math.max(0, s.spend - s.paid); }
+  // 最舊那段若完全沒交易就不列
+  while (segs.length > 2 && !segs[segs.length - 1].txs.length) segs.pop();
+  return { segs: segs };
+}
+function cpLabel(s, md) { return s.kind === 'open' ? '本期未出帳（' + md(s.from) + ' 起）' : s.kind === 'all' ? s.label : md(s.from) + '～' + md(s.to) + ' 帳單'; }
+/* 帳戶上次實查 */
+function updAgo(iso) { var t = thMs(iso); return t ? (Date.now() - t) / 864e5 : null; }
+var UPD = {}; try { UPD = JSON.parse(localStorage.getItem('kk_upd') || '{}') || {}; } catch (e) { UPD = {}; }
+function updMark(id) { UPD[id] = Date.now(); try { localStorage.setItem('kk_upd', JSON.stringify(UPD)); } catch (e) {} }
+function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶] 請登入「' + name + '」的網銀或 App 實查目前真實餘額' + (isCard ? '（信用卡查未出帳與帳單）' : '') + '，查完回報並更新，附查到的時間。帳上目前 ' + bal + '，上次實查 ' + (asof || '沒有資料') + '。查不到就說查不到，不要用推算的。'; }
 
 /* ---------- v34 E 版接線：回覆就地看見、帳戶跟塔塔說、減字（接在 z_live.js 後面，同名函式以這裡為準） ---------- */
 function thEsc(s) { return esc(String(s == null ? '' : s)); }
@@ -4340,15 +4373,15 @@ syncFab = function () {
 function eNextDue(day) { if (!day) return null; var t = new Date(), y = t.getFullYear(), m = t.getMonth() + 1, dd = t.getDate(); if (dd > day) { m++; if (m > 12) { m = 1; y++; } } var last = new Date(y, m, 0).getDate(), d = new Date(y, m - 1, Math.min(day, last)); return { md: (m) + '/' + d.getDate(), days: Math.round((d - new Date(t.getFullYear(), t.getMonth(), dd)) / 864e5) }; }
 function eDebtHtml() {
   var rows = [];
-  (D.accounts || []).filter(function (a) { return a.kind === 'credit_card' && !a.archived && Number(a.computed_balance) < 0; }).forEach(function (a) { var n = eNextDue(a.due_day); rows.push({ t: n ? n.days : 9999, h: '<button type="button" class="cardrow" data-e341="acct:' + a.id + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(a.name) + ' 卡費</div><div class="t2">' + (n ? n.md + ' 截止，' + (n.days === 0 ? '今天' : n.days + ' 天後') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(-Number(a.computed_balance)) + '</div></button>' }); });
-  (D.debts || []).forEach(function (db, i) { if (!(Number(db.remaining) > 0)) return; rows.push({ t: 9998, h: '<button type="button" class="cardrow" data-e341="debt:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(db.name) + '</div><div class="t2">沒有日子</div></div><div class="amt num neg">' + nt(db.remaining) + '</div></button>' }); });
-  (D.installments || []).filter(function (x) { return x.active; }).forEach(function (it, i) { rows.push({ t: 9997, h: '<button type="button" class="cardrow" data-e341="inst:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(it.name) + '</div><div class="t2">' + (it.next_due_date ? '下次 ' + md(it.next_due_date) + (it.per_period_amount ? '，繳 ' + nt(it.per_period_amount) : '') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(it.outstanding_amount) + '</div></button>' }); });
+  (D.accounts || []).filter(function (a) { return a.kind === 'credit_card' && !a.archived && Number(a.computed_balance) < 0; }).forEach(function (a) { var n = eNextDue(a.due_day); rows.push({ t: n ? n.days : 9999, h: '<button type="button" class="cardrow" data-e341="debtx:acct:' + a.id + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(a.name) + ' 卡費</div><div class="t2">' + (n ? n.md + ' 截止，' + (n.days === 0 ? '今天' : n.days + ' 天後') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(-Number(a.computed_balance)) + '</div></button>' }); });
+  (D.debts || []).forEach(function (db, i) { if (!(Number(db.remaining) > 0)) return; rows.push({ t: 9998, h: '<button type="button" class="cardrow" data-e341="debtx:debt:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(db.name) + '</div><div class="t2">沒有日子</div></div><div class="amt num neg">' + nt(db.remaining) + '</div></button>' }); });
+  (D.installments || []).filter(function (x) { return x.active; }).forEach(function (it, i) { rows.push({ t: 9997, h: '<button type="button" class="cardrow" data-e341="debtx:inst:' + i + '"><div style="flex:1;min-width:0"><div class="t1">' + esc(it.name) + '</div><div class="t2">' + (it.next_due_date ? '下次 ' + md(it.next_due_date) + (it.per_period_amount ? '，繳 ' + nt(it.per_period_amount) : '') : '沒有日子') + '</div></div><div class="amt num neg">' + nt(it.outstanding_amount) + '</div></button>' }); });
   if (!rows.length) return '';
   rows.sort(function (a, b) { return a.t - b.t; });
   var first = rows[0].t < 9997 ? '<div class="gh"><span><b>下一筆要繳</b></span></div>' : '';
   return '<div class="card kk-debt" data-ctitle="欠款、卡費、分期"><div class="gh" style="padding:10px 14px 0"><span><b>欠款、卡費、分期</b></span></div>' + first + '<div class="rows">' + rows.map(function (r) { return r.h; }).join('') + '</div></div>';
 }
-document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-e341]'); if (!b) return; var p = b.getAttribute('data-e341').split(':'); openDet(p[0], Number(p[1])); }, false);
+document.addEventListener('click', function (e) { var b = e.target.closest && e.target.closest('[data-e341]'); if (!b) return; var v = b.getAttribute('data-e341'), p = v.split(':'); if (p[0] === 'debtx') openDet('debtx', p[1] + ':' + p[2]); else openDet(p[0], Number(p[1])); }, false);
 var _renderV341 = render;
 render = function () {
   _renderV341.apply(this, arguments);
@@ -4399,6 +4432,95 @@ function kkCardsE() { kkCards(document.getElementById('app'), CARD_SEL_E, CARD_F
 var _thOrgE341 = thOrgE; thOrgE = function (c) { if (c && c.type === 'card') return { k: 'card:' + c.id, lab: '卡片「' + c.label + '」' }; return _thOrgE341(c); };
 var _thCtxE341 = thCtxE; thCtxE = function (c) { if (c && c.type === 'card') { var cd = CARDS[c.id] || {}; return '（關於卡片「' + c.label + '」' + (cd.sum ? '：' + cd.sum : '') + '）'; } return _thCtxE341(c); };
 (function () { var app = document.getElementById('app'), q = 0; if (!app || !window.MutationObserver) return; new MutationObserver(function () { if (q) return; q = requestAnimationFrame(function () { q = 0; try { kkCardsE(); } catch (e) {} }); }).observe(app, { childList: true, subtree: true }); })();
+/* ---------- v34.3 E 版：負債處理鍵、信用卡帳單期、帳戶請塔塔更新 ---------- */
+function eSend(org, lab, q, text) {
+  if (!window.confirm('要把這段話傳給塔塔嗎？\n\n' + text)) return null;
+  var t = thNew(org, lab, q, text); thPaint();
+  kkRefresh({ action: 'message', text: text, client_id: t.cid, test: LS.get('kk_testmsg') === '1' }).then(function (x) { if (x.net) thMark(t, null, '連不上伺服器'); else thMark(t, x.j); thReveal(t); });
+  return t;
+}
+function eAsof(a) { return a.balance_as_of ? thTime(a.balance_as_of) : null; }
+function eUpdLine(a) { if (a.is_system || a.archived) return ''; var t = a.balance_as_of, ag = t ? updAgo(t) : null, q = UPD[a.id], pend = q && (!t || thMs(t) < q); return '<div class="updl' + (!t || ag > 3 ? ' old' : '') + '">上次實查：' + (t ? eAsof(a) : '沒有資料') + (pend ? '・已請塔塔去查' : '') + '</div>'; }
+function eUpdSend(id) {
+  if (id === 'all') { var L = (D.accounts || []).filter(function (a) { return !a.archived && !a.is_system; });
+    var text = '[面板請塔塔全部更新] 請登入每個帳戶的網銀或 App 實查目前真實餘額（信用卡查未出帳與帳單），查完逐一回報並更新，附查到的時間。查不到的帳戶就說查不到，不要用推算的。帳上：' + L.map(function (a) { return a.name + ' ' + (a.computed_balance == null ? '待對帳' : 'NT$' + nt(a.computed_balance)) + '（上次實查 ' + (eAsof(a) || '沒有資料') + '）'; }).join('、');
+    if (text.length > 495) text = text.slice(0, 494) + '…';
+    var t = eSend('acct:all', '帳戶總覽', '全部請塔塔更新', text); if (t) { t.upd = 1; thSave(); L.forEach(function (a) { updMark(a.id); }); render(); } return; }
+  var a = acctId(Number(id)); if (!a) return;
+  var t2 = eSend('acct:' + a.id, '帳戶 ' + a.name, '請塔塔更新「' + a.name + '」', updText(a.name, a.computed_balance == null ? '待對帳' : 'NT$' + nt(a.computed_balance), eAsof(a), a.kind === 'credit_card'));
+  if (t2) { t2.upd = 1; thSave(); updMark(a.id); if (DET.length) drawDet(true); render(); }
+}
+function thOnFresh(fresh) { if (fresh.some(function (t) { return t.upd; })) { try { load({ force: true }); } catch (e) {} } }
+function eUpdBtn(id, label) { return '<button type="button" class="dbtn n th-askb" data-eupd="' + id + '">' + (label || '請塔塔更新') + '</button>'; }
+function eDebtItems() {
+  var L = [];
+  (D.accounts || []).filter(function (a) { return (a.kind === 'credit_card' || a.kind === 'loan_in') && !a.archived && Number(a.computed_balance) < 0; }).forEach(function (a) { var n = a.kind === 'credit_card' ? eNextDue(a.due_day) : null; L.push({ key: 'acct:' + a.id, name: a.kind === 'credit_card' ? a.name + ' 卡費' : a.name, rem: -Number(a.computed_balance), prin: null, paid: null, due: n ? n.md : (a.loan_due_date ? md(a.loan_due_date) : '沒有日子'), sk: 'acct', sid: a.id }); });
+  (D.debts || []).forEach(function (db, i) { if (Number(db.remaining) > 0) L.push({ key: 'debt:' + i, name: db.name, rem: Number(db.remaining), prin: Number(db.principal), paid: Number(db.repaid || 0), due: '沒有日子', sk: 'debt', sid: i }); });
+  (D.installments || []).filter(function (x) { return x.active; }).forEach(function (it, i) { L.push({ key: 'inst:' + i, name: it.name, rem: Number(it.outstanding_amount), prin: null, paid: null, per: it.per_period_amount, due: it.next_due_date ? md(it.next_due_date) : '沒有日子', sk: 'inst', sid: i }); });
+  return L;
+}
+function eDebtFind(key) { return eDebtItems().filter(function (x) { return x.key === key; })[0]; }
+function eDebtActs(key, withDet) { return '<div class="dbtn2"><button type="button" class="dbtn" data-edebt="ask" data-key="' + key + '">請塔塔處理</button><button type="button" class="dbtn n" data-edebt="paid" data-key="' + key + '">我還了一筆</button></div>' + (withDet ? '<button type="button" class="dbtn n th-askb" data-edebt="det" data-key="' + key + '">看明細</button>' : ''); }
+function eDebtText(x) { return '[面板請塔塔處理負債] 「' + x.name + '」還剩 NT$' + nt(x.rem) + '，還款日 ' + x.due + (x.prin != null ? '，本金 NT$' + nt(x.prin) + '，已還 NT$' + nt(x.paid || 0) : '') + (x.per ? '，每期 NT$' + nt(x.per) : '') + '。請你看怎麼處理（還款、分期或繳費），處理完回報。'; }
+function eAskAmount(what) { var v = window.prompt(what + '（只填數字）'); if (v == null) return null; var n = Number(String(v).replace(/[,\s，]/g, '')); if (!(n > 0)) { showErr('要填大於 0 的數字'); return null; } return Math.round(n); }
+var CARDH = null, CARDHB = 0;
+function eAddMonths(iso, n) { var y = +iso.slice(0, 4), m = +iso.slice(5, 7) + n; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return cpISO(y, m, +iso.slice(8, 10)); }
+function eCardHist() { if (CARDH || CARDHB || !D.period_start) return; CARDHB = 1; var ps = String(D.period_start).slice(0, 10);
+  Promise.all([rpc('list_transactions', { p_period_start: eAddMonths(ps, -2), p_include_void: false }), rpc('list_transactions', { p_period_start: eAddMonths(ps, -3), p_include_void: false })]).then(function (r) { CARDH = [].concat(r[0] || [], r[1] || []).map(function (t) { var o = {}; for (var k in t) o[k] = t[k]; o.occurred_at = tpe(t.occurred_at); return o; }); }).catch(function () { CARDH = []; }).then(function () { CARDHB = 0; var d = DET[DET.length - 1]; if (d && d.t === 'acct') drawDet(true); }); }
+function eCardTxs(a) {
+  var names = [a.name].concat(a.aliases || []), seen = {}, out = [];
+  TXALL.concat(KD.prev_tx || []).concat(CARDH || []).forEach(function (t) { if (t.voided_at || seen[t.id]) return; seen[t.id] = 1; var mine = names.indexOf(t.account_name) >= 0, to = t.to_account_name && names.indexOf(t.to_account_name) >= 0; if (!mine && !to) return;
+    var amtN = Number(t.amount) || 0; out.push({ iso: dayKey(t.occurred_at), spend: mine ? (t.type === 'income' ? -amtN : amtN) : 0, pay: !mine && to ? amtN : 0, ref: t }); });
+  return out;
+}
+function eToday() { return new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }); }
+function eCardSegs(a) { return cardPeriods(eCardTxs(a), a.statement_day || null, a.due_day || null, eToday()); }
+function eCardHtml(a) {
+  eCardHist(); var res = eCardSegs(a), total = res.segs.reduce(function (s, x) { return s + x.txs.length; }, 0);
+  var seg = function (s, i) { var cls = { '未出帳': 'open', '待繳': 'due', '部分繳': 'part', '已繳': 'paid' }[s.status] || 'none';
+    var rows = [['這期刷卡（照交易算）', nt(s.spend)]]; if (s.kind === 'bill') rows.push(['已繳', nt(s.paid)], ['未繳', nt(s.unpaid)], ['繳款截止', s.dueDate ? md(s.dueDate) : '沒有資料']); rows.push(['筆數', s.txs.length + ' 筆']);
+    return '<div class="card cper" data-segn="' + s.txs.length + '"><div class="cper-h">' + cpLabel(s, md) + ' <span class="cst cst-' + cls + '">' + s.status + '</span></div><div class="sgrp">' + rows.map(function (r) { return '<div class="af"><span class="k">' + r[0] + '</span><span class="v num">' + r[1] + '</span></div>'; }).join('') + '</div>'
+      + '<div class="dbtn2"><button type="button" class="dbtn" data-ecard="pay" data-i="' + i + '" data-aid2="' + a.id + '">請塔塔繳這期</button><button type="button" class="dbtn n" data-ecard="paid" data-i="' + i + '" data-aid2="' + a.id + '">我繳了</button></div>'
+      + (s.txs.length ? '<details class="kk-more"><summary>看這期 ' + s.txs.length + ' 筆交易</summary>' + txList(s.txs.map(function (x) { return x.ref; }).sort(function (x, y) { return x.occurred_at < y.occurred_at ? 1 : -1; })) + '</details>' : '') + '</div>'; };
+  var segs = res.segs, rest = segs.slice(2);
+  return '<div class="cpers" data-total="' + total + '"><div class="gh"><span><b>帳單期</b>共 ' + total + ' 筆</span></div><div class="dm" style="padding:0 4px 6px">結帳日' + (a.statement_day ? '每月 ' + a.statement_day + ' 號' : '沒有資料') + '，繳款日' + (a.due_day ? '每月 ' + a.due_day + ' 號' : '沒有資料') + '</div>'
+    + segs.slice(0, 2).map(seg).join('') + (rest.length ? '<details class="kk-more"><summary>更早 ' + rest.length + ' 期</summary>' + rest.map(function (s, i) { return seg(s, i + 2); }).join('') + '</details>' : '') + '</div>';
+}
+function eCardText(a, s, k, v) { var lab = cpLabel(s, md);
+  if (k === 'pay') return '[面板請塔塔繳卡費] 「' + a.name + '」' + lab + '，這期刷卡 NT$' + nt(s.spend) + '（照交易算）' + (s.kind === 'bill' ? '，已繳 NT$' + nt(s.paid) + '，未繳 NT$' + nt(s.unpaid) + '，繳款截止 ' + (s.dueDate ? md(s.dueDate) : '沒有資料') : '，還沒出帳') + '。請你先查銀行帳單實際應繳金額，再代繳或回我繳費方式，處理完回報。';
+  return '[面板：老大繳了卡費] 「' + a.name + '」' + lab + ' 繳了 NT$' + nt(v) + '，請核對銀行後記帳並更新。'; }
+var _detModelV343 = detModel;
+detModel = function (d) {
+  if (d.t === 'debtx') { var x = eDebtFind(d.arg); if (!x) return { title: '負債', html: '<div class="card">' + emptyBox('✅', '這筆已經還完或不在了', '') + '</div>' };
+    var rows = [['還剩', nt(x.rem)]]; if (x.prin != null) rows.push(['本金', nt(x.prin)], ['已還', nt(x.paid || 0)]); if (x.per) rows.push(['每期', nt(x.per)]); rows.push(['還款日', x.due]);
+    return { title: x.name, html: dsum('還剩', nt(x.rem), x.due === '沒有日子' ? '還款日沒有資料' : '還款日 ' + x.due, 'neg') + '<div class="sgrp" style="margin-top:10px">' + rows.map(function (r) { return '<div class="af"><span class="k">' + r[0] + '</span><span class="v num">' + r[1] + '</span></div>'; }).join('') + '</div>' + eDebtActs(x.key, true) + thSlot('debt:' + x.key, 1) }; }
+  var m = _detModelV343(d);
+  if (d.t === 'debt' || d.t === 'inst') { var k = d.t + ':' + d.arg; if (eDebtFind(k)) m.html += eDebtActs(k, false) + thSlot('debt:' + k, 1); }
+  if (d.t === 'acct') { var a = acctId(d.arg); if (a) {
+    m.html = m.html.replace('<div class="dbtn2"><button type="button" class="dbtn" data-dedit="1">', eUpdLine(a) + '<div class="dbtn2"><button type="button" class="dbtn" data-dedit="1">');
+    m.html = m.html.replace(eAskBtn(d.arg), eAskBtn(d.arg) + eUpdBtn(d.arg));
+    if (a.kind === 'credit_card') { var al = TXALL.concat(KD.prev_tx).filter(function (t) { return posted(t) && (t.account_name === a.name || t.to_account_name === a.name); }).sort(function (x, y) { return x.occurred_at < y.occurred_at ? 1 : -1; }); var tl = txList(al.slice(0, 80)); var i = m.html.lastIndexOf(tl); m.html = (i >= 0 ? m.html.slice(0, i) + m.html.slice(i + tl.length) : m.html) + eCardHtml(a); } } }
+  return m;
+};
+var _renderAssetsV343 = renderAssets;
+renderAssets = function () {
+  _renderAssetsV343.apply(this, arguments);
+  var xs = document.querySelectorAll('#tab_assets .xp');
+  for (var i = 0; i < xs.length; i++) { var g = xs[i].closest('[data-gid]'); if (!g || xs[i].querySelector('[data-eupd]')) continue; var a = acctId(Number(g.getAttribute('data-gid'))); if (!a) continue; var ask = xs[i].querySelector('[data-dask]'); var h = eUpdLine(a) + eUpdBtn(a.id); if (ask) ask.insertAdjacentHTML('afterend', h); else xs[i].insertAdjacentHTML('beforeend', h); }
+  var rows = document.querySelectorAll('#tab_assets .acr[data-aid]');
+  for (var j = 0; j < rows.length; j++) { var r = rows[j]; if (r.querySelector('.updl')) continue; var ac = acctId(Number(r.getAttribute('data-aid'))); if (!ac || ac.is_system || ac.archived) continue; var t1 = r.querySelector('.t1'); if (t1) t1.insertAdjacentHTML('afterend', eUpdLine(ac)); }
+};
+document.addEventListener('click', function (e) {
+  if (!e.target.closest) return; var u = e.target.closest('[data-eupd]'); if (u) { e.stopPropagation(); eUpdSend(u.getAttribute('data-eupd')); return; }
+  var b = e.target.closest('[data-edebt]'); if (b) { e.stopPropagation(); var x = eDebtFind(b.getAttribute('data-key')); if (!x) return; var k = b.getAttribute('data-edebt');
+    if (k === 'det') { openDet(x.sk, x.sid); return; }
+    if (k === 'ask') { eSend('debt:' + x.key, x.name, '請塔塔處理「' + x.name + '」', eDebtText(x)); return; }
+    var v = eAskAmount('「' + x.name + '」這次還了多少？'); if (!v) return; eSend('debt:' + x.key, x.name, '我還了「' + x.name + '」NT$' + nt(v), '[面板：老大還了一筆] 「' + x.name + '」還了 NT$' + nt(v) + '，請記帳並更新還剩（帳上目前還剩 NT$' + nt(x.rem) + '）。'); return; }
+  var c = e.target.closest('[data-ecard]'); if (c) { e.stopPropagation(); var a = acctId(Number(c.getAttribute('data-aid2'))); if (!a) return; var s = eCardSegs(a).segs[+c.getAttribute('data-i')]; if (!s) return;
+    if (c.getAttribute('data-ecard') === 'pay') { eSend('acct:' + a.id, '帳戶 ' + a.name, '請塔塔繳「' + a.name + '」' + cpLabel(s, md), eCardText(a, s, 'pay')); return; }
+    var v2 = eAskAmount('「' + a.name + '」' + cpLabel(s, md) + '繳了多少？'); if (!v2) return; eSend('acct:' + a.id, '帳戶 ' + a.name, '我繳了「' + a.name + '」NT$' + nt(v2), eCardText(a, s, 'paid', v2)); }
+}, true);
+(function () { var top = document.querySelector('#tab_assets > .th-ask'); if (top && !top.querySelector('[data-eupd]')) top.insertAdjacentHTML('beforeend', eUpdBtn('all', '全部請塔塔更新')); })();
 
 </script>
 </body></html>
