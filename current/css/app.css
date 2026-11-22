@@ -1220,3 +1220,11 @@ html.marking main,html.marking .tabs,html.marking .dock{cursor:crosshair}
 .card p,.card .note,.card small,.card .lbl,.card h3{overflow-wrap:anywhere;word-break:break-word}
 .card .meta{flex-wrap:wrap;row-gap:4px}
 .edm{color:var(--mute,#9a9a9a);font-size:12px;margin:2px 0 0}
+.strow{border:1px solid var(--line,#2a2a2e);border-radius:14px;padding:12px;margin:10px 0}
+.strh{display:flex;justify-content:space-between;align-items:center}
+.st3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st3 select{width:100%;min-width:0}
+@media(max-width:420px){.st3{grid-template-columns:1fr}}
+.stlist li small.d2{display:block}
+label.f select{width:100%;min-height:48px;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--line2);background:var(--sf2);color:var(--ink);font:inherit}
+label.f input:not([type]){width:100%;min-height:48px;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--line2);background:var(--sf2);color:var(--ink);font:inherit}

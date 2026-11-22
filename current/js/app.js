@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v71');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v72');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3188,6 +3188,51 @@ ACT.pesave=id=>{const g=s=>{const e=document.getElementById(s);return e?e.value:
   await reload();toast(`存好了，大器知道你改了${ch.join('、')}`,async()=>{try{await LV.api.cardEdit(id,old);if(dueCh)await LV.api.act(id,'work',{patch:{delivery_date:oldDue||null}});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})
  }catch(e){toast('沒存上：'+LERR(e))}})};
 WRITE.push('pasave','pesave');
+/* ---------- v72（2026-11-23）：意見第二批之二，交辦「步驟卡」：每步可選模型、執行方式（監工本身或開子視窗）、技能 ----------
+   老大原話：「希望交辦或者案子與工作可以設立步驟卡與模型選用，如果可以，也可以選用監工、子視窗方式來描寫分派，這樣真的執行的時候就會有照這個架構走，
+   並且希望這些卡片會等同一個視窗或多個視窗 可以在裡面裡 標記到我的技能庫」
+   存法：不加資料庫欄位。步驟照舊存 progress_steps（opp_progress_set 的 p_steps），模型、方式、技能寫在每步 note 開頭：〔模型：Opus 5.5｜方式：開子視窗｜技能：eyear〕備註。
+   送出執行時櫃台 brief 會帶步驟（櫃台說明.md 第 2 點已補一句：照這些指定執行）。 */
+const SMODEL=['不指定','Opus 5.5','Fable 5.2','Codex','AGY','Grok'],SMODE=['監工本身','開子視窗'];
+const SSKILL=['archimise','canon','copybook','craft','diagram-design','distill','eagle','eyear','eyear-meeting-notes','fieldwork','folio','glean','handy','herald','hyperframes','intake','last30days','lilt','media-use','minimise','mise','motion','present','proof','score','splice','stage','sweep','tableread','trophy','vault','weigh'];
+const SMETA=/^〔([^〕]*)〕\s*/;
+function stepOf(s){const o={name:s.name||'',status:s.status||'pending',model:'不指定',mode:'監工本身',skill:'',note:s.note||''},m=SMETA.exec(o.note);
+ if(m){o.note=o.note.slice(m[0].length);m[1].split('｜').forEach(kv=>{const i=kv.indexOf('：'),k=kv.slice(0,i),v=kv.slice(i+1);if(k==='模型')o.model=v;else if(k==='方式')o.mode=v;else if(k==='技能')o.skill=v})}
+ return o}
+function stepNote(o){const a=[];if(o.model&&o.model!=='不指定')a.push('模型：'+o.model);if(o.mode&&o.mode!=='監工本身')a.push('方式：'+o.mode);if(o.skill)a.push('技能：'+o.skill);
+ return (a.length?`〔${a.join('｜')}〕`:'')+(o.note||'')}
+const stepTags=o=>[o.model!=='不指定'?o.model:'',o.mode==='開子視窗'?'子視窗':'',o.skill?'技能 '+o.skill:''].filter(Boolean).join('・');
+const sOpt=(a,v)=>a.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('');
+const stepRow=(o,i)=>`<div class="strow" data-st="${i}" data-status="${esc(o.status)}"><div class="strh"><b>第 ${i+1} 步</b><button type="button" class="mb" data-act="stdel" data-id="${i}">拿掉</button></div>
+ <label class="f">這步做什麼<input class="st-name" maxlength="80" value="${esc(o.name)}" placeholder="例：整理素材清單"></label>
+ <div class="st3"><label class="f">模型<select class="st-model">${sOpt(SMODEL,o.model)}</select></label><label class="f">方式<select class="st-mode">${sOpt(SMODE,o.mode)}</select></label><label class="f">技能庫<select class="st-skill"><option value="">不標</option>${SSKILL.map(x=>`<option${x===o.skill?' selected':''}>${x}</option>`).join('')}</select></label></div>
+ <label class="f">備註<input class="st-note" maxlength="160" value="${esc(o.note)}"></label></div>`;
+const todoOf=id=>DB.todo.find(t=>t.id===id)||DB.proj.find(t=>t.id===id);
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':'),t=a[0];
+ if(t==='stepx'){const id=S.sheet.slice(6),it=todoOf(id),c=it&&it.raw;if(!c)return shHead('這件不在了');
+  const st=(c.progressSteps||[]).map(stepOf);if(!st.length)st.push(stepOf({name:''}));
+  return shHead('步驟卡')+`<p class="note">一步一張卡：選這步用哪個模型、監工自己做還是開子視窗、標哪個技能。按「去執行」時，大器照這個架構走。</p><div id="stRows">${st.map(stepRow).join('')}</div><div class="mrow">${mb('＋ 加一步','stadd','')}</div>${S.err==='stepx'?'<p class="err" role="alert">▲ 每一步都要寫做什麼。</p>':''}<div class="btns">${B('存好','stsave',id,'pri wide')}</div>`}
+ let h=_s();
+ if(t==='cview'&&a[1]==='todo'){const id=a.slice(2).join(':'),it=DB.todo.find(q=>q.id===id);if(it&&it.raw){const st=(it.raw.progressSteps||[]).map(stepOf),
+   sec=`<p class="h4">步驟卡</p>${st.length?`<ol class="ydsteps stlist">${st.map(o=>`<li>${esc(o.name)}${stepTags(o)?`<small class="d2">${esc(stepTags(o))}</small>`:''}</li>`).join('')}</ol>`:'<p class="note">還沒設步驟。可以自己排，也可以請定定或大器規劃。</p>'}<div class="mrow">${mb('🧩 '+(st.length?'編輯步驟卡':'設步驟卡與模型'),'sheet','stepx:'+id)}</div>`;
+   h=h.replace(/<div class="mrow">(?![\s\S]*<div class="mrow">)/,sec+'<div class="mrow">')}}
+ return h}}
+ACT.stadd=()=>{const box=$('#stRows');if(!box)return;const n=box.querySelectorAll('.strow').length;if(n>=30){toast('最多 30 步');return}
+ box.insertAdjacentHTML('beforeend',stepRow(stepOf({name:''}),n));const i=box.querySelector('.strow:last-child .st-name');if(i)i.focus()};
+ACT.stdel=i=>{const box=$('#stRows');if(!box)return;const r=box.querySelector(`.strow[data-st="${i}"]`);if(r)r.remove();
+ box.querySelectorAll('.strow').forEach((e,k)=>{e.dataset.st=k;e.querySelector('.strh b').textContent=`第 ${k+1} 步`;e.querySelector('[data-act="stdel"]').dataset.id=k})};
+ACT.stsave=id=>{const rows=[...document.querySelectorAll('#stRows .strow')],it=todoOf(id),c=it&&it.raw;if(!c)return;
+ const steps=rows.map(r=>({name:r.querySelector('.st-name').value.trim(),model:r.querySelector('.st-model').value,mode:r.querySelector('.st-mode').value,skill:r.querySelector('.st-skill').value,note:r.querySelector('.st-note').value.trim(),status:r.dataset.status||'pending'}));
+ const keep=steps.filter(s=>s.name||s.note);if(steps.some(s=>!s.name&&(s.note||s.skill))){S.err='stepx';render('keep');return}S.err='';
+ const old=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''}));
+ const body=keep.map(s=>({name:s.name,status:s.status,note:stepNote(s)}));
+ if(!LV.api||!LV.api.act){toast('離線中，連上再存');return}
+ closeThen(async()=>{try{await LV.api.act(id,'steps',{steps:body});await reload();toast(body.length?`存了 ${body.length} 張步驟卡`:'步驟卡清掉了',async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}catch(e){toast('沒存上：'+LERR(e))}})};
+WRITE.push('stsave','stadd','stdel');
+{const _p=pageHTML;pageHTML=function(){const h=_p(),x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw||!p.raw.id)return h;
+ return h.replace(/(data-id="pedit:[^"]*">✎ 編輯<\/button>)/,'$1'+mb('🧩 步驟卡','sheet','stepx:'+p.id))}}
+{const _ms=mineSheet;mineSheet=function(id){const i=id.indexOf(':'),k=id.slice(0,i),x=id.slice(i+1);const h=_ms(id);
+ return k==='todo'&&DB.todo.find(q=>q.id===x)?h.replace(/<\/div>$/,mi('🧩','步驟卡、模型、技能','sheet','stepx:'+x)+'</div>'):h}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
