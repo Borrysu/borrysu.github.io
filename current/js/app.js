@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v84');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v85');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3544,6 +3544,75 @@ ACT.pstask=v=>{const [id,i]=v.split('|'),p=DB.proj.find(q=>q.id===id),s=p&&p.raw
    f.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const k=$('#mkBtn');if(k)k.click()},true);document.body.appendChild(f)}
   const on=document.documentElement.classList.contains('marking');f.setAttribute('aria-pressed',on?'true':'false');f.querySelector('b').textContent=on?'完成':'編修'};
  const _r=render;render=function(d){_r(d);fab()};new MutationObserver(fab).observe(document.documentElement,{attributes:true,attributeFilter:['class']})}
+/* ---------- v85（2026-11-23）：案子詳情做成專案面板、交辦能轉案子或併進案子、工作屬於哪個案子 ----------
+   老大原話：「點進去卡片會有一種專案面板設計的感覺 排版美麗 會有質感顏色 按鈕等等顯示進度或者檔案夾雲端連結的位置之類的」
+   「交辦任務希望可以有轉變成工作或案子或合併到案件的步驟之類的。另外"工作"跟"交辦"跟"案子"可能要整合好。」
+   定義：案子＝有交付物或客戶的事；交辦＝你交給 AI 的一件事（可轉成案子或併進案子）；工作＝AI 現在在 Mac 上跑的那一棒（屬於某個交辦或案子時標出來）。
+   不動資料庫：轉案子＝workAdd＋cardEdit＋steps，併案子＝在案子步驟最後加一步，兩者都用 opp_drop 收掉原交辦（72 小時可救回，提示條可復原）。 */
+const HTTPS_RE=/https:\/\/[^\s<>"'）)」』，。、]+/g;
+const projSteps=p=>{const c=p.raw||{};if(c.progressSteps&&c.progressSteps.length)return c.progressSteps;return (p.steps||[]).map((n,i)=>({name:n,status:i<p.cur?'done':i===p.cur?'current':'pending'}))};
+const projKind=p=>isScript(p)?['劇本','script']:isBid(p)?['投標','bid']:['一般','gen'];
+function projPaths(p){const c=p.raw||{},out=[],seen={},add=(l,v)=>{v=String(v||'').trim();if(!v||/^[（(]/.test(v)||seen[v])return;seen[v]=1;out.push({l,p:v})};
+ add('案子資料夾',c.folderPath);(c.links||[]).forEach(l=>{if(l.path)add(l.kind==='review'?'內審':l.kind==='pool'?'Pool':l.label||'資料夾',l.path)});return out}
+function projLinks(p){const c=p.raw||{},out=[],seen={};
+ (c.links||[]).forEach(l=>{if(l.url&&l.kind!=='pay'&&!seen[l.url]){seen[l.url]=1;out.push({u:l.url,l:l.label||(l.kind==='pool'?'Pool':l.kind==='review'?'內審':'連結')})}});
+ String(c.why||'').replace(HTTPS_RE,u=>{u=u.replace(/[.,;]+$/,'');if(!seen[u]){seen[u]=1;let h='';try{h=new URL(u).hostname.replace(/^www\./,'')}catch(e){}out.push({u,l:h||'連結'})}return u});
+ return out.slice(0,4)}
+function projHero(p,h1){const c=p.raw||{},st=projSteps(p),tot=st.length,dn=st.filter(s=>s.status==='done'||s.status==='skipped').length,pct=tot?Math.round(dn/tot*100):0,
+ cur=st.find(s=>s.status==='current'||s.status==='blocked')||st.find(s=>s.status==='pending'),kd=projKind(p),paths=projPaths(p),lk=projLinks(p),blk=st.some(s=>s.status==='blocked'),real=!!c.id,
+ now=!tot?'還沒有步驟，按「編輯每一步」開始排':dn===tot?'每一步都做完了':(blk?'卡住：':'現在：')+cur.name;
+ const seg=tot?`<div class="pcx-seg" role="img" aria-label="${dn} 步做完，共 ${tot} 步">${st.slice(0,30).map(s=>`<i data-s="${esc(s.status)}"></i>`).join('')}</div>`:`<div class="pcx-seg" aria-hidden="true"><i></i></div>`;
+ const acts=[paths.length?B('📁 複製位置','pcxcopy',p.id+'|0','pcx-b'):'',...lk.map(l=>`<a class="btn pcx-b" href="${esc(l.u)}" target="_blank" rel="noopener noreferrer">☁ ${esc(clip(l.l,16))}</a>`),
+  B(bm('daqi')+'跟大器說','ai','daqi|proj:'+p.id+'||','pcx-b'),real?B('🧩 編輯每一步','sheet','stepx:'+p.id,'pcx-b'):''].filter(Boolean).join('');
+ const pth=paths.length?`<div class="pcx-paths">${paths.map((q,i)=>`<div><small>${esc(q.l)}</small><span>${esc(q.p)}</span></div>`).join('')}</div>`:`<p class="pcx-none">${real?'還沒有資料夾位置，也沒有雲端連結。':'這是示意案，沒有資料夾位置。'}</p>`;
+ return `<section class="pcx" data-k="${kd[1]}" aria-label="專案面板"><div class="pcx-main"><div class="pcx-top"><span class="pcx-kind">${kd[0]}</span>${chip(p.due,p.urg)}</div>${h1}
+ <div class="pcx-prog"><div class="pcx-num"><b>${pct}%</b><span>${tot?dn+' / '+tot+' 步':'0 步'}</span></div>${seg}<p class="pcx-now${blk?' blk':''}">${esc(now)}</p></div></div>
+ <div class="pcx-side"><div class="pcx-act">${acts}</div>${pth}</div></section>`}
+{const _p=pageHTML;pageHTML=function(){const h=_p(),x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p)return h;
+ return h.replace(/<h1 class="pt">[\s\S]*?<\/h1>/,m=>projHero(p,m))}}
+ACT.pcxcopy=v=>{const [id,i]=v.split('|'),p=DB.proj.find(q=>q.id===id),q=p&&projPaths(p)[+i];if(!q)return;
+ const ok=()=>toast('位置複製好了，回電腦貼到「前往資料夾」');try{navigator.clipboard.writeText(q.p).then(ok,()=>toast('複製被擋住了，請長按路徑自己選取'))}catch(e){toast('複製被擋住了，請長按路徑自己選取')}};
+// 交辦詳情：轉成案子、併到案子
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');
+ if(a[0]==='cview'&&a[1]==='todo'){const t=DB.todo.find(q=>q.id===a[2]);if(!t)return h;
+  return h+`<section class="sec"><h3>這件接下來</h3><p class="note">交辦＝你交給 AI 的一件事。有交付物或客戶，轉成案子；本來就是某個案子的一步，併進去。原交辦會收掉，72 小時內可救回。</p><div class="btns">${B('轉成案子','jtoproj',t.id,'pri')}${B('併到案子','sheet','jmerge:'+t.id)}</div></section>`}
+ if(a[0]==='hjob'){const j=jobs().find(q=>q.id===a.slice(1).join(':')),o=j&&jobOwner(j);
+  return o?h+`<div class="mrow">${mb('屬於〈'+esc(clip(o.name,18))+'〉 ›',o.k==='proj'?'page':'sheet',o.k==='proj'?'proj:'+o.id:'cview:todo:'+o.id)}</div>`:h}
+ if(a[0]==='jmerge'){const id=a[1],t=DB.todo.find(q=>q.id===id);if(!t)return shHead('這件交辦不在了');
+  const L=DB.proj.filter(p=>p.raw&&p.raw.id&&['doing','delivered'].includes(p.raw.status));
+  return shHead('併到哪個案子')+`<p class="note">「${esc(clip(t.title,30))}」會加在那個案子的最後一步（還沒做）。</p>`+(L.length?`<div class="rows">${L.map(p=>`<div class="rowi"><button class="rowb" data-act="jmergeto" data-id="${esc(id+'|'+p.id)}" style="min-height:52px"><span class="tx"><b>${esc(p.title)}</b><small>${esc(projSteps(p).length+' 步・'+(p.due||''))}</small></span><span class="rt"><span class="chev" aria-hidden="true">›</span></span></button></div>`).join('')}</div>`:`<div class="card"><p>目前沒有進行中的案子可以併。先用「轉成案子」。</p></div>`)}
+ return h}}
+const jSnap=c=>(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''}));
+async function jDrop(id){await LV.api.act(id,'deleted')}
+async function jRestore(id){await LV.api.act(id,'restore')}
+ACT.jtoproj=id=>{const t=DB.todo.find(q=>q.id===id),c=t&&t.raw;if(!c||!LV.api||!LV.api.workAdd){toast('離線中，連上再轉');return}
+ closeThen(async()=>{let n=null;try{n=await LV.api.workAdd(String(c.title||'新案子').slice(0,120));if(!n||!n.id)throw new Error('案子沒建起來');
+  const why=WHYOF(c).trim();if(why&&LV.api.cardEdit)await LV.api.cardEdit(n.id,{why});
+  const stp=jSnap(c);if(stp.length)await LV.api.act(n.id,'steps',{steps:stp})}
+  catch(e){toast('沒轉成：'+LERR(e));await reload();return}
+  let dropped=true;try{await jDrop(id)}catch(e){dropped=false;toast('案子建好了，但原交辦沒收掉（'+LERR(e)+'），請到交辦的「⋯」刪掉')}
+  await reload();if(DB.proj.find(q=>q.id===n.id))setTimeout(()=>ACT.page('proj:'+n.id),150);
+  if(dropped)toast('轉成案子了，原交辦收掉',async()=>{try{await jDrop(n.id);await jRestore(id);await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})})};
+ACT.jmergeto=v=>{const [tid,pid]=v.split('|'),t=DB.todo.find(q=>q.id===tid),c=t&&t.raw,p=DB.proj.find(q=>q.id===pid),pc=p&&p.raw;if(!c||!pc||!LV.api||!LV.api.act){toast('離線中，連上再併');return}
+ closeThen(async()=>{const old=jSnap(pc),nw=old.concat([{name:String(c.title||'交辦').slice(0,80),status:'pending',note:clip(WHYOF(c),90)}]).slice(0,30);
+  try{await LV.api.act(pid,'steps',{steps:nw})}catch(e){toast('沒併進去：'+LERR(e));await reload();return}
+  let dropped=true;try{await jDrop(tid)}catch(e){dropped=false;toast('已加成步驟，但原交辦沒收掉（'+LERR(e)+'），請到交辦的「⋯」刪掉')}
+  await reload();setTimeout(()=>ACT.page('proj:'+pid),150);
+  if(dropped)toast('併進「'+clip(p.title,14)+'」當最後一步',async()=>{try{await LV.api.act(pid,'steps',{steps:old});await jRestore(tid);await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})})};
+WRITE.push('jtoproj','jmergeto');
+// 工作屬於哪個交辦或案子
+const normT=s=>String(s||'').replace(/[（(][^）)]*[）)]/g,'').replace(/\s+/g,'').toLowerCase();
+function jobOwner(j){const r=j.raw||{},pj=normT(r.project),tt=normT(j.title||r.title);
+ const L=DB.proj.filter(p=>p.raw&&p.raw.id).map(p=>({k:'proj',id:p.id,name:p.title,keys:[p.title,p.short]})).concat(DB.todo.map(t=>({k:'todo',id:t.id,name:t.title,keys:[t.title]})));
+ for(const o of L)for(const k of o.keys){const n=normT(k);if(n.length<3)continue;if(pj&&(pj===n||(pj.length>=3&&(pj.includes(n)||n.includes(pj)))))return o;if(tt&&n.length>=4&&tt.includes(n))return o}
+ return null}
+{const _j=jobList;jobList=function(){const h=_j();if(E())return h;const js=jobs();if(!js.length)return h;
+ return h.split('<div class="rowi" data-card="').map((s,i)=>{if(!i)return s;const id=s.slice(0,s.indexOf('"')),j=js.find(q=>q.id===id);if(!j)return s;const o=jobOwner(j);
+  const own=`<div class="jown">${chip('工作')}${o?`<span>屬於</span>${mb('〈'+esc(clip(o.name,18))+'〉 ›',o.k==='proj'?'page':'sheet',o.k==='proj'?'proj:'+o.id:'cview:todo:'+o.id)}`:'<span>獨立進行，沒對到案子或交辦</span>'}</div>`;
+  return s.replace('</span></div></div>','</span></div>'+own+'</div>')}).join('<div class="rowi" data-card="')}}
+{const _h=homeL2;homeL2=function(){const h=_h();if(E())return h;const k=h.indexOf('正在跑');if(k<0)return h;
+ const a=h.indexOf('<div class="seg jseg"',k),b=h.indexOf('<div class="rows">',k),i=a>-1&&(b<0||a<b)?a:b;if(i<0)return h;
+ return h.slice(0,i)+`<p class="note jdef"><b>案子</b>有交付物或客戶的事・<b>交辦</b>你交給 AI 的一件事，可轉成案子或併進案子・<b>工作</b>AI 現在在 Mac 上跑的那一棒</p>`+h.slice(i)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
