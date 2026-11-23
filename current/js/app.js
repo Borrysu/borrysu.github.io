@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v81');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v82');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3496,6 +3496,24 @@ WRITE.push('pst','bidsteps','ydhand','beatfix');
    老大原話：「霸霸要用霸霸的頭像啊 跟動態」「啥鬼，只有我做好了的按鈕，沒有大器處理嗎 或者霸霸處裡」 */
 {const _y=ydSec;ydSec=function(){const h=_y();if(!h)return h;
  return h.replace(/(<div class="rowi" data-card="([^"]*)"><div class="rowb">[\s\S]*?<span class="rt">)/g,(m,a,id)=>a+`<button class="ydface" data-act="ydhand" data-id="daqi|${id}" aria-label="請大器代辦">${bm('daqi')}</button><button class="ydface" data-act="ydhand" data-id="baba|${id}" aria-label="請霸霸設置">${bm('baba')}</button>`)}}
+/* ---------- v82（2026-11-23）：老大面板意見 msg 203、207、210 ----------
+   「封存放最後面」→ 案子房間分類順序：案子、交辦、公司、劇本、封存。
+   「我新增案子還沒更新完頁面好像就更新導致我打的內容消失」「新增案子卻沒有出現」→ 背景更新重畫時，彈出卡與詳情頁裡打到一半的字、勾選、游標都保留（原因：重畫把表單清空，送出時案名是空的，所以沒建出來）。
+   「點進卡片之後大器跟定定的位置分配很怪，可以接近吧」→ 案子詳情頁大器和定定的臉放在同一排。 */
+{const _zp=zoneProj;zoneProj=function(){const h=_zp();return h.replace(/(<div class="seg" role="group" aria-label="案子分類">)([\s\S]*?)(<\/div>)/,(m,a,b,c)=>{
+ const arch=(b.match(/<button[^>]*data-id="proj:arch"[^>]*>[\s\S]*?<\/button>/)||[''])[0];return arch?a+b.replace(arch,'')+arch+c:m})}}
+// 重畫時保留表單
+{const keyOf=()=>(S.sheet||'')+'#'+(S.page||'');
+ const snap=()=>{const out={k:keyOf(),f:[],act:null};['#sheet','#page'].forEach(sel=>{const box=$(sel);if(!box||box.hidden)return;
+  box.querySelectorAll('input,textarea,select').forEach((e,i)=>{if(e.type==='hidden'||e.type==='button')return;out.f.push({sel,i,id:e.id,v:e.value,c:e.checked,def:e.type==='checkbox'||e.type==='radio'?e.defaultChecked===e.checked:e.defaultValue===e.value})});
+  const a=document.activeElement;if(a&&box.contains(a)&&/^(INPUT|TEXTAREA)$/.test(a.tagName)){const all=[...box.querySelectorAll('input,textarea,select')];out.act={sel,i:all.indexOf(a),s:a.selectionStart,e:a.selectionEnd}}});return out};
+ const back=o=>{if(!o||o.k!==keyOf())return;o.f.forEach(x=>{if(x.def)return;const box=$(x.sel);if(!box)return;const e=x.id?box.querySelector('#'+CSS.escape(x.id)):box.querySelectorAll('input,textarea,select')[x.i];
+   if(!e)return;if(e.type==='checkbox'||e.type==='radio')e.checked=x.c;else e.value=x.v});
+  if(o.act){const box=$(o.act.sel),e=box&&box.querySelectorAll('input,textarea,select')[o.act.i];if(e&&document.activeElement!==e){try{e.focus({preventScroll:true});if(o.act.s!=null)e.setSelectionRange(o.act.s,o.act.e)}catch(err){}}}};
+ const _r=render;render=function(d){const o=snap();_r(d);back(o)}}
+// 案子詳情：大器、定定放同一排
+{const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;
+ return h.replace(/<div class="aifs([^"]*)">/,(m,c)=>`<div class="aifs${c} aifs2">${aiF('daqi','proj:'+x[1])}`)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
