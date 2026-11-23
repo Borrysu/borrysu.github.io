@@ -73,6 +73,8 @@
       names: { thinking: '比價中', logged: '比好了', alert: '價格變了' } },
     dinding: { shape: 'hex', color: '#FFFFFF', eye: '#17151E', outline: true, label: '定定',
       names: { thinking: '想一下', logged: '有看法了', alert: '有風險' } },
+    baba:    { shape: 'shield', color: '#22222A', eye: '#F4F4F6', outline: true, label: '霸霸',
+      names: { thinking: '設置中', logged: '設好了', alert: '要你點頭' } },
     kimkim:  { shape: 'star6', color: '#FF6700', label: '金金',
       names: { thinking: '看值不值', logged: '看完了', alert: '先別買' } },
     // 大器：不是 Grok Bot，是照同一套畫法自己設計的。1122-E：紫色球身（App 色票 violet）、黑眼、黑耳內、兩隻黑豹耳
@@ -122,6 +124,13 @@
     // tablet：App 2D 輪廓 _s(114,74)＝半寬 114、半高 74、兩端半圓（橫的體育場形）；
     // 3D 是 pill axis 0＝沿 x 軸躺平的膠囊（圓柱＋兩端半球），size 1.3923；
     // 眼睛 seat wrapX＝繞著圓柱面貼，jo.tablet＝寬 .2132、高 .4674、間距 .587776、shiftY .02
+    // shield：霸霸（Grok Bot 本機資料 avatarShape shield／black，2026-11-23 唯讀查到）。盾牌：平頂圓角、兩側直下、底部收成圓尖；3D 照 hex 的 extrusion
+    shield: {
+      kind: 'slab', half: 0.95, corner: 0, depth: 0.34,
+      eye: { w: 1, h: 0.92, gap: 1, shiftY: 0.02 },
+      pose: { yaw: -12, pitch: 10, roll: -8, k: 0.55 },
+      path: function (S) { return scalePath('M-0.86 -0.72Q-0.86 -0.92 -0.66 -0.92H0.66Q0.86 -0.92 0.86 -0.72V0.06C0.86 0.52 0.46 0.82 0 1C-0.46 0.82 -0.86 0.52 -0.86 0.06Z', S); }
+    },
     tablet: {
       kind: 'pill', half: 0.98, radius: 74 / 114,
       eye: { w: 0.2132 / 0.26, h: 0.4674 / 0.57, gap: 0.587776 / 0.64, shiftY: 0.02 }

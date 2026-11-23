@@ -128,7 +128,7 @@ const AVEYE='<rect class="ey" x="15.2" y="8.6" width="3.6" height="8" rx="1.8"/>
 const AV={jiji:'<rect class="bd" x="2" y="2" width="28" height="28" rx="8.5"/>'+AVEYE,
  tata:'<circle class="bd" cx="16" cy="16" r="14.5"/><ellipse class="hl" cx="9.5" cy="8.5" rx="4" ry="2.4" transform="rotate(-38 9.5 8.5)"/>'+AVEYE,
  peng:'<circle class="bd" cx="16" cy="16" r="14.5"/><ellipse class="hl" cx="9.5" cy="8.5" rx="4" ry="2.4" transform="rotate(-38 9.5 8.5)"/>'+AVEYE};
-const BFP={daqi:'daqi',jiji:'gig',tata:'tata',peng:'pompom'},BFC={daqi:'#a37aff',jiji:'#4d86ff',tata:'#ff6700',peng:'#00b351'};
+const BFP={daqi:'daqi',jiji:'gig',tata:'tata',peng:'pompom',baba:'baba'},BFC={daqi:'#a37aff',jiji:'#4d86ff',tata:'#ff6700',peng:'#00b351',baba:'#22222A'};
 const bm=(b,m,c)=>window.BotFace&&BFP[b]?`<span class="bm bf${c?' '+c:''}" data-b="${b}"${m?` data-m="${m}"`:''} aria-hidden="true"></span>`:AV[b]?`<span class="bm av" data-b="${b}" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false">${AV[b]}</svg></span>`:`<span class="bm" data-b="${b}" aria-hidden="true">${BOTS[b].mono}</span>`;
 const chip=(t,u)=>`<span class="chip${u?' urg':''}">${u?'▲ ':''}${esc(t)}</span>`;
 const B=(label,act,id,cls,x)=>`<button class="btn ${cls||''}" data-act="${act}"${id!=null?` data-id="${esc(id)}"`:''}${x||''}>${label}</button>`;
@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v80');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v81');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3448,7 +3448,7 @@ WRITE.push('stapply');
 const ydTxt=j=>{const p=ydParse(j);return `「${ydFace(j)}」${p.steps.length?'：'+p.steps.join('；'):''}`};
 {const _s=sheetHTML;sheetHTML=function(){const h=_s();const a=(S.sheet||'').split(':');if(a[0]!=='youdo')return h;const id=a.slice(1).join(':');
  const j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);if(!j||j.status!=='waiting_you')return h;
- const row=`<p class="h4">交給別人做</p><div class="ydmore">${B(bm('daqi')+'請大器代辦','ydhand','daqi|'+id)}${B('🛠 請霸霸設置','ydhand','baba|'+id)}</div>`;
+ const row=`<p class="h4">交給別人做</p><div class="ydmore">${B(bm('daqi')+'請大器代辦','ydhand','daqi|'+id)}${B(bm('baba')+'請霸霸設置','ydhand','baba|'+id)}</div>`;
  return h.replace(/(<p class="h4">還沒辦法做好？<\/p>)/,row+'$1')}}
 ACT.ydhand=async v=>{const [w,id]=v.split('|'),j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);if(!j)return;
  const body=w==='baba'?`【請霸霸設置】${ydTxt(j)}。這是設置類的事，請大器轉給霸霸（call-baba.sh）做；要老大本人登入、付款、按同意的留下來在逐流問老大。`
@@ -3492,6 +3492,10 @@ ACT.pst=async v=>{const [id,si,op]=v.split('|'),i=+si,it=todoOf(id),c=it&&it.raw
   toast(op==='del'?`刪掉「${clip(nm,14)}」`:op==='done'?`「${clip(nm,14)}」做完了`:op==='skipped'?`略過「${clip(nm,14)}」`:'改回還沒做',async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}
  catch(e){toast('沒改到：'+LERR(e))}};
 WRITE.push('pst','bidsteps','ydhand','beatfix');
+/* ---------- v81（2026-11-23）：霸霸用霸霸的臉；首頁「要你做」列也能直接交大器或霸霸 ----------
+   老大原話：「霸霸要用霸霸的頭像啊 跟動態」「啥鬼，只有我做好了的按鈕，沒有大器處理嗎 或者霸霸處裡」 */
+{const _y=ydSec;ydSec=function(){const h=_y();if(!h)return h;
+ return h.replace(/(<div class="rowi" data-card="([^"]*)"><div class="rowb">[\s\S]*?<span class="rt">)/g,(m,a,id)=>a+`<button class="ydface" data-act="ydhand" data-id="daqi|${id}" aria-label="請大器代辦">${bm('daqi')}</button><button class="ydface" data-act="ydhand" data-id="baba|${id}" aria-label="請霸霸設置">${bm('baba')}</button>`)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
