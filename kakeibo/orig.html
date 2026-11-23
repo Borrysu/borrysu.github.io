@@ -4,7 +4,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><!-- v34.8 原值 black-translucent，退回就改回這個值 --><meta name="apple-mobile-web-app-title" content="塔塔記帳">
 <meta name="theme-color" content="#FF6700"><meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=20261116f"><link rel="icon" href="favicon-32.png?v=20261116f">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=20261123"><link rel="icon" type="image/svg+xml" href="icon.svg?v=20261123"><link rel="icon" href="favicon-32.png?v=20261123">
 <title>塔塔記帳</title>
 <script>(function(){try{var sp=new URLSearchParams(location.search),q=sp.get('layout'),l=(q&&/^[ABCE]$/.test(q))?q:localStorage.getItem('kk_layout');
 if(l&&/^[ABC]$/.test(l)){var n=Number(sessionStorage.getItem('kk_hop')||0);if(n<3){sessionStorage.setItem('kk_hop',String(n+1));
@@ -3717,7 +3717,7 @@ function keyManifest() {
   if (KEY.length < 20) return;
   try { var root = new URL('./', location.origin + location.pathname.replace(/\/k\/[^/]+\/.*$/, '/')); var abs = function (u) { return new URL(u, root).href; };
     var m = { name: '塔塔記帳', short_name: '塔塔記帳', description: 'Borry 的共用記帳本', lang: 'zh-Hant', display: 'standalone', orientation: 'portrait', background_color: '#f2f2f7', theme_color: '#f99b1d', id: root.pathname, scope: root.href, start_url: abs('./?k=' + encodeURIComponent(KEY)),
-      icons: [{ src: abs('icon-192.png?v=20261116f'), sizes: '192x192', type: 'image/png' }, { src: abs('icon-512.png?v=20261116f'), sizes: '512x512', type: 'image/png' }, { src: abs('icon-maskable-512.png?v=20261116f'), sizes: '512x512', type: 'image/png', purpose: 'maskable' }] };
+      icons: [{ src: abs('icon-192.png?v=20261123'), sizes: '192x192', type: 'image/png', purpose: 'any' }, { src: abs('icon-512.png?v=20261123'), sizes: '512x512', type: 'image/png', purpose: 'any' }, { src: abs('icon-maskable-512.png?v=20261123'), sizes: '512x512', type: 'image/png', purpose: 'maskable' }] };
     var l = document.querySelector('link[rel=manifest]'); if (l) l.href = 'data:application/manifest+json;charset=utf-8,' + encodeURIComponent(JSON.stringify(m)); } catch (e) {}
 }
 function normalizeUrl() {
@@ -4320,7 +4320,7 @@ function kkExDecorate() {
   document.querySelectorAll('.cardrow.acr[data-aid]').forEach(function (b) { var a = acctId(b.dataset.aid), box = b.querySelector('div[style*="flex:1"]'); if (a && box) kkExSet(box, KKCF.pdHtml('acct', a.name)); });
   var top = DET[DET.length - 1], ds = document.querySelector('#det .dsum'); if (top && top.t === 'acct' && ds) { var a2 = acctId(top.arg && top.arg.id != null ? top.arg.id : top.arg); if (a2) kkExSet(ds, KKCF.pdHtml('acct', a2.name)); }
 }
-var KK_VER = 'kk-v36.2', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v36.3', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');

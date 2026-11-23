@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><!-- v34.8 原值 black-translucent，退回就改回這個值 --><meta name="apple-mobile-web-app-title" content="塔塔記帳">
 <meta name="theme-color" content="#f99b1d"><meta name="format-detection" content="telephone=no">
-<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=20261116f"><link rel="icon" href="favicon-32.png?v=20261116f">
+<link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="apple-touch-icon.png?v=20261123"><link rel="icon" type="image/svg+xml" href="icon.svg?v=20261123"><link rel="icon" href="favicon-32.png?v=20261123">
 <title>塔塔記帳</title>
 <script>/* v31 版面：kk_layout=E（原版進化）或 ?layout=E 時直接轉 orig.html，保留 ?k= 與 # */
 (function(){try{var q=new URLSearchParams(location.search),v=q.get("layout")||localStorage.getItem("kk_layout");if(v!=="E")return;var m=location.pathname.match(/\/k\/([A-Za-z0-9_-]{20,})\/?$/),dir=location.pathname.replace(/\/k\/[^/]+\/?$/,"/").replace(/[^/]*$/,"");q.delete("layout");if(m&&!q.get("k"))q.set("k",m[1]);var s=q.toString();location.replace(dir+"orig.html"+(s?"?"+s:"")+location.hash)}catch(e){}})();</script>
@@ -2225,7 +2225,7 @@ function keyManifest(){
   try{const root=new URL('./',location.origin+location.pathname.replace(/\/k\/[^/]+\/?$/,'/'));const abs=u=>new URL(u,root).href;
     const m={name:'塔塔記帳',short_name:'塔塔記帳',description:'Borry 的共用記帳本',lang:'zh-Hant',display:'standalone',orientation:'portrait',background_color:'#f2f2f7',theme_color:'#f99b1d',
       id:root.pathname,scope:root.href,start_url:abs('./?k='+encodeURIComponent(KEY)),
-      icons:[{src:abs('icon-192.png?v=20261116f'),sizes:'192x192',type:'image/png'},{src:abs('icon-512.png?v=20261116f'),sizes:'512x512',type:'image/png'},{src:abs('icon-maskable-512.png?v=20261116f'),sizes:'512x512',type:'image/png',purpose:'maskable'}]};
+      icons:[{src:abs('icon-192.png?v=20261123'),sizes:'192x192',type:'image/png',purpose:'any'},{src:abs('icon-512.png?v=20261123'),sizes:'512x512',type:'image/png',purpose:'any'},{src:abs('icon-maskable-512.png?v=20261123'),sizes:'512x512',type:'image/png',purpose:'maskable'}]};
     const l=document.querySelector('link[rel=manifest]');if(l)l.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(m));
   }catch(e){}
 }
@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.2', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.3', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');

@@ -1,5 +1,5 @@
-const V='kk-v36.2';
-const SHELL=['./','orig.html','manifest.json','apple-touch-icon.png?v=20261116f','icon-192.png?v=20261116f'];
+const V='kk-v36.3';
+const SHELL=['./','orig.html','manifest.json','apple-touch-icon.png?v=20261123','icon-192.png?v=20261123'];
 const LAZY=['chart.min.js','supabase.js'];
 // install never blocks or fails because of one slow file; the big libraries are fetched lazily by the page itself
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>Promise.all(SHELL.map(u=>c.add(u).catch(()=>{})))).then(()=>self.skipWaiting()));});
