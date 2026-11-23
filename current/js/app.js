@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v91');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v92');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3711,6 +3711,108 @@ async function jConvert(id,basket){const t=DB.todo.find(q=>q.id===id),c=t&&t.raw
   await reload();paint('keep');if(DB.proj.find(q=>q.id===n.id))setTimeout(()=>ACT.page('proj:'+n.id),150);
   toast(basket==='company'?'轉成公司案子了，原任務收掉':'轉成案子了，原任務收掉',async()=>{try{await LV.api.act(n.id,'close',{result:'void'});await jBack(id,how);await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})})}
 ACT.jtoproj=id=>jConvert(id,'');ACT.jtoco=id=>jConvert(id,'company');
+/* ---------- v92（2026-11-24）：彈出卡改版、等你時往前推、步驟執行鈕、詳情卡片化、「要你看」說明 ----------
+   老大原話（逐流 msg 297、302、315、319、322）：「這邊感覺就是要有個快速按鈕可以到達目的地處理或者接入面板處理，不是我要在那邊跑來跑去…並且文字排版的樣式，只要字多就會很難閱讀很辛苦」
+   「顯示等你的時候，要有更積極能往下往前做的步驟或方法或引導或按鈕」「怎麼會沒有執行鈕讓對應的ai 去執行工作？」「這塊區域的排版精美一點視覺一點不要像工程文字」
+   「要我看的定義是什麼？怎樣才能離開這裡？怎樣才能到這裡？」
+   1 工作、做完、要你做、拍板後續的彈出卡：最上面一句大字「現在要做什麼」，下面一排動作鈕；內容分段條列；網址、本機路徑、工具、機器人、視窗名自動變按鈕（跟誰說＝打開對話只預填，不代送）。
+   2 等你、卡住、等 Mac 的卡一定有往前推的鈕。3 案子步驟每步「▶ 執行這步」。4 詳情區改成卡片格。5 「要你看」加說明與每張卡為什麼在這裡。 */
+const PC_TOOLS=[[/Notion/i,'Notion','https://www.notion.so/'],[/Higgsfield/i,'Higgsfield','https://higgsfield.ai/'],[/雲端硬碟|Google ?Drive|雲端/i,'雲端硬碟','https://drive.google.com/'],[/Gmail/i,'Gmail','https://mail.google.com/'],[/行事曆|Calendar/i,'行事曆','https://calendar.google.com/'],[/GitHub/i,'GitHub','https://github.com/']];
+const PC_APPS=[[/Premiere/i,'Premiere'],[/DaVinci|達文西/i,'DaVinci'],[/ComfyUI/i,'ComfyUI'],[/Finder/i,'Finder']];
+const PC_BOTS=[['jiji',/集集|Gig ?Gig/i],['tata',/塔塔/],['peng',/朋朋/],['mon',/萌萌/],['din',/定定/],['kim',/金金/]];
+const PC_PATH=/(?:~|\/Users|\/Volumes)\/[^\s<>"'，。、；）)」』｜]+/g,PC_WIN=/【(?:監工|子|總控|機會雷達|櫃台|櫃檯)】[^\s，。、；｜|「」]{1,24}/g;
+function pcBtns(txt,about,skip){txt=String(txt||'');const out=[],seen={},add=(k,h)=>{if(seen[k]||(skip&&skip===k))return;seen[k]=1;out.push(h)},a=String(about||'這件');
+ (txt.match(HTTPS_RE)||[]).forEach(u=>{u=u.replace(/[.,;]+$/,'');let h='';try{h=new URL(u).hostname.replace(/^www\./,'')}catch(e){return}add(u,`<a class="btn pc-b" href="${esc(u)}" target="_blank" rel="noopener noreferrer">↗ ${esc(h)}</a>`)});
+ PC_TOOLS.forEach(([re,l,u])=>{if(re.test(txt))add('t:'+l,`<a class="btn pc-b" href="${u}" target="_blank" rel="noopener noreferrer">↗ 開 ${l}</a>`)});
+ (txt.match(PC_PATH)||[]).forEach(p=>{p=p.replace(/[.,;]+$/,'');const n=p.replace(/\/+$/,'').split('/').pop()||p;add(p,B('📁 複製「'+esc(n)+'」位置','pccopy',p,'pc-b'))});
+ PC_APPS.forEach(([re,l])=>{if(re.test(txt))add('a:'+l,B('🖥 叫大器開 '+l,'pcsay',`daqi|請在 Mac 上開 ${l} 處理「${a}」：`,'pc-b'))});
+ PC_BOTS.forEach(([b,re])=>{if(re.test(txt))add('b:'+b,B(bm(b)+'跟'+BOTS[b].name+'說','pcsay',`${b}|關於「${a}」：`,'pc-b'))});
+ if(/霸霸/.test(txt))add('b:baba',B(bm('baba')+'請霸霸（大器轉）','pcsay',`daqi|請轉給霸霸：關於「${a}」，`,'pc-b'));
+ (txt.match(PC_WIN)||[]).forEach(w=>add('w:'+w,B(bm('daqi')+'跟'+esc(w)+'說','pcsay',`daqi|請轉給${w}：關於「${a}」，`,'pc-b')));
+ return out}
+ACT.pcsay=v=>{const i=v.indexOf('|'),b=v.slice(0,i),t=v.slice(i+1),bb=BOTS[b]?b:'daqi';
+ const go=()=>openChat(bb,'',null,()=>{const x=$('#cText');if(x){x.value=t;x.focus();try{x.setSelectionRange(t.length,t.length)}catch(e){}}});
+ if(S.sheet)closeThen(()=>setTimeout(go,60));else go()};
+ACT.pccopy=p=>{const ok=()=>toast('位置複製好了，回電腦貼到「前往資料夾」');try{navigator.clipboard.writeText(p).then(ok,()=>toast('複製被擋住了，請長按路徑自己選取'))}catch(e){toast('複製被擋住了，請長按路徑自己選取')}};
+const pcLines=t=>{const out=[];String(t||'').replace(/\r/g,'').split('\n').map(x=>x.trim()).filter(Boolean).forEach(l=>{if(l.length>56)l.replace(/([。；！？])/g,'$1\n').split(/\n|｜/).map(x=>x.trim()).filter(Boolean).forEach(x=>out.push(x));else l.split('｜').map(x=>x.trim()).filter(Boolean).forEach(x=>out.push(x))});
+ return out.map(x=>x.replace(/^\s*(\d+[.、)）]|[①-⑩]|[-・•])\s*/,'')).filter(Boolean)};
+const pcSec=(title,t,ol)=>{const ls=pcLines(t);if(!ls.length)return '';const tag=ol?'ol':'ul';
+ return `<div class="pc-sec"><p class="pc-h">${title}</p>${ls.length===1?`<p class="pc-p">${esc(ls[0])}</p>`:`<${tag} class="pc-l">${ls.map(x=>`<li>${esc(x)}</li>`).join('')}</${tag}>`}</div>`};
+function pcView(o){return shHead(esc(o.kick))+`<div class="pc">`
+ +`<div class="pc-now${o.urg?' urg':''}"><p class="pc-k">現在要做什麼</p><p class="pc-big">${esc(o.now)}</p>${o.sub?`<p class="pc-sub">${esc(o.sub)}</p>`:''}<div class="pc-chips">${(o.chips||[]).filter(c=>c&&c[0]).map(c=>chip(c[0],c[1])).join('')}</div></div>`
+ +(o.acts&&o.acts.length?`<div class="pc-acts">${o.acts.join('')}</div>`:'')+(o.extra||'')
+ +(o.tools&&o.tools.length?`<div class="pc-sec"><p class="pc-h">一鍵到達</p><div class="pc-tools">${o.tools.join('')}</div></div>`:'')
+ +(o.secs||[]).join('')+(o.more?`<details class="pc-more"><summary>更多細節</summary>${o.more}</details>`:'')
+ +`<div class="mrow pc-edit">${(o.edit||[]).join('')}</div></div>`}
+const PCK={waiting_you:'要你做',running:'AI 在做',queued:'排隊中',waiting_mac:'等 Mac',failed:'卡住了',done:'做完了'};
+function pcJob(r,d){const id=String(r.id),st=r.status||'running',s=JST[st]||['進行中',0],p=ydParse(r),bot=LBOT(r.agent),bz=YD.busy?' disabled':'';
+ const face=r.ask||askCut(String(r.title||'').replace(/^拍板後續｜/,''),40),Q=`「${face}」`;
+ let now,sub='',acts=[],extra='',secs=[];
+ if(st==='waiting_you'){now=face;sub=p.prog||'';
+  const main=p.link?`<a class="btn pri pc-main" href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">↗ 打開連結</a>`:p.act?B(esc(p.actLabel),'ydrun',id,'pri pc-main',bz):B('✓ 我做好了','yddone',id,'pri pc-main',bz);
+  acts=[main,p.link||p.act?B('✓ 我做好了','yddone',id,'',bz):'',B(bm('daqi')+'交給大器處理','ydhand','daqi|'+id),B('📅 改期','pcsay',`daqi|${Q}改到＿＿再做，原因：`),B('✕ 不做了','ydskip',id)].filter(Boolean);
+  if(p.paste)extra=`<div class="pc-sec"><label class="f">${esc(p.paste)}<textarea id="ydPaste" rows="3" placeholder="貼在這裡"></textarea></label><div class="btns">${B(YD.busy?'送出中…':'送出','ydpaste',id,'pri wide',bz)}</div></div>`;
+  extra+=`<div class="mrow pc-alt">${mb(bm('baba')+'請霸霸設置','ydhand','baba|'+id)}${mb('還沒好','ydnot',id)}${mb('加註記','ydnote',id)}${mb('問大器','ydq',id)}</div>`;
+  secs.push(pcSec('怎麼做',p.steps.join('\n'),true))}
+ else{if(st==='failed'){now='卡住了，選一個處理方式';acts=[B(bm('daqi')+'交給大器重跑','ydhand','daqi|'+id,'pri pc-main'),B('問怎麼了','pcsay',`${bot}|${Q}卡在哪？要我做什麼？`),B('我自己來','pcsay',`daqi|${Q}我自己處理，你先停。`),B('▣ 收起來','hshelf','job|'+id+'|archive')]}
+  else if(st==='waiting_mac'){now='等 Mac 開機，開了會自動接著跑';acts=[B('請大器看 Mac','pcsay',`daqi|${Q}一直在等 Mac，幫我看 Mac 有沒有醒著。`,'pri pc-main'),B('問進度','pcsay',`${bot}|${Q}現在做到哪？`),B('改期','pcsay',`daqi|${Q}改到＿＿再做。`)]}
+  else if(st==='done'){now='做完了'+(r.resultPath?'，成果在下面':'');acts=[r.resultPath?(/^https:\/\//.test(r.resultPath)?`<a class="btn pri pc-main" href="${esc(r.resultPath)}" target="_blank" rel="noopener noreferrer">↗ 打開成果</a>`:B('📁 複製成果位置','pccopy',r.resultPath,'pri pc-main')):'',B('問這件','pcsay',`${bot}|關於${Q}：`),B('接著做下一步','pcsay',`daqi|${Q}做完了，下一步請：`),B('▣ 收起來','hshelf','job|'+id+'|archive')].filter(Boolean)}
+  else{now='不用你動，'+(r.agent||'大器')+'在做';acts=[B('問進度','pcsay',`${bot}|${Q}現在做到哪？`,'pri pc-main'),B('補一句','pcsay',`${bot}|關於${Q}，補充：`)]}
+  sub=face;secs.push(pcSec('在做什麼',String(r.title||'').replace(/^拍板後續｜/,'')),pcSec('做到哪',[p.prog].concat(p.steps).filter(Boolean).join('\n')))}
+ if(d)secs.unshift(pcSec('你拍板的問題',d.question));
+ let own='';try{const jj=jobs().find(q=>q.id===id)||{raw:r,title:r.title},o=jobOwner(jj);if(o)own=`<div class="mrow">${mb('屬於〈'+esc(o.name)+'〉 ›',o.k==='proj'?'page':'sheet',o.k==='proj'?'proj:'+o.id:'cview:todo:'+o.id)}</div>`}catch(e){}
+ const more=kvs([['誰',r.agent],['機器',r.machine],['案子',r.project],['更新',tstr(r.updatedAt)]])+(r.resultPath?`<p class="pc-path">${esc(r.resultPath)}</p>`:'')+own;
+ return pcView({kick:(d?'拍板後續・':'')+(PCK[st]||'工作'),now,sub,urg:s[1],chips:[[s[0],s[1]],d?['你選：'+(d.answerLabel||'')]:null,[r.agent],[r.project],[LAGO(r.updatedAt)]],acts,extra,
+  tools:pcBtns([r.title,r.note,r.resultPath].join('\n'),face,r.resultPath),secs,more,edit:[mb('✎ 改這張','sheet','hedit:job:'+id),mb('▣ 封存','hshelf','job|'+id+'|archive'),mb('🗑 刪掉','hshelf','job|'+id+'|delete')]})}
+function pcEvt(r){const id=String(r.id),face=r.ask||askCut(r.summary,40),bot=LBOT(r.actor),Q=`「${face}」`,pth=r.path||'';
+ return pcView({kick:'做完了',now:face,chips:[['做完',0],[r.actor],[r.project],[tstr(r.at)]],
+  acts:[pth?(/^https:\/\//.test(pth)?`<a class="btn pri pc-main" href="${esc(pth)}" target="_blank" rel="noopener noreferrer">↗ 打開成果</a>`:B('📁 複製檔案位置','pccopy',pth,'pri pc-main')):'',B('問這件','pcsay',`${bot}|關於${Q}：`),B('接著做下一步','pcsay',`daqi|${Q}做完了，下一步請：`)].filter(Boolean),
+  tools:pcBtns([r.summary,pth].join('\n'),face,pth),secs:[pcSec('做完了什麼',r.summary)],more:pth?`<p class="pc-path">${esc(pth)}</p>`:'',
+  edit:[mb('✎ 改這張','sheet','hedit:event:'+id),mb('▣ 封存','hshelf','event|'+id+'|archive'),mb('🗑 刪掉','hshelf','event|'+id+'|delete')]})}
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':'),t=a[0],id=a.slice(1).join(':');
+ if(t==='hjob'||t==='youdo'){const r=hubRow('job',id)||((DB.jobs.find(x=>String(x.id)===id)||{}).raw);if(r)return pcJob(r)}
+ if(t==='hevt'){const r=hubRow('event',id)||((DB.events.find(x=>String(x.id)===id)||{}).raw);if(r)return pcEvt(r)}
+ if(t==='hdecf'){const d=((LV.hub&&LV.hub.answered)||[]).find(x=>x.id===id),j=d&&decJob(id);if(d&&j)return pcJob(j,d)}
+ let h=_s();
+ if(t==='dec'||t==='why'){const d=DB.dec.find(x=>x.id===a[1]);if(d){const rec=d.kind==='talk'?null:((d.opts||[]).find(o=>o.rec)||(d.opts||[])[0]);
+  const tl=pcBtns([d.q,d.detail,d.projFull,d.link].join('\n'),askCut(d.ask||d.q,30));
+  const nb=`<div class="pc pc-dec"><div class="pc-now"><p class="pc-k">現在要做什麼</p><p class="pc-big">${d.kind==='talk'?'只有你本人能做：照下面步驟辦':'選一個做法，按下去就交給大器'}</p>${rec?`<p class="pc-sub">大器推薦：${esc(rec.label)}</p>`:''}</div>${tl.length?`<div class="pc-sec"><p class="pc-h">一鍵到達</p><div class="pc-tools">${tl.join('')}</div></div>`:''}</div>`;
+  h=h.replace(/(<div class="shead">[\s\S]*?<\/button><\/div>)/,'$1'+nb).replace('>✎ 編輯<','>✎ 改這張<')}}
+ return h}}
+// 3 案子步驟：每一步「▶ 執行這步」（走既有 opp_run；先在這張卡寫一則【只做這一步】，櫃台照這則只做那一步）
+const PSR={};
+{const _p=pageHTML;pageHTML=function(){const h=_p(),x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw||!p.raw.id)return h;
+ const c=p.raw,st=c.progressSteps||[],busy=['running','queued'].includes(c.runStatus);let i=-1;
+ return h.replace(/(<li class="pstr[^"]*" data-s="([^"]*)">[\s\S]*?<div class="pstb">)/g,(m,a,s)=>{i++;const k=p.id+'|'+i;
+  if(s==='done'||s==='skipped')return m;
+  if((busy&&(s==='current'||s==='blocked'))||(PSR[k]&&Date.now()-PSR[k]<15*60e3))return a+`<span class="chip urg pstrun-on">${busy&&(s==='current'||s==='blocked')?'跑中':'已送出'}</span>`;
+  return a+`<button class="mb pstrun" data-act="pstrun" data-id="${esc(k)}">▶ 執行這步</button>`})}}
+ACT.pstrun=async v=>{const [id,si]=v.split('|'),i=+si,p=DB.proj.find(q=>q.id===id),c=p&&p.raw,s=c&&(c.progressSteps||[])[i];if(!s)return;
+ const k=id+'|'+i;if(PSR[k]&&Date.now()-PSR[k]<15*60e3){toast('這步剛送出過，Mac 在開視窗');return}
+ if(['running','queued'].includes(c.runStatus)&&(s.status==='current'||s.status==='blocked')){toast('這步已經在跑了');return}
+ if(!LV.api||!LV.api.act||!LV.api.say){toast('離線中，連上再送');return}
+ const o=stepOf(s),body=`【只做這一步】第 ${i+1} 步：${o.name}。用 ${o.model==='不指定'?'預設模型':o.model}，${o.mode}${o.skill?'，技能 '+o.skill:''}。${o.note?'這步備註：'+o.note+'。':''}其他步驟不要動；做完把這步標做完，回報成果位置。`;
+ PSR[k]=Date.now();render('keep');
+ try{await LV.api.say(id,body,'daqi')}catch(e){delete PSR[k];render('keep');toast('沒送出：'+LERR(e));return}
+ let ran=true;try{const nc=await LV.api.act(id,'run');if(nc){const j=LV.items.findIndex(q=>q.id===id);if(j>-1)LV.items[j]=nc}}catch(e){ran=false}
+ LV.sig='';paint('keep');
+ toast(ran?`送出第 ${i+1} 步。Mac 會開新視窗只做這步；開不了窗時，Claude App 側欄會出現開窗卡，點一下就開工`:`第 ${i+1} 步交給大器櫃台了，它會照這步開視窗；進度寫回這張卡`);setTimeout(()=>reload&&reload(),4e3)};
+WRITE.push('pstrun');
+// 4 詳情區：卡片格，圖示＋標題＋重點大字
+const PDI={step:'🧭',date:'📅',money:'💰',team:'👥',file:'📁',hist:'🕘'};
+{const _p=pageHTML;pageHTML=function(){let h=_p();if(!/^proj:/.test(S.page||''))return h;
+ h=h.replace(/<section class="sec">(\s*)<div class="sh"><h2>詳情<\/h2><\/div>(\s*)<div class="rows">/,'<section class="sec pdx">$1<div class="sh"><h2>詳情</h2></div>$2<div class="rows pdgrid">');
+ return h.replace(/(<button class="rowb" data-act="open" data-id="pd:[^"]*:([a-z]+)" aria-expanded="[a-z]+">)<span class="tx"><b>([\s\S]*?)<\/b><small>([\s\S]*?)<\/small><\/span>/g,(m,a,k,t,sm)=>
+  `${a}<span class="pdic" aria-hidden="true">${PDI[k]||'•'}</span><span class="tx"><small class="pdt">${t}</small><b class="pdv">${sm.replace(/(NT\$ ?[\d,]+|剩 \d+ 天|\d+ 步做到第 \d+ 步)/g,'<em>$1</em>')}</b></span>`)}}
+// 5 「要你看」：定義、怎麼進來、怎麼離開；每張卡寫為什麼在這裡
+function needWhy(p){const c=p.raw||{},a=[];if(c.progressBlocker)a.push('卡在：'+c.progressBlocker);if(c.runStatus==='failed')a.push('AI 跑到一半失敗');
+ const dl=c.deadline||(c.deliveryDate?Date.parse(c.deliveryDate):null),dd=c.id?LDAYS(dl):null;if(dd!=null&&dd<=3)a.push(dd<0?'已過期限':dd===0?'今天到期':dd+' 天內到期');else if(!c.id&&p.urg)a.push('3 天內到期');
+ return a.join('・')||'有事要你看'}
+{const _pc=projCard;projCard=function(p){const h=_pc(p);if(p.g!=='need')return h;return h.replace(/(<\/h3>)/,`$1<p class="ndwhy">▲ 在這裡因為：${esc(needWhy(p))}</p>`)}}
+{const _zp=zoneProj;zoneProj=function(){const h=_zp();const i=h.indexOf('<h2>要你看<');if(i<0)return h;const e=h.indexOf('</h2>',i)+5,op=!!S.open.needhelp;
+ const btn=`<button class="mb ndq" data-act="open" data-id="needhelp" aria-expanded="${op}">ⓘ 什麼會在這裡</button>`;
+ const help=op?`<div class="card ndhelp fadein"><p><b>「要你看」</b>＝進行中的案子裡，現在需要你出手的那幾件。</p><p class="pc-h">什麼會進來</p><ul class="pc-l"><li>大器寫了卡點（卡在某件事）</li><li>AI 跑到一半失敗</li><li>期限剩 3 天內，還沒交</li></ul><p class="pc-h">怎麼離開</p><ul class="pc-l"><li>解掉卡點，或在步驟按「✓ 做完」</li><li>請 AI 重跑成功</li><li>改期限，或送件那步做完（會改成「已交・等下一步」）</li></ul><p class="note">每張卡上的「▲ 在這裡因為」寫出它被列進來的原因。</p></div>`:'';
+ const j=h.indexOf('</div>',e);return j<0?h:h.slice(0,e)+btn+h.slice(e,j+6)+help+h.slice(j+6)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

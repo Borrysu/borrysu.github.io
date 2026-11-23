@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v91';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v92';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -118,6 +118,8 @@ function workRows() {
     base({ id: 'work-doing', status: 'doing', title: '某品牌形象短片導演（示意）', folder_path: '/Users/me/案子/11-10_某品牌短片', links: [{ kind: 'pool', label: 'Pool（官方文件、成品）', path: '/Users/me/案子/11-10_某品牌短片/Pool' }, { kind: 'review', label: '內審', path: '/Users/me/案子/11-10_某品牌短片/內審' }, { kind: 'other', label: '雲端資料夾', url: 'https://example.com/drive/brand-film' }], run_status: 'running', progress_note: '分鏡第二版寫好，等客戶回。', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 2 * H).toISOString(),
       progress_steps: [{ name: '讀客戶 brief', status: 'done' }, { name: '分鏡第一版', status: 'done' }, { name: '分鏡第二版', status: 'current', note: '等客戶回覆' }, { name: '拍攝', status: 'pending' }, { name: '剪接交片', status: 'pending' }], quote_amount: 120000, signed: true, deposit_amount: 36000, deposit_date: dayOff(-6), final_amount: 84000, final_due: dayOff(30), payment_terms: '簽約付三成，交片後 30 天付尾款',
       career: { line: '個人導演', public_identity: '導演 林遠', status_gain: '中', status_gain_note: '品牌會在片尾掛導演名', est_hours: 60, tax_withheld: true, referrer: '朋友介紹', kim_judgment: '錢普通，但能放作品集。' } }),
+    base({ id: 'work-need', status: 'doing', title: '某咖啡品牌開幕短片（示意）', deadline: new Date(Date.now() + 2 * D).toISOString(), folder_path: '/Users/me/案子/11-20_咖啡開幕', links: [], run_status: 'failed', progress_blocker: '客戶還沒給 Logo 向量檔', progress_note: '粗剪好了，片尾要放 Logo。', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 3 * H).toISOString(),
+      progress_steps: [{ name: '粗剪', status: 'done' }, { name: '片尾放 Logo', status: 'blocked', note: '〔模型：Opus 5.5｜方式：開子視窗｜技能：splice〕等客戶 Logo' }, { name: '調色', status: 'pending' }, { name: '交片', status: 'pending' }], quote_amount: 45000, career: {} }),
     base({ id: 'work-delivered', status: 'delivered', title: 'AI 影片比賽代製（示意）', basket: 'other', quote_amount: 30000, delivery_date: dayOff(-2), delivered_at: new Date(Date.now() - 2 * D).toISOString(), expected_pay_date: dayOff(12), payment_terms: '交件後兩週匯款',
       career: { line: 'AI 影片與比賽', est_hours: 12, actual_hours: 15, tax_withheld: false } }),
     base({ id: 'work-paid', status: 'paid', title: '工作坊講師鐘點（示意）', basket: 'achievement', quote_amount: 8000, received_amount: 7200, delivery_date: dayOff(-20), delivered_at: new Date(Date.now() - 20 * D).toISOString(), paid_at: new Date(Date.now() - 5 * D).toISOString(),
@@ -167,6 +169,12 @@ export function mockAdapter(modeStr) {
   hub.jobs.push({ id: 'j3', agent: '大器（Claude）', machine: 'Mac', project: '把 IG 貼文排程接上 Notion（示意）', title: '寫 IG 串接第二棒', status: 'running', updated_at: new Date(Date.now() - 12 * 60e3).toISOString() });
   hub.jobs.push({ id: 'j9', agent: '老大', machine: 'Borry 的 MacBook', title: '拍板後續｜示範平台三個帳號登入', status: 'waiting_you', source_key: 'dec-h9', ask: flags.has('xss') ? badH : '按開始登入示範平台三帳號',
     note: (flags.has('xss') ? badH + '\n' : '') + '決定 h9｜老大選「照你建議的做」｜三個帳號要你本人登入。\n已試：連接器未授權。\n按開始登入後卡上出現連結，登入完把網址貼回。\n動作：hf_login｜開始登入' + (flags.has('xss') ? '\n連結：javascript:window.__xss=9' : ''), updated_at: new Date(Date.now() - 3 * 60e3).toISOString() });
+  // 2026-11-24 彈出卡示範：網址、本機路徑、工具名、視窗名都會變按鈕
+  hub.jobs.push({ id: 'j4', agent: '大器（Claude）', machine: 'Mac', project: '某品牌形象短片導演（示意）', title: '試看帶要你看一眼', status: 'waiting_you', ask: '看試看帶第二版，回一句可不可以', note: '試看帶放在雲端：https://example.com/drive/preview-v2\n本機檔：/Users/me/案子/11-10_某品牌短片/02_Render/1124_試看v2.mp4\n剪接檔在 Premiere，有意見也可以直接跟【監工】品牌短片 說\n配樂要不要換，問塔塔預算夠不夠', updated_at: new Date(Date.now() - 25 * 60e3).toISOString() });
+  hub.jobs.push({ id: 'j5', agent: '大器（Claude）', machine: 'Mac', project: '某咖啡品牌開幕短片（示意）', title: '片尾 Logo 動態', status: 'failed', note: '找不到 Logo 向量檔，Notion 案子頁也沒有附件。\n已試：信箱、雲端硬碟都搜過。', updated_at: new Date(Date.now() - 50 * 60e3).toISOString() });
+  hub.events.push({ id: 3, at: new Date(Date.now() - 7 * H).toISOString(), actor: '大器（Claude）', project: '某品牌形象短片導演（示意）', summary: '分鏡第二版 PDF 輸出好了，放在內審資料夾。', path: '/Users/me/案子/11-10_某品牌短片/內審/1124_分鏡v2.pdf' });
+  hub.answered.push({ id: 'h5', project: '某品牌形象短片（示意）', question: '拍攝日要不要先訂 12/3', kind: 'choice', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - D).toISOString(), options: [{ key: 'ok', label: '先訂 12/3' }], status: 'answered', answer_key: 'ok', answer_label: '先訂 12/3', answer_note: '', answered_at: new Date(Date.now() - 6 * H).toISOString(), picked_up_at: new Date(Date.now() - 5 * H).toISOString() });
+  hub.jobs.push({ id: 'j6', agent: '老大', machine: 'Borry 的 MacBook', title: '拍板後續｜拍攝日先訂 12/3', status: 'waiting_you', source_key: 'dec-h5', ask: '打給場地確認 12/3 有空', note: '決定 h5｜老大選「先訂 12/3」｜場地要你本人打電話。\n場地資料在 Notion 案子頁\n確認後回「我做好了」，大器接著排通告', updated_at: new Date(Date.now() - 2 * H).toISOString() });
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }
   // v41 示範資料
   const iso = n => { const x = new Date(Date.now() + n * D); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };

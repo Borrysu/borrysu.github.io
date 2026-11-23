@@ -1291,3 +1291,49 @@ body:has(#mkBox) .mkfab{display:none}
 .jdef{margin:6px 0 10px;line-height:1.7}.jdef b{color:var(--ink);margin-right:4px}
 .jsug{display:flex;gap:10px;align-items:flex-start}.jsug .bm{width:32px;height:32px;flex:none}.jnext .ydmore{margin-top:8px}
 .mkfab{top:calc(env(safe-area-inset-top) + 10px);bottom:auto;right:68px;height:44px}@media(min-width:900px){.mkfab{right:76px}}
+/* v92 彈出卡：現在要做什麼、動作列、一鍵到達、條列 */
+.pc{display:block}
+.pc-now{margin:10px 0 0;padding:16px;border-radius:18px;background:var(--sf2);border:1px solid var(--line)}
+.pc-now.urg{border-color:#f3efe0;box-shadow:inset 4px 0 0 #f3efe0}
+.pc-k{margin:0;font-size:12px;color:var(--ink2);letter-spacing:.04em}
+.pc-big{margin:4px 0 0;font-size:21px;line-height:1.4;font-weight:800;overflow-wrap:anywhere}
+.pc-sub{margin:6px 0 0;color:var(--ink2);font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.pc-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.pc-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.pc-acts .btn{width:100%;min-height:48px;text-decoration:none;padding-inline:10px}
+.pc-acts .pc-main{grid-column:1/-1;min-height:52px;font-weight:700}
+.pc-acts .btn .bm{width:22px;height:22px}
+.pc-sec{margin-top:18px}
+.pc-h{margin:0 0 6px;font-size:13px;font-weight:700;color:var(--ink2);letter-spacing:.04em}
+.pc-p{margin:0;line-height:1.7;overflow-wrap:anywhere}
+.pc-l{margin:0;padding-left:1.3em;display:grid;gap:6px;line-height:1.65}
+.pc-l li{overflow-wrap:anywhere}.pc-l li::marker{color:var(--ink2)}
+.pc-tools{display:flex;flex-wrap:wrap;gap:8px}
+.pc-tools .btn{min-height:44px;text-decoration:none;font-size:14px;padding-inline:12px;max-width:100%;white-space:normal;text-align:left}
+.pc-tools .btn .bm{width:22px;height:22px}
+.pc-alt{margin-top:8px}
+.pc-more{margin-top:16px;border-top:1px solid var(--line);padding-top:4px}
+.pc-more summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--ink2);font-size:14px}
+.pc-path{margin:8px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;overflow-wrap:anywhere;user-select:all;padding:8px 10px;border-radius:10px;background:var(--sf2)}
+.pc-edit{margin-top:14px;border-top:1px solid var(--line);padding-top:4px}
+.pc-dec{margin-bottom:6px}
+@media(min-width:900px){.pc-acts{grid-template-columns:repeat(3,1fr)}.pc-acts .pc-main{grid-column:auto}}
+/* v92 步驟執行鈕 */
+.pstrun{color:var(--ink);font-weight:700}
+.pstrun-on{align-self:center;margin-right:6px}
+/* v92 詳情卡片格 */
+.pdx .pdgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:none;border:0;box-shadow:none;overflow:visible;backdrop-filter:none;-webkit-backdrop-filter:none}
+.pdx .pdgrid .rowi{border:1px solid var(--line);border-radius:16px;background:var(--sf);overflow:hidden}
+.pdx .pdgrid .rowi:has(>.rowx){grid-column:1/-1}
+.pdx .pdgrid .rowb{flex-direction:column;align-items:flex-start;gap:6px;min-height:104px;padding:14px;position:relative;text-align:left}
+.pdx .pdgrid .rowb .rt{position:absolute;top:12px;right:12px}
+.pdx .pdic{font-size:22px;line-height:1}
+.pdx .rowb .tx small.pdt{white-space:normal;font-size:12px;letter-spacing:.04em}
+.pdx .rowb .tx b.pdv{white-space:normal;font-size:15px;line-height:1.45;margin-top:2px;overflow-wrap:anywhere}
+.pdx .pdv em{font-style:normal;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums}
+.pdx .pdgrid .rowi:has(.rowb[aria-expanded=true]){border-color:var(--line2)}
+@media(min-width:900px){.pdx .pdgrid{grid-template-columns:repeat(3,1fr)}}
+/* v92 要你看 */
+.ndq{margin-left:auto;color:var(--ink)}
+.ndhelp{margin:0 0 12px;line-height:1.6}.ndhelp .pc-h{margin-top:12px}
+.ndwhy{margin:6px 0 0;font-size:13px;font-weight:700;color:#f3efe0;overflow-wrap:anywhere}
