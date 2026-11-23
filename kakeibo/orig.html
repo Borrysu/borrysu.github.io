@@ -4320,7 +4320,7 @@ function kkExDecorate() {
   document.querySelectorAll('.cardrow.acr[data-aid]').forEach(function (b) { var a = acctId(b.dataset.aid), box = b.querySelector('div[style*="flex:1"]'); if (a && box) kkExSet(box, KKCF.pdHtml('acct', a.name)); });
   var top = DET[DET.length - 1], ds = document.querySelector('#det .dsum'); if (top && top.t === 'acct' && ds) { var a2 = acctId(top.arg && top.arg.id != null ? top.arg.id : top.arg); if (a2) kkExSet(ds, KKCF.pdHtml('acct', a2.name)); }
 }
-var KK_VER = 'kk-v36.1', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v36.2', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4702,9 +4702,12 @@ document.addEventListener('click', function (e) {
 
 /* ---- kk-v36 ---- */
 /* ================= kk-v36（E 原版進化）：老大第一批編修意見 #2 訂閱明細、#4 請塔塔繳、#5 訂閱分類（#1、#3 見各處） ================= */
-var SC36 = ['AI 工具', '影音', '雲端與軟體', '工作', '生活', '其他'], SF36 = '';
+var SC36 = ['AI 工具', '影音', '雲端與軟體', '工作', '健康', '社群', '生活', '其他'], SF36 = ''; /* v36.2 加健康、社群 */
 function sc36Auto(s) {
   var n = (s.name || '') + ' ' + (s.via || '');
+  if (s.payer === 'company') return '工作'; /* v36.2 公司付全部歸工作 */
+  if (/Strong|fatsecret|健身|Gym|Headspace|Calm|Keep\b/i.test(n)) return '健康';
+  if (/Meta Verified|Sniffies|Tinder|Bumble|Threads|X Premium|Twitter/i.test(n)) return '社群';
   if (/Claude|ChatGPT|OpenAI|Grok|Midjourney|Higgsfield|Suno|Gemini|Perplexity|Cursor|Copilot|Runway|Kling|ElevenLabs|Poe\b/i.test(n)) return 'AI 工具';
   if (/Adobe|Milanote|Notion|Figma|Canva|Microsoft 365|Office 365|Slack|Zoom|Frame\.io|Envato|Artlist|Epidemic/i.test(n)) return '工作';
   if (/Spotify|Netflix|YouTube|Disney|KKBOX|Apple Music|Apple TV|Infuse|Plex|愛奇藝|friDay|Hami|HBO|Prime Video|巴哈|動畫瘋|Crunchyroll/i.test(n)) return '影音';
@@ -4746,7 +4749,7 @@ renderBills = function () {
     var byId = {}; Array.prototype.forEach.call(list.querySelectorAll('.subrow[data-sub]'), function (b) { byId[b.getAttribute('data-sub')] = b; });
     var h = sc36Hint();
     sc36Groups(SUBS).forEach(function (g) {
-      h += '<div class="gh sc36-h"><span><b>' + g.c + '</b>' + g.xs.length + ' 個</span><span class="num">' + (g.m ? '每月 ' + nt(g.m) : '') + (g.co ? (g.m ? '・' : '') + '公司付 ' + g.co + ' 個' : '') + '</span></div><div class="rows">' + g.xs.map(function (it) { var b = byId[String(it.id)]; return b ? '<div class="sc36w">' + b.outerHTML + sc36Chip(it) + '</div>' : ''; }).join('') + '</div>';
+      h += '<div class="gh sc36-h"><span><b>' + g.c + '</b>' + (g.co ? '<small class="co36">' + (g.co === g.xs.length ? '公司付，不算自己' : '公司付的不算自己') + '</small>' : '') + g.xs.length + ' 個</span><span class="num">' + (g.m ? '每月 ' + nt(g.m) : '') + (g.co ? (g.m ? '・' : '') + '公司付 ' + g.co + ' 個' : '') + '</span></div><div class="rows">' + g.xs.map(function (it) { var b = byId[String(it.id)]; return b ? '<div class="sc36w">' + b.outerHTML + sc36Chip(it) + '</div>' : ''; }).join('') + '</div>';
     });
     var w = document.createElement('div'); w.className = 'sc36-all'; w.style.marginTop = '10px'; w.innerHTML = h; list.parentNode.replaceChild(w, list);
   } catch (e) {}
@@ -4882,6 +4885,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)
 
 /* kk-v36.1（E）：上期記得不完整 */
 .dl.na36{color:var(--muted);background:var(--solid2);font-size:13px;font-weight:700;white-space:normal;line-height:1.35;text-align:center;max-width:9em}
+.co36{font-size:12px;font-weight:600;color:var(--muted);margin-right:6px}
 </style>
 <script id="kkcf-js">
 /* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字；v35.4 改：待確認交易按不對＝資料庫作廢，可復原，合計都照資料庫）

@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.1', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.2', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4209,8 +4209,9 @@ cmpBlock=function(cur,prev,lab){if(prev==null)return '<p class="sub">上一期�
   return '<div class="cmp36-g cmp36-sh"><div class="cmp36-c"><span class="cmp36-k">這期到今天</span><span class="cmp36-n'+(cur>prev?' up':cur<prev?' dn':'')+'">'+amt(cur)+'</span></div><div class="cmp36-c"><span class="cmp36-k">上期同一段</span><span class="cmp36-d">'+lab+'</span><span class="cmp36-n">'+amt(prev)+'</span></div></div><div class="cmp36-f">'+chg36(cur,prev)+'</div>'};
 
 /* #5 訂閱分類：塔塔先依名稱分，老大點分類名可改；存 kk_prefs 的 sub_categories（存不進去就先存這支手機） */
-const SC36=['AI 工具','影音','雲端與軟體','工作','生活','其他'];
-function sc36Auto(s){const n=(s.name||'')+' '+(s.via||'');
+const SC36=['AI 工具','影音','雲端與軟體','工作','健康','社群','生活','其他']; /* v36.2 加健康、社群 */
+function sc36Auto(s){const n=(s.name||'')+' '+(s.via||'');if(s.co||s.payer==='company')return '工作'; /* v36.2 公司付全部歸工作 */
+  if(/Strong|fatsecret|健身|Gym|Headspace|Calm|Keep\b/i.test(n))return '健康';if(/Meta Verified|Sniffies|Tinder|Bumble|Threads|X Premium|Twitter/i.test(n))return '社群';
   if(/Claude|ChatGPT|OpenAI|Grok|Midjourney|Higgsfield|Suno|Gemini|Perplexity|Cursor|Copilot|Runway|Kling|ElevenLabs|Poe\b/i.test(n))return 'AI 工具';
   if(/Adobe|Milanote|Notion|Figma|Canva|Microsoft 365|Office 365|Slack|Zoom|Frame\.io|Envato|Artlist|Epidemic/i.test(n))return '工作';
   if(/Spotify|Netflix|YouTube|Disney|KKBOX|Apple Music|Apple TV|Infuse|Plex|愛奇藝|friDay|Hami|HBO|Prime Video|巴哈|動畫瘋|Crunchyroll/i.test(n))return '影音';
@@ -4227,7 +4228,7 @@ function sc36Row(x){let h=fxRow(x);const chip=sc36Chip(x);
   if(h.indexOf('<button class="row"')===0){h=h.replace('<button class="row" ','<div class="row arow sc36r" data-fx="'+x.id+'"><button class="rowb" ').replace(/<span class="chev" aria-hidden="true">›<\/span><\/button>$/,'</button>')+chip+'</div>';return h}
   return h.replace('<div class="row arow"','<div class="row arow sc36r"')} /* 有「去付款」的列不放分類鍵（太擠），分類在段頭、詳情頁可改 */
 function sc36Groups(subs){const G={};subs.forEach(x=>{const c=sc36Of(x);(G[c]=G[c]||[]).push(x)});return SC36.filter(c=>G[c]).map(c=>({c:c,xs:G[c],m:G[c].filter(x=>!x.co).reduce((a,x)=>a+sc36M(x),0),co:G[c].filter(x=>x.co).length}))}
-function sc36Section(subs,o){o=o||{};return sc36Hint()+sc36Groups(subs).map(g=>'<div class="sc36-h" id="sc36-'+SC36.indexOf(g.c)+'"><b>'+g.c+'</b><span>'+g.xs.length+' 個'+(g.m?' · 每月 '+fmt(g.m):'')+(g.co?' · 公司付 '+g.co+' 個':'')+'</span></div>'+(o.flat?'<div class="list">':'<section class="card"><div class="list">')+g.xs.map(sc36Row).join('')+(o.flat?'</div>':'</div></section>')).join('')}
+function sc36Section(subs,o){o=o||{};return sc36Hint()+sc36Groups(subs).map(g=>'<div class="sc36-h" id="sc36-'+SC36.indexOf(g.c)+'"><b>'+g.c+(g.co?' <small class="co36">'+(g.co===g.xs.length?'公司付，不算自己':'公司付的不算自己')+'</small>':'')+'</b><span>'+g.xs.length+' 個'+(g.m?' · 每月 '+fmt(g.m):'')+(g.co?' · 公司付 '+g.co+' 個':'')+'</span></div>'+(o.flat?'<div class="list">':'<section class="card"><div class="list">')+g.xs.map(sc36Row).join('')+(o.flat?'</div>':'</div></section>')).join('')}
 SH.subCat36=function(d,id){const x=d.subs.find(y=>y.id===id);if(!x)return{t:'分類',h:'<p class="gray-line">找不到這個訂閱。</p>'+B('close','關閉',{cls:'pri wide'})};const cur=sc36Of(x),auto=sc36Auto(x);
   return{t:'「'+x.name+'」的分類',h:'<div class="sub">現在是「'+cur+'」'+(cur===auto?'（塔塔依名稱先分的）':'')+'。點一個改掉，清單會照分類分段。</div><div class="sc36-pick" role="group" aria-label="選分類">'+SC36.map(c=>'<button class="chip" data-act="sc36Set" data-id="'+id+'" data-c="'+c+'" aria-pressed="'+(c===cur)+'">'+c+'</button>').join('')+'</div>'}};
 /* #2 訂閱明細：依每月金額排序，每列可點進訂閱詳情，分類鍵可快速跳到該分類 */
@@ -4399,6 +4400,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
 .weak36{margin:6px 0 2px;padding:8px 12px;border-radius:var(--radius-sm,12px);background:var(--surface2);color:var(--ink2);font-size:14px;font-weight:600}
 .weak36 small{display:block;margin-top:2px;font-size:12px;font-weight:500;color:var(--muted)}
 .cmp36-n.mut36 .amt{color:var(--muted)}
+.co36{font-size:12px;font-weight:600;color:var(--muted);margin-left:6px}
 </style>
 <script id="kkcf-js">
 /* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字；v35.4 改：待確認交易按不對＝資料庫作廢，可復原，合計都照資料庫）
