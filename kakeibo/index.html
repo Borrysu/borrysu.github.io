@@ -2410,7 +2410,7 @@ function homeB(d){
   if(!S.hide.where&&!d.empty){const top=d.cats.slice().sort((a,b)=>b.s-a.s).slice(0,4),mx=top[0].s||1;
     h+='<section class="card" data-flip="where"><h2 class="h3">花在哪 '+B('tab','看全部分類 ›',{tab:'budget'})+'</h2>'+top.map(c=>'<div class="hbar"><span>'+c.k.slice(0,2)+'</span><span class="t"><span style="--p:'+(c.s/mx).toFixed(3)+'"></span></span>'+amt(c.s)+'</div>').join('')+'</section>'}
   if(!S.hide.recent&&d.txs.length)h+='<section class="card" data-flip="recent"><h2 class="h3">最近 3 筆 '+B('tab','看帳本 ›',{tab:'ledger'})+'</h2><div class="list">'+d.txs.slice(0,3).map(txRow).join('')+'</div></section>';
-  if(!S.hide.subs)h+='<button class="card tile" data-flip="subs" data-act="tab" data-tab="fixed"><span class="lab">訂閱每月平均 ›</span><span class="mid">'+amt(d.subAvg)+'</span><span class="sub">'+d.subs.filter(s=>!s.co).length+' 個自己付 · 1 個標了要取消</span></button>';
+  if(!S.hide.subs)h+='<button class="card tile" data-flip="subs" data-act="tab" data-tab="fixed"><span class="lab">訂閱每月平均 ›</span><span class="mid">'+amt(d.subAvg)+'</span><span class="sub">'+d.subs.filter(s=>!s.co).length+' 個自己付'+(d.subs.filter(s=>s.cancel).length?' · '+d.subs.filter(s=>s.cancel).length+' 個標了要取消':'')+'</span></button>';
   if(!S.hide.acct)h+='<button class="card tile" data-flip="acct" data-act="acct"><span class="lab">可動用現金 ›</span><span class="mid">'+amt(d.cash)+'</span><span class="sub">照這期預算可以撐 '+(d.cash/BUDGET).toFixed(1)+' 個月</span></button>';
   return h+B('sheet','調整卡片',{cls:'wide',k:'cards'});
 }
@@ -3715,12 +3715,14 @@ function tdSplit(p, label) {
   var frag = rg.extractContents(); if (!tdLen(frag.textContent || '')) return false;
   if (c.ell) p.appendChild(document.createTextNode('…'));
   var d = document.createElement('details'); d.className = 'kk-more'; d.setAttribute('data-td', 'split');
-  d.innerHTML = '<summary>' + label + '</summary>'; var q = document.createElement('p'); q.className = 'kk-more-p'; q.appendChild(frag); d.appendChild(q);
+  d.innerHTML = '<summary aria-label="' + label + '"><span class="kk-dots" aria-hidden="true">⋯</span></summary>'; /* v36 #3 */ var q = document.createElement('p'); q.className = 'kk-more-p'; q.appendChild(frag); d.appendChild(q);
   p.parentNode.insertBefore(d, p.nextSibling); p.setAttribute('data-td', '1'); return true;
 }
+/* kk-v36 #3：被截那行整行點了也能展開（不在按鈕裡才接手） */
+document.addEventListener('click', function (e) { var p = e.target && e.target.closest && e.target.closest('[data-td="1"]'); if (!p || p.closest('button,a,[data-act],[role="button"]')) return; var d = p.nextElementSibling; if (!d || d.tagName !== 'DETAILS' || !d.classList.contains('kk-more')) return; d.open = !d.open; });
 function tdHelp(list, host, before) { /* 長說明句：同一區塊收成一個「看說明」 */
   if (!list.length) return;
-  var d = document.createElement('details'); d.className = 'kk-more kk-help'; d.setAttribute('data-td', 'help'); d.innerHTML = '<summary>看說明</summary>';
+  var d = document.createElement('details'); d.className = 'kk-more kk-help'; d.setAttribute('data-td', 'help'); d.innerHTML = '<summary aria-label="看說明"><span class="kk-dots" aria-hidden="true">⋯</span></summary>'; /* v36 #3 */
   list.forEach(function (p) { p.setAttribute('data-td', '1'); d.appendChild(p); });
   if (before && before.parentNode === host) host.insertBefore(d, before); else host.appendChild(d);
 }
@@ -3738,7 +3740,7 @@ function cardTitle(el) {
 }
 function cardLines(el) {
   var seen = {}, out = [];
-  String(el.innerText || el.textContent || '').split('\n').forEach(function (x) { x = x.replace(/[›‹⌄]/g, '').trim(); if (!x || seen[x] || x === '看細節' || x === '看說明') return; seen[x] = 1; out.push(x); });
+  String(el.innerText || el.textContent || '').split('\n').forEach(function (x) { x = x.replace(/[›‹⌄⋯]/g, '').trim(); if (!x || seen[x] || x === '看細節' || x === '看說明') return; seen[x] = 1; out.push(x); });
   return out.slice(0, 24);
 }
 var CARD_INTERACT = 'button,a,input,select,textarea,label,summary,details,[data-act],[data-cask],[role="button"],[data-det],[data-aid],[data-dacct],[data-rv],[data-rvok],[data-rvedit],[data-rvfix],[data-dask],[data-more],[data-more],[data-gk]';
@@ -3797,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v35.4', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4183,6 +4185,109 @@ window.KKCF_CTX={o:()=>KD.o,txs:()=>(KD.l||[]).concat(KD.prevL||[]),txsCur:()=>K
   host:()=>S.tab==='ledger'&&!S.loading&&S.per===0?$('#main .pg'):null,
   editTx:rid=>openSheet('edit','x'+rid),editAcct:rid=>openSheet('acctEdit','a'+rid),reload:()=>kkLoad({}),toast:m=>{toast(m);return true},
   goLedger:()=>{if(sheet.classList.contains('on'))closeSheet();go('ledger')},toastUndo:(m,fn)=>{toast(m,fn);return true}};/* v35.4：不對＝資料庫作廢，合計照資料庫；復原走 kk_tx_unvoid */
+/* ---- kk-v36 ---- */
+/* ================= kk-v36：老大第一批編修意見（kk_feedback b0d9ddd6 #1～5） ================= */
+/* 金額一律整數顯示（#2 附帶：訂閱每月平均原本 16,158.25） */
+amt=function(n,o){o=o||{};const sign=(n<0&&!o.abs)?'−':(o.plus&&n>0?'+':'');return '<span class="amt'+(o.c?' '+o.c:'')+'">'+sign+'<i>NT$</i><b'+(o.roll?' data-roll="'+o.roll+'" data-val="'+Math.abs(Math.round(n))+'"':'')+'>'+fmt(n)+'</b></span>'};
+/* #1 本期與上期比：卡片排版，數字分色（支出比上期多＝紅、少＝綠），標籤與數字分層 */
+function chg36(cur,prev,o){o=o||{};const df=Math.round(cur)-Math.round(prev);if(!df)return '<span class="chg36 eq'+(o.sm?' sm':'')+'">'+(o.pre||'')+'一樣</span>';
+  const up=df>0,p=prev>0?Math.round(Math.abs(df)/prev*100):null;
+  return '<span class="chg36 '+(up?'up':'dn')+(o.sm?' sm':'')+'" aria-label="'+(o.pre||'')+(up?'多 ':'少 ')+fmt(df)+'"><span aria-hidden="true">'+(o.pre||'')+(up?'▲ 多 ':'▼ 少 ')+fmt(df)+(p!=null&&p<1000&&!o.noPct?' <small>'+p+'%</small>':'')+'</span></span>'}
+budgetHead=function(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null,g=goalNums(d),none=ps!=null&&prevNone(),cmp=ps!=null&&!none;const tone=cmp?(d.spent>ps?' up':d.spent<ps?' dn':''):'';
+  let h='<section class="card cmp36"><div class="cmp36-h"><span class="cmp36-l">'+P.label+' 支出</span>'+(cmp?chg36(d.spent,ps):'')+'</div>'
+   +'<div class="cmp36-big'+tone+'">'+amt(d.spent,{abs:1,roll:'spent'})+'</div>'
+   +(d.prev||d.fut?'':unbLine(' style="display:block"'))
+   +(d.bud?'<span class="sub" style="display:block">預算 '+fmt(BUDGET)+'，'+(d.left<0?'<b class="neg">超支 '+fmt(-d.left)+'</b>':'還能花 '+fmt(d.left)+(d.dl?'，每天 '+fmt(d.perDay):''))+(V32.bud.scope==='period'?'（這期專用）':'（每期通用）')+'</span>'+bul(d.pS,d.prev?null:d.pT,{big:true,lab:'預算用了'}):'')
+   +'<div class="cmp36-g">';
+  if(ps!=null)h+='<div class="cmp36-c"><span class="cmp36-k">上期同一段</span><span class="cmp36-d">'+(none?PLf(-1)[0]:KD.ps.label)+'</span>'+(none?'<span class="cmp36-n mut">沒有支出紀錄</span>':'<span class="cmp36-n">'+amt(ps)+'</span>')+'</div>';
+  h+='<div class="cmp36-c"><span class="cmp36-k">收入</span><span class="cmp36-d">目標 '+fmt(g.tgt)+'</span><span class="cmp36-n in">'+amt(g.inc)+'</span></div></div>'
+   +'<div class="cmp36-f"><span>'+(g.gap>0?'離目標還差':'已達標')+'</span>'+(g.gap>0?'<b class="cmp36-gap">'+fmt(g.gap)+'</b>':'<b class="cmp36-ok">超過 '+fmt(-g.gap)+'</b>')+'<span class="cmp36-pct">'+g.pctTxt+'</span></div>'
+   +bul(g.tgt>0?g.inc/g.tgt:0,null,{lab:'收入到目標'})+'</section>';
+  return h};
+catCmpTag=function(k,s){if(S.per!==0||!KD.ps||prevNone())return '';const p=KD.ps.cat[k]||0;if(!p)return '<span class="chg36 sm new">上期同一段沒花</span>';return chg36(s,p,{sm:1,pre:'比上期 '})};
+cmpBlock=function(cur,prev,lab){if(prev==null)return '<p class="sub">上一期的資料還沒讀到。</p>';
+  return '<div class="cmp36-g cmp36-sh"><div class="cmp36-c"><span class="cmp36-k">這期到今天</span><span class="cmp36-n'+(cur>prev?' up':cur<prev?' dn':'')+'">'+amt(cur)+'</span></div><div class="cmp36-c"><span class="cmp36-k">上期同一段</span><span class="cmp36-d">'+lab+'</span><span class="cmp36-n">'+amt(prev)+'</span></div></div><div class="cmp36-f">'+chg36(cur,prev)+'</div>'};
+
+/* #5 訂閱分類：塔塔先依名稱分，老大點分類名可改；存 kk_prefs 的 sub_categories（存不進去就先存這支手機） */
+const SC36=['AI 工具','影音','雲端與軟體','工作','生活','其他'];
+function sc36Auto(s){const n=(s.name||'')+' '+(s.via||'');
+  if(/Claude|ChatGPT|OpenAI|Grok|Midjourney|Higgsfield|Suno|Gemini|Perplexity|Cursor|Copilot|Runway|Kling|ElevenLabs|Poe\b/i.test(n))return 'AI 工具';
+  if(/Adobe|Milanote|Notion|Figma|Canva|Microsoft 365|Office 365|Slack|Zoom|Frame\.io|Envato|Artlist|Epidemic/i.test(n))return '工作';
+  if(/Spotify|Netflix|YouTube|Disney|KKBOX|Apple Music|Apple TV|Infuse|Plex|愛奇藝|friDay|Hami|HBO|Prime Video|巴哈|動畫瘋|Crunchyroll/i.test(n))return '影音';
+  if(/iCloud|1Password|Google One|Dropbox|Polarr|潑辣|美圖|Meitu|Lightroom|VSCO|CapCut|Bitwarden|NordVPN|Surfshark/i.test(n))return '雲端與軟體';
+  if(/潮汐|Whoscall|Meta Verified|蝦皮|Strong|fatsecret|Sniffies|Gym|健身|Uber|foodpanda|LINE|Tinder|Bumble|Duolingo|Headspace|Calm/i.test(n))return '生活';
+  return '其他'}
+function sc36Map(){const db=(KD.prefs&&KD.prefs.sub_categories&&typeof KD.prefs.sub_categories==='object')?KD.prefs.sub_categories:{};let loc={};try{loc=JSON.parse(LS.get('kk_subcat36')||'{}')||{}}catch(e){}return Object.assign({},db,loc)}
+function sc36Of(x){const m=sc36Map(),v=m[String(x.rid!=null?x.rid:x.id)];return SC36.includes(v)?v:sc36Auto(x)}
+const sc36M=x=>x.cyc==='年'?x.amt/12:x.amt;
+function sc36Hint(){if(LS.get('kk_subcat36_hint')||Object.keys(sc36Map()).length)return '';return '<div class="hint36" role="note"><span>分類是塔塔先分的，點分類名可改</span><button class="hint36-x" data-act="sc36Hint" aria-label="知道了，不再顯示">知道了</button></div>'}
+function sc36Chip(x){return '<button class="cat36" data-act="sheet" data-k="subCat36" data-id="'+x.id+'" aria-label="'+esc(x.name)+'的分類：'+sc36Of(x)+'，點了可改">'+sc36Of(x)+'</button>'}
+/* 訂閱列＝原本的列＋右邊一顆分類鍵（兩顆並排的按鈕，不巢狀） */
+function sc36Row(x){let h=fxRow(x);const chip=sc36Chip(x);
+  if(h.indexOf('<button class="row"')===0){h=h.replace('<button class="row" ','<div class="row arow sc36r" data-fx="'+x.id+'"><button class="rowb" ').replace(/<span class="chev" aria-hidden="true">›<\/span><\/button>$/,'</button>')+chip+'</div>';return h}
+  return h.replace('<div class="row arow"','<div class="row arow sc36r"')} /* 有「去付款」的列不放分類鍵（太擠），分類在段頭、詳情頁可改 */
+function sc36Groups(subs){const G={};subs.forEach(x=>{const c=sc36Of(x);(G[c]=G[c]||[]).push(x)});return SC36.filter(c=>G[c]).map(c=>({c:c,xs:G[c],m:G[c].filter(x=>!x.co).reduce((a,x)=>a+sc36M(x),0),co:G[c].filter(x=>x.co).length}))}
+function sc36Section(subs,o){o=o||{};return sc36Hint()+sc36Groups(subs).map(g=>'<div class="sc36-h" id="sc36-'+SC36.indexOf(g.c)+'"><b>'+g.c+'</b><span>'+g.xs.length+' 個'+(g.m?' · 每月 '+fmt(g.m):'')+(g.co?' · 公司付 '+g.co+' 個':'')+'</span></div>'+(o.flat?'<div class="list">':'<section class="card"><div class="list">')+g.xs.map(sc36Row).join('')+(o.flat?'</div>':'</div></section>')).join('')}
+SH.subCat36=function(d,id){const x=d.subs.find(y=>y.id===id);if(!x)return{t:'分類',h:'<p class="gray-line">找不到這個訂閱。</p>'+B('close','關閉',{cls:'pri wide'})};const cur=sc36Of(x),auto=sc36Auto(x);
+  return{t:'「'+x.name+'」的分類',h:'<div class="sub">現在是「'+cur+'」'+(cur===auto?'（塔塔依名稱先分的）':'')+'。點一個改掉，清單會照分類分段。</div><div class="sc36-pick" role="group" aria-label="選分類">'+SC36.map(c=>'<button class="chip" data-act="sc36Set" data-id="'+id+'" data-c="'+c+'" aria-pressed="'+(c===cur)+'">'+c+'</button>').join('')+'</div>'}};
+/* #2 訂閱明細：依每月金額排序，每列可點進訂閱詳情，分類鍵可快速跳到該分類 */
+S.sf36=S.sf36||'';
+SH.subs36=function(d){const own=d.subs.filter(x=>!x.co),co=d.subs.filter(x=>x.co),tot=own.reduce((a,x)=>a+sc36M(x),0),G=sc36Groups(d.subs),f=S.sf36&&G.some(g=>g.c===S.sf36)?S.sf36:'';
+  const xs=d.subs.filter(x=>!f||sc36Of(x)===f).sort((a,b)=>(a.co-b.co)||(sc36M(b)-sc36M(a)));
+  const row=x=>'<div class="row arow sc36r"><button class="rowb" data-act="sheet" data-k="fx" data-id="'+x.id+'"><span class="row-m"><b>'+esc(x.name)+(x.co?'<span class="tag">公司付</span>':x.cancel?'<span class="tag act">要取消</span>':'')+'</b><small>'+(x.cyc==='年'?'年繳 '+fmt(x.amt)+' · 每月約':'月繳 · '+x.due+' 扣')+'</small></span>'+amt(Math.round(sc36M(x)))+'</button>'+sc36Chip(x)+'</div>';
+  return{t:'訂閱明細',tall:true,h:'<section class="card sum36"><span class="cmp36-k" style="display:block">自己付每月平均</span><span class="sum36-n">'+amt(Math.round(tot))+'</span><span class="sub" style="display:block">'+own.length+' 個自己付'+(co.length?' · 公司付 '+co.length+' 個每月 '+fmt(co.reduce((a,x)=>a+sc36M(x),0))+'（不算進平均）':'')+'</span></section>'
+   +'<div class="chips sc36-f" role="group" aria-label="跳到分類"><button class="chip" data-act="sc36F" data-c="" aria-pressed="'+(!f)+'">全部 '+d.subs.length+'</button>'+G.map(g=>'<button class="chip" data-act="sc36F" data-c="'+g.c+'" aria-pressed="'+(f===g.c)+'">'+g.c+' '+g.xs.length+'</button>').join('')+'</div>'
+   +sc36Hint()+'<div class="sub" style="margin:4px 2px 8px">依每月金額排，年繳的除以 12。點一列看詳情，點右邊分類可改。</div><section class="card"><div class="list">'+xs.map(row).join('')+'</div></section>'+B('sheet','新增訂閱',{cls:'wide',k:'subAdd'})}};
+/* 頁面：B 的「訂閱每月平均」卡點了開明細；訂閱清單照分類分段（A、B、C、全部清單） */
+fixedB=function(d){
+  if(d.err)return errBlock();const open=fixedItems(d).filter(x=>!x.paid),inP=open.filter(x=>x.rel<=P.left&&!x.co);
+  let h='<div class="two"><button class="card tile" data-act="sheet" data-k="subs36" aria-label="訂閱每月平均 '+fmt(d.subAvg)+'，點開看明細"><span class="lab">訂閱每月平均 ›</span><span class="mid">'+amt(Math.round(d.subAvg))+'</span><span class="sub">'+d.subs.filter(s=>!s.co).length+' 個自己付 · 看明細</span></button><div class="card tile"><span class="lab">這期還要扣</span><span class="mid">'+amt(inP.reduce((a,x)=>a+x.amt,0))+'</span><span class="sub">'+inP.length+' 筆</span></div></div>';
+  h+=subSum(d);
+  h+='<h2 class="h3">接下來 <span class="sub">往右滑還有</span></h2><div class="hs" tabindex="0" role="group" aria-label="接下來要扣的，可以橫向捲動">'+open.slice(0,5).map(x=>'<button class="card upc'+(x.rel<=7?' soon':'')+'" data-act="sheet" data-k="fx" data-id="'+x.id+'"><span class="when">'+rel(x.rel)+'</span><b>'+esc(x.name)+'</b>'+amt(x.amt)+'<span class="sub">'+(x.type==='bill'?'帳單':'訂閱 · '+sc36Of(x))+' · '+x.due+'</span></button>').join('')+'</div>';
+  const ub=d.bills.filter(b=>!b.paid);
+  h+='<h2 class="h3">這期帳單 <span class="sub">塔塔可代繳</span></h2>'+(ub.length?'<section class="card"><div class="list">'+d.bills.map(fxRow).join('')+'</div></section>':'<p class="gray-line">這期的帳單都繳了。</p>');
+  h+='<h2 class="h3">訂閱 <span class="sub">'+d.subs.length+' 個 · 依分類</span></h2>'+sc36Section(d.subs);
+  return h+B('sheet','新增訂閱',{cls:'wide',k:'subAdd'})};
+PAGES.fixed.B=fixedB;
+{const fA=fixedA;fixedA=function(d){if(d.err||S.ff!=='sub')return fA(d).replace(/(<div class="chips" role="group" aria-label="篩選">)/,'<div class="sub sc36-bn">帳單塔塔可代繳，按「請塔塔繳」。</div>$1');
+  const open=d.subs.filter(x=>!x.paid),paid=d.subs.filter(x=>x.paid);let h=fA(d);const i=h.indexOf('<p class="day"');const j=h.lastIndexOf(B('sheet','新增訂閱',{cls:'wide',k:'subAdd'}));
+  const body='<p class="day" style="text-align:left">訂閱 '+d.subs.length+' 個，依分類</p>'+sc36Section(open)+(paid.length?'<p class="day" style="text-align:left">這期已扣</p><section class="card"><div class="list">'+paid.map(sc36Row).join('')+'</div></section>':'');
+  if(i<0||j<0)return h;return h.slice(0,i)+body+h.slice(j)};PAGES.fixed.A=fixedA}
+{const fC=fixedC;fixedC=function(d){let h=fC(d);return h.replace(/(<article class="dcard[^"]*" data-pager="f" data-fx="(s:\d+)">)<span class="kick">訂閱 · /,(m,a,id)=>{const x=d.subs.find(y=>y.id===id);return a+'<span class="kick">訂閱 · '+(x?sc36Of(x)+' · ':'')})
+  .replace(/<button class="btn" data-act="sheet" data-id="([^"]+)" data-k="fx">看細節<\/button>/,(m,id)=>{const x=d.subs.find(y=>y.id===id);return '<div class="deck-more">'+(x?sc36Chip(x):'')+'<button class="btn dots36" data-act="sheet" data-k="fx" data-id="'+id+'" aria-label="看細節"><span aria-hidden="true">⋯</span></button></div>'})
+  .replace(/<button class="btn pri" data-act="sheet" data-id="([^"]+)" data-k="pay">去繳費<\/button>/,'<button class="btn pri" data-act="payAsk36" data-id="$1">請塔塔繳</button>')};PAGES.fixed.C=fixedC}
+{const af=SH.allfixed;SH.allfixed=function(d){const r=af(d);const bills=fixedItems(d).filter(x=>x.type==='bill');r.h=subSum(d)+'<p class="day" style="text-align:left">帳單 <span class="sub">塔塔可代繳</span></p><div class="list">'+bills.map(fxRow).join('')+'</div><p class="day" style="text-align:left">訂閱 '+d.subs.length+' 個，依分類</p>'+sc36Section(d.subs,{flat:1})+B('sheet','新增訂閱',{cls:'wide',k:'subAdd'});return r}}
+/* 訂閱詳情多一列「分類」 */
+{const fx=SH.fx;SH.fx=function(d,id){const r=fx(d,id),x=d.subs.find(y=>y.id===id);if(!x||!r||!r.h)return r;r.h='<div class="sc36-fx"><span class="cmp36-k">分類</span>'+sc36Chip(x)+'</div>'+r.h;return r}}
+/* #4 帳單「請塔塔繳」：沿用 v32 付款請求（kk_pay_request＋傳話塔塔），兩步確認；塔塔目前不代付，是送請求給她處理繳費管道 */
+{const fr=fxRow;fxRow=function(x){let h=fr(x);if(x.type!=='bill'||x.tata)return h;
+  return h.replace(/<button class="payb([^"]*)" data-act="sheet" data-k="pay" data-id="([^"]+)" aria-label="去繳費，([^"]*)">去繳費<\/button>/,'<button class="payb pay36$1" data-act="payAsk36" data-id="$2" aria-label="請塔塔繳，$3">請塔塔繳</button>')}}
+{const sp=SH.pay;SH.pay=function(d,id){const r=sp(d,id),x=d.bills.concat(d.subs).find(y=>y.id===id);if(!x||x.type!=='bill'||x.paid||!r||!r.h)return r;
+  r.h=r.h.replace('aria-label="確認提醒我付"','aria-label="確認請塔塔繳"').replace('請塔塔提醒你付「','請塔塔繳「').replace('，回你繳費管道與期限。</span>','：送給塔塔處理繳費，她會回你繳費管道與期限。</span>')
+   .replace('<p class="sub">塔塔不會代付。</p>','<p class="sub">塔塔目前不代付，這是送請求給她處理。</p>').replace('>送出提醒</button>','>送出，請塔塔繳</button>').replace('>提醒我付</button>','>請塔塔繳</button>')
+   .replace('已請塔塔提醒你付','已送給塔塔繳');if(r.t)r.t=r.t.replace('已請塔塔提醒：','已請塔塔繳：');
+  if(S.pay&&S.pay.ask&&S.pay.cf){const m=r.h.match(/<div class="cfm" id="payCfm"[\s\S]*?<\/div><\/div>/);const k=r.h.indexOf('</p></div>');if(m&&k>0){r.h=r.h.replace(m[0],'');r.h=r.h.slice(0,k+10)+m[0]+r.h.slice(k+10)}r.t='請塔塔繳：'+x.name}
+  return r}}
+const ACT_payCf35=ACT.payCf;
+Object.assign(ACT,{
+ sc36Hint(){LS.set('kk_subcat36_hint','1');if(sheet.classList.contains('on'))renderSheetBody();render()},
+ sc36F(el){S.sf36=el.dataset.c||'';renderSheetBody();const s=$('#shB');if(s)s.scrollTop=0},
+ async sc36Set(el){const id=el.dataset.id,c=el.dataset.c,x=D().subs.find(y=>y.id===id);if(!x||!SC36.includes(c))return;const rid=String(x.rid!=null?x.rid:x.id);
+  let loc={};try{loc=JSON.parse(LS.get('kk_subcat36')||'{}')||{}}catch(e){}loc[rid]=c;LS.set('kk_subcat36',JSON.stringify(loc));LS.set('kk_subcat36_hint','1');
+  const back=()=>{if(S.stack.length>1){S.stack.pop();renderSheetBody()}else closeSheet();render()};back();
+  if(x.rid==null){toast('「'+x.name+'」改成「'+c+'」（新加的訂閱，先存在這支手機）');return}
+  try{const all=Object.assign({},(KD.prefs&&KD.prefs.sub_categories)||{},loc);const p=await rpc('kk_prefs_set',{p_name:'sub_categories',p_value:all});
+   if(p&&p.sub_categories){KD.prefs=p;LS.del('kk_subcat36');kkCacheSave();toast('「'+x.name+'」改成「'+c+'」')}else toast('「'+x.name+'」改成「'+c+'」（先存在這支手機）')}
+  catch(e){toast('「'+x.name+'」改成「'+c+'」（先存在這支手機，資料庫沒存進去）')}
+  if(sheet.classList.contains('on'))renderSheetBody();render()},
+ payAsk36(el){const id=el.dataset.id;openSheet('pay',id,!!el.closest('.sheet')?undefined:false);if(!S.pay||S.pay.id!==id)return;S.pay.cf=true;S.pay.ask=1;renderSheetBody();const b=$('#shB');if(b)b.scrollTop=0;reFocus('[data-act="payCf"][data-c="1"]')},
+ async payCf(el){const id=el.dataset.id,x=fxFind(id);if(!x||x.type!=='bill')return ACT_payCf35(el);
+  if(el.dataset.c!=='1'||!S.pay){if(S.pay)S.pay.cf=false;renderSheetBody();reFocus('[data-act="payTata"]');return}
+  const rid=billRid(x);if(rid==null){toast('找不到這張帳單的編號');return}
+  const ok=await kkDo(async()=>{const r=await rpc('kk_pay_request',{p_kind:'bill',p_ref_id:rid,p_note:'面板請塔塔繳'});
+    await sendTata('[面板請塔塔繳] 「'+x.name+'」NT$'+fmt(x.amt)+'，'+(x.rel<0?rel(x.rel):x.due+' 到期')+'。請幫我處理繳費：回我繳費管道與期限（不用代付）。（請求單 #'+r.id+'）').catch(e=>{throw new Error('請求已記下，但傳給塔塔失敗：'+e.message)});return r},'已請塔塔繳「'+x.name+'」，她會回繳費管道與期限');
+  if(ok)S.pay=null}});
+
 syncSkin();remountHd();
 if(KEY.length>=20&&kkCacheLoad()){kkApply();KD.loaded=true;S.loading=false}
 render('f');kkLoad({dir:'f'});
@@ -4212,6 +4317,57 @@ window.addEventListener('resize',()=>{if(S.tab==='looks')fitThumbs()});
 .kkpd::after{content:" ›"}
 .kkcf-i.hit{background:rgba(255,103,0,.12);border-radius:10px;box-shadow:0 0 0 2px #FF6700}
 .kkcf-zero{margin:2px 0 8px;font-size:14px;color:var(--muted,#666)}
+</style>
+<style id="kk36-css">
+/* kk-v36：比較卡、訂閱分類、⋯、請塔塔繳 */
+.cmp36-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.cmp36-l{font-size:14px;color:var(--muted);font-weight:600}
+.cmp36-big{margin:6px 0 4px}
+.cmp36-big .amt{font-size:34px;font-weight:var(--x-num-weight,700);line-height:1.15}
+.cmp36-big .amt i{font-size:14px;font-style:normal;margin-right:2px;opacity:.8}
+.cmp36-big.up .amt{color:var(--bad)}.cmp36-big.dn .amt{color:var(--good)}
+.cmp36-g{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.cmp36-c{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:var(--radius-sm,12px);background:var(--surface2);min-width:0}
+.cmp36-k{font-size:13px;color:var(--muted);font-weight:600}
+.cmp36-d{font-size:12px;color:var(--muted)}
+.cmp36-n{margin-top:4px}
+.cmp36-n .amt{font-size:20px;font-weight:var(--x-num-weight,700)}
+.cmp36-n .amt i{font-size:11px;font-style:normal;margin-right:1px;opacity:.75}
+.cmp36-n.in .amt{color:var(--good)}.cmp36-n.up .amt{color:var(--bad)}.cmp36-n.dn .amt{color:var(--good)}
+.cmp36-n.mut{font-size:14px;color:var(--muted)}
+.cmp36-f{display:flex;align-items:baseline;gap:8px;margin:12px 0 6px;font-size:14px;color:var(--ink2)}
+.cmp36-gap{font-size:16px;color:var(--warn)}.cmp36-ok{font-size:16px;color:var(--good)}
+.cmp36-pct{margin-left:auto;font-size:13px;color:var(--muted)}
+.cmp36-sh{margin-top:4px}
+.chg36{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:14px;font-weight:700;white-space:nowrap;background:var(--surface2);color:var(--ink2)}
+.chg36 small{font-size:12px;font-weight:600;opacity:.85}
+.chg36.up{color:var(--bad);background:color-mix(in srgb,var(--bad) 14%,transparent)}
+.chg36.dn{color:var(--good);background:color-mix(in srgb,var(--good) 14%,transparent)}
+.chg36.new{color:var(--muted)}
+.chg36.sm{font-size:12px;padding:2px 8px;margin-top:4px;align-self:flex-start}
+.row-m .chg36.sm{display:inline-flex;width:max-content}
+.hint36{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0;padding:6px 6px 6px 12px;border-radius:var(--radius-sm,12px);background:var(--surface2);font-size:13px;color:var(--ink2)}
+.hint36-x{min-height:44px;padding:0 12px;border:0;background:none;color:var(--muted);font:inherit;font-weight:700}
+.sc36-h{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:14px 2px 6px;font-size:15px}
+.sc36-h b{font-family:var(--font-display);font-weight:700}
+.sc36-h span{font-size:13px;color:var(--muted)}
+.cat36{flex:none;min-height:44px;min-width:44px;padding:0 10px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+.sc36r .rowb .amt{margin-left:auto}
+.sc36-pick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.sc36-f{margin:10px 0 4px}
+.sc36-fx{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.sum36 .sum36-n .amt{font-size:30px;font-weight:var(--x-num-weight,700)}
+.deck-more{display:flex;justify-content:center;gap:8px;margin-top:14px}
+.dots36{min-width:56px;font-size:20px;letter-spacing:1px}
+.payb.pay36{background:var(--x-accent-fill,var(--accent));color:var(--x-on-accent-fill,#fff);border-color:var(--x-accent-fill,var(--accent))}
+/* #3「看細節」改成 ⋯：疊在被截的那行右邊，整行也能點 */
+details.kk-more>summary{justify-content:flex-start}
+details.kk-more>summary::after{content:none!important}
+details.kk-more[data-td="split"]{margin-top:-40px}
+details.kk-more[data-td="split"]>summary{justify-content:flex-end}
+[data-td="1"]{padding-right:46px}
+.kk-dots{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:28px;padding:0 8px;border-radius:999px;background:var(--surface2);color:var(--ink2);font-size:18px;font-weight:700;line-height:1;letter-spacing:1px}
+details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surface)}
 </style>
 <script id="kkcf-js">
 /* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字；v35.4 改：待確認交易按不對＝資料庫作廢，可復原，合計都照資料庫）
