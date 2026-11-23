@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v90');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v91');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3698,6 +3698,19 @@ WRITE.push('tdone');
 {const _zp=zoneProj;zoneProj=function(){const h=_zp();if(S.sub.proj!=='todo')return h;
  return h.replace(/(<article class="card cardx" data-card="([^"]*)"[\s\S]*?<div class="cf-l">)/g,(m,a,id)=>DB.todo.find(q=>q.id===id)?a+mb('✓ 做完了','tdone',id):m)}}
 {const _ma=mapArch;mapArch=function(c){const x=_ma(c);if(c.basket==='todo'&&c.closeResult==='won')x.st='任務做完';return x}}
+/* ---------- v91（2026-11-23）：修「轉成案子」跳狀態不對（msg 312） ----------
+   原因：後端 opp_work_add 不准建「跟還沒收掉的卡同名」的案子，原任務本身就同名，所以被擋。
+   改成：先收掉原任務、再建案子；建不起來就把原任務救回來。轉成公司案子同樣。 */
+async function jOff(id){try{await jDrop(id);return 'drop'}catch(e){await LV.api.act(id,'tdone',{done:true});return 'done'}}
+async function jBack(id,how){if(how==='done')await LV.api.act(id,'tdone',{done:false});else await jRestore(id)}
+async function jConvert(id,basket){const t=DB.todo.find(q=>q.id===id),c=t&&t.raw;if(!c||!LV.api||!LV.api.workAdd){toast('離線中，連上再轉');return}
+ closeThen(async()=>{let how='';try{how=await jOff(id)}catch(e){toast('沒轉成（收原任務失敗）：'+LERR(e));return}
+  let n=null;try{n=await LV.api.workAdd(String(c.title||'新案子').slice(0,120),basket||undefined);if(!n||!n.id)throw new Error('案子沒建起來');
+   const why=WHYOF(c).trim();if(why&&LV.api.cardEdit)await LV.api.cardEdit(n.id,{why});const stp=jSnap(c);if(stp.length)await LV.api.act(n.id,'steps',{steps:stp})}
+  catch(e){try{if(!n)await jBack(id,how)}catch(e2){}toast('沒轉成：'+LERR(e)+'。原任務還在');await reload();paint('keep');return}
+  await reload();paint('keep');if(DB.proj.find(q=>q.id===n.id))setTimeout(()=>ACT.page('proj:'+n.id),150);
+  toast(basket==='company'?'轉成公司案子了，原任務收掉':'轉成案子了，原任務收掉',async()=>{try{await LV.api.act(n.id,'close',{result:'void'});await jBack(id,how);await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})})}
+ACT.jtoproj=id=>jConvert(id,'');ACT.jtoco=id=>jConvert(id,'company');
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
