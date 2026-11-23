@@ -1247,3 +1247,8 @@ label.f input:not([type]){width:100%;min-height:48px;padding:10px 12px;border-ra
 .bidtip{margin:12px 0}
 .ydface{width:40px;height:40px;min-width:40px;padding:0;border:0;background:transparent;display:inline-grid;place-items:center}.ydface .bm{width:30px;height:30px;pointer-events:none}.ydmore .btn .bm{width:22px;height:22px;margin-right:6px;vertical-align:middle;pointer-events:none}
 .aifs2{justify-content:flex-start;gap:8px}
+/* 2026-11-23 v83 步驟點開看詳情 */
+.pstbtn{width:100%;background:transparent;border:0;color:inherit;font:inherit;text-align:left;min-height:44px;padding:0;cursor:pointer}
+.pstbtn .chev{margin-left:auto}
+.pstd{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.pstd .kv{display:flex;gap:10px;justify-content:space-between;padding:4px 0}.pstd .kv span{color:var(--ink2);flex:none}.pstd .kv b{text-align:right;overflow-wrap:anywhere;font-weight:500}

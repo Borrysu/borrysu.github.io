@@ -135,7 +135,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v82');
+  const { mockAdapter } = await import('./mock.js?v83');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -230,7 +230,7 @@ export function normalize(r) {
     progressSteps: (Array.isArray(r.progress_steps) ? r.progress_steps : []).filter(x => x && typeof x === 'object' && str(x.name)).slice(0, 30)
       .map(x => ({ name: str(x.name), note: str(x.note), status: ['pending', 'current', 'done', 'skipped', 'blocked'].includes(x.status) ? x.status : 'pending' })),
     progressNote: str(r.progress_note), progressBlocker: str(r.progress_blocker), progressUpdatedAt: ts(r.progress_updated_at), progressUpdatedBy: nick(str(r.progress_updated_by)),
-    runStatus: ['queued', 'running', 'done', 'failed'].includes(r.run_status) ? r.run_status : '', runNote: str(r.run_note),
+    runStatus: ['queued', 'running', 'done', 'failed'].includes(r.run_status) ? r.run_status : '', runNote: str(r.run_note), runSession: str(r.run_session),
   };
 }
 

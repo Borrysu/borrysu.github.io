@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v82');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v83');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3482,7 +3482,7 @@ const STL={done:'做完',current:'正在做',pending:'還沒',skipped:'略過',b
  const rows=st.map((s,i)=>`<li class="pstr" data-s="${esc(s.status)}"><div class="pstn"><span class="chip${s.status==='current'||s.status==='blocked'?' urg':''}">${STL[s.status]||s.status}</span><b>${esc(s.name)}</b></div><div class="pstb">${s.status!=='done'?mb('✓ 做完','pst',p.id+'|'+i+'|done'):mb('↺ 還沒','pst',p.id+'|'+i+'|pending')}${s.status!=='skipped'?mb('略過','pst',p.id+'|'+i+'|skipped'):''}${mb('✎ 改','pst',p.id+'|'+i+'|edit')}${mb('刪','pst',p.id+'|'+i+'|del')}</div></li>`).join('');
  const sec=`<section class="sec pstep"><h3>步驟</h3>${st.length?`<ol class="pstl">${rows}</ol>`:isBid(p)?`<div class="card bidtip"><p><b>這是投標案</b>：步驟通常是 ${BID_STEPS.join('→')}。</p><div class="btns">${B('套用投標步驟','bidsteps',p.id,'pri')}</div></div>`:'<p class="note">還沒有步驟。</p>'}<div class="mrow">${mb('＋ 加一步','pst',p.id+'|-1|add')}${mb('🧩 編輯每一步','sheet','stepx:'+p.id)}</div></section>`;
  const i=h.indexOf('<p class="h4">詳情</p>');if(i>-1)return h.slice(0,i)+sec+h.slice(i);
- const k=h.search(/<h[23][^>]*>詳情<\/h[23]>/);return k>-1?h.slice(0,k)+sec+h.slice(k):h+sec}}
+ const k0=h.search(/<h[23][^>]*>詳情<\/h[23]>/),k=k0>-1?h.lastIndexOf('<section',k0):-1;return k>-1?h.slice(0,k)+sec+h.slice(k):h+sec}}
 ACT.pst=async v=>{const [id,si,op]=v.split('|'),i=+si,it=todoOf(id),c=it&&it.raw;if(!c)return;
  if(op==='edit'||op==='add'){if(op==='add'){S.stAdd=1}ACT.sheet('stepx:'+id);if(op==='add')setTimeout(()=>ACT.stadd(),350);return}
  if(!LV.api||!LV.api.act){toast('離線中，連上再改');return}
@@ -3514,6 +3514,26 @@ WRITE.push('pst','bidsteps','ydhand','beatfix');
 // 案子詳情：大器、定定放同一排
 {const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;
  return h.replace(/<div class="aifs([^"]*)">/,(m,c)=>`<div class="aifs${c} aifs2">${aiF('daqi','proj:'+x[1])}`)}}
+/* ---------- v83（2026-11-23）：案子詳情每一步點開看詳情（msg 239） ----------
+   老大原話：「點進去卡片每個步驟點開都可以看見視窗的內容進度詳情之類的」
+   步驟名稱可以點開：這步的備註、用哪個模型、監工或子視窗、技能；正在做或卡住的那步，再加上執行狀態、哪個視窗在跑、進度說明、卡點、最後更新，與這張卡最近三則對話（點了才讀）。
+   面板讀不到視窗裡的畫面，看得到的是視窗寫回卡片的進度與訊息。 */
+const RUNST2={queued:'排隊中',running:'跑中',done:'跑完',failed:'卡住'};
+const PSM={};
+async function pstMsgs(id){if(PSM[id]&&Date.now()-PSM[id].t<60e3)return;PSM[id]={t:Date.now(),a:null};
+ try{const ms=await LV.api.msgs(id,'daqi');PSM[id].a=(ms||[]).slice(-3)}catch(e){PSM[id].a=[];PSM[id].err=LERR(e)}if((S.page||'').indexOf(id)>-1)render('keep')}
+function pstDetail(p,s,i){const c=p.raw||{},o=stepOf(s),tg=stepTags(o),live=s.status==='current'||s.status==='blocked';
+ const kv=[['這步備註',o.note],['模型與方式',tg]];
+ if(live){kv.push(['執行',RUNST2[c.runStatus]||'還沒送出執行'],['視窗',(String(c.runNote||'').match(/【[^】]+】[^\s，。]*/)||[''])[0]||c.runNote],['進度',c.progressNote],['卡在',c.progressBlocker],['最後更新',c.progressUpdatedAt?LAGO(c.progressUpdatedAt)+(c.progressUpdatedBy?'・'+c.progressUpdatedBy:''):''])}
+ const rows=kv.filter(x=>x[1]).map(x=>`<div class="kv"><span>${esc(x[0])}</span><b>${esc(x[1])}</b></div>`).join('');
+ let msg='';if(live){const m=PSM[p.id];if(!m)pstMsgs(p.id);msg=`<p class="h4">最近對話</p>`+(!m||m.a===null?'<p class="note">讀取中…</p>':m.a.length?`<ul class="tl">${m.a.map(x=>`<li>${esc((x.kind==='user'?'你：':'大器：')+String(x.body||'').replace(/^［[^］]*］\n?/,'').slice(0,140))}</li>`).join('')}</ul>`:'<p class="note">這張卡還沒有對話。</p>')+`<div class="mrow">${mb(bm('daqi')+'跟大器問這步','pstask',p.id+'|'+i)}</div>`}
+ return `<div class="pstd">${rows||'<p class="note">這步還沒有更多資料。按「✎ 改」可以補備註、模型與技能。</p>'}${msg}</div>`}
+{const _p=pageHTML;pageHTML=function(){let h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw)return h;
+ const st=p.raw.progressSteps||[];let i=-1;
+ return h.replace(/<li class="pstr" data-s="([^"]*)"><div class="pstn">([\s\S]*?)<\/div>/g,(m,s,inner)=>{i++;const k='pst:'+p.id+':'+i,op=!!S.open[k];
+  return `<li class="pstr${op?' on':''}" data-s="${s}"><button class="pstn pstbtn" data-act="open" data-id="${esc(k)}" aria-expanded="${op}">${inner}<span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></button>`+(op&&st[i]?pstDetail(p,st[i],i):'')})}}
+ACT.pstask=v=>{const [id,i]=v.split('|'),p=DB.proj.find(q=>q.id===id),s=p&&p.raw&&(p.raw.progressSteps||[])[+i];if(!s)return;
+ openChat('daqi','proj:'+id,null,()=>{const t=$('#cText');if(t){t.value=`第 ${+i+1} 步「${s.name}」現在做到哪？`;t.focus()}})};
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
