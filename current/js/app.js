@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v76');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v77');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3378,6 +3378,36 @@ ACT.wfsave=id=>{const w=W(id);if(!w)return;const f=wfInfo(w),fr=f.fresh,p={},old
  closeThen(()=>lw(id,'wish',p,'存到這張卡了',{patch:old}))};
 WRITE.push('wishfind','wfsave');
 window.__zlWF={parse:wfParse};
+/* ---------- v77（2026-11-23）：老大面板意見 msg 143 ----------
+   1「這邊多一個分類是劇本」：案子房間分類多「劇本」。案名或說明有劇本、編劇、分場、腳本、影集、長片的自動歸進來；編輯案子可以勾「歸到劇本」（說明第一行寫［劇本］，不加資料庫欄位）。
+   2「卡片裡的每一個步驟，我也要都可以編輯」：步驟卡每一步多「狀態」（還沒開始、正在做、做完、跳過、卡住），案子詳情頁的按鈕改叫「編輯每一步」，階段打開也有同一顆。 */
+const SCRIPT_RE=/劇本|編劇|分場|腳本|影集|長片/,SCRIPT_MK=/^［劇本］\n?/m;
+const isScript=p=>{const c=p.raw||{};return SCRIPT_RE.test([p.title,p.short,c.title,c.shortTitle].join(' '))||SCRIPT_MK.test(String(c.why||''))};
+{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj,n=E()?0:DB.proj.filter(isScript).length,btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:script">劇本 ${n}</button>`;
+ const segRe=/(<div class="seg" role="group" aria-label="案子分類">[\s\S]*?)(<\/div>)/;
+ if(s!=='script')return _zp().replace(segRe,(x,a,b)=>a+btn(false)+b);
+ const all=DB.proj;DB.proj=all.filter(isScript);S.sub.proj='proj';let h;try{h=_zp()}finally{DB.proj=all;S.sub.proj='script'}
+ h=h.replace(segRe,(x,a,b)=>a.replace(/aria-pressed="true"/g,'aria-pressed="false"')+btn(true)+b);
+ if(!n)h=h.replace(/<div class="addtop">/,`<div class="card" style="margin-top:12px"><p>還沒有劇本案。案名有「劇本、編劇、分場、腳本」會自動放進來，也可以在案子的「✎ 編輯」勾「歸到劇本」。</p></div><div class="addtop">`);
+ return h}}
+// 編輯案子：歸到劇本
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();if(!/^pedit:/.test(S.sheet||''))return h;const id=S.sheet.slice(6),p=DB.proj.find(x=>x.id===id);if(!p)return h;
+ const on=SCRIPT_MK.test(String((p.raw||{}).why||''))||isScript(p);
+ const box=`<label class="f fchk"><input type="checkbox" id="peScript"${on?' checked':''}> 歸到劇本分類</label>`;
+ return h.replace(/(<label class="f">說明)/,box+'$1').replace(/(id="peWhy"[^>]*>)([\s\S]*?)(<\/textarea>)/,(m,a,t,b)=>a+t.replace(/^［劇本］\n?/,'')+b)}}
+{const _ps=ACT.pesave;ACT.pesave=function(id){const cb=document.getElementById('peScript'),w=document.getElementById('peWhy');
+ if(cb&&w){const t=w.value.replace(/^［劇本］\n?/,'');const p=DB.proj.find(x=>x.id===id),auto=p&&SCRIPT_RE.test([p.title,p.short].join(' '));
+  w.value=(cb.checked&&!auto?'［劇本］\n':'')+t}
+ return _ps.apply(this,arguments)}}
+// 步驟卡：每一步可以改狀態
+const STS=[['pending','還沒開始'],['current','正在做'],['done','做完'],['skipped','跳過'],['blocked','卡住']];
+const stSel=v=>`<label class="f">狀態<select class="st-status">${STS.map(([k,l])=>`<option value="${k}"${k===v?' selected':''}>${l}</option>`).join('')}</select></label>`;
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();if(!/^stepx:/.test(S.sheet||''))return h;
+ return h.replace(/(<div class="strow" data-st="\d+" data-status="([^"]*)">[\s\S]*?<input class="st-name"[^>]*><\/label>)/g,(m,a,st)=>a+stSel(st||'pending'))}}
+{const _a=ACT.stadd;ACT.stadd=function(){_a.apply(this,arguments);const r=document.querySelector('#stRows .strow:last-child');if(r&&!r.querySelector('.st-status')){const l=r.querySelector('.st-name');if(l)l.closest('label').insertAdjacentHTML('afterend',stSel('pending'))}}}
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('st-status')){const r=t.closest('.strow');if(r)r.dataset.status=t.value}});
+{const _p=pageHTML;pageHTML=function(){const h=_p(),x=(S.page||'').split(':');if(x[0]!=='proj')return h;
+ return h.replace(/🧩 步驟卡/,'🧩 編輯每一步').replace(/(<button[^>]*data-id="pd:[^"]*:step"[^>]*aria-expanded="true"[\s\S]*?<\/button>)/,`$1<div class="mrow">${mb('🧩 編輯每一步','sheet','stepx:'+x[1])}</div>`)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
