@@ -1112,3 +1112,17 @@
     if (pend) chip();
   }, 200);
 })();
+
+/* 2026-11-24 生活「要買」的「比價」鈕補回萌萌的臉（逐流 msg 680，老大：「要是萌萌的小臉」）。
+   app.js 把「請萌萌比價」改短成「比價」時用 textContent 蓋掉了臉；這裡沒有臉就補一顆（由 faceSync 掛）。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  function run() {
+    document.querySelectorAll('[data-act="supcmp"]').forEach(function (b) {
+      if (b.querySelector('.bm')) return;
+      var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'mon'; f.setAttribute('aria-hidden', 'true');
+      b.insertBefore(f, b.firstChild);
+    });
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
