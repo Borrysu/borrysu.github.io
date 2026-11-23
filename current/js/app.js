@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v97');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v98');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4340,6 +4340,79 @@ ACT.codstep=async v=>{const [id,k]=String(v).split('|'),c=coFind(id);if(!c)retur
 ACT.codall=async id=>{const c=coFind(id);if(!c)return;const st=coStepsOf(c).map(stepOf),ks=st.map((o,k)=>k).filter(k=>st[k].status!=='done'&&st[k].status!=='skipped');if(!ks.length)return;
  try{const n=await coSendStep(c,st,ks);if(n.r&&!n.d){if(S.sheet)back()}toast([n.r?`${n.r} 步交給肉咖`:'',n.d?`${n.d} 步開大器對話`:''].filter(Boolean).join('，'));await coLoad();render('keep')}catch(e){toast(NOFN(e)?'資料庫還沒更新，派工還沒接上':'沒送出：'+LERR(e))}};
 
+/* ---------- v98（2026-11-24）：想買詳情改成比較卡 ----------
+   老大原話（msg 553）：「這一頁不能這樣，這一頁應該要有所比較 會有幾張卡片比較之類的 同一個商品的不同價格不同通路之類的或者是規格的差異 不是給我一堆文字 然後比較的話就會讓那個什麼獲勝的那個可能某個數字是突出的 拿點進去卡片的話可以看到詳細的內容」
+   - wdet: 改成：商品圖與一行摘要、萌萌狀態，下面 2～4 張比較卡（手機橫滑、桌機並排）。含運總價最低＝「最划算」、萌萌標「標記：規格最好」＝「規格最好」，獲勝的數字放大上色。
+   - 點一張卡＝下面展開那張的全部細節（萌萌原話、連結、付款方式），一次只看一張；再點一次收起。
+   - 萌萌回覆格式：一個方案一段，「方案：／價格：／規格：／運費：／付款方式：／連結：／圖片：／查核：」（可加「標記：規格最好」）。舊格式（單一價格、通路）顯示成一張卡；還沒回、但卡上有存價格的也顯示一張「這張卡存的」。
+   - 「存到這張卡」：存點開的那張，沒點就存最划算那張。
+   - 這段取代 v96 的 wd2 版面，所以 bot_voice.js 的 .wd2-p 價格拆行在 wdet 不再有對象（那段選擇器旁有註記）。比較卡價格自己拆大字與小字，不靠 bot_voice。 */
+const WCK={方案:'name',價格:'price',規格:'spec',運費:'ship',付款方式:'pay',付費方式:'pay',連結:'url',網址:'url',圖片:'img',查核:'chk',通路:'shop',標記:'mark'};
+const WCRE=/^(方案|價格|規格|運費|付款方式|付費方式|連結|網址|圖片|查核|通路|標記)\s*[：:]\s*(.*)$/;
+const wcUrl=s=>(String(s||'').match(/https:\/\/[^\s)）」<>"']+/)||[])[0]||'';
+function wcSegs(body){const out=[];out.gen=[];
+ String(body||'').replace(/^［[^］]*］\s*/,'').split(/\n\s*\n/).forEach(par=>{const lines=par.split(/\n+/).map(l=>l.trim()).filter(Boolean);
+ if(!lines.some(l=>/^方案\s*[：:]/.test(l.replace(/^[\-•*\d.、)）]+\s*/,'')))){out.gen.push(...lines);return}
+ let cur=null;
+ lines.forEach(l=>{const c=l.replace(/^[\-•*\d.、)）]+\s*/,''),m=c.match(WCRE);
+  if(m&&m[1]==='方案'){cur={name:m[2].trim()||('方案 '+(out.length+1)),raw:[l]};out.push(cur);return}
+  if(!cur){out.gen.push(l);return}cur.raw.push(l);if(m){const k=WCK[m[1]];if(!cur[k])cur[k]=m[2].trim()}else(cur.more=cur.more||[]).push(l)})});
+ return out}
+function wcPlans(w){const rp=wfReply(w);let ps=[],gen=[];
+ if(rp&&rp.msg){ps=wcSegs(rp.msg.body);gen=ps.gen.filter(l=>!/^（示範回覆）$/.test(l));
+  if(!ps.length){const i=wfParse(rp.msg.body);if(i.price||i.shop)ps=[{name:i.shop||'萌萌找到的',price:i.price,pay:i.pay,url:i.url,img:i.img,shop:i.shop,old:1,more:String(rp.msg.body).replace(/^［[^］]*］\s*/,'').split(/\n+/).map(l=>l.trim()).filter(l=>l&&!WCRE.test(l.replace(/^[\-•*\d.、)）]+\s*/,'')))}];gen=[]}}
+ if(!ps.length&&!w.noPrice&&w.price){const n0=wfNote((w.raw2||{}).note);ps=[{name:w.shop&&!/還沒補/.test(w.shop)?w.shop:'這張卡存的',price:nt(w.price),pay:n0.pay,url:w.url,img:n0.img,saved:1}]}
+ ps=ps.slice(0,4);ps.forEach(p=>{p.url=wcUrl(p.url);p.img=okImg(wcUrl(p.img))?wcUrl(p.img):'';p.n=wfNum(p.price)});
+ const nums=ps.filter(p=>p.n!=null);if(ps.length>1&&nums.length){const lo=Math.min(...nums.map(p=>p.n));const c=nums.find(p=>p.n===lo);if(nums.filter(p=>p.n===lo).length<ps.length)c.cheap=1}
+ if(ps.length>1){const s=ps.find(p=>/規格最好|規格最強|最高規/.test(p.mark||''));if(s)s.best=1}
+ return {ps,rp,gen}}
+LV.wcSel=LV.wcSel||{};
+function wcPrice(p){if(p.n==null)return {big:p.price||'還沒有價格',sub:''};
+ const sub=String(p.price||'').replace(/NT\$\s?[\d,]+(?:\.\d+)?/i,'').replace(/^[\s（(]+|[\s）)]+$/g,'').replace(/[；;]\s*/g,'・').trim();
+ return {big:'NT$ '+p.n.toLocaleString('en-US'),sub}}
+function wcCard(w,p,i,sel){const pr=wcPrice(p),sp=String(p.spec||'').split(/[、，,／\/；;]\s*/).map(s=>s.trim()).filter(Boolean).slice(0,3);
+ const meta=[p.ship?'運費 '+p.ship:'',p.pay||''].filter(Boolean).join('・');
+ const chk=p.chk?('查核 '+p.chk.replace(/^\d{4}[-/]/,'').replace('-','/')):(p.saved?'卡上存的':'');
+ return `<button type="button" class="wc-card${p.cheap?' cheap':''}${p.best?' spec':''}${sel===i?' on':''}" data-act="wcpick" data-id="${esc(w.id)}|${i}" aria-pressed="${sel===i}" aria-label="${esc(p.name)} ${esc(pr.big)}，點開看細節">`
+  +`<span class="wc-tags">${p.cheap?'<span class="wc-tag cheap">最划算</span>':''}${p.best?'<span class="wc-tag spec">規格最好</span>':''}</span>`
+  +`<span class="wc-n">${esc(clip(p.name,24))}</span><span class="wc-p">${esc(pr.big)}</span>${pr.sub?`<span class="wc-ps">${esc(clip(pr.sub,30))}</span>`:''}`
+  +(sp.length?`<span class="wc-sp">${sp.map(s=>`<span>${esc(clip(s,26))}</span>`).join('')}</span>`:'')
+  +(meta?`<span class="wc-m">${esc(clip(meta,40))}</span>`:'')+(chk?`<span class="wc-d">${esc(chk)}</span>`:'')+`</button>`}
+function wcDet(w,p,i){let site='';try{site=p.url?new URL(p.url).hostname.replace(/^www\./,''):''}catch(e){}
+ const kv=[['價格',p.price],['規格',p.spec],['運費',p.ship],['付款方式',p.pay],['查核',p.chk]].filter(x=>x[1]);
+ const said=(p.more||[]).filter(l=>!/^（示範回覆）/.test(l)||l.length>8);
+ return `<div class="wc-det" role="region" aria-label="${esc(p.name)}的細節"><p class="wc-dh">${esc(p.name)}${p.cheap?' <span class="wc-tag cheap">最划算</span>':''}${p.best?' <span class="wc-tag spec">規格最好</span>':''}</p>`
+  +(kv.length?`<dl class="wc-kv">${kv.map(x=>`<dt>${x[0]}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>`:'')
+  +(p.url?`<a class="wc-lk" href="${esc(p.url)}" target="_blank" rel="noopener noreferrer">${esc(site||'商品頁')} ↗</a>`:'')
+  +(said.length&&!p.saved?`<p class="wc-rh">萌萌另外說</p><div class="wc-raw">${said.slice(0,14).map(l=>`<p>${esc(clip(l,200))}</p>`).join('')}</div>`:'')
+  +(!p.saved?`<div class="btns">${B('存這個方案到這張卡','wcsave',w.id+'|'+i,'pri wide')}</div>`:'')+`</div>`}
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='wdet')return _s();const w=W(a.slice(1).join(':'));if(!w)return shHead('這項不在了');
+ const {ps,rp,gen}=wcPlans(w);let sel=LV.wcSel[w.id];if(sel!=null&&!ps[sel])sel=null;
+ const st=rp&&rp.msg?`<p class="wd2-st">${bm('mon','','sm')}<span>萌萌回了・${LMD(rp.msg.at)} ${LHM(rp.msg.at)}${ps.length>1?`・比了 ${ps.length} 個方案`:''}</span></p>`:rp&&rp.run?`<p class="wd2-st run">${bm('mon','thinking','sm')}<span>萌萌比價中・${LHM(rp.at)} 送出，比好會變成比較卡</span></p>`:`<p class="wd2-st dim">${bm('mon','','sm')}<span>還沒請萌萌比</span></p>`;
+ const ch=ps.find(p=>p.cheap),top=ch||ps[0];
+ const sum=top?(ch?`最划算 ${wcPrice(ch).big}・${esc(clip(ch.name,16))}`:`${esc(wcPrice(top).big)}・${esc(clip(top.name,16))}`):'還沒有價格';
+ const cols=ps.length<=3?ps.length:2;
+ const save=ps.length&&!(ps.length===1&&ps[0].saved)?(()=>{const k=sel!=null?sel:Math.max(0,ps.indexOf(ch));const p=ps[k];return p&&!p.saved?`<div class="btns">${B(`存「${esc(clip(p.name,12))}」到這張卡`,'wcsave',w.id+'|'+k,'pri wide')}</div>`:''})():'';
+ return shHead(esc(w.name))
+  +`<div class="wc-hero">${wimgH(w,1)}<div class="wc-hm"><p class="wc-sum">${sum}</p>${w.spec?`<p class="wc-note">${esc(clip(wfStrip(w.spec),60))}</p>`:''}</div></div>`+st
+  +(ps.length?`<div class="wc-row" style="--wc-cols:${cols}">${ps.map((p,i)=>wcCard(w,p,i,sel)).join('')}</div>${ps.length>1?'<p class="wc-hint">點一張看細節</p>':''}${gen.length?`<div class="wc-raw wc-gen"><p class="wc-rh">${bm('mon','','sm')}萌萌說</p>${gen.slice(0,4).map(l=>`<p>${esc(clip(l.replace(/^（示範回覆）/,''),160))}</p>`).join('')}</div>`:''}`:(!rp?`<p class="note">按「萌萌先比」，她會找 2 到 4 個方案（不同通路或規格），變成比較卡；沒指定品牌會先問你需求。</p>`:''))
+  +(sel!=null?wcDet(w,ps[sel],sel):'')+(sel==null?save:'')
+  +`<div class="wd2-a">${rp?mb('開萌萌的對話','wfchat',w.id)+mb(bm('mon','','sm')+'請萌萌再比一次','wishfind',w.id):B(bm('mon','','sm')+'萌萌先比','wishfind',w.id,'pri')}${mb('✎ 編輯','ledit',w.id)}</div>`}}
+ACT.wcpick=v=>{const s=String(v),k=s.lastIndexOf('|'),id=s.slice(0,k),i=+s.slice(k+1);LV.wcSel[id]=LV.wcSel[id]===i?null:i;render('keep');
+ setTimeout(()=>{const d=document.querySelector('#sheet .wc-det');if(d)d.scrollIntoView({behavior:RM?'auto':'smooth',block:'nearest'})},60)};
+ACT.wcsave=v=>{const s=String(v),k=s.lastIndexOf('|'),id=s.slice(0,k),w=W(id);if(!w)return;const p=wcPlans(w).ps[+s.slice(k+1)];if(!p||p.saved){toast('沒有新的資料可存');return}
+ const x=w.raw2||{},pt={},old={};
+ if(p.n!=null&&(w.noPrice||p.n!==w.price)){pt.price=p.n;old.price=x.price==null?null:x.price}
+ const shop=p.shop&&p.shop!==p.name?`${p.name}（${p.shop}）`:p.name;if(shop&&shop!==x.shop){pt.shop=shop.slice(0,80);old.shop=x.shop||''}
+ if(p.url&&p.url!==x.url){pt.url=p.url;old.url=x.url||''}
+ const n0=wfNote(x.note),pay=p.pay||n0.pay,img=p.img||n0.img;if((p.pay&&p.pay!==n0.pay)||(p.img&&p.img!==n0.img)){pt.note=(wfStrip(x.note)+(pay?'\n付款方式：'+pay:'')+(img?'\n圖片：'+img:'')).trim();old.note=x.note||''}
+ if(!Object.keys(pt).length){toast('這個方案已經存在卡上了');return}
+ delete LV.wcSel[id];closeThen(()=>lw(id,'wish',pt,`存了「${clip(p.name,12)}」`,{patch:old}))};
+const WC_ASK=(w,id)=>`【萌萌先找】老大想買「${w.name}」（想買編號 ${id}）${w.url?'，來源 '+w.url:''}${w.spec?'，備註：'+wfStrip(w.spec).replace(/\n/g,' '):''}。請比 2 到 4 個方案（同一商品不同通路，或不同規格），逐流會把每個方案變成一張比較卡。一個方案一段，段和段之間空一行，每段固定這幾行：\n方案：<通路或規格名>\n價格：NT$ …（含運總價）\n規格：<重點 2～3 項，用頓號分開>\n運費：…\n付款方式：…\n連結：https://…\n圖片：https://…\n查核：YYYY-MM-DD\n規格最好的那段多加一行「標記：規格最好」。價格一定寫含運總價的數字。沒有指定品牌的話，先問我預算、用途、偏好，我回了你再比。`;
+ACT.wishfind=id=>{const w=W(id);if(!w)return;LV.wishRun[id]='mon';LV.sig='';delete LV.wcSel[id];botAsk('mon',WC_ASK(w,id),'wish:'+id);setTimeout(loadMon,3000)};
+ACT.wishcmp=ACT.wishfind;
+WRITE.push('wcsave');
+window.__zlWC={segs:wcSegs,plans:wcPlans};
 window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 

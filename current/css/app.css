@@ -1507,3 +1507,50 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .stc-cmd{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(127,127,127,.12);display:flex;flex-direction:column;gap:4px;min-width:0}
 .stc-cmd small{font-size:12px;color:var(--ink2)}
 .stc-cmd code{font:500 12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink);overflow-wrap:anywhere;word-break:break-all}
+/* v98 想買比較卡（wdet:） */
+.wc-hero{display:flex;gap:14px;align-items:center;margin:12px 0 10px}
+.wc-hero .wimg{width:72px;height:72px;flex:none}
+.wc-hm{min-width:0}
+.wc-sum{margin:0;font:700 17px/1.35 var(--fn);color:var(--ink)}
+.wc-note{margin:4px 0 0;font-size:13px;color:var(--ink2);overflow-wrap:anywhere}
+.wc-row{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -16px 4px;padding:6px 16px 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.wc-row::-webkit-scrollbar{display:none}
+.wc-card{flex:0 0 min(70%,230px);scroll-snap-align:start;display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:left;padding:12px 13px 13px;border-radius:16px;border:1px solid var(--line);background:var(--sf2);color:var(--ink);font:inherit;cursor:pointer;min-width:0;min-height:44px;transition:border-color .15s,transform .15s}
+.wc-row:has(.wc-card:only-child) .wc-card{flex-basis:100%;max-width:none}
+.wc-card:active{transform:scale(.98)}
+.wc-card.cheap{border-color:var(--ok);border-width:2px;padding:11px 12px 12px}
+.wc-card.on{outline:2px solid var(--ink);outline-offset:2px}
+.wc-tags{display:flex;gap:4px;flex-wrap:wrap;min-height:20px}
+.wc-tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:999px;line-height:1.4;vertical-align:2px}
+.wc-tag.cheap{background:var(--ok);color:#0b0b0b}
+.wc-tag.spec{background:var(--c-mon);color:#111}
+.wc-n{font-size:13px;color:var(--ink2);font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.wc-p{font:800 20px/1.1 var(--fn);color:var(--ink);white-space:nowrap}
+.wc-card.cheap .wc-p{font-size:24px;color:var(--ok)}
+.wc-ps{font-size:12px;color:var(--ink2);line-height:1.35}
+.wc-sp{display:flex;flex-direction:column;gap:2px;margin-top:2px;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+.wc-card.spec .wc-sp{font-weight:700}
+.wc-m{font-size:12px;color:var(--ink2);line-height:1.4;overflow-wrap:anywhere}
+.wc-d{font-size:11px;color:var(--ink2);opacity:.8}
+.wc-hint{margin:0 0 10px;font-size:12px;color:var(--ink2)}
+.wc-det{padding:14px;border-radius:16px;border:1px solid var(--line2,var(--line));margin:2px 0 12px}
+.wc-dh{margin:0 0 10px;font-weight:700;font-size:16px}
+.wc-kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin:0 0 10px;font-size:14px}
+.wc-kv dt{color:var(--ink2);font-size:13px}
+.wc-kv dd{margin:0;overflow-wrap:anywhere}
+.wc-lk{display:inline-flex;align-items:center;min-height:36px;font-size:14px;color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.wc-rh{margin:8px 0 4px;font-size:12px;color:var(--ink2);font-weight:600}
+.wc-raw{padding:10px 12px;border-radius:12px;background:var(--sf2);margin-bottom:10px}
+.wc-raw p{margin:0 0 3px;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+@media (min-width:1000px){
+  .wc-row{display:grid;grid-template-columns:repeat(var(--wc-cols,3),minmax(0,1fr));overflow:visible;margin:0 0 4px;padding:6px 0 10px}
+  .wc-card{flex:none}
+  .wc-p{font-size:18px}.wc-card.cheap .wc-p{font-size:21px}
+}
+.wc-gen .wc-rh{display:flex;align-items:center;gap:6px;margin-top:0}
+.wc-gen .wc-rh .bm{width:18px;height:18px;pointer-events:none}
+.wc-row{scroll-padding-inline:16px}
+.wc-card{flex-basis:min(46%,200px)}
+.wc-tags{min-height:0}.wc-tags:empty{display:none}
+.wc-row:has(.wc-tag) .wc-tags:empty{display:flex;min-height:20px}
+@media (min-width:1000px){.wc-card{flex-basis:auto}}

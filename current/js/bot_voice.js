@@ -837,6 +837,7 @@
     el.appendChild(sub);
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () {
+    // 2026-11-24 v98：想買詳情（wdet:）改成比較卡（app.js「v98」段，價格用 .wc-p／.wc-ps 自己拆），.wd2-p、.wd2-c 在 wdet 已不出現；這裡只處理舊結構與卡片上的 .amt，不要把 .wc-p 加進來。
     document.querySelectorAll('#sheet .wd2-p, #sheet .wd2-c b, #sheet .wdh .amt, #view .cardx .amt').forEach(split);
   }, 80); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
