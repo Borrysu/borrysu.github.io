@@ -75,7 +75,7 @@
       names: { thinking: '想一下', logged: '有看法了', alert: '有風險' } },
     // 肉咖：公司 Mac 的 AI（好咖）。老大 2026-11-23 定 F2：桃紅底、黑剪影、黃色只放在眼睛（README 1123_PixPix_肉咖臉）；
     // 老大：「肉咖的臉請幫我也設計一個會動的。」「紫色應該是大器，桃紅色粉紅色才是肉咖」。會動版：桃紅身體、黃眼、黑描邊，黃只在眼睛
-    rouka:   { shape: 'gecko', color: '#FF4F9A', eye: '#FFBD6B', outline: true, label: '肉咖',
+    rouka:   { shape: 'gecko', color: '#1E1B24', eye: '#FFBD6B', outline: true, label: '肉咖',   // 老大 2026-11-23：「你應該要用皮皮傳過來的頭像去設計一個這種泡泡質感的動圖」→ 照 F2：黑頭、黃眼、頭頂兩眼鼓起；桃紅留給按鈕與描邊
       names: { thinking: '在做', logged: '做好了', alert: '要你看' } },
     baba:    { shape: 'shield', color: '#FFFFFF', eye: '#17151E', outline: true, label: '霸霸',   // 老大 2026-11-23：「霸霸是白色的」（Grok Bot 本機資料是 black，以老大為準）
       names: { thinking: '設置中', logged: '設好了', alert: '要你點頭' } },
