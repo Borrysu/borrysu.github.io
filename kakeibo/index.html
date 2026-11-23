@@ -3361,7 +3361,7 @@ function budgetHead(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null;const bk=' style
   +(ps==null?'':prevNone()?'<span class="sub"'+bk+'>上一期（'+PLf(-1)[0]+'）沒有支出紀錄，還不能比</span>':'<span class="sub"'+bk+'>上期同一段（'+KD.ps.label+'）'+fmt(ps)+'，'+(d.spent>=ps?'多 ':'少 ')+fmt(Math.abs(d.spent-ps))+'</span>')
   +'<span class="sub"'+bk+'>收入 '+fmt(d.income)+' · 目標 '+fmt(TARGET)+' '+goalNums(d).txt+'</span></section>'}
 function budgetTail(){return B('sheet',BUD()?'調整預算':'設定預算',{cls:'wide',k:'budSet'})+B('sheet','看收入目標',{cls:'wide',k:'income'})+B('askBud','跟塔塔說',{cls:'wide'})+thSlot('budget',2)}
-function budgetA(d){if(d.err)return errBlock();return budgetHead(d)+'<h2 class="h3">各類支出'+(prevNone()?'':' <span class="sub">與上期同天數比</span>')+'</h2>'+catList(d)+budgetTail()}
+function budgetA(d){if(d.err)return errBlock();return budgetHead(d)+'<h2 class="h3">各類支出'+(prevNone()?'':' <span class="sub">'+(ps36Ok()?'與上期同天數比':'上期記得不完整，先不比')+'</span>')+'</h2>'+catList(d)+budgetTail()}
 function budgetB(d){return budgetA(d)}
 function budgetC(d){return budgetA(d)}
 SH.left=function(d){const g=goalNums(d),ps=S.per===0&&KD.ps?KD.ps.tot:null;
@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.1', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4288,6 +4288,32 @@ Object.assign(ACT,{
     await sendTata('[面板請塔塔繳] 「'+x.name+'」NT$'+fmt(x.amt)+'，'+(x.rel<0?rel(x.rel):x.due+' 到期')+'。請幫我處理繳費：回我繳費管道與期限（不用代付）。（請求單 #'+r.id+'）').catch(e=>{throw new Error('請求已記下，但傳給塔塔失敗：'+e.message)});return r},'已請塔塔繳「'+x.name+'」，她會回繳費管道與期限');
   if(ok)S.pay=null}});
 
+/* ---- kk-v36.1 ---- */
+/* ================= kk-v36.1：上期記得不完整就不比（上期同段筆數 <10，或少於這期同段的三分之一）；百分比超過 300% 只寫金額差 ================= */
+{const psc=prevSameCalc;prevSameCalc=function(){psc();if(!KD.ps||!KD.o)return;const n=KD.ps.n,ps0=addMonths(KD.o.period_start,-1),p0=KD.o.period_start;let pc=0,cc=0;
+  (KD.prevL||[]).forEach(t=>{if(t.voided_at||t.type!=='expense')return;if(dayDiff(tpDay(t.occurred_at),ps0)>=n)return;pc++});
+  (KD.l||[]).forEach(t=>{if(t.voided_at||t.type!=='expense')return;const dd=dayDiff(tpDay(t.occurred_at),p0);if(dd<0||dd>=n)return;cc++});
+  KD.ps.cnt=pc;KD.ps.curCnt=cc;KD.ps.ok=pc>=10&&pc*3>=cc}}
+const ps36Ok=()=>!!(KD.ps&&KD.ps.ok);
+const weak36=()=>'<div class="weak36">上期記得不完整，先不比<small>上期同一段 '+(KD.ps?KD.ps.cnt:0)+' 筆、這期 '+(KD.ps?KD.ps.curCnt:0)+' 筆</small></div>';
+chg36=function(cur,prev,o){o=o||{};const df=Math.round(cur)-Math.round(prev);if(!df)return '<span class="chg36 eq'+(o.sm?' sm':'')+'">'+(o.pre||'')+'一樣</span>';
+  const up=df>0,p=prev>0?Math.round(Math.abs(df)/prev*100):null;
+  return '<span class="chg36 '+(up?'up':'dn')+(o.sm?' sm':'')+'" aria-label="'+(o.pre||'')+(up?'多 ':'少 ')+fmt(df)+'"><span aria-hidden="true">'+(o.pre||'')+(up?'▲ 多 ':'▼ 少 ')+fmt(df)+(p!=null&&p<=300&&!o.noPct?' <small>'+p+'%</small>':'')+'</span></span>'};
+budgetHead=function(d){const ps=S.per===0&&KD.ps?KD.ps.tot:null,g=goalNums(d),none=ps!=null&&prevNone(),ok=ps!=null&&!none&&ps36Ok(),weak=ps!=null&&!none&&!ok;const tone=ok?(d.spent>ps?' up':d.spent<ps?' dn':''):'';
+  let h='<section class="card cmp36"><div class="cmp36-h"><span class="cmp36-l">'+P.label+' 支出</span>'+(ok?chg36(d.spent,ps):'')+'</div>'
+   +'<div class="cmp36-big'+tone+'">'+amt(d.spent,{abs:1,roll:'spent'})+'</div>'+(weak?weak36():'')
+   +(d.prev||d.fut?'':unbLine(' style="display:block"'))
+   +(d.bud?'<span class="sub" style="display:block">預算 '+fmt(BUDGET)+'，'+(d.left<0?'<b class="neg">超支 '+fmt(-d.left)+'</b>':'還能花 '+fmt(d.left)+(d.dl?'，每天 '+fmt(d.perDay):''))+(V32.bud.scope==='period'?'（這期專用）':'（每期通用）')+'</span>'+bul(d.pS,d.prev?null:d.pT,{big:true,lab:'預算用了'}):'')
+   +'<div class="cmp36-g">';
+  if(ps!=null)h+='<div class="cmp36-c"><span class="cmp36-k">上期同一段</span><span class="cmp36-d">'+(none?PLf(-1)[0]:KD.ps.label)+'</span>'+(none?'<span class="cmp36-n mut">沒有支出紀錄</span>':'<span class="cmp36-n'+(weak?' mut36':'')+'">'+amt(ps)+'</span>')+'</div>';
+  h+='<div class="cmp36-c"><span class="cmp36-k">收入</span><span class="cmp36-d">目標 '+fmt(g.tgt)+'</span><span class="cmp36-n in">'+amt(g.inc)+'</span></div></div>'
+   +'<div class="cmp36-f"><span>'+(g.gap>0?'離目標還差':'已達標')+'</span>'+(g.gap>0?'<b class="cmp36-gap">'+fmt(g.gap)+'</b>':'<b class="cmp36-ok">超過 '+fmt(-g.gap)+'</b>')+'<span class="cmp36-pct">'+g.pctTxt+'</span></div>'
+   +bul(g.tgt>0?g.inc/g.tgt:0,null,{lab:'收入到目標'})+'</section>';
+  return h};
+catCmpTag=function(k,s){if(S.per!==0||!KD.ps||prevNone()||!ps36Ok())return '';const p=KD.ps.cat[k]||0;if(!p)return '<span class="chg36 sm new">上期同一段沒花</span>';return chg36(s,p,{sm:1,pre:'比上期 '})};
+cmpBlock=function(cur,prev,lab){if(prev==null)return '<p class="sub">上一期的資料還沒讀到。</p>';const ok=ps36Ok();
+  return '<div class="cmp36-g cmp36-sh"><div class="cmp36-c"><span class="cmp36-k">這期到今天</span><span class="cmp36-n'+(ok?(cur>prev?' up':cur<prev?' dn':''):'')+'">'+amt(cur)+'</span></div><div class="cmp36-c"><span class="cmp36-k">上期同一段</span><span class="cmp36-d">'+lab+'</span><span class="cmp36-n'+(ok?'':' mut36')+'">'+amt(prev)+'</span></div></div>'+(ok?'<div class="cmp36-f">'+chg36(cur,prev)+'</div>':weak36())};
+
 syncSkin();remountHd();
 if(KEY.length>=20&&kkCacheLoad()){kkApply();KD.loaded=true;S.loading=false}
 render('f');kkLoad({dir:'f'});
@@ -4368,6 +4394,11 @@ details.kk-more[data-td="split"]>summary{justify-content:flex-end}
 [data-td="1"]{padding-right:46px}
 .kk-dots{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:28px;padding:0 8px;border-radius:999px;background:var(--surface2);color:var(--ink2);font-size:18px;font-weight:700;line-height:1;letter-spacing:1px}
 details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surface)}
+
+/* kk-v36.1：上期記得不完整 */
+.weak36{margin:6px 0 2px;padding:8px 12px;border-radius:var(--radius-sm,12px);background:var(--surface2);color:var(--ink2);font-size:14px;font-weight:600}
+.weak36 small{display:block;margin-top:2px;font-size:12px;font-weight:500;color:var(--muted)}
+.cmp36-n.mut36 .amt{color:var(--muted)}
 </style>
 <script id="kkcf-js">
 /* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字；v35.4 改：待確認交易按不對＝資料庫作廢，可復原，合計都照資料庫）

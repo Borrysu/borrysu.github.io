@@ -2683,7 +2683,7 @@ function detModel(d) {
     var by = {}; D.category_share.forEach(function (r) { by[r.category] = r.expense; });
     var cats = CATS.filter(function (c) { return (by[c] || 0) + (KD.prev_same_days[c] || 0) > 0; }), m2 = Math.max.apply(null, cats.map(function (c) { return Math.max(by[c] || 0, KD.prev_same_days[c] || 0); }).concat([1]));
     var t1 = cats.reduce(function (x, c) { return x + (by[c] || 0); }, 0), t0 = cats.reduce(function (x, c) { return x + (KD.prev_same_days[c] || 0); }, 0);
-    return { title: '與上期比', html: dsum('和上期同 ' + periodDays() + ' 天比', sgp(t1 - t0), '本期 ' + nt(t1) + '　上期 ' + nt(t0), t1 > t0 ? 'neg' : 'pos') + '<div class="rows" style="margin-top:10px">' + cats.map(function (c) {
+    return { title: '與上期比', html: (cmpOkE() ? dsum('和上期同 ' + periodDays() + ' 天比', sgp(t1 - t0), '本期 ' + nt(t1) + '　上期 ' + nt(t0), t1 > t0 ? 'neg' : 'pos') : dsum('和上期同 ' + periodDays() + ' 天比', '先不比', '上期記得不完整：上期同一段 ' + (KD.prev_same_n || 0) + ' 筆、這期 ' + KD.cur_same_n + ' 筆。本期 ' + nt(t1) + '　上期 ' + nt(t0), '')) + '<div class="rows" style="margin-top:10px">' + cats.map(function (c) {
       return '<button type="button" class="cmp" data-dcat="' + esc(c) + '" style="border-top:1px solid var(--line)"><span class="vh">' + esc(c) + '</span>' + ico(CAT_EMOJI[c], CAT_COLOR[c]) + '<div class="bars"><div class="b"><span>本期</span><i style="--w:' + ((by[c] || 0) / m2 * 100).toFixed(1) + ';background:' + CAT_COLOR[c] + '"></i><span class="num">' + nt(by[c] || 0) + '</span></div><div class="b p"><span>上期</span><i style="--w:' + ((KD.prev_same_days[c] || 0) / m2 * 100).toFixed(1) + '"></i><span class="num">' + nt(KD.prev_same_days[c] || 0) + '</span></div></div>' + delta(by[c] || 0, KD.prev_same_days[c] || 0) + '</button>'; }).join('') + '</div>' };
   }
   if (d.t === 'comp') {
@@ -3369,9 +3369,9 @@ async function load(opt) {
 async function loadPrev() {
   if (!NAVP[1]) return; LIVE.prevAt = Date.now();
   try {
-    var l = await rpc('list_transactions', { p_period_start: NAVP[1], p_include_void: false }), days = dayDiff(TODAY, NAVP[0]) + 1, same = {}, full = {};
-    (l || []).forEach(function (t) { t = mapTx(t); if (t.type !== 'expense' || t.voided_at || t.status === 'pending') return; var c = t.category || '其他', a = Number(t.amount); full[c] = (full[c] || 0) + a; if (dayDiff(dayKey(t.occurred_at), NAVP[1]) < days) same[c] = (same[c] || 0) + a; });
-    KD.prev_same_days = same; KD.prev_category_share = full;
+    var l = await rpc('list_transactions', { p_period_start: NAVP[1], p_include_void: false }), days = dayDiff(TODAY, NAVP[0]) + 1, same = {}, full = {}, sn = 0;
+    (l || []).forEach(function (t) { t = mapTx(t); if (t.type !== 'expense' || t.voided_at || t.status === 'pending') return; var c = t.category || '其他', a = Number(t.amount); full[c] = (full[c] || 0) + a; if (dayDiff(dayKey(t.occurred_at), NAVP[1]) < days) { same[c] = (same[c] || 0) + a; sn++; } });
+    KD.prev_same_days = same; KD.prev_same_n = sn; KD.prev_category_share = full;
     if (tab === 'stats') renderStats(); if (DET.length) drawDet(true);
   } catch (e) { LIVE.prevAt = 0; }
 }
@@ -4320,7 +4320,7 @@ function kkExDecorate() {
   document.querySelectorAll('.cardrow.acr[data-aid]').forEach(function (b) { var a = acctId(b.dataset.aid), box = b.querySelector('div[style*="flex:1"]'); if (a && box) kkExSet(box, KKCF.pdHtml('acct', a.name)); });
   var top = DET[DET.length - 1], ds = document.querySelector('#det .dsum'); if (top && top.t === 'acct' && ds) { var a2 = acctId(top.arg && top.arg.id != null ? top.arg.id : top.arg); if (a2) kkExSet(ds, KKCF.pdHtml('acct', a2.name)); }
 }
-var KK_VER = 'kk-v36', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v36.1', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4813,6 +4813,23 @@ billModel = function (name) { var m = _billModel36(name); m.html = m.html.replac
 })();
 if (typeof tab !== 'undefined' && tab === 'bills') try { renderBills(); } catch (e) {}
 
+
+/* ---- kk-v36.1 ---- */
+/* ================= kk-v36.1（E）：上期記得不完整就不比；百分比超過 300% 只寫金額差 ================= */
+function cmpOkE() {
+  var pn = KD.prev_same_n; if (pn == null || !NAVP[0]) return false;
+  var days = dayDiff(TODAY, NAVP[0]) + 1;
+  var cn = (TXALL || []).filter(function (t) { if (t.type !== 'expense' || t.voided_at || t.status === 'pending') return false; var dd = dayDiff(dayKey(t.occurred_at), NAVP[0]); return dd >= 0 && dd < days; }).length;
+  KD.cur_same_n = cn; return pn >= 10 && pn * 3 >= cn;
+}
+var _delta361 = delta;
+delta = function (now, prev, big) {
+  if (VIEW === 0 && !cmpOkE()) return big ? '<span class="dl na36 big">上期記得不完整，先不比</span>' : '';
+  if (prev) { var p = Math.round((now - prev) / prev * 100), df = now - prev;
+    if (Math.abs(p) > 300) return '<span class="dl ' + (df > 0 ? 'up' : 'dn') + (big ? ' big' : '') + '" role="img" aria-label="比上期同天數' + (df > 0 ? '多' : '少') + ' ' + nt(Math.abs(df)) + '"><span aria-hidden="true">' + (df > 0 ? '▲' : '▼') + '</span>' + nt(Math.abs(df)) + '</span>'; }
+  return _delta361(now, prev, big);
+};
+
 </script>
 <style id="kkcf-css">
 #rv{display:none!important} /* v35.1：舊的「塔塔記的 N 筆等你看」併進確認清單 */
@@ -4862,6 +4879,9 @@ details.kk-more[data-td="split"]>summary{justify-content:flex-end;display:flex}
 .kk-dots{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:28px;padding:0 8px;border-radius:999px;background:var(--solid2);color:var(--ink2);font-size:18px;font-weight:700;line-height:1;letter-spacing:1px}
 details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)}
 .mut36{font-size:13px;color:var(--muted);padding:6px 6px 4px;line-height:1.5}
+
+/* kk-v36.1（E）：上期記得不完整 */
+.dl.na36{color:var(--muted);background:var(--solid2);font-size:13px;font-weight:700;white-space:normal;line-height:1.35;text-align:center;max-width:9em}
 </style>
 <script id="kkcf-js">
 /* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字；v35.4 改：待確認交易按不對＝資料庫作廢，可復原，合計都照資料庫）
