@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v88');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v89');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3674,7 +3674,19 @@ function renameIn(root){if(!root)return;const w=document.createTreeWalker(root,N
 {const _r=render;render=function(d){_r(d);['#view','#sheet','#page','#chat','#dock','#tabs'].forEach(q=>renameIn($(q)))}}
 {const _t=toast;toast=function(m,fn){return _t(REN(String(m||'')),fn)}}
 new MutationObserver(ms=>{ms.forEach(m=>m.addedNodes.forEach(x=>{if(x.nodeType===1)renameIn(x);else if(x.nodeType===3&&x.nodeValue.indexOf('交辦')>-1)x.nodeValue=REN(x.nodeValue)}))}).observe(document.getElementById('app'),{childList:true,subtree:true});
-window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
+/* ---------- v89（2026-11-23）：案子卡跟著進度走、交了就退下（msg 283） ----------
+   老大：「這邊我進度更新了畫面上面的標題描述卻沒變，而且今天要交的內容給了，但他還是掛在這邊很怪，應該要等後面日期公布才會跳上來」
+   1 你最後改了步驟（進度由你更新），卡面那一句改成「現在這一步」，下面寫進度說明。
+   2 期限到了但「送件、交件、送印、交付、提交」那步已做完：不再標「今天要交／已過期限」，改「已交・等下一步」，不排在最急，等有新日期再上來。 */
+const SENT_RE=/送件|交件|送印|交付|交出|提交|上傳|寄出/;
+{const _m=mapProj;mapProj=function(c){const x=_m(c),ps=c.progressSteps||[];if(!ps.length)return x;
+ const ci=ps.findIndex(s=>s.status==='current'||s.status==='blocked'||s.status==='pending'),cs=ci>-1?ps[ci]:null;
+ const met=ps.some((s,i)=>s.status==='done'&&SENT_RE.test(s.name)&&(ci<0||i<ci));
+ const dl=c.deadline||(c.deliveryDate?Date.parse(c.deliveryDate):null),dd=LDAYS(dl);
+ if(met&&dd!=null&&dd<=0&&c.status==='doing'){x.urg=false;x.due='已交・等下一步';if(x.g==='need'&&!c.progressBlocker&&c.runStatus!=='failed')x.g='doing'}
+ if(cs&&c.progressUpdatedBy==='Borry'){x.ask='現在：'+cs.name;x.next=c.progressNote||x.next}
+ return x}}
+window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
