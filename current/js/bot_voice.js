@@ -768,3 +768,30 @@
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* 2026-11-24 定定只留在目標頁；案子與任務的執行入口只留大器臉＋霸霸臉（逐流 msg 501）。
+   老大：「不好意思，讓定定待在目標頁 執行鈕留霸霸跟大器臉」「對啊，怎麼會只有給大器做 當然也要有霸霸」。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var st = document.createElement('style');
+  st.textContent = 'html[data-tab="proj"] [data-act="pjplan"][data-id="din"],[data-act="stplan"][data-id^="din|"],' +
+    '.cf-r [data-act="ai"][data-id^="din|proj:"],.cf-r [data-act="ai"][data-id^="din|todo"],' +
+    '#sheet .jnext [data-id^="din|"],#sheet [data-act="ai"][data-id^="din|proj:"],#page [data-act="ai"][data-id^="din|proj:"]{display:none!important}' +
+    '.babacf{width:40px;height:40px;min-width:40px;padding:0;border:0;background:transparent;display:inline-grid;place-items:center}' +
+    '.babacf .bm{width:30px;height:30px;pointer-events:none}';
+  (document.head || document.documentElement).appendChild(st);
+  function face(btn) {
+    var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true');
+    btn.appendChild(f); try { if (window.BotFace) window.BotFace.mount(f, { preset: 'baba', color: '#FFFFFF', size: 0 }); } catch (e) {}
+  }
+  function add() {
+    var Z = window.__zl; if (!Z || !Z.DB || !Z.DB.todo) return;
+    document.querySelectorAll('#view article.cardx[data-card]').forEach(function (a) {
+      var id = a.dataset.card; if (!Z.DB.todo.some(function (t) { return t.id === id; })) return;
+      var r = a.querySelector('.cf-r'); if (!r || r.querySelector('.babacf')) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'babacf'; b.dataset.act = 'jtobaba'; b.dataset.id = id; b.setAttribute('aria-label', '交給霸霸');
+      face(b); r.appendChild(b);
+    });
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
