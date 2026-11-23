@@ -795,3 +795,48 @@
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* 2026-11-24 生活待辦：點這一列就地看朋朋排的時段，不開對話、不跳編輯（逐流 msg 463、546，老大：「然後要顯示在這裡我可以直接點開看選卡片不是連到他的對話啊」）。
+   有朋朋安排區塊（.lt2）的列，點標題＝展開／收起那一區並捲到眼前；要改內容用列上的「編輯」。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var st = document.createElement('style');
+  st.textContent = '.rowi.ltopen .lt2{outline:2px solid var(--c-peng,#00b351);outline-offset:4px;border-radius:12px}' +
+    '.rowi.ltshut .lt2{display:none}';
+  (document.head || document.documentElement).appendChild(st);
+  document.addEventListener('click', function (e) {
+    if (document.documentElement.classList.contains('marking')) return;
+    var b = e.target && e.target.closest && e.target.closest('[data-act="sheet"][data-id^="ltodo:"],[data-act="ltchat"]');
+    if (!b) return;
+    var row = b.closest('.rowi'); if (!row) return;
+    var box = row.querySelector('.lt2');
+    if (!box) return;            // 還沒請朋朋排的，照原本打開編輯
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    if (b.dataset.act === 'ltchat') {   // 「看朋朋回什麼」：就地展開朋朋原話，不開對話
+      var r = box.querySelector('.lt2-r,.lt2-h span'); if (r) { r.style.webkitLineClamp = 'unset'; r.style.whiteSpace = 'normal'; }
+      row.classList.add('ltopen'); row.classList.remove('ltshut'); box.scrollIntoView({ behavior: 'smooth', block: 'center' }); return;
+    }
+    var open = row.classList.toggle('ltopen'); row.classList.toggle('ltshut', !open);
+    if (open) box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, true);
+})();
+
+/* 2026-11-24 想買詳情價格拆開（逐流 msg 548，接 466／479）：「NT$27,500（官網價…；…）」改成大字 NT$27,500，括號裡每一段變一行小字。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var st = document.createElement('style');
+  st.textContent = '.wd2-sub{display:block;margin-top:4px;font-size:13px;font-weight:400;line-height:1.45;color:var(--ink2,#aaa)}.wd2-sub span{display:block}';
+  (document.head || document.documentElement).appendChild(st);
+  function split(el) {
+    if (el.dataset.sp) return; var t = el.textContent || ''; var m = t.match(/^\s*(NT\$\s?[\d,]+(?:\.\d+)?)\s*[（(](.+)[）)]\s*$/);
+    if (!m) return; el.dataset.sp = '1';
+    var parts = m[2].split(/[；;，]\s*|,(?!\d{3})\s*/).filter(function (x) { return x.trim(); });
+    el.textContent = m[1];
+    var sub = document.createElement('small'); sub.className = 'wd2-sub';
+    parts.forEach(function (p) { var s = document.createElement('span'); s.textContent = p.trim(); sub.appendChild(s); });
+    el.appendChild(sub);
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () {
+    document.querySelectorAll('#sheet .wd2-p, #sheet .wd2-c b, #sheet .wdh .amt, #view .cardx .amt').forEach(split);
+  }, 80); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
