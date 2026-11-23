@@ -1668,3 +1668,20 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .tlx .rows{margin:4px 0}
 .tlf small{white-space:nowrap}.tlf .tlbz{opacity:.75}
 .tlruler .tlbar{background:none;overflow:visible}
+
+/* v115 評估時間：立體負荷樓＋「我要找幾小時」 */
+.twsvg{display:block;width:100%;height:auto;margin:10px 0 2px;overflow:visible}
+.tw .twf{fill:var(--tw-c)}.tw .twr{fill:var(--tw-c);filter:brightness(.62)}.tw .twt{fill:var(--tw-c);filter:brightness(1.25)}
+.tw[data-st="ok"]{--tw-c:#34c27a}.tw[data-st="mid"]{--tw-c:#f2a93b}.tw[data-st="no"]{--tw-c:#f0605a}
+.tww,.twd{font-size:10px;fill:var(--ink2);text-anchor:middle}.twd{font-size:9px}
+.twm{font-size:12px;font-weight:700;text-anchor:middle;fill:var(--ink)}
+.twcap{stroke:var(--line2);stroke-dasharray:3 4;stroke-width:1}.twcapt{font-size:9px;fill:var(--ink2)}
+.tlneed{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
+.tlneed>span{font-size:13px;color:var(--ink2);margin-right:2px}
+.tlneed .mb{min-height:36px;padding:0 12px;border:1px solid var(--line2);border-radius:999px}
+.tlneed .mb[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tlverdict{font-size:17px;line-height:1.5;margin:0 0 6px;padding:10px 12px;border-radius:12px;background:rgba(52,194,122,.14)}
+.tlverdict.bad{background:rgba(240,96,90,.16)}
+.tlfit{position:absolute;top:1px;bottom:1px;border-radius:5px;border:2px solid #34c27a;background:rgba(52,194,122,.25)}
+.tlbar.nofit{outline:1px dashed rgba(240,96,90,.7);outline-offset:1px}
+.tlv b{font-size:18px}.tlv.ok b{color:#34c27a}.tlv.no b{color:#f0605a}

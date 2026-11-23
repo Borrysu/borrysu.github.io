@@ -2487,7 +2487,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v114');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v115');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4575,6 +4575,25 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
   const busy=mg.reduce((t,[a,b])=>t+Math.max(0,Math.min(b,FW1)-Math.max(a,FW0)),0);
   return {segs,alls,free,freeH:free.reduce((t,[a,b])=>t+b-a,0),busy,n:segs.length+alls.length}}
  const pct=h=>Math.max(0,Math.min(100,(h-TL0)/(TL1-TL0)*100));
+ // v115 評估：老大選「要幾小時」，每天找最早一段連續放得下的空檔（今天只看現在以後）
+ const fitOf=(i,need,from)=>{for(const [a,b] of i.free){const A=Math.max(a,from);if(b-A>=need-1e-6)return [A,A+need]}return null};
+ const NEEDS=[1,2,3,4,6];
+ // 立體負荷：一天一棟樓，高度＝排了幾小時，顏色＝那天還空多少（評估時改成放得下／放不下）
+ function towers(days,need,now){const W=18,D=10,GAP=25,BASE=118,MAXH=84,X0=8;let g='';
+  days.forEach((d,k)=>{const fh=d.n===0?d.i.freeNow:d.i.freeH,busy=Math.max(0,FW1-FW0-fh),h=Math.max(3,Math.round(busy/(FW1-FW0)*MAXH)),x=X0+k*GAP,y=BASE;
+   const fit=need?fitOf(d.i,need,d.n===0?now:0):null,st=need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok');
+   g+=`<g class="tw" data-st="${st}"><polygon class="twr" points="${x+W},${y} ${x+W+D},${y-D/2} ${x+W+D},${y-h-D/2} ${x+W},${y-h}"/><rect class="twf" x="${x}" y="${y-h}" width="${W}" height="${h}"/><polygon class="twt" points="${x},${y-h} ${x+D},${y-h-D/2} ${x+W+D},${y-h-D/2} ${x+W},${y-h}"/>`+
+    (need?`<text class="twm" x="${x+W/2+D/2}" y="${y-h-D/2-5}">${fit?'✓':'✕'}</text>`:'')+
+    `<text class="tww" x="${x+W/2}" y="${y+14}">${d.n===0?'今':WK[d.x.w]}</text><text class="twd" x="${x+W/2}" y="${y+26}">${d.x.d}</text></g>`});
+  const full=BASE-MAXH;
+  return `<svg class="twsvg" viewBox="0 0 ${X0+14*GAP+D+4} ${BASE+30}" role="img" aria-label="接下來 14 天每天排了多少，越高越滿"><line class="twcap" x1="0" y1="${full}" x2="${X0+14*GAP+D}" y2="${full}"/><text class="twcapt" x="0" y="${full-4}">排滿（9～22 點）</text>${g}</svg>`}
+ function tlEval(days,now){const need=S.tlneed||0;
+  const chips=`<div class="tlneed" role="group" aria-label="我要找多久的空檔"><span>我要找</span>${NEEDS.map(n=>`<button class="mb" data-act="tlneed" data-id="${n}" aria-pressed="${need===n}">${n} 小時</button>`).join('')}${need?`<button class="mb" data-act="tlneed" data-id="0">不評估</button>`:''}</div>`;
+  if(!need)return chips;
+  const wk=days.slice(0,7).map(d=>({d,f:fitOf(d.i,need,d.n===0?now:0)})),ok=wk.filter(x=>x.f),first=days.map(d=>({d,f:fitOf(d.i,need,d.n===0?now:0)})).find(x=>x.f);
+  const lab=d=>d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w];
+  return chips+`<p class="tlverdict${ok.length?'':' bad'}">要連續 <b>${need}</b> 小時：這 7 天 <b>${ok.length}</b> 天可以${first?`，最快 <b>${lab(first.d)} ${fmt(first.f[0])}</b>`:'，兩週內都排不進'}${wk.length-ok.length?`；${wk.filter(x=>!x.f).map(x=>lab(x.d)).join('、')}不行`:''}。</p>`}
+ ACT.tlneed=id=>{const n=+id;S.tlneed=n&&S.tlneed!==n?n:0;render('keep')};
  function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})();
   const days=Array.from({length:14},(_,n)=>({n,x:dOf(n),i:dayInfo(all.filter(e=>e.d===n))}));
   // 今天只算現在之後的空檔
@@ -4591,9 +4610,10 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
    const bars=i.segs.map(s=>{const w=Math.max(1.2,pct(s.b)-pct(s.a));return `<i class="tlseg" data-s="${s.e.src}" style="left:${pct(s.a)}%;width:${w}%">${w>=14?`<span>${esc(String(s.e.n||''))}</span>`:''}</i>`}).join('');
    const now_=d.n===0&&now>=TL0&&now<=TL1?`<b class="tlnow" style="left:${pct(now)}%" aria-hidden="true"></b>`:'';
    const past=d.n===0?`<i class="tlpast" style="width:${pct(Math.min(Math.max(now,TL0),TL1))}%"></i>`:'';
-   const lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`;
+   const lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`,need=S.tlneed||0,fit=need?fitOf(i,need,d.n===0?now:0):null;
+   const fitBox=fit?`<i class="tlfit" style="left:${pct(fit[0])}%;width:${pct(fit[1])-pct(fit[0])}%"></i>`:'';
    const summ=i.n?`${i.n} 件・空 ${hrs(fh)} 小時`:`整天有空`;
-   rows+=`<div class="tlday${open?' open':''}${we?' we':''}"><button class="tlrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${summ}"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small></span><span class="tlbar" aria-hidden="true">${past}${bars}${now_}${i.alls.length?`<em class="tlall">全天 ${i.alls.length}</em>`:''}</span><span class="tlf${tight?' tight':fh>=6?' roomy':''}"><b class="num">${hrs(fh)}</b><small>小時空</small>${i.busy>0?`<small class="tlbz">排 ${hrs(i.busy)}</small>`:''}</span></button>`;
+   rows+=`<div class="tlday${open?' open':''}${we?' we':''}"><button class="tlrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${summ}"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small></span><span class="tlbar${need?(fit?' fit':' nofit'):''}" aria-hidden="true">${past}${bars}${fitBox}${now_}${i.alls.length?`<em class="tlall">全天 ${i.alls.length}</em>`:''}</span>${need?`<span class="tlf tlv ${fit?'ok':'no'}"><b>${fit?'✓':'✕'}</b><small>${fit?fmt(fit[0])+' 起':'不夠'}</small></span>`:''}<span class="tlf${tight?' tight':fh>=6?' roomy':''}"${need?' hidden':''}><b class="num">${hrs(fh)}</b><small>小時空</small>${i.busy>0?`<small class="tlbz">排 ${hrs(i.busy)}</small>`:''}</span></button>`;
    if(open){const ev=all.filter(e=>e.d===d.n),alls=ev.filter(e=>e.all||!e.t),timed=ev.filter(e=>!(e.all||!e.t));
     const items=timed.map(e=>({k:hm(e.t)||0,h:`<div class="rows">${evRow(e)}</div>`}));
     i.free.forEach(([a,b])=>{const A=d.n===0?Math.max(a,now):a;if(b-A<0.5)return;items.push({k:A-0.001,h:`<p class="tlgap"><span><b>空 ${hrs(b-A)} 小時</b>${fmt(A)}～${fmt(b)}</span></p>`})});
@@ -4601,8 +4621,8 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
     rows+=`<div class="tlx">${alls.length?`<div class="rows">${alls.map(evRow).join('')}</div>`:''}${items.length?items.map(x=>x.h).join(''):`<p class="tlnone">這天沒有行程，也沒有空檔可算。</p>`}${i.free.length?'':`<p class="tlnone">9 點到 22 點沒有空檔。</p>`}</div>`}
    rows+='</div>'});
   return `<section class="tl" aria-label="接下來兩週的時間">
-   <div class="tlhd"><p class="tlsum">這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p>
-   <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p>${nxt}</div>
+   <div class="tlhd">${tlEval(days,now)}<p class="tlsum"${S.tlneed?' hidden':''}>這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p>
+   <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p>${towers(days,S.tlneed||0,now)}${nxt}</div>
    <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
    ${rows}<p class="cbhint">點一天看那天的行程和空檔時段</p></section>`}
  ACT.tlpick=id=>{const n=+id;S.calsel=S.calsel===n?null:n;render('keep')};
