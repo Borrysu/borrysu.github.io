@@ -1613,3 +1613,46 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .gsmr::-webkit-scrollbar{display:none}
 .gsmr>span{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;padding:3px 10px;border-radius:999px;background:rgba(127,127,127,.14);font-size:13px;line-height:1.5}
 .gsmr>span:first-child{background:transparent;padding-left:0}
+
+/* v113 行事曆時間條（趁手）：一天一條，忙的上色、空的留底，右邊寫空幾小時 */
+.tl{margin:14px 0 6px;padding:14px 12px 10px;border:1px solid var(--line);border-radius:18px;background:var(--sf)}
+.tl{--tl-me:#5b8cff;--tl-co:#f2a93b;--tl-track:rgba(127,127,127,.16)}
+.tlhd{margin:0 2px 8px}
+.tlsum{font-size:17px;line-height:1.45;margin:0 0 6px}
+.tlsum b{font-size:24px}
+.tlkey{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin:0;font-size:12px;color:var(--ink2)}
+.tlkey span{display:inline-flex;align-items:center;gap:5px}
+.tlkey i{width:14px;height:8px;border-radius:3px;background:var(--tl-me)}
+.tlkey i[data-s="co"]{background:var(--tl-co)}
+.tlkey i.tlk-free{background:var(--tl-track)}
+.tlruler,.tlrow{display:grid;grid-template-columns:64px 1fr 58px;gap:8px;align-items:center}
+.tlruler{height:16px;margin-top:4px}
+.tlr{position:relative;height:16px;background:none}
+.tlr span{position:absolute;top:0;transform:translateX(-50%);font-size:11px;color:var(--ink2)}
+.tlr span:first-child{transform:none}.tlr span:last-child{transform:translateX(-100%)}
+.tlday{border-top:1px solid var(--line)}
+.tlday:first-of-type{border-top:0}
+.tlrow{width:100%;min-height:48px;padding:6px 0;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.tll{display:flex;flex-direction:column;line-height:1.2}
+.tll b{font-size:15px}.tll small{font-size:12px;color:var(--ink2)}
+.tll.we b{color:var(--ink2)}
+.tlbar{position:relative;height:22px;border-radius:6px;background:var(--tl-track);overflow:hidden}
+.tlseg{position:absolute;top:0;bottom:0;border-radius:4px;background:var(--tl-me)}
+.tlseg[data-s="co"]{background:var(--tl-co)}
+.tlpast{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(127,127,127,.28) 0 3px,transparent 3px 7px)}
+.tlnow{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);transform:translateX(-1px)}
+.tlall{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-style:normal;font-size:11px;padding:0 6px;border-radius:999px;background:var(--ink);color:var(--bg)}
+.tlf{display:flex;flex-direction:column;align-items:flex-end;line-height:1.1}
+.tlf b{font-size:18px}.tlf small{font-size:11px;color:var(--ink2)}
+.tlf.tight b{color:var(--urg,#f87171)}
+.tlf.tight small::before{content:"▲ "}
+.tlx{padding:2px 0 12px 72px}
+.tlfree{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.tlfree span{padding:5px 10px;border-radius:10px;border:1px dashed var(--line2);font-size:13px}
+.tlfree small{color:var(--ink2)}
+.tlnone{margin:4px 0 8px;color:var(--ink2);font-size:13px}
+.tlday.open .tlrow{font-weight:600}
+@media (max-width:420px){.tlruler,.tlrow{grid-template-columns:52px 1fr 50px;gap:6px}.tlx{padding-left:0}}
+@media (prefers-reduced-motion:reduce){.tl *{transition:none!important}}
+.tlseg span{display:block;padding:0 4px;font-style:normal;font-size:10.5px;line-height:22px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlday:first-of-type,.tlruler+.tlday{border-top:0}

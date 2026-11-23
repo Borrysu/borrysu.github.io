@@ -2487,7 +2487,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v112');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v113');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4556,6 +4556,58 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
  const _cp=calPage;calPage=function(){const h=_cp();if(E())return h;const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f);
   const i=h.indexOf('<div class="seg"');return i<0?h:h.slice(0,i)+busyPanel(all)+h.slice(i)};
  window.__zl=Object.assign(window.__zl||{},{busyOf,goalMini});}
+/* ---------- v113（2026-11-24）：行事曆時間條（趁手 handy） ----------
+   老大原話（逐流 msg 646）：「行事曆區我覺得要用一個視覺化的方式讓我可以很清楚知道我在哪些日期要忙哪些事情然後這樣我才會知道我什麼時候有空什麼時候沒空」
+   2026-11-24：「普通的行事曆，我會沒辦法評估我的時間」「然後這個就放到我們逐流的行事曆那一頁頁面裡面就好」
+   任務句：老大打開行事曆頁，5 秒內看出接下來兩週哪幾天滿、滿在什麼、哪些時段還空幾小時。
+   做法：一天一條時間條（8 點到 24 點），忙的時段上色（個人藍、公司黃，條上和展開都寫字），空檔是底色；右邊寫「空 N 小時」（只算 9 點到 22 點）。
+   最上面一句總結：這 7 天還空幾小時、最空哪天。點一天展開那天的行程與空檔時段。取代 v109 的 14 格忙閒格。
+   退回：刪掉這一段（v109 的忙閒格會回來）。 */
+{const TL0=8,TL1=24,FW0=9,FW1=22;
+ const hm=s=>{const m=/^(\d{1,2}):(\d{2})/.exec(s||'');return m?+m[1]+m[2]/60:null};
+ const fmt=h=>{const H=Math.floor(h),M=Math.round((h-H)*60);return String(H).padStart(2,'0')+':'+String(M).padStart(2,'0')};
+ const hrs=h=>{const r=Math.round(h*2)/2;return (r%1?r.toFixed(1):String(r))};
+ function dayInfo(its){const segs=[],alls=[];
+  its.forEach(e=>{if(e.cancel)return;if(e.all||!e.t){alls.push(e);return}const a=hm(e.t);let b=hm(e.e);if(a==null)return;if(b==null||b<=a)b=a+1;segs.push({a,b,e})});
+  segs.sort((x,y)=>x.a-y.a);
+  const mg=[];segs.forEach(s=>{const l=mg[mg.length-1];if(l&&s.a<=l[1])l[1]=Math.max(l[1],s.b);else mg.push([s.a,s.b])});
+  const free=[];let c=FW0;mg.forEach(([a,b])=>{const A=Math.max(a,FW0),B=Math.min(b,FW1);if(B<=FW0||A>=FW1)return;if(A-c>=0.5)free.push([c,A]);c=Math.max(c,B)});if(FW1-c>=0.5)free.push([c,FW1]);
+  const busy=mg.reduce((t,[a,b])=>t+Math.max(0,Math.min(b,FW1)-Math.max(a,FW0)),0);
+  return {segs,alls,free,freeH:free.reduce((t,[a,b])=>t+b-a,0),busy,n:segs.length+alls.length}}
+ const pct=h=>Math.max(0,Math.min(100,(h-TL0)/(TL1-TL0)*100));
+ function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})();
+  const days=Array.from({length:14},(_,n)=>({n,x:dOf(n),i:dayInfo(all.filter(e=>e.d===n))}));
+  // 今天只算現在之後的空檔
+  const d0=days[0].i;d0.freeNow=d0.free.reduce((t,[a,b])=>t+Math.max(0,b-Math.max(a,now)),0);
+  const wk=days.slice(0,7),freeWk=wk.reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
+  const best=wk.slice(1).sort((p,q)=>q.i.freeH-p.i.freeH)[0];
+  const full=wk.filter(d=>(d.n===0?d0.freeNow:d.i.freeH)<2).length;
+  const ruler=[8,12,16,20,24].map(h=>`<span style="left:${pct(h)}%">${h}</span>`).join('');
+  let rows='';
+  days.forEach(d=>{const i=d.i,we=d.x.w===0||d.x.w===6,fh=d.n===0?d0.freeNow:i.freeH,tight=fh<2,open=sel===d.n;
+   const bars=i.segs.map(s=>{const w=Math.max(1.2,pct(s.b)-pct(s.a));return `<i class="tlseg" data-s="${s.e.src}" style="left:${pct(s.a)}%;width:${w}%">${w>=14?`<span>${esc(String(s.e.n||''))}</span>`:''}</i>`}).join('');
+   const now_=d.n===0&&now>=TL0&&now<=TL1?`<b class="tlnow" style="left:${pct(now)}%" aria-hidden="true"></b>`:'';
+   const past=d.n===0?`<i class="tlpast" style="width:${pct(Math.min(Math.max(now,TL0),TL1))}%"></i>`:'';
+   const lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`;
+   const summ=i.n?`${i.n} 件・空 ${hrs(fh)} 小時`:`整天有空`;
+   rows+=`<div class="tlday${open?' open':''}"><button class="tlrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${summ}"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small></span><span class="tlbar" aria-hidden="true">${past}${bars}${now_}${i.alls.length?`<em class="tlall">全天 ${i.alls.length}</em>`:''}</span><span class="tlf${tight?' tight':fh>=6?' roomy':''}"><b class="num">${hrs(fh)}</b><small>小時空</small></span></button>`;
+   if(open){const ev=all.filter(e=>e.d===d.n);
+    rows+=`<div class="tlx">${i.free.length?`<div class="tlfree">${i.free.filter(([a,b])=>d.n!==0||b>now).map(([a,b])=>{const A=d.n===0?Math.max(a,now):a;return `<span><b>有空</b> ${fmt(A)}～${fmt(b)}<small>（${hrs(b-A)} 小時）</small></span>`}).join('')}</div>`:`<p class="tlnone">9 點到 22 點沒有空檔。</p>`}${ev.length?`<div class="rows">${ev.map(evRow).join('')}</div>`:`<p class="tlnone">這天沒有行程。</p>`}</div>`}
+   rows+='</div>'});
+  return `<section class="tl" aria-label="接下來兩週的時間">
+   <div class="tlhd"><p class="tlsum">這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p>
+   <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p></div>
+   <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
+   ${rows}<p class="cbhint">點一天看那天的行程和空檔時段</p></section>`}
+ ACT.tlpick=id=>{const n=+id;S.calsel=S.calsel===n?null:n;render('keep')};
+ const _cp2=calPage;calPage=function(){const h=_cp2();if(E())return h;const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f);
+  // 換掉 v109 的 14 格忙閒格；篩選（全部／個人／公司）放到時間條上面，切了時間條跟著變
+  let x=h.replace(/<section class="cbusy"[\s\S]*?<\/section>/,'');
+  const seg2=x.match(/<div class="seg" role="group" aria-label="看哪邊">[\s\S]*?<\/div>/);
+  const i=x.indexOf('<div class="seg"');if(i<0)return x;
+  if(seg2)x=x.replace(seg2[0],'');
+  return x.slice(0,i)+(seg2?seg2[0]:'')+tlPanel(all)+x.slice(i)};
+ window.__zl=Object.assign(window.__zl||{},{tlDay:dayInfo});}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
