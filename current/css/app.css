@@ -1238,3 +1238,10 @@ label.f input:not([type]){width:100%;min-height:48px;padding:10px 12px;border-ra
 .wdh{display:flex;gap:14px;align-items:center;margin:12px 0}
 .fchk{display:flex;align-items:center;gap:10px;min-height:44px}.fchk input{width:22px;height:22px}
 .stplanr .mb{display:inline-flex;align-items:center;gap:6px}
+/* 2026-11-23 v79 案子每一步可做完、略過、改、刪；投標案提示 */
+.pstl{list-style:none;padding:0;margin:6px 0 8px;display:grid;gap:8px}
+.pstr{border:1px solid var(--line);border-radius:12px;padding:10px}
+.pstr[data-s="done"] b,.pstr[data-s="skipped"] b{opacity:.55;text-decoration:line-through}
+.pstn{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.pstn b{overflow-wrap:anywhere}
+.pstb{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:6px}.pstb .mb{min-height:40px}
+.bidtip{margin:12px 0}

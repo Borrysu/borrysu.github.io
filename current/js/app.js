@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v78');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v79');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3438,6 +3438,59 @@ ACT.stapply=async v=>{const [b,id]=v.split('|'),it=todoOf(id),c=it&&it.raw,st=la
   toast(`套用了 ${body.length} 步，可以再改`,async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}
  catch(e){toast('沒套用：'+LERR(e))}};
 WRITE.push('stapply');
+/* ---------- v79（2026-11-23）：老大面板意見 msg 166（4 則） ----------
+   1「這個也要有大器幫忙執行或者霸霸之類的執行（霸霸是設置類機器人）」→ 要你做的卡多「請大器代辦」「請霸霸設置」，送給大器（霸霸那件由大器櫃台轉）。
+   2「沒報到我要點下去就有人會去想辦法讓他抱到」→ 燈號細節每支沒報到的多「請大器修」，上方「全部交給大器修」。
+   3「這種計劃書，就不會有收款啥的，應該是投標，過審等等之類的那種提示跟步驟」→ 企劃書、標案類案子不顯示收款，改「投標・審查」，可一鍵套投標步驟。
+   4「每個步驟不能編輯或按確定或按刪除或按略過或之類的」→ 案子詳情頁最上面一張「步驟」，每一步都有 做完、略過、改、刪。 */
+// 1 要你做：交給大器或霸霸
+const ydTxt=j=>{const p=ydParse(j);return `「${ydFace(j)}」${p.steps.length?'：'+p.steps.join('；'):''}`};
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();const a=(S.sheet||'').split(':');if(a[0]!=='youdo')return h;const id=a.slice(1).join(':');
+ const j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);if(!j||j.status!=='waiting_you')return h;
+ const row=`<p class="h4">交給別人做</p><div class="ydmore">${B(bm('daqi')+'請大器代辦','ydhand','daqi|'+id)}${B('🛠 請霸霸設置','ydhand','baba|'+id)}</div>`;
+ return h.replace(/(<p class="h4">還沒辦法做好？<\/p>)/,row+'$1')}}
+ACT.ydhand=async v=>{const [w,id]=v.split('|'),j=((LV.hub&&LV.hub.jobs)||[]).find(x=>x.id===id);if(!j)return;
+ const body=w==='baba'?`【請霸霸設置】${ydTxt(j)}。這是設置類的事，請大器轉給霸霸（call-baba.sh）做；要老大本人登入、付款、按同意的留下來在逐流問老大。`
+  :`【請大器代辦】${ydTxt(j)}。老大請你能代就代；要老大本人登入、付款、按同意的留下來在逐流問老大。`;
+ if(!LV.api||!LV.api.say){toast('離線中，連上再送');return}
+ try{await LV.api.say(null,body,'daqi');toast(w==='baba'?'交給霸霸了（大器轉），進度回在「跟大器說」':'交給大器了，進度回在「跟大器說」')}catch(e){toast('沒送出：'+LERR(e))}};
+// 2 燈號沒報到：請大器修
+const beatAsk=bs=>`【燈號沒報到，請修】${bs.map(b=>`${b.name}（${b.note||''}，最後報到 ${b.ago||'不明'}）`).join('；')}。請查原因、讓它恢復報到，修好在這裡回一句；要老大本人做的再問。`;
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();if(S.sheet!=='beats')return h;const late=(E()?[]:DB.beats).filter(b=>b.late);if(!late.length)return h;
+ let k=0;const out=h.replace(/(<div class="rowi"><div class="rowb"><span class="tx"><b>)(▲ |● )([\s\S]*?<\/span><span class="rt">)/g,(m,a,mark,rest)=>{k++;
+  return mark==='▲ '?m.replace('<span class="rt">',`<span class="rt">${mb(bm('daqi')+'請大器修','beatfix',String(k-1))}`):m});
+ return out.replace(/(<div class="rows" style="margin-top:12px">)/,`<div class="btns">${B(bm('daqi')+'全部交給大器修（'+late.length+' 支）','beatfix','all','pri wide')}</div>$1`)}}
+ACT.beatfix=async v=>{const all=E()?[]:DB.beats,bs=v==='all'?all.filter(b=>b.late):[all[+v]].filter(Boolean);if(!bs.length)return;
+ if(!LV.api||!LV.api.say){toast('離線中，連上再送');return}
+ try{await LV.api.say(null,beatAsk(bs),'daqi');toast(`交給大器修 ${bs.length} 支，修好回在「跟大器說」`)}catch(e){toast('沒送出：'+LERR(e))}};
+// 3 企劃書、標案類：不顯示收款，改投標・審查
+const BID_RE=/企劃書|企畫書|計畫書|計劃書|標案|投標|服務建議書|評選|審查|提案/;
+const isBid=p=>{const c=p.raw||{};return BID_RE.test([p.title,p.short,p.next,c.title,c.why].join(' '))&&c.quoteAmount==null};
+const BID_STEPS=['準備送件資料','送件','資格審查','評選簡報','等決標','簽約'];
+{const _pc=projCard;projCard=function(p){let h=_pc(p);if(!isBid(p))return h;return h.replace(/沒寫金額/g,'投標・審查')}}
+{const _p=pageHTML;pageHTML=function(){let h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!isBid(p))return h;
+ h=h.replace(/報價與收款/g,'投標與審查').replace(/沒寫金額/g,'投標案，不用收款欄');
+ return h}}
+ACT.bidsteps=async id=>{const it=todoOf(id),c=it&&it.raw;if(!c||!LV.api||!LV.api.act)return;const old=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''}));
+ try{await LV.api.act(id,'steps',{steps:BID_STEPS.map((n,i)=>({name:n,status:i?'pending':'current',note:''}))});await reload();paint('keep');
+  toast('套上投標步驟了',async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}catch(e){toast('沒套上：'+LERR(e))}};
+// 4 案子詳情：每一步 做完、略過、改、刪
+const STL={done:'做完',current:'正在做',pending:'還沒',skipped:'略過',blocked:'卡住'};
+{const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw||!p.raw.id)return h;
+ const st=p.raw.progressSteps||[];
+ const rows=st.map((s,i)=>`<li class="pstr" data-s="${esc(s.status)}"><div class="pstn"><span class="chip${s.status==='current'||s.status==='blocked'?' urg':''}">${STL[s.status]||s.status}</span><b>${esc(s.name)}</b></div><div class="pstb">${s.status!=='done'?mb('✓ 做完','pst',p.id+'|'+i+'|done'):mb('↺ 還沒','pst',p.id+'|'+i+'|pending')}${s.status!=='skipped'?mb('略過','pst',p.id+'|'+i+'|skipped'):''}${mb('✎ 改','pst',p.id+'|'+i+'|edit')}${mb('刪','pst',p.id+'|'+i+'|del')}</div></li>`).join('');
+ const sec=`<section class="sec pstep"><h3>步驟</h3>${st.length?`<ol class="pstl">${rows}</ol>`:isBid(p)?`<div class="card bidtip"><p><b>這是投標案</b>：步驟通常是 ${BID_STEPS.join('→')}。</p><div class="btns">${B('套用投標步驟','bidsteps',p.id,'pri')}</div></div>`:'<p class="note">還沒有步驟。</p>'}<div class="mrow">${mb('＋ 加一步','pst',p.id+'|-1|add')}${mb('🧩 編輯每一步','sheet','stepx:'+p.id)}</div></section>`;
+ const i=h.indexOf('<p class="h4">詳情</p>');if(i>-1)return h.slice(0,i)+sec+h.slice(i);
+ const k=h.search(/<h[23][^>]*>詳情<\/h[23]>/);return k>-1?h.slice(0,k)+sec+h.slice(k):h+sec}}
+ACT.pst=async v=>{const [id,si,op]=v.split('|'),i=+si,it=todoOf(id),c=it&&it.raw;if(!c)return;
+ if(op==='edit'||op==='add'){if(op==='add'){S.stAdd=1}ACT.sheet('stepx:'+id);if(op==='add')setTimeout(()=>ACT.stadd(),350);return}
+ if(!LV.api||!LV.api.act){toast('離線中，連上再改');return}
+ const old=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''}));let nw=old.map(s=>({...s}));const nm=(old[i]||{}).name||'';
+ if(op==='del')nw.splice(i,1);else{nw[i].status=op;if(op==='done'||op==='skipped'){const n=nw.findIndex((s,k)=>k>i&&s.status==='pending');if(n>-1&&!nw.some(s=>s.status==='current'))nw[n].status='current'}}
+ try{await LV.api.act(id,'steps',{steps:nw});await reload();paint('keep');
+  toast(op==='del'?`刪掉「${clip(nm,14)}」`:op==='done'?`「${clip(nm,14)}」做完了`:op==='skipped'?`略過「${clip(nm,14)}」`:'改回還沒做',async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}
+ catch(e){toast('沒改到：'+LERR(e))}};
+WRITE.push('pst','bidsteps','ydhand','beatfix');
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
