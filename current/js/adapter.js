@@ -135,7 +135,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v103');
+  const { mockAdapter } = await import('./mock.js?v104');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -317,6 +317,7 @@ function liveAdapter() {
     async calRefresh() { return rpc(R.calRefresh, {}, 0, W); },
     // v60：公司卡（肉咖從皮條客同步過來，只有老大讀得到）與派工（肉咖或大器，各記一筆 hub_jobs）
     async company() { return rpc(R.company, {}, 0, W); },
+    async coTaskOpp(oppId, title, assignee, body) { return rpc('hub_company_task_add_opp', { p_opp_id: oppId, p_title: title, p_assignee: assignee, p_body: body }, 0, W); },   // v100 原生公司案子同步到皮條客（遷移 20261124_公司原生卡）
     async coSteps(cardId, steps) { return rpc('hub_company_steps_set', { p_card_id: cardId, p_steps: steps }, 0, W); },   // 2026-11-24 公司卡步驟卡
     async coTask(cardId, who, body) { const r = await rpc(R.coTask, { p_card_id: cardId, p_assignee: who, p_body: body }, 0, W); if (who === 'daqi') wake(); return r; },
     async cardEdit(id, patch) { return card(await rpc(R.cardEdit, { p_id: id, p_patch: patch || {} }, 0, W)); },

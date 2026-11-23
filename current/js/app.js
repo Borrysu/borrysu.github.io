@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v103');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v104');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3155,7 +3155,7 @@ const EDM=/^【老大 [\d\/]+ 改過[^】]*】\n?/;
 const edMark=c=>{const m=String((c&&c.why)||'').match(/^【老大 ([\d\/]+) 改過[：:]?([^】]*)】/);return m?{d:m[1],f:m[2]}:null};
 {const _m=mapProj;mapProj=function(c){const x=_m(c);x.next=String(x.next||'').replace(EDM,'')||'還沒寫下一步';x.ask=String(x.ask||'').replace(EDM,'');x.edited=edMark(c);return x}}
 {const _pc=projCard;projCard=function(p){const h=_pc(p);return p.edited?h.replace('</h3>',`</h3><p class="note edm">老大 ${esc(p.edited.d)} 改過</p>`):h}}
-const WHYOF=c=>String((c&&c.why)||'').replace(EDM,'');
+const WHYOF=c=>String((c&&c.why)||'').replace(EDM,'').replace(/^［皮條客 [^］\n]*］\n?/,'');
 {const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':'),t=a[0];
  if(t==='padd'){return shHead('新增案子')+`<label class="f">案名<input id="paTitle" maxlength="120" placeholder="例：品牌短片導演" autocomplete="off"></label><label class="f">說明（要做什麼、客戶是誰）<textarea id="paWhy" rows="4"></textarea></label><label class="f">期限（交件日）<input type="date" id="paDue"></label>${S.err==='padd'?'<p class="err" role="alert">▲ 還沒寫案名。</p>':''}<div class="btns">${B('建好案子','pasave',null,'pri wide')}</div>`}
  if(t==='pedit'){const id=S.sheet.slice(6),p=DB.proj.find(x=>x.id===id),c=p&&p.raw;if(!c)return shHead('這件不在了');
@@ -4299,11 +4299,11 @@ ACT.codoneok=async id=>{const c=coFind(id);if(!c)return;const body=`【做完】
 {const _l=stdLoad;stdLoad=function(id){if(String(id).indexOf('co:')!==0)return _l(id);const c=coFind(id.slice(3));if(!c)return null;
  const st=coStepsOf(c).map(s=>{const o=stepOf(s),cl=cliOf(o.cli);return {name:o.name,status:o.status,cli:cl?cl.k:'',model:cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定'),mode:o.mode==='開子視窗'?'開子視窗':'監工本身',skills:skSplit(o.skill),note:o.note,where:coWhere(o),pk:''}});
  if(!st.length)st.push(Object.assign(stdNew(),{cli:'',where:'公司'}));return {id,steps:st}}}
-{const _h=stcHTML;stcHTML=function(o,i){const h=_h(o,i);if(!STD||String(STD.id).indexOf('co:')!==0)return h;const w=coWhere(o);
+{const _h=stcHTML;stcHTML=function(o,i){const h=_h(o,i);if(!STD||!isCoStd(STD.id))return h;const w=coWhere(o);
  const seg=`<div class="stc-seg${w==='我電腦'?' r':''}" role="group" aria-label="第 ${i+1} 步在哪做"><i aria-hidden="true"></i><button type="button" data-act="stcwhr" data-id="${i}|公司" aria-pressed="${w==='公司'}">公司電腦</button><button type="button" data-act="stcwhr" data-id="${i}|我電腦" aria-pressed="${w==='我電腦'}">我電腦</button></div>`;
  const j=h.indexOf('<div class="stc-pk');return j<0?h:h.slice(0,j)+`<div class="stc-top stc-whr">${seg}<small>${esc(w==='我電腦'?'大器在這台做':'肉咖在公司電腦做')}</small></div>`+h.slice(j)}}
 ACT.stcwhr=v=>{if(!STD)return;const [i,w]=String(v).split('|'),o=STD.steps[+i];if(!o)return;o.where=w;const n=stcRedraw(+i);if(n){const b=n.querySelector('.stc-whr');if(b)b.classList.add('stpop')}};
-{const _a=ACT.stadd;ACT.stadd=()=>{_a();if(STD&&String(STD.id).indexOf('co:')===0){const o=STD.steps[STD.steps.length-1];if(o&&!o.where){o.where='公司';stcRedraw(STD.steps.length-1)}}}}
+{const _a=ACT.stadd;ACT.stadd=()=>{_a();if(STD&&isCoStd(STD.id)){const o=STD.steps[STD.steps.length-1];if(o&&!o.where){o.where='公司';stcRedraw(STD.steps.length-1)}}}}
 {const _s=sheetHTML;sheetHTML=function(){const t=S.sheet||'';
  if(t.indexOf('codone:')===0)return coDoneSheet(t.slice(7));if(t.indexOf('codisp:')===0)return coDispSheet(t.slice(7));
  const h=_s();if(t.indexOf('stepx:co:')!==0)return h;
@@ -4413,6 +4413,112 @@ ACT.wishfind=id=>{const w=W(id);if(!w)return;LV.wishRun[id]='mon';LV.sig='';dele
 ACT.wishcmp=ACT.wishfind;
 WRITE.push('wcsave');
 window.__zlWC={segs:wcSegs,plans:wcPlans};
+/* ---------- v100（2026-11-24）：公司案子＝逐流原生案子卡（老大 msg 566、511） ----------
+   老大原話：「我覺得公司的這邊案子不要 完全同步皮條客好了 架構一樣跟其他案子是一樣的卡片 但裡面多了肉咖可以使用 然後多了同步更新工作狀態到好咖皮條客對應的欄目」
+   1 公司案子＝basket company 的原生案子卡（跟個人案同一套：步驟卡、監工／子視窗、CLI、大器臉、霸霸臉），公司分頁列這些；案子分頁不再混進公司案。
+   2 不再「從皮條客全量匯入」：舊匯入的卡（hub_company_cards）留在公司分頁底下一區，按「轉成原生案子」帶內容、步驟、期限過來，原卡不刪。
+   3 公司案子多：肉咖的臉（派肉咖做、同步到皮條客）、步驟「在哪做」（公司電腦＝肉咖／我電腦＝大器）。逐流做完、改步驟、派工會交一張單給肉咖，肉咖在皮條客對應欄目照改。
+   4 移到公司／移回個人：後端沒有改籃函式，照「轉成案子」同一招：新建、帶內容、舊的收掉，提示條可復原。
+   5 連結：案子 why 第一行［皮條客 <id>］對到皮條客那張卡；沒有這行的新案子，單走 hub_company_task_add_opp（遷移 20261124_公司原生卡，沒套上前寫「資料庫還沒更新」）。 */
+const isCoCase=p=>!!(p&&p.raw&&p.raw.basket==='company');
+const CO_MKR=/^［皮條客 ([^］\n]*)］\n?/;
+const coSrcOf=c=>{const m=CO_MKR.exec(String((c&&c.why)||'').replace(EDM,''));return m?m[1].trim():''};
+const coRowOf=c=>{const sid=coSrcOf(c),d=coData();return sid&&d&&Array.isArray(d.cards)?d.cards.find(x=>String(x.source_id)===sid)||null:null};
+function isCoStd(id){id=String(id);if(id.indexOf('co:')===0)return true;const p=DB.proj.find(q=>q.id===id);return isCoCase(p)}
+const coCaseTasks=c=>{const d=coData(),r=coRowOf(c);return d&&Array.isArray(d.tasks)?d.tasks.filter(t=>(r&&t.card_id===r.id)||t.card_id===c.id||(!t.card_id&&t.card_title===c.title)):[]};
+const coAdoptedIds=()=>{const s=new Set();DB.proj.filter(isCoCase).forEach(p=>{const k=coSrcOf(p.raw);if(k)s.add(k)});return s};
+async function coPush(c,text){
+ if(LV.mode!=='live'){const d=coData();d.tasks.unshift({id:Date.now()+Math.random(),card_id:c.id,card_title:c.title,assignee:'rouka',body:text,status:'queued',created_at:new Date().toISOString()});return true}
+ try{const r=coRowOf(c);if(r)await LV.api.coTask(r.id,'rouka',text);else await LV.api.coTaskOpp(c.id,c.title,'rouka',text);return true}
+ catch(e){toast(NOFN(e)?'資料庫還沒更新，同步到皮條客還沒接上（逐流這邊照樣存了）':'沒交給肉咖：'+LERR(e));return false}}
+const coCaseLink=c=>coRowOf(c)?`皮條客 id ${coSrcOf(c)}`:'皮條客上還沒有這張（請在對應欄目新增，案名照抄）';
+// 1 卡面與詳情去掉連結行
+{const _m=mapProj;mapProj=function(c){const x=_m(c);x.next=String(x.next||'').replace(CO_MKR,'')||'還沒寫下一步';return x}}
+// 2 步驟「在哪做」：原生公司案子也有
+{const _l=stdLoad;stdLoad=function(id){const r=_l(id);if(!r||String(id).indexOf('co:')===0||!isCoStd(id))return r;const it=todoOf(id),c=it&&it.raw,st=(c&&c.progressSteps)||[];
+ r.steps.forEach((s,i)=>{s.where=st[i]?coWhere(stepOf(st[i])):'公司'});return r}}
+{const _v=ACT.stsave;ACT.stsave=id=>{if(!STD||STD.id!==id||String(id).indexOf('co:')===0||!isCoStd(id))return _v(id);
+ const p=DB.proj.find(q=>q.id===id),c=p&&p.raw,live=STD.steps.filter(s=>s.name||s.note||s.skills.length),q=live.map(s=>s.where||'公司'),_n2=stepNote;let k=0;
+ const sum=live.map((s,i)=>`${i+1}. ${s.name}（${coWho(q[i])}${s.cli?'・'+s.cli:''}${s.model&&s.model!=='不指定'?'・'+s.model:''}${s.skills.length?'・@'+s.skills.join('、'):''}）`).join('\n');
+ stepNote=function(o){return _n2(Object.assign({},o,{where:q[k++]||'公司'}))};
+ try{_v(id)}finally{stepNote=_n2}
+ if(c&&live.length)setTimeout(()=>coPush(c,`【改步驟】老大在逐流改了公司案子「${c.title}」的步驟（${coCaseLink(c)}），共 ${live.length} 步。請在皮條客對應欄目照這份更新進度與步數，做完回報一句。\n${sum}`.slice(0,2000)),300)}}
+// 3 公司分頁＝原生公司案子
+{const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,nat=all.filter(isCoCase),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?d.cards.filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
+  btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:co">公司 ${n}</button>`,segRe=/(<div class="seg" role="group" aria-label="案子分類">)([\s\S]*?)(<\/div>)/,fix=h=>h.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,'');
+  if(s!=='co'){DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all}
+   return /data-id="proj:co"/.test(h)?h.replace(/(data-id="proj:co">)公司 \d+/,`$1公司 ${n}`):h.replace(segRe,(x,a,b,c)=>a+b+btn(false)+c)}
+  S.sub.proj='proj';DB.proj=nat;let h;try{h=_zp()}finally{DB.proj=all;S.sub.proj='co'}
+  h=h.replace(segRe,(x,a,b,c)=>a+fix(b).replace(/aria-pressed="true"/g,'aria-pressed="false"')+btn(true)+c);
+  h=h.replace(/<div class="addtop"><button[^>]*data-id="padd"[^>]*>[^<]*<\/button><\/div>/g,'');
+  const top=`<div class="addtop">${B('＋ 新增公司案子','sheet','padd:co','pri')}</div>`,k=h.indexOf('aria-label="案子分類">'),e=k<0?-1:h.indexOf('</div>',k);
+  h=e<0?top+h:h.slice(0,e+6)+top+h.slice(e+6);
+  if(!nat.length)h=h.replace(/(<div class="addtop">[\s\S]*?<\/div>)/,`$1<div class="card" style="margin-top:12px"><p>還沒有公司案子。按「新增公司案子」，或到個人案子的「⋯」選「移到公司」。</p></div>`);
+  return h+coLeftSec(left)}}
+function coLeftSec(left){if(!left.length)return '';
+ return `<section class="sec"><h3>皮條客匯入的卡 ${left.length} 張</h3><div class="card"><p class="note">這些是之前從皮條客整批匯入的，還不是案子。轉成原生案子後跟其他案子一樣，有步驟、監工、肉咖、大器；原卡不刪。</p><div class="btns">${B(`全部轉成原生案子（${left.length}）`,'coadoptall',null,'pri wide')}</div></div><div class="rows">${left.map(c=>`<div class="rowi"><div class="rowb"><span class="tx"><b>${esc(c.ask||c.title)}</b><small>${esc(brief(c.project||'公司',c.owner||''))}${c.due?'・'+esc(coDue(c)):''}</small></span><span class="rt">${mb('轉成案子','coadopt',c.id)}</span></div></div>`).join('')}</div></section>`}
+async function coAdoptOne(c){const ad=coAdoptedIds();if(ad.has(String(c.source_id)))return null;
+ const dup=DB.proj.find(p=>String(p.title).trim().toLowerCase()===String(c.title).trim().toLowerCase());let title=String(c.title||'公司案子').slice(0,120);if(dup)title=(title.slice(0,112)+'（公司）');
+ const n=await LV.api.workAdd(title,'company');if(!n||!n.id)throw new Error('案子沒建起來');
+ const link=/^https:\/\//i.test(String(c.link||''))?c.link:'',why=`［皮條客 ${c.source_id}］\n`+[c.detail||'',c.status?'皮條客狀態：'+c.status:'',c.owner?'負責：'+c.owner:'',link?'皮條客：'+link:''].filter(Boolean).join('\n');
+ await LV.api.cardEdit(n.id,{why:why.slice(0,3000),...(c.ask?{ask:String(c.ask).slice(0,80)}:{})});
+ const st=coStepsOf(c);if(st.length)await LV.api.act(n.id,'steps',{steps:st.map(s=>({name:String(s.name||'').slice(0,80),status:s.status||'pending',note:s.note||''}))});
+ if(c.due)await LV.api.act(n.id,'work',{patch:{delivery_date:String(c.due).slice(0,10)}});return n}
+ACT.coadopt=async id=>{const c=coFind(id);if(!c||!LV.api||!LV.api.workAdd){toast('離線中，連上再轉');return}
+ try{const n=await coAdoptOne(c);await reload();paint('keep');toast(n?'轉成原生案子了，原卡留著':'這張已經轉過了')}catch(e){await reload();paint('keep');toast('沒轉成：'+LERR(e))}};
+ACT.coadoptall=async()=>{const d=coData(),ad=coAdoptedIds(),left=(d&&d.cards||[]).filter(c=>!ad.has(String(c.source_id)));if(!left.length||!LV.api||!LV.api.workAdd)return;let ok=0,bad='';
+ for(const c of left){try{if(await coAdoptOne(c))ok++}catch(e){bad=LERR(e)}}await reload();paint('keep');toast(`轉成原生案子 ${ok} 張，原卡留著${bad?'；有沒轉成的：'+bad:''}`)};
+// 4 新增公司案子
+function coWrapAdd(){if(!LV.api||LV.api.__coW)return;const w=LV.api.workAdd,ce=LV.api.cardEdit;LV.api.workAdd=function(t,b){const f=LV.coAdd;LV.coAdd=false;return w.call(this,t,b||(f?'company':undefined))};
+ LV.api.cardEdit=function(id,p){if(p&&typeof p.why==='string'&&p.why.indexOf('［皮條客 ')<0){const c=(LV.items||[]).find(x=>x.id===id),m=c&&CO_MKR.exec(String(c.why||'').replace(EDM,''));if(m){const e=EDM.exec(p.why),pre=e?e[0]:'';p=Object.assign({},p,{why:pre+m[0].trim()+'\n'+p.why.slice(pre.length)})}}return ce.call(this,id,p)};LV.api.__coW=1}
+coWrapAdd();
+{const _s=sheetHTML;sheetHTML=function(){const t=S.sheet||'';const h=_s();if(t==='padd:co'){LV.coAdd=false;return h.replace('>新增案子<','>新增公司案子<')}return h}}
+{const _p=ACT.pasave;ACT.pasave=function(a){if(S.sheet==='padd:co'&&((document.getElementById('paTitle')||{}).value||'').trim()){coWrapAdd();LV.coAdd=true}return _p(a)}}
+// 5 案子詳情：公司案子多肉咖與同步；個人案多「移到公司」
+{const _h=projHero;projHero=function(p,h1){let h=_h(p,h1);const c=p.raw||{};if(!c.id)return h;
+ if(isCoCase(p)){const ts=coCaseTasks(c).filter(t=>t.assignee==='rouka'),lt=ts[0],stt=lt?coSt(lt):'';
+  h=h.replace(/(<div class="pcx-act">)/,`$1${B(bm('rouka')+'派肉咖做','sheet','cocase:'+p.id,'pcx-b')}${B('同步到皮條客','cosync',p.id,'pcx-b')}`);
+  h=h.replace(/(<p class="pcx-now[^>]*>[\s\S]*?<\/p>)/,`$1<p class="note">公司案子・${esc(coCaseLink(c))}${stt?'・肉咖：'+esc(stt):''}</p>`)}
+ return h}}
+// 6 詳情「⋯」與案子「⋯」多一項：移到公司／移回個人
+{const _s=sheetHTML;sheetHTML=function(){const t=S.sheet||'',h=_s();if(t.indexOf('mine:proj:')!==0)return h;const id=t.slice(10),p=DB.proj.find(q=>q.id===id);if(!p||!p.raw||!p.raw.id)return h;
+ const it=isCoCase(p)?mi('⇄','移回個人案子','pmove',id+'|personal')+mi('◆','同步到皮條客','cosync',id)+mi('◆','派肉咖做','sheet','cocase:'+id):mi('⇄','移到公司','pmove',id+'|company');
+ return h.replace(/<\/div>$/,it+'</div>')}}
+// 7 肉咖的臉：公司案子卡
+{const _pc=projCard;projCard=function(p){const h=_pc(p);if(!isCoCase(p))return h;const ts=coCaseTasks(p.raw).filter(t=>t.assignee==='rouka'),f=aiF('rouka','proj:'+p.id,coSt(ts[0]),{do:'cocase',arg:p.id});
+ return h.replace(/(<div class="cf-r">)/,`$1${f}`)}}
+ACT.cocase=id=>{S.err='';ACT.sheet('cocase:'+id)};
+const CO_Q2=['把這張在皮條客的進度整理給我','把這張在皮條客標成做完','到皮條客確認這張的期限和負責人'];
+{const _s=sheetHTML;sheetHTML=function(){const t=S.sheet||'';if(t.indexOf('cocase:')!==0)return _s();const id=t.slice(7),p=DB.proj.find(q=>q.id===id);if(!p)return shHead('這件不在了');const c=p.raw;
+ return shHead('派肉咖做')+`<div class="meta" style="margin-top:8px">${bm('rouka','z')}<span class="lbl">肉咖・公司電腦</span></div><div class="meta" style="margin-top:8px">${chip('關於：'+(p.ask||p.title))}</div>
+ <label class="f">要肉咖做什麼<textarea id="coText" rows="3" placeholder="例：把這張在皮條客的進度改成剪接中"></textarea></label>${S.err==='co'?'<p class="err" role="alert">▲ 還沒寫字。先寫一句再傳。</p>':''}
+ <div class="btns">${CO_Q2.map(q=>`<button class="btn" data-act="cofill" data-id="${esc(q)}">${esc(q)}</button>`).join('')}</div>
+ <div class="btns">${B('交給肉咖','cocasesend',id,'pri wide')}</div><p class="note">${esc(coCaseLink(c))}。肉咖拿到單會改成「進行中」，做完回報在這張卡，今天頁「正在跑」也看得到。</p>`}}
+ACT.cocasesend=async id=>{const p=DB.proj.find(q=>q.id===id),t=$('#coText'),v=t?t.value.trim():'';if(!p)return;if(!v){S.err='co';render('keep');return}S.err='';
+ const ok=await coPush(p.raw,`【派工】公司案子「${p.title}」（${coCaseLink(p.raw)}）：${v}。做完回報；要改皮條客就改對應欄目。`);if(ok){back();toast(LV.mode==='live'?'交給肉咖了，公司電腦拿到就會開始':'示範：交給肉咖了');try{await coLoad()}catch(e){}render('keep')}};
+// 8 同步到皮條客（把這張目前的狀態交給肉咖寫進對應欄目）
+ACT.cosync=async id=>{const p=DB.proj.find(q=>q.id===id);if(!p||!isCoCase(p))return;const c=p.raw,st=(c.progressSteps||[]).map(stepOf),dn=st.filter(o=>o.status==='done'||o.status==='skipped').length;
+ const lines=st.map((o,k)=>`${k+1}. ${o.name}（${coWho(coWhere(o))}・${stsL(o.status)}）`).join('\n');
+ const msg=`【同步】公司案子「${p.title}」（${coCaseLink(c)}）目前狀態，請在皮條客對應欄目改成一樣：狀態 ${stsL(st.find(o=>o.status==='current'||o.status==='blocked')?'current':dn===st.length&&st.length?'done':'pending')}；${st.length?`步驟 ${dn}／${st.length}。\n${lines}`:'還沒排步驟。'}${c.progressBlocker?`\n卡點：${c.progressBlocker}`:''}${c.deliveryDate?`\n交件日：${String(c.deliveryDate).slice(0,10)}`:''}\n做完回報一句。`;
+ if(S.sheet)back();const ok=await coPush(c,msg.slice(0,2000));if(ok){toast(LV.mode==='live'?'交給肉咖了，皮條客改好會回報':'示範：同步交給肉咖了');try{await coLoad()}catch(e){}render('keep')}};
+// 這步做完／退回、做完交件：公司案子同步一則
+{const _g=ACT.mstep,_b=ACT.mstepb;const wrap=(f,w)=>id=>{const p=DB.proj.find(q=>q.id===id),c=p&&isCoCase(p)?p.raw:null,nm=c?(p.steps[w>0?p.cur:p.cur-1]||''):'';const r=f(id);
+  if(c&&nm)setTimeout(()=>coPush(c,`【同步】公司案子「${p.title}」（${coCaseLink(c)}）${w>0?'做完了':'退回了'}「${nm}」，請在皮條客對應欄目照改。做完回報一句。`),400);return r};ACT.mstep=wrap(_g,1);ACT.mstepb=wrap(_b,-1)}
+// 案子被移走、結案後，還開著的詳情頁不要當掉
+{const _p=pageHTML;pageHTML=function(){const a=(S.page||'').split(':');if(a[0]==='proj'&&!DB.proj.find(q=>q.id===a[1]))return `<div class="page-in"><div class="phead">${B('‹ 返回','back',null,'ghost',' id="pBack"')}</div>`+emptyBox('這張案子不在這裡了','可能已移到公司或個人，或已結案。',B('回案子','back',null,'pri'))+'</div>';return _p()}}
+// 9 移到公司／移回個人
+ACT.pmove=async v=>{const [id,to]=String(v).split('|'),p=DB.proj.find(q=>q.id===id),c=p&&p.raw;if(!c||!LV.api||!LV.api.workAdd){toast('離線中，連上再移');return}
+ const toCo=to==='company';if(toCo===isCoCase(p))return;coWrapAdd();
+ closeThen(async()=>{let n=null,closed=false;if(S.page==='proj:'+id)back();try{await LV.api.act(id,'close',{result:'void'});closed=true;
+   n=await LV.api.workAdd(String(c.title).slice(0,120),toCo?'company':'personal');if(!n||!n.id)throw new Error('案子沒建起來');
+   let why=String(c.why||'').replace(EDM,'').replace(CO_MKR,'').trim();if(c.folderPath&&!/^[（(]/.test(c.folderPath)&&why.indexOf(c.folderPath)<0)why+=(why?'\n':'')+'原資料夾：'+c.folderPath;
+   const ce={};if(why)ce.why=why.slice(0,3000);if(c.ask)ce.ask=String(c.ask).slice(0,80);if(c.shortTitle)ce.short_title=c.shortTitle;if(c.firstStep)ce.first_step=c.firstStep;if(Object.keys(ce).length)await LV.api.cardEdit(n.id,ce);
+   const st=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''}));if(st.length)await LV.api.act(n.id,'steps',{steps:st});
+   const pt={};if(c.deliveryDate)pt.delivery_date=String(c.deliveryDate).slice(0,10);if(c.quoteAmount!=null)pt.quote_amount=c.quoteAmount;if(Object.keys(pt).length)await LV.api.act(n.id,'work',{patch:pt})}
+  catch(e){try{if(!n&&closed)await LV.api.act(id,'reopen',{})}catch(e2){}await reload();paint('keep');toast('沒移成：'+LERR(e)+(n?'（新卡已建，原卡收掉了，請到封存放回）':'。原卡還在'));return}
+  await reload();paint('keep');if(DB.proj.find(q=>q.id===n.id))S.sub.proj=toCo?'co':'proj';paint('keep');
+  toast(toCo?'移到公司了，原卡收掉（封存可放回）':'移回個人了，原卡收掉（封存可放回）',async()=>{try{await LV.api.act(n.id,'close',{result:'void'});await LV.api.act(id,'reopen',{});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})})};
+
 window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 

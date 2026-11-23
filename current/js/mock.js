@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v103';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v104';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -120,6 +120,9 @@ function workRows() {
       career: { line: '個人導演', public_identity: '導演 林遠', status_gain: '中', status_gain_note: '品牌會在片尾掛導演名', est_hours: 60, tax_withheld: true, referrer: '朋友介紹', kim_judgment: '錢普通，但能放作品集。' } }),
     base({ id: 'work-need', status: 'doing', title: '某咖啡品牌開幕短片（示意）', deadline: new Date(Date.now() + 2 * D).toISOString(), folder_path: '/Users/me/案子/11-20_咖啡開幕', links: [], run_status: 'failed', progress_blocker: '客戶還沒給 Logo 向量檔', progress_note: '粗剪好了，片尾要放 Logo。', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 3 * H).toISOString(),
       progress_steps: [{ name: '粗剪', status: 'done' }, { name: '片尾放 Logo', status: 'blocked', note: '〔模型：Opus 5.5｜方式：開子視窗｜技能：splice〕等客戶 Logo' }, { name: '調色', status: 'pending' }, { name: '交片', status: 'pending' }], quote_amount: 45000, career: {} }),
+    base({ id: 'work-co1', basket: 'company', status: 'doing', title: '示意客戶形象片（公司案）', org: '示意客戶股份有限公司', deadline: new Date(Date.now() + 9 * D).toISOString(), folder_path: '（示意，公司案）', links: [], why: '［皮條客 d3］\n示意：客戶要 60 秒形象片，公司電腦先做初剪。（示意資料）',
+      progress_steps: [{ name: '素材盤點', status: 'done', note: '〔在：公司〕' }, { name: '初剪', status: 'current', note: '〔模型：Opus 5.5｜方式：監工本身｜在：公司〕' }, { name: '客戶看初剪、回意見', status: 'pending', note: '〔在：我電腦〕' }], quote_amount: 90000 }),
+    base({ id: 'work-co2', basket: 'company', status: 'doing', title: '示意活動紀錄影片（公司案）', org: '示意活動公司', deadline: new Date(Date.now() + 20 * D).toISOString(), folder_path: '（示意，公司案）', links: [], why: '示意：活動當天跟拍，兩週內交 3 分鐘精華。（示意資料）', progress_steps: [], quote_amount: 60000 }),
     base({ id: 'work-delivered', status: 'delivered', title: 'AI 影片比賽代製（示意）', basket: 'other', quote_amount: 30000, delivery_date: dayOff(-2), delivered_at: new Date(Date.now() - 2 * D).toISOString(), expected_pay_date: dayOff(12), payment_terms: '交件後兩週匯款',
       career: { line: 'AI 影片與比賽', est_hours: 12, actual_hours: 15, tax_withheld: false } }),
     base({ id: 'work-paid', status: 'paid', title: '工作坊講師鐘點（示意）', basket: 'achievement', quote_amount: 8000, received_amount: 7200, delivery_date: dayOff(-20), delivered_at: new Date(Date.now() - 20 * D).toISOString(), paid_at: new Date(Date.now() - 5 * D).toISOString(),
