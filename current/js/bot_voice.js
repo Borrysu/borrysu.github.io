@@ -710,3 +710,20 @@
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* 2026-11-24 行事曆「個人 ?」的問號拿掉（逐流 msg 481，老大：「為什麼個人帳戶會有一個問號」）。
+   問號是「還沒分類」的代碼，不該露出來；有分類的改顯示中文（出班、剪接、企劃行政、創作、生活）。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var CATN = { S: '出班', E: '剪接', W: '企劃行政', C: '創作', L: '生活' };
+  function fix() {
+    document.querySelectorAll('.src').forEach(function (s) {
+      if (s.dataset.fx) return; var tn = null;
+      s.childNodes.forEach(function (n) { if (n.nodeType === 3 && /個人/.test(n.nodeValue)) tn = n; });
+      if (!tn) return; s.dataset.fx = '1';
+      var m = tn.nodeValue.match(/個人\s*(\S*)/); var c = m && m[1];
+      tn.nodeValue = '個人' + (c && CATN[c] ? '・' + CATN[c] : '');
+    });
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(fix, 80); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
