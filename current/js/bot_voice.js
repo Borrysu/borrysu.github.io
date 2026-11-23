@@ -616,7 +616,7 @@
   function tick() {
     var c = document.getElementById('chat'), open = !!(c && !c.hidden && c.classList.contains('in'));
     if (open && !lastOpen) { typed = false; sug = ''; }
-    if (open && !typed) {
+    if (open && !typed && !(window.__actAt && Date.now() - window.__actAt < 4000)) {
       var t = document.getElementById('cText');
       if (t && t.value.trim()) { sug = t.value; t.value = ''; chip(sug); }
       else if (sug && !document.getElementById('cSug')) chip(sug);
@@ -625,4 +625,33 @@
     lastOpen = open;
   }
   setInterval(tick, 150);
+})();
+
+/* 2026-11-24 動作鈕（萌萌先找、請比價、請朋朋買／安排／分類…）不再把一大段指示塞進輸入框（逐流 msg 454，老大：「我真的很不喜歡一點開，就預設很多文字」）。
+   按這類鈕＝老大要它去做，直接送出；給機器人的格式指示藏在對話不顯示的標頭裡，畫面只顯示一句「請幫我處理「品名」」。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var CHAT_ONLY = { ai: 1, havtalk: 1, talk: 1, chatsend: 1, chatclose: 1, chatq: 1, chatinfo: 1, chathead: 1 };
+  var lastAct = 0;
+  document.addEventListener('click', function (e) {
+    var el = e.target && e.target.closest && e.target.closest('[data-act]');
+    if (el && e.isTrusted && !CHAT_ONLY[el.dataset.act] && !el.closest('#chat')) { lastAct = Date.now(); window.__actAt = lastAct; }
+  }, true);
+  var busy = false;
+  setInterval(function () {
+    if (busy || !lastAct || Date.now() - lastAct > 4000) return;
+    var Z = window.__zl, t = document.getElementById('cText');
+    if (!Z || !Z.S || !Z.S.chat || !t || !t.value.trim() || !Z.LV || !Z.LV.api || !Z.LV.api.say) return;
+    busy = true; lastAct = 0; window.__actAt = 0;
+    var text = t.value, b = Z.S.chat.b, ctx = Z.S.chat.ctx || '';
+    t.value = ''; var s = document.getElementById('cSug'); if (s) s.remove();
+    var name = (text.match(/「([^」]{1,40})」/) || [])[1] || '';
+    var verb = b === 'mon' ? '請幫我找' : b === 'kim' ? '請幫我看' : '請幫我處理';
+    var shown = name ? verb + '「' + name + '」' : verb + '這件';
+    var hidden = text.replace(/[［］]/g, function (c) { return c === '［' ? '（' : '）'; }).replace(/\n/g, ' ');
+    var body = '［老大在逐流按了動作鈕，給你的指示：' + hidden + '］\n' + shown;
+    Z.LV.api.say(null, body, b).then(function () {
+      if (Z.ACT && Z.ACT.ai) setTimeout(function () { Z.ACT.ai(b + '|' + ctx); }, 300);
+    }).catch(function () { t.value = text; }).then(function () { busy = false; });
+  }, 120);
 })();
