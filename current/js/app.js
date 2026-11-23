@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v96');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v97');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4262,6 +4262,83 @@ stdLoad=function(id){const it=todoOf(id),c=it&&it.raw;if(!c)return null;const st
   // 存檔時照順序把每步的 CLI 帶進 stepNote（原本的 stsave 只傳模型、方式、技能、備註）
   const live=STD.steps.filter(s=>s.name||s.note||s.skills.length);const q=live.map(s=>s.cli||'');
   stepNote=function(o){return _n2(Object.assign({},o,{cli:q[k++]||''}))};try{return _v(id)}finally{stepNote=_n2}}return _v(id)}}
+
+/* ---------- 2026-11-24：公司卡也能「做完／改步驟／派工」，經肉咖同步回皮條客（拍板 current-company-sync-1124） ----------
+   老大原話（逐流 msg 508）：「反正在這邊我的行為動作是可以同步到皮條客那邊去的 另外公司專案的部分也是在這邊而且也適用監工與子監工邏輯 以及各種CLI工具 差別就插在我要在公司那台電腦上鎖還是我的電腦上面做」
+   老大選：照建議做（逐流不碰皮條客鑰匙，全經肉咖）。
+   1 公司卡多三顆：做完、步驟、派工。逐流只寫一張單給肉咖（hub_company_tasks），公司電腦每分鐘收單，肉咖在皮條客照做再回報。
+   2 步驟卡沿用同一套（監工／子視窗、模型、CLI、@技能），每步多一顆「在哪做」：公司電腦（肉咖）或我電腦（大器）。存在 note〔…｜在：公司〕。
+     步驟存 hub_company_cards.steps（hub_company_steps_set，遷移 20261124_公司卡步驟）；資料庫還沒套時，拿最近一張【改步驟】單裡的〔steps〕顯示。
+   3 派工：選公司的步驟派給肉咖；選我電腦的照大器流程（開大器對話帶這張卡送出，另記 cotask）。 */
+{const _o=stepOf;stepOf=function(s){const o=_o(s);o.where='';const m=SMETA.exec(s.note||'');if(m)m[1].split('｜').forEach(kv=>{const i=kv.indexOf('：');if(kv.slice(0,i)==='在'&&/^(公司|我電腦)$/.test(kv.slice(i+1)))o.where=kv.slice(i+1)});return o}}
+{const _n=stepNote;stepNote=function(o){const r=_n(o);if(!o.where)return r;const m=SMETA.exec(r);return m?`〔${m[1]}｜在：${o.where}〕`+r.slice(m[0].length):`〔在：${o.where}〕`+r}}
+const CO_STP=/〔steps〕(\[[\s\S]*\])\s*$/;
+function coStepsOf(c){if(!c)return [];if(Array.isArray(c.steps))return c.steps;const d=coData(),ts=(d&&d.tasks||[]).filter(t=>t.card_id===c.id&&/^【改步驟】/.test(t.body||''));
+ for(const t of ts){const m=CO_STP.exec(t.body||'');if(m){try{const a=JSON.parse(m[1]);if(Array.isArray(a))return a}catch(e){}}}return []}
+const coWhere=o=>o.where==='我電腦'?'我電腦':'公司';
+const coWho=w=>w==='我電腦'?'大器・我電腦':'肉咖・公司電腦';
+const coTags=o=>[coWho(coWhere(o)),o.mode==='開子視窗'?'子視窗':'監工',o.cli||'',o.model&&o.model!=='不指定'?o.model:'',o.skill?'@'+o.skill:''].filter(Boolean).join('・');
+const coStLine=(o,k)=>`${k+1}. ${o.name}（${coTags(o)}${o.status&&o.status!=='pending'?'・'+stsL(o.status):''}）${o.note?'：'+o.note:''}`;
+// 卡面三顆
+coCard=function(c){const id='co:'+c.id,n=coDays(c.due),rt=coTaskOf(c.id,'rouka'),dt=coTaskOf(c.id,'daqi'),st=coStepsOf(c).map(stepOf),dn=st.filter(o=>o.status==='done').length;
+ return `<article class="card cardx" data-card="${esc(id)}"><div class="meta">${chip(coDue(c),n!=null&&n<=3)}<span class="lbl">${esc(brief(c.project||'公司',c.owner||''))}</span></div><h3>${cgo(esc(c.ask||c.title),'sheet',id)}</h3>${c.ask?`<p class="owhat">${esc(c.title)}</p>`:''}${c.status?`<p class="note">皮條客：${esc(c.status)}</p>`:''}${st.length?`<p class="note">步驟 ${dn}／${st.length}</p>`:''}`
+ +kfoot(mb('做完','sheet','codone:'+c.id)+mb('步驟','sheet','stepx:co:'+c.id)+mb('派工','sheet','codisp:'+c.id),[aiF('rouka',id,coSt(rt),{do:'coRouka',arg:c.id}),aiF('daqi',id,coSt(dt))],'')+`</article>`};
+// 詳情：加步驟清單與三顆
+{const _cs=coSheet;coSheet=function(id){const h=_cs(id),c=coFind(id);if(!c)return h;const st=coStepsOf(c).map(stepOf);
+ const sec=`<p class="h4">步驟卡</p>${st.length?`<ol class="ydsteps stlist">${st.map(o=>`<li>${esc(o.name)}<small class="d2">${esc(coTags(o))}${o.status&&o.status!=='pending'?'・'+esc(stsL(o.status)):''}</small></li>`).join('')}</ol>`:'<p class="note">還沒排步驟。排了之後每一步可以選在公司電腦（肉咖）或我電腦（大器）做。</p>'}`;
+ const btns=`<div class="btns">${B('做完','sheet','codone:'+id)}${B(st.length?'改步驟':'排步驟','sheet','stepx:co:'+id)}${B('派工','sheet','codisp:'+id,'pri')}</div>`;
+ const i=h.indexOf('<div class="btns">');return i<0?h+sec+btns:h.slice(0,i)+sec+btns+h.slice(i).replace(B('派肉咖做','coRouka',id,'pri'),B('另外交代肉咖','coRouka',id))}}
+// 做完：確認一次
+function coDoneSheet(id){const c=coFind(id);if(!c)return shHead('這張公司卡不在了');const dt=(coData().tasks||[]).find(t=>t.card_id===id&&/^【做完】/.test(t.body||'')&&!['failed','cancelled'].includes(t.status));
+ return shHead('這張做完了？')+`<div class="meta" style="margin-top:8px">${chip(c.ask||c.title)}</div><p>按下去，肉咖會在皮條客把這張卡標成做完，回報在這張卡。</p>`
+ +(dt?`<p class="note">已經送過做完（${esc(coSt(dt)||'已送出')}）。</p>`:'')+`<div class="btns">${B('對，做完了','codoneok',id,'pri wide')}</div><p class="note">送錯了：等肉咖回報後，在這張卡按「另外交代肉咖」說改回進行中。</p>`}
+ACT.codoneok=async id=>{const c=coFind(id);if(!c)return;const body=`【做完】老大在逐流按了做完：請在皮條客把這張卡（皮條客 id ${c.source_id}）標成做完／結案，做完回報一句。`;
+ if(LV.mode!=='live'){coData().tasks.unshift({id:Date.now(),card_id:id,assignee:'rouka',body,status:'queued',created_at:new Date().toISOString()});back();toast('示範：做完交給肉咖了');render('keep');return}
+ try{await LV.api.coTask(id,'rouka',body);back();toast('交給肉咖了，皮條客那邊改好會回報');await coLoad();render('keep')}catch(e){toast(NOFN(e)?'資料庫還沒更新，派工還沒接上':'沒送出：'+LERR(e))}};
+// 步驟卡：沿用同一套編輯器，多「在哪做」
+{const _l=stdLoad;stdLoad=function(id){if(String(id).indexOf('co:')!==0)return _l(id);const c=coFind(id.slice(3));if(!c)return null;
+ const st=coStepsOf(c).map(s=>{const o=stepOf(s),cl=cliOf(o.cli);return {name:o.name,status:o.status,cli:cl?cl.k:'',model:cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定'),mode:o.mode==='開子視窗'?'開子視窗':'監工本身',skills:skSplit(o.skill),note:o.note,where:coWhere(o),pk:''}});
+ if(!st.length)st.push(Object.assign(stdNew(),{cli:'',where:'公司'}));return {id,steps:st}}}
+{const _h=stcHTML;stcHTML=function(o,i){const h=_h(o,i);if(!STD||String(STD.id).indexOf('co:')!==0)return h;const w=coWhere(o);
+ const seg=`<div class="stc-seg${w==='我電腦'?' r':''}" role="group" aria-label="第 ${i+1} 步在哪做"><i aria-hidden="true"></i><button type="button" data-act="stcwhr" data-id="${i}|公司" aria-pressed="${w==='公司'}">公司電腦</button><button type="button" data-act="stcwhr" data-id="${i}|我電腦" aria-pressed="${w==='我電腦'}">我電腦</button></div>`;
+ const j=h.indexOf('<div class="stc-pk');return j<0?h:h.slice(0,j)+`<div class="stc-top stc-whr">${seg}<small>${esc(w==='我電腦'?'大器在這台做':'肉咖在公司電腦做')}</small></div>`+h.slice(j)}}
+ACT.stcwhr=v=>{if(!STD)return;const [i,w]=String(v).split('|'),o=STD.steps[+i];if(!o)return;o.where=w;const n=stcRedraw(+i);if(n){const b=n.querySelector('.stc-whr');if(b)b.classList.add('stpop')}};
+{const _a=ACT.stadd;ACT.stadd=()=>{_a();if(STD&&String(STD.id).indexOf('co:')===0){const o=STD.steps[STD.steps.length-1];if(o&&!o.where){o.where='公司';stcRedraw(STD.steps.length-1)}}}}
+{const _s=sheetHTML;sheetHTML=function(){const t=S.sheet||'';
+ if(t.indexOf('codone:')===0)return coDoneSheet(t.slice(7));if(t.indexOf('codisp:')===0)return coDispSheet(t.slice(7));
+ const h=_s();if(t.indexOf('stepx:co:')!==0)return h;
+ return h.replace(/<div class="mrow stplanr">[\s\S]*?<\/div>/,'').replace(/按「去執行」時，大器照這個架構走。/,'每一步選在公司電腦（肉咖）還是我電腦（大器）做。存好會交一張單給肉咖，在皮條客照著改。')}}
+{const _v=ACT.stsave;ACT.stsave=id=>{if(String(id).indexOf('co:')!==0)return _v(id);if(!STD||STD.id!==id)return;const cid=id.slice(3),c=coFind(cid);if(!c)return;
+ STD.steps.forEach(o=>{o.name=o.name.replace(/(^|\s)[@＠]([^\s@＠]+)/g,(m,a,w)=>{const k=skExact(w);if(!k)return m;if(!o.skills.includes(k)&&o.skills.length<3)o.skills.push(k);return a}).replace(/\s{2,}/g,' ').trim();o.note=o.note.trim()});
+ const keep=STD.steps.filter(s=>s.name||s.note||s.skills.length);if(keep.some(s=>!s.name)){S.err='stepx';render('keep');return}S.err='';
+ const old=coStepsOf(c).slice(),body=keep.map(s=>({name:s.name.slice(0,80),status:s.status,note:stepNote({model:s.model,mode:s.mode,skill:s.skills.join('、'),cli:s.cli||'',where:coWhere(s),note:s.note})}));
+ const lines=body.map((s,k)=>coStLine(stepOf(s),k)).join('\n'),js='〔steps〕'+JSON.stringify(body);
+ let msg=`【改步驟】老大在逐流改了這張公司卡的步驟（皮條客 id ${c.source_id}），共 ${body.length} 步。請在皮條客照這份更新進度與步數，做完回報一句。\n${lines}\n`;
+ if((msg+js).length>2000)msg=msg.slice(0,Math.max(0,1990-js.length))+'…\n';msg+=js;
+ STD=null;closeThen(async()=>{
+  if(LV.mode!=='live'){c.steps=body;coData().tasks.unshift({id:Date.now(),card_id:cid,assignee:'rouka',body:msg,status:'queued',created_at:new Date().toISOString()});toast(`示範：存了 ${body.length} 步，交給肉咖同步`);render('keep');return}
+  let saved=false;try{await LV.api.coSteps(cid,body);saved=true}catch(e){if(!NOFN(e)){toast('沒存上：'+LERR(e));return}}
+  try{await LV.api.coTask(cid,'rouka',msg)}catch(e){toast((saved?'步驟存了，但':'')+'沒交給肉咖：'+LERR(e));await coLoad();render('keep');return}
+  await coLoad();render('keep');
+  toast(`存了 ${body.length} 步，交給肉咖同步到皮條客`,saved?async()=>{try{await LV.api.coSteps(cid,old);await coLoad();render('keep');toast('逐流這邊還原了；肉咖那張單照舊，要改回再交代它')}catch(e){toast('沒還原：'+LERR(e))}}:null)})}}
+// 派工：照步驟派，公司的給肉咖、我電腦的給大器
+const coStepMsg=(c,st,k)=>{const o=st[k];return `【派工】公司卡「${c.title}」第 ${k+1}／${st.length} 步：${o.name}。架構：${o.mode==='開子視窗'?'開子視窗':'監工本身'}${o.cli?'・CLI '+o.cli:''}${o.model&&o.model!=='不指定'?'・模型 '+o.model:''}${o.skill?'・技能 '+o.skill:''}。${o.note?'備註：'+o.note+'。':''}做完回報，並在皮條客把這步標成做完。`};
+function coDispSheet(id){const c=coFind(id);if(!c)return shHead('這張公司卡不在了');const st=coStepsOf(c).map(stepOf),open=st.map((o,k)=>[o,k]).filter(([o])=>o.status!=='done'&&o.status!=='skipped');
+ if(!st.length)return shHead('派工')+`<div class="meta" style="margin-top:8px">${chip('關於：'+(c.ask||c.title))}</div><p class="note">這張還沒排步驟。先排步驟，每一步選在公司電腦或我電腦做；或直接交代肉咖一句話。</p><div class="btns">${B('排步驟','sheet','stepx:co:'+id,'pri')}${B('直接交代肉咖','coRouka',id)}</div>`;
+ return shHead('派工')+`<div class="meta" style="margin-top:8px">${chip('關於：'+(c.ask||c.title))}</div>
+ <div class="rows">${st.map((o,k)=>`<div class="rowi"><div class="rowb">${bm(coWhere(o)==='我電腦'?'daqi':'rouka','z')}<span class="tx"><b>${k+1}. ${esc(o.name)}</b><small>${esc(coTags(o))}${o.status!=='pending'?'・'+esc(stsL(o.status)):''}</small></span>${o.status==='done'||o.status==='skipped'?'':`<span class="rt">${mb('派這步','codstep',id+'|'+k)}</span>`}</div></div>`).join('')}</div>
+ ${open.length?`<div class="btns">${B(`照步驟全部派（${open.length} 步）`,'codall',id,'pri wide')}</div>`:'<p class="note">每一步都做完或跳過了。</p>'}
+ <p class="note">公司電腦的步驟交給肉咖，一分鐘內收單；我電腦的步驟開大器對話帶這張卡送出。</p><div class="mrow">${mb('改步驟','sheet','stepx:co:'+id)}</div>`}
+async function coSendStep(c,st,ks){const rk=ks.filter(k=>coWhere(st[k])!=='我電腦'),dk=ks.filter(k=>coWhere(st[k])==='我電腦');
+ if(LV.mode!=='live'){rk.forEach(k=>coData().tasks.unshift({id:Date.now()+k,card_id:c.id,assignee:'rouka',body:coStepMsg(c,st,k),status:'queued',created_at:new Date().toISOString()}));render('keep')}
+ else if(rk.length){const msg=rk.length===1?coStepMsg(c,st,rk[0]):`【派工】公司卡「${c.title}」照步驟做這 ${rk.length} 步，一步做完回報一次：\n`+rk.map(k=>coStLine(st[k],k)).join('\n');await LV.api.coTask(c.id,'rouka',msg.slice(0,2000))}
+ if(dk.length){const t=dk.length===1?coStepMsg(c,st,dk[0]).replace(/，並在皮條客把這步標成做完/,'；公司那邊的狀態由肉咖同步'):`公司卡「${c.title}」這幾步在我電腦做：\n`+dk.map(k=>coStLine(st[k],k)).join('\n')+'\n照步驟架構走，做完回報在這張卡。';
+  if(LV.mode==='live')openChat('daqi','co:'+c.id,null,()=>sendTo('daqi',t,'co:'+c.id));else toast('示範：我電腦的步驟會開大器對話送出')}
+ return {r:rk.length,d:dk.length}}
+ACT.codstep=async v=>{const [id,k]=String(v).split('|'),c=coFind(id);if(!c)return;const st=coStepsOf(c).map(stepOf);if(!st[+k])return;
+ try{const n=await coSendStep(c,st,[+k]);if(n.r){if(S.sheet)back();toast(`第 ${+k+1} 步交給肉咖了`);await coLoad();render('keep')}}catch(e){toast(NOFN(e)?'資料庫還沒更新，派工還沒接上':'沒送出：'+LERR(e))}};
+ACT.codall=async id=>{const c=coFind(id);if(!c)return;const st=coStepsOf(c).map(stepOf),ks=st.map((o,k)=>k).filter(k=>st[k].status!=='done'&&st[k].status!=='skipped');if(!ks.length)return;
+ try{const n=await coSendStep(c,st,ks);if(n.r&&!n.d){if(S.sheet)back()}toast([n.r?`${n.r} 步交給肉咖`:'',n.d?`${n.d} 步開大器對話`:''].filter(Boolean).join('，'));await coLoad();render('keep')}catch(e){toast(NOFN(e)?'資料庫還沒更新，派工還沒接上':'沒送出：'+LERR(e))}};
 
 window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
