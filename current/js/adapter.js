@@ -308,6 +308,7 @@ function liveAdapter() {
     // v46：卡片編輯、封存、刪除。kind＝decision｜job｜event；action＝archive｜unarchive｜delete｜restore（刪除 72 小時內可救回）
     async hubEdit(kind, id, patch) { return rpc(R.hubEdit, { p_kind: kind, p_id: String(id), p_patch: patch || {} }, 0, W); },
     async hubShelf(kind, id, action) { return rpc(R.hubShelf, { p_kind: kind, p_id: String(id), p_action: action }, 0, W); },
+    async jobSet(o) { return rpc('hub_job_set', { p_id: o.id, p_title: o.title, p_agent: o.agent, p_status: o.status || 'running', p_note: o.note || null, p_ask: o.ask || null, p_project: o.project || null, p_needs: o.needs || 'any' }, 0, W); },   // 2026-11-24 要你做交給大器／霸霸：卡轉成在跑
     async shelf() { const d = await rpc(R.shelf, {}, 0, W); return Array.isArray(d) ? d : []; },
     // v48：付款授權單。只有老大本人的金鑰能授權（AI協作金鑰回 403，不清金鑰）；面板不碰錢，實際付款由負責的 Bot 做完回報
     async payAuthorize(o) { return rpc(R.payAuthorize, { p_src_kind: o.kind, p_src_id: o.id == null ? null : String(o.id), p_src_title: o.title || null, p_amount: o.amount == null ? null : +o.amount, p_amount_text: o.amountText, p_payee: o.payee, p_assignee: o.by || null, p_link: o.link || null }, 0, W); },
@@ -344,7 +345,8 @@ function liveAdapter() {
         case 'deliver': return card(await rpc(R.setStatus, { p_id: id, p_status: 'delivered', ...(o.patch ? { p_patch: o.patch } : {}) }, 0, W));
         case 'paid': return card(await rpc(R.setStatus, { p_id: id, p_status: 'paid', p_patch: o.patch || {} }, 0, W));
         case 'run': { const c = card(await rpc(R.run, { p_id: id })); wake(); return c; }
-        case 'steps': return card(await rpc(R.progress, { p_id: id, p_steps: o.steps || [] }, 0, W));   // v39：案子「⋯」這步做完／退回上一步，只改步驟，不動 note、blocker
+        case 'steps': return card(await rpc(R.progress, { p_id: id, p_steps: o.steps || [] }, 0, W));
+        case 'runset': return card(await rpc(R.progress, { p_id: id, p_run_status: o.status, p_run_note: o.note || '' }, 0, W));   // v93 立刻停止與復原：只改執行狀態與執行備註   // v39：案子「⋯」這步做完／退回上一步，只改步驟，不動 note、blocker
         case 'back': return card(await rpc(R.setStatus, { p_id: id, p_status: o.to === 'delivered' ? 'delivered' : 'doing' }, 0, W));
       }
       throw new AdapterError('server', '未知動作');

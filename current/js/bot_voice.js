@@ -558,3 +558,31 @@
   setTimeout(check, 15000); setInterval(check, 120000);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
 })();
+
+/* 2026-11-24 要你做「交給大器處理／請霸霸設置」按了卡要離開要你做（逐流 msg 364）。
+   老大：「我點了選項結果他還是在最上面要你做，並且也沒有進度」。原本只送訊息、卡片狀態沒動。
+   改成：送出後同一張 hub job 改成 running、執行者寫大器或霸霸、進度寫一句，卡從「要你做」移到「正在跑」。 */
+(function () {
+  if (typeof window === 'undefined') return;
+  var tries = 0;
+  (function hook() {
+    var Z = window.__zl;
+    if (!Z || !Z.ACT || !Z.ACT.ydhand || !Z.LV) { if (++tries < 200) setTimeout(hook, 100); return; }
+    if (Z.ACT.ydhand.__run) return;
+    var orig = Z.ACT.ydhand;
+    var wrapped = async function (v) {
+      var parts = String(v || '').split('|'), who = parts[0], id = parts.slice(1).join('|');
+      var jobs = (Z.LV.hub && Z.LV.hub.jobs) || [], j = jobs.find(function (x) { return x.id === id; });
+      await orig.apply(this, arguments);
+      if (!j || !Z.LV.api || !Z.LV.api.jobSet) return;
+      var name = who === 'baba' ? '霸霸（經大器轉）' : '大器';
+      try {
+        await Z.LV.api.jobSet({ id: id, title: j.title || j.ask || '要你做', agent: name, status: 'running',
+          note: '進度：老大交給' + (who === 'baba' ? '霸霸' : '大器') + '處理，' + new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', hour12: false }) + ' 送出，等回報', ask: (who === 'baba' ? '霸霸在做：' : '大器在做：') + (j.ask || j.title || '').replace(/^(大器|霸霸)在做：/, '') });
+        j.status = 'running'; j.agent = name;
+        if (Z.paint) Z.paint('keep'); else if (Z.render) Z.render('keep');
+      } catch (e) { /* 訊息已送出，狀態沒改到就留著，下次同步會再對 */ }
+    };
+    wrapped.__run = 1; Z.ACT.ydhand = wrapped;
+  })();
+})();

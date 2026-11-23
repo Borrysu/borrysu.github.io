@@ -126,7 +126,9 @@ function workRows() {
       career: { line: '教學授權', actual_hours: 4, advance_amount: 300, advance_recovered_date: dayOff(-5) } }),
     base({ id: 'todo-1', status: 'new', basket: 'todo', title: '建一個報價單產生器（示意）', why: '每次報價都要重打，想要填幾個欄位就出 PDF。', source_site: '待辦', folder_status: 'none', folder_path: null }),
     base({ id: 'todo-2', status: 'doing', basket: 'todo', title: '把 IG 貼文排程接上 Notion（示意）', source_site: '待辦', folder_status: 'none', folder_path: null, run_status: 'running',
-      progress_steps: [{ name: '查 IG API 能不能排程', status: 'done' }, { name: '寫串接', status: 'current' }, { name: '測一篇', status: 'pending' }], progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 20 * 60e3).toISOString() }),
+      progress_steps: [{ name: '查 IG API 能不能排程', status: 'done' }, { name: '寫串接', status: 'current' }, { name: '測一篇', status: 'pending' }], run_note: '開跑了，子視窗：【機會雷達】IG 排程接 Notion', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 20 * 60e3).toISOString() }),
+    base({ id: 'todo-3', status: 'doing', basket: 'todo', title: '申請示意平台的開發者帳號（示意）', source_site: '待辦', folder_status: 'none', folder_path: null, run_status: 'queued',
+      progress_steps: [{ name: '查申請條件', status: 'done', note: '〔模型：Opus 5.5〕' }, { name: '老大申請帳號', status: 'current' }], progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }),
     base({ id: 'work-gone', status: 'dropped', drop_reason: 'skipped', title: '婚禮紀錄側拍（示意）', folder_status: 'none', folder_path: null, source_site: '接案城', drop_note: '日期跟另一案撞期' }),
   ];
 }
@@ -257,6 +259,7 @@ export function mockAdapter(modeStr) {
     // v46 示範：卡片編輯、封存、刪除（72 小時可救回）
     async hubEdit(kind, id, patch) { await wait(200); sorry(); const L = kind === 'decision' ? hub.open.concat(hub.answered) : kind === 'job' ? hub.jobs : hub.events; const x = L.find(r => String(r.id) === String(id)) || (hub.shelf || []).map(s => s.row).find(r => String(r.id) === String(id)); if (!x) throw new AdapterError('server', 'not found');
       const F = { decision: ['question', 'detail'], job: ['title', 'note'], event: ['summary', 'path'] }[kind]; if ('ask' in patch) x.ask = patch.ask || null; if ('text' in patch) x[F[0]] = patch.text; if ('detail' in patch) x[F[1]] = patch.detail; if ('project' in patch) x.project = patch.project || null; return x; },
+    async jobSet(o) { await wait(200); sorry(); const j = (hub.jobs || []).find(x => x.id === o.id); if (j) { Object.assign(j, { status: o.status || 'running', agent: o.agent, note: o.note || j.note, ask: o.ask || j.ask, updated_at: new Date().toISOString() }); } setTimeout(ping, 50); return j || null; },
     async hubShelf(kind, id, action) { await wait(200); sorry(); hub.shelf = hub.shelf || []; const key = kind === 'decision' ? 'open' : kind === 'job' ? 'jobs' : 'events';
       if (action === 'archive' || action === 'delete') { const L = kind === 'decision' ? (hub.open.some(r => String(r.id) === String(id)) ? 'open' : 'answered') : key; const i = hub[L].findIndex(r => String(r.id) === String(id)); if (i < 0) throw new AdapterError('server', 'not found'); const row = hub[L].splice(i, 1)[0]; row._from = L; hub.shelf.unshift({ kind, t: new Date().toISOString(), gone: action === 'delete', row }); return row; }
       const j = hub.shelf.findIndex(s => s.kind === kind && String(s.row.id) === String(id)); if (j < 0) throw new AdapterError('server', 'not found or too late'); const s = hub.shelf.splice(j, 1)[0]; hub[s.row._from || key].unshift(s.row); return s.row; },
@@ -309,7 +312,7 @@ export function mockAdapter(modeStr) {
         }
         case 'work': applyWork(r, o.patch || {}); break;
         case 'run': r.run_status = 'queued'; if (r.basket === 'todo') r.status = 'doing'; msgs.push({ id: msgs.length + 1, item_id: r.id, kind: 'run', author: 'Borry', body: '去執行：' + r.title, created_at: new Date().toISOString() });
-          setTimeout(() => { r.run_status = 'running'; r.progress_steps = [{ name: '盤點需求', status: 'current' }, { name: '建置', status: 'pending' }, { name: '驗收', status: 'pending' }]; r.progress_updated_by = 'AI協作'; r.progress_updated_at = new Date().toISOString(); ping(); }, 3000); break;
+          setTimeout(() => { if (r.run_status !== 'queued') return; r.run_status = 'running'; r.run_note = '【機會雷達】' + String(r.title).slice(0, 10); r.progress_steps = [{ name: '盤點需求', status: 'current' }, { name: '建置', status: 'pending' }, { name: '驗收', status: 'pending' }]; r.progress_updated_by = 'AI協作'; r.progress_updated_at = new Date().toISOString(); ping(); }, 3000); break;
         case 'deliver': if (!['doing', 'delivered'].includes(r.status)) throw new AdapterError('state', 'cannot go from ' + r.status + ' to delivered', 400);
           if (o.patch) applyWork(r, o.patch); if (r.status === 'doing') { r.status = 'delivered'; r.delivery_date = r.delivery_date || today(); r.delivered_at = r.delivered_at || new Date().toISOString(); } break;
         case 'paid': if (!['delivered', 'paid'].includes(r.status)) throw new AdapterError('state', 'cannot go from ' + r.status + ' to paid', 400);
@@ -320,6 +323,7 @@ export function mockAdapter(modeStr) {
           if (!((r.status === 'delivered' && to === 'doing') || (r.status === 'paid' && to === 'delivered') || r.status === to)) throw new AdapterError('state', 'cannot go from ' + r.status + ' to ' + to, 400);
           if (r.status !== to) { r.status = to; r.paid_at = null; if (to === 'doing') r.delivered_at = null; } break; }
         case 'tdone': if (o.done !== false) { r.status = 'closed'; r.close_result = 'won'; r.closed_at = new Date().toISOString(); } else { r.status = 'new'; r.close_result = null; r.closed_at = null; } break;
+        case 'runset': r.run_status = o.status; r.run_note = o.note || ''; r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'steps': r.progress_steps = (o.steps || []).map(x => ({ name: x.name, status: x.status, note: x.note || '' })); r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'close': if (!['doing', 'delivered', 'paid', 'closed'].includes(r.status)) throw new AdapterError('state', 'card is ' + r.status, 400); r.status = 'closed'; r.close_result = o.result; r.closed_at = new Date().toISOString(); break;
         case 'reopen': if (r.status !== 'closed') throw new AdapterError('state', 'card is not closed', 400); r.status = 'doing'; r.close_result = null; r.closed_at = null; break;
