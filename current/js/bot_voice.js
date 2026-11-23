@@ -753,7 +753,8 @@
     if (/霸霸/.test(on.textContent)) return;
     var id = Z.S.sheet.slice('cview:todo:'.length);
     var b = document.createElement('button'); b.type = 'button'; b.className = 'mb babaf';
-    var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true');
+    // 不用 .bm.bf[data-b]：那組 class 會被 app.js faceSync 再掛一次臉，變兩顆疊在一起（msg 572「破圖跑版」）
+    var f = document.createElement('span'); f.className = 'bbf'; f.setAttribute('aria-hidden', 'true');
     f.style.cssText = 'width:24px;height:24px;display:inline-block;vertical-align:middle;margin-right:6px;pointer-events:none';
     b.appendChild(f); b.appendChild(document.createTextNode('改交給霸霸'));
     b.onclick = async function (ev) {
@@ -778,18 +779,25 @@
     '.cf-r [data-act="ai"][data-id^="din|proj:"],.cf-r [data-act="ai"][data-id^="din|todo"],' +
     '#sheet .jnext [data-id^="din|"],#sheet [data-act="ai"][data-id^="din|proj:"],#page [data-act="ai"][data-id^="din|proj:"]{display:none!important}' +
     '.babacf{width:40px;height:40px;min-width:40px;padding:0;border:0;background:transparent;display:inline-grid;place-items:center}' +
-    '.babacf .bm{width:30px;height:30px;pointer-events:none}';
+    '.babacf .bbf{width:30px;height:30px;display:block;pointer-events:none}.babaf .bbf{width:22px;height:22px;display:inline-block;vertical-align:middle;margin-right:6px;pointer-events:none}';
   (document.head || document.documentElement).appendChild(st);
   function face(btn) {
-    var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true');
+    // 不用 .bm.bf[data-b]：那組 class 會被 app.js faceSync 再掛一次臉，變兩顆疊在一起（msg 572「破圖跑版」）
+    var f = document.createElement('span'); f.className = 'bbf'; f.setAttribute('aria-hidden', 'true');
     btn.appendChild(f); try { if (window.BotFace) window.BotFace.mount(f, { preset: 'baba', color: '#FFFFFF', size: 0 }); } catch (e) {}
   }
   function add() {
     var Z = window.__zl; if (!Z || !Z.DB || !Z.DB.todo) return;
     document.querySelectorAll('#view article.cardx[data-card]').forEach(function (a) {
-      var id = a.dataset.card; if (!Z.DB.todo.some(function (t) { return t.id === id; })) return;
+      var id = a.dataset.card;
+      var isTodo = Z.DB.todo.some(function (t) { return t.id === id; });
+      // 案子卡（個人與公司）也要霸霸臉（msg 575，接 501 定案：執行入口都要有大器臉＋霸霸臉）；點了打開跟霸霸的對話，帶這張案子
+      var isProj = !isTodo && (Z.DB.proj || []).some(function (q) { return q.id === id; });
+      if (!isTodo && !isProj) return;
       var r = a.querySelector('.cf-r'); if (!r || r.querySelector('.babacf')) return;
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'babacf'; b.dataset.act = 'jtobaba'; b.dataset.id = id; b.setAttribute('aria-label', '交給霸霸');
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'babacf';
+      if (isTodo) { b.dataset.act = 'jtobaba'; b.dataset.id = id; b.setAttribute('aria-label', '交給霸霸'); }
+      else { b.dataset.act = 'projbaba'; b.dataset.id = id; b.setAttribute('aria-label', '交給霸霸推進這個案子'); }
       face(b); r.appendChild(b);
     });
   }
@@ -879,4 +887,63 @@
     if (m.every(function (x) { return x.type === 'attributes'; })) return;
     clearTimeout(t); t = setTimeout(run, 100);
   }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+
+/* 2026-11-24 霸霸沒有自己的對話窗，臉按下去是「交給霸霸」：經大器送【請霸霸轉派】，由大器用 call-baba.sh 叫霸霸。
+   ①案子卡霸霸臉（msg 575）：霸霸推進這個案子。②任務房「請霸霸規劃」（msg 578，老大：「請霸霸規劃 就會是他打過去叫定定思考 霸霸想辦法推進」）：
+   先把輸入框的事加成任務，再請霸霸叫定定規劃、霸霸推進；定定本人不在案子房間出現（msg 501）。退回：刪掉這一段（案子卡霸霸臉會變成沒反應）。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  function Z() { return window.__zl; }
+  function toast(t) { var e = document.getElementById('toast'), m = document.getElementById('toastMsg'), u = document.getElementById('toastUndo'); if (!e || !m) return; m.textContent = t; if (u) u.hidden = true; e.classList.add('in'); clearTimeout(toast.t); toast.t = setTimeout(function () { e.classList.remove('in'); }, 3200); }
+  async function send(id, body) {
+    var L = Z().LV; if (!L || !L.api || !L.api.say) { toast('離線中，連上再按'); return false; }
+    try { await L.api.say(id, body, 'daqi'); } catch (e) { toast('沒送出，再按一次'); return false; }
+    try { if (L.api.act) await L.api.act(id, 'runset', { status: 'running', note: '【霸霸】接手推進中，等霸霸回報' }); } catch (e) {}
+    return true;
+  }
+  document.addEventListener('click', async function (e) {
+    var b = e.target.closest && e.target.closest('[data-act="projbaba"]');
+    if (!b || document.documentElement.classList.contains('marking')) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    var id = b.dataset.id, p = (Z().DB.proj || []).find(function (q) { return q.id === id; }) || {};
+    var name = String(p.name || p.title || '這個案子').slice(0, 80);
+    var body = '［老大在逐流按了案子卡上的霸霸臉，給你的指示：用 call-baba.sh 把這個案子交給霸霸推進。霸霸可以叫定定一起想下一步，判斷交給哪隻機器人或自己做，進度寫回這張案子卡；要花錢、對外發布的先問老大。］\n【請霸霸推進】「' + name + '」';
+    b.disabled = true; window.__actAt = Date.now();
+    if (await send(id, body)) { toast('交給霸霸推進了，進度會寫回這張卡'); if (Z().paint) Z().paint('keep'); }
+    b.disabled = false;
+  }, true);
+  // 任務房：「請大器規劃」旁加「請霸霸規劃」
+  function addPlan() {
+    document.querySelectorAll('.mrow.pjplan').forEach(function (r) {
+      if (r.querySelector('[data-act="pjbaba"]')) return;
+      var d = r.querySelector('[data-act="pjplan"][data-id="daqi"]'); if (!d) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = d.className; b.dataset.act = 'pjbaba';
+      var f = document.createElement('span'); f.className = 'bbf'; f.setAttribute('aria-hidden', 'true');
+      f.style.cssText = 'width:22px;height:22px;display:inline-block;vertical-align:middle;margin-right:6px;pointer-events:none';
+      b.appendChild(f); b.appendChild(document.createTextNode('請霸霸規劃'));
+      r.appendChild(b);
+      try { if (window.BotFace) window.BotFace.mount(f, { preset: 'baba', color: '#FFFFFF', size: 0 }); } catch (e) {}
+    });
+  }
+  document.addEventListener('click', async function (e) {
+    var b = e.target.closest && e.target.closest('[data-act="pjbaba"]');
+    if (!b || document.documentElement.classList.contains('marking')) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    var t = document.getElementById('pjIn'), v = t ? t.value.trim() : '';
+    if (!v) { if (t) t.focus(); toast('先在上面寫要做的事'); return; }
+    var L = Z().LV; if (!L || !L.api || !L.api.todoAdd) { toast('離線中，等連上再加'); return; }
+    b.disabled = true;
+    try {
+      var c = await L.api.todoAdd(v.slice(0, 200)); if (t) t.value = '';
+      if (c && c.id) {
+        var body = '［老大在逐流按了「請霸霸規劃」，給你的指示：用 call-baba.sh 交給霸霸。霸霸去叫定定思考、把這件拆成步驟寫回這張卡，然後霸霸負責推進（交給適合的機器人或自己做）；要花錢、對外發布的先問老大。］\n【請霸霸規劃】「' + v.slice(0, 120) + '」';
+        if (await send(c.id, body)) toast('交給霸霸規劃了，步驟會寫回這張卡');
+      } else toast('加進任務了，打開卡片再交給霸霸');
+      if (Z().paint) Z().paint('keep');
+    } catch (err) { toast('沒存上，再按一次'); }
+    b.disabled = false;
+  }, true);
+  var tm = 0; new MutationObserver(function () { clearTimeout(tm); tm = setTimeout(addPlan, 90); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
