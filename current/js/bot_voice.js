@@ -841,3 +841,42 @@
     document.querySelectorAll('#sheet .wd2-p, #sheet .wd2-c b, #sheet .wdh .amt, #view .cardx .amt').forEach(split);
   }, 80); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+// 2026-11-24 監工：全面板去重複（逐流 msg 445／487／490／497／501／560／562，老大：「這邊感覺有很多按鈕重複了」）。
+// 規則：同一張卡或同一個彈出頁裡，①有某隻的臉（.hav），就藏掉只是「打開跟牠聊天」的文字鈕；②同一個動作（data-act＋data-id 相同）只留第一個。
+// 交出去、做完、步驟鈕這類真的會改狀態的不動。退回：刪掉這一段。
+(function () {
+  var CHATONLY = { ai: 1, ydq: 1 };
+  function scopeOf(el) { return el.closest('.card, .cardx, .rowi, .sheet-b, #sheet, #page') || document.body; }
+  function run() {
+    document.querySelectorAll('[data-zldup]').forEach(function (e) { e.style.display = ''; e.removeAttribute('data-zldup'); });
+    var scopes = new Set();
+    document.querySelectorAll('#view [data-act], #sheet [data-act], #page [data-act]').forEach(function (b) { scopes.add(scopeOf(b)); });
+    scopes.forEach(function (sc) {
+      var faces = {};
+      sc.querySelectorAll('.hav[data-act="havtalk"], [data-act="havtalk"]').forEach(function (f) { var id = f.dataset.id || ''; faces[id.split('|')[0]] = id; });
+      var seen = {};
+      sc.querySelectorAll('[data-act]').forEach(function (b) {
+        if (b.offsetParent === null || b.classList.contains('hav')) return;
+        // 臉本身（沒字、或只有狀態小字）不藏
+        if (b.querySelector('svg, canvas, .bf, [class*="face"]') && b.textContent.trim().length < 4) return;
+        var a = b.dataset.act, id = b.dataset.id || '', hide = false;
+        if (CHATONLY[a]) {
+          // ai：id 結尾是「||」才是單純開聊天；ydq＝問大器
+          var who = a === 'ydq' ? 'daqi' : id.split('|')[0];
+          if (faces[who] && (a === 'ydq' || /\|\|$/.test(id))) hide = true;
+        }
+        if (a === 'ydhand' && /^baba\|/.test(id) && sc.querySelector('.babacf, .babaf')) hide = true;
+        if (!hide && (a === 'sheet' || a === 'page' || a === 'ai' || a === 'open' || a === 'pcsay')) {
+          var key = a + '=' + id;
+          if (seen[key] && b !== seen[key] && !seen[key].contains(b) && !b.contains(seen[key])) hide = true; else seen[key] = b;
+        }
+        if (hide) { b.style.display = 'none'; b.setAttribute('data-zldup', '1'); }
+      });
+    });
+  }
+  var t = 0; new MutationObserver(function (m) {
+    if (m.every(function (x) { return x.type === 'attributes'; })) return;
+    clearTimeout(t); t = setTimeout(run, 100);
+  }).observe(document.documentElement, { childList: true, subtree: true });
+})();
