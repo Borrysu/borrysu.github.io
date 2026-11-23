@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v77';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v78';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -268,7 +268,7 @@ export function mockAdapter(modeStr) {
     async botInbox() { await wait(60); return normInbox({ replies: msgs.filter(m => m.kind === 'bot'), waiting: msgs.filter(m => m.kind === 'user' && m.bot && m.bot !== 'daqi' && !msgs.some(x => x.kind === 'bot' && x.bot === m.bot && x.id > m.id)) }); },
     async say(id, body, bot) { await wait(250); sorry(); bot = bot || 'daqi'; const NM = { daqi: '大器', jiji: '集集', tata: '塔塔', peng: '朋朋', mon: '萌萌', din: '定定', kim: '金金' };
       const m = { id: msgs.length + 1, item_id: id || null, kind: 'user', bot, author: 'Borry', body, created_at: new Date().toISOString() }; msgs.push(m);
-      setTimeout(() => { msgs.push({ id: msgs.length + 1, item_id: id || null, kind: bot === 'daqi' ? 'daqi' : 'bot', bot, author: NM[bot], body: /幫我規劃這件/.test(body) ? '（示範回覆）三步：一、盤點現在用的格式與欄位；二、做成模板並試填一份；三、你看過再定版。要準備：舊的兩份範例。要你決定：模板放哪個雲端資料夾。' : '收到，「' + body.replace(/^［[^］]*］\n?/, '').slice(0, 30) + '」我來處理，好了在這裡跟你說。', created_at: new Date().toISOString() }); ping(); }, 2500); return m; },
+      setTimeout(() => { msgs.push({ id: msgs.length + 1, item_id: id || null, kind: bot === 'daqi' ? 'daqi' : 'bot', bot, author: NM[bot], body: /規劃成步驟卡/.test(body) ? '（示範回覆）\n1. 盤點素材與舊稿｜不指定｜監工本身｜\n2. 寫分鏡第二版｜Opus 5.5｜開子視窗｜mise\n3. 剪試看帶｜Codex｜開子視窗｜splice\n4. 你看過再送客戶｜不指定｜監工本身｜\n要你決定：試看帶要不要配音。' : /幫我規劃這件/.test(body) ? '（示範回覆）三步：一、盤點現在用的格式與欄位；二、做成模板並試填一份；三、你看過再定版。要準備：舊的兩份範例。要你決定：模板放哪個雲端資料夾。' : '收到，「' + body.replace(/^［[^］]*］\n?/, '').slice(0, 30) + '」我來處理，好了在這裡跟你說。', created_at: new Date().toISOString() }); ping(); }, 2500); return m; },
     async todoAdd(title) { await wait(250); sorry(); const r = Object.assign(workRows()[0], { id: 'todo-n' + (++nextN), basket: 'todo', status: 'new', title, source_site: '待辦', folder_status: 'none', folder_path: null, quote_amount: null, signed: null, deposit_amount: null, final_amount: null, payment_terms: '', career: {}, progress_steps: [], run_status: null, progress_note: '', created_at: new Date().toISOString() }); rows.push(r); return normalize(view(r)); },
     async workAdd(title) { await wait(250); sorry(); const r = Object.assign(workRows()[0], { id: 'work-n' + (++nextN), title, quote_amount: null, signed: null, deposit_amount: null, final_amount: null, payment_terms: '', career: {}, progress_steps: [], run_status: null, progress_note: '', is_demo: false, decided_at: new Date().toISOString() }); rows.push(r); return normalize(view(r)); },
     async scanRequest(basket) { await wait(300); sorry(); const b = { funding: 'fund', achievement: 'honor' }[basket] || basket; if (scans[b] && Date.now() - Date.parse(scans[b].requested_at) < 60e3) return { ok: true, throttled: true }; scans[b] = { status: 'sent', requested_at: new Date().toISOString() }; setTimeout(ping, 50); return { ok: true }; },

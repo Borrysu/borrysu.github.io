@@ -1237,3 +1237,4 @@ label.f input:not([type]){width:100%;min-height:48px;padding:10px 12px;border-ra
 .wimg.wbig{width:96px;height:96px;font-size:34px;border-radius:18px}
 .wdh{display:flex;gap:14px;align-items:center;margin:12px 0}
 .fchk{display:flex;align-items:center;gap:10px;min-height:44px}.fchk input{width:22px;height:22px}
+.stplanr .mb{display:inline-flex;align-items:center;gap:6px}

@@ -2485,7 +2485,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v77');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v78');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3408,6 +3408,36 @@ const stSel=v=>`<label class="f">狀態<select class="st-status">${STS.map(([k,l
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('st-status')){const r=t.closest('.strow');if(r)r.dataset.status=t.value}});
 {const _p=pageHTML;pageHTML=function(){const h=_p(),x=(S.page||'').split(':');if(x[0]!=='proj')return h;
  return h.replace(/🧩 步驟卡/,'🧩 編輯每一步').replace(/(<button[^>]*data-id="pd:[^"]*:step"[^>]*aria-expanded="true"[\s\S]*?<\/button>)/,`$1<div class="mrow">${mb('🧩 編輯每一步','sheet','stepx:'+x[1])}</div>`)}}
+/* ---------- v78（2026-11-23）：編輯每一步、編輯案子可以請定定或大器規劃步驟 ----------
+   老大原話：「編輯每一步的部分，編輯卡片的部分我希望定定 大器都可以選，幫忙規劃步驟」
+   步驟卡與編輯案子頂端各兩顆（帶臉）：請定定規劃步驟、請大器規劃步驟。按了打開跟它的對話並送出規劃請求（老大按的才送）。
+   它回了一行一步的清單，對話裡出現「套用成步驟卡」，老大按了才寫入，可復原。 */
+const STEPQ=t=>`幫我把「${t}」規劃成步驟卡。一行一步，格式：步驟｜建議模型（Opus 5.5、Fable 5.2、Codex、AGY、Grok 擇一，不用就寫不指定）｜監工本身或開子視窗｜技能（沒有就空白）。最後一行列出哪裡要我決定。`;
+const stTitle=id=>{const t=todoOf(id);return t?(t.title||(t.raw&&t.raw.title)||''):''};
+const stPlanRow=id=>`<div class="mrow stplanr">${mb(bm('din')+'請定定規劃步驟','stplan','din|'+id)}${mb(bm('daqi')+'請大器規劃步驟','stplan','daqi|'+id)}</div>`;
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');
+ if(a[0]==='stepx'){const id=S.sheet.slice(6);return h.replace(/(<p class="note">一步一張卡[\s\S]*?<\/p>)/,'$1'+stPlanRow(id))}
+ if(a[0]==='pedit'){const id=S.sheet.slice(6);return h.replace(/(<label class="f">案名)/,`<p class="h4">步驟</p>${stPlanRow(id)}<div class="mrow">${mb('🧩 自己編每一步','sheet','stepx:'+id)}</div>$1`)}
+ return h}}
+ACT.stplan=v=>{const [b,id]=v.split('|'),t=stTitle(id);if(!t)return;const ctx='proj:'+id;
+ closeThen(()=>openChat(b,ctx,null,()=>say(b,STEPQ(t),ctx)))};
+// 解析它回的清單
+function parseSteps(txt){const out=[];String(txt||'').split('\n').forEach(l=>{const m=l.match(/^\s*(?:\d+\s*[.、)）:：]|[①-⑳]|[-・•*])\s*(.+)$/);if(!m)return;
+ const p=m[1].split(/[｜|]/).map(s=>s.replace(/\*\*/g,'').trim());const name=p[0].replace(/[：:]\s*$/,'');if(!name||/要我決定|需要你決定/.test(name))return;
+ const mt=(p[1]||'')+' ',model=/fable/i.test(mt)?'Fable 5.2':/opus/i.test(mt)?'Opus 5.5':/codex/i.test(mt)?'Codex':/agy|gemini/i.test(mt)?'AGY':/grok/i.test(mt)?'Grok':'不指定';
+ const mode=/子視窗/.test(p[2]||'')?'開子視窗':'監工本身',sk=(p[3]||'').toLowerCase(),skill=SSKILL.find(x=>sk.includes(x))||'';
+ out.push({name:name.slice(0,80),model,mode,skill,note:'',status:'pending'})});return out.slice(0,30)}
+const lastPlan=b=>{const a=(CH[b]||[]).filter(m=>realBot(b,m));for(let i=a.length-1;i>=0;i--){const s=parseSteps(a[i].t);if(s.length>=2)return s}return null};
+{const _l=logSync;logSync=function(){_l();const on=S.chat,l=$('#clog');if(!on||!l||(on.b!=='din'&&on.b!=='daqi'))return;
+ const a=(on.ctx||'').split(':');if(a[0]!=='proj'||!todoOf(a[1]))return;const st=lastPlan(on.b);if(!st)return;
+ l.insertAdjacentHTML('beforeend',`<div class="cm bot card jplan"><p class="note">${NAMES[on.b]}排了 ${st.length} 步。套用後會換掉這張卡現在的步驟，可以復原。</p><div class="btns">${B('🧩 套用成步驟卡（'+st.length+' 步）','stapply',on.b+'|'+a[1],'pri wide')}</div></div>`);l.scrollTop=l.scrollHeight}}
+ACT.stapply=async v=>{const [b,id]=v.split('|'),it=todoOf(id),c=it&&it.raw,st=lastPlan(b);if(!c||!st)return;
+ if(!LV.api||!LV.api.act){toast('離線中，連上再套用');return}
+ const old=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''})),body=st.map(s=>({name:s.name,status:s.status,note:stepNote(s)}));
+ try{await LV.api.act(id,'steps',{steps:body});await reload();if(S.chat)back();setTimeout(()=>ACT.sheet('stepx:'+id),300);
+  toast(`套用了 ${body.length} 步，可以再改`,async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}
+ catch(e){toast('沒套用：'+LERR(e))}};
+WRITE.push('stapply');
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
