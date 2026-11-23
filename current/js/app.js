@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v85');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v86');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3613,6 +3613,12 @@ function jobOwner(j){const r=j.raw||{},pj=normT(r.project),tt=normT(j.title||r.t
 {const _h=homeL2;homeL2=function(){const h=_h();if(E())return h;const k=h.indexOf('正在跑');if(k<0)return h;
  const a=h.indexOf('<div class="seg jseg"',k),b=h.indexOf('<div class="rows">',k),i=a>-1&&(b<0||a<b)?a:b;if(i<0)return h;
  return h.slice(0,i)+`<p class="note jdef"><b>案子</b>有交付物或客戶的事・<b>交辦</b>你交給 AI 的一件事，可轉成案子或併進案子・<b>工作</b>AI 現在在 Mac 上跑的那一棒</p>`+h.slice(i)}}
+/* ---------- v86（2026-11-23）：監工驗 v85 後收重複 ----------
+   詳情頁主卡已有「編輯每一步」，下面那排只留「✎ 編輯」；交辦詳情已有「步驟卡」清單，舊的「步驟」清單拿掉。 */
+{const _p=pageHTML;pageHTML=function(){const h=_p();if(!/^proj:/.test(S.page||'')||h.indexOf('編輯每一步')===h.lastIndexOf('編輯每一步'))return h;
+ return h.replace(/(<div class="mrow"><button class="mb" data-act="sheet" data-id="pedit:[^"]*">✎ 編輯<\/button>)<button class="mb" data-act="sheet" data-id="stepx:[^"]*">🧩 編輯每一步<\/button>/,'$1')}}
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();if(!/^cview:todo:/.test(S.sheet||'')||h.indexOf('步驟卡</p>')<0)return h;
+ return h.replace(/<section class="sec"><h3>步驟<\/h3>[\s\S]*?<\/section>/,'')}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
