@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v87');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v88');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3084,7 +3084,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   catch(e){bs.forEach(b=>{b.disabled=false;b.textContent=b.closest('#mkBox')?'全部送出':'送出'});toast('沒送出：'+(typeof LERR==='function'?LERR(e):e.message)+'。清單還在，可以再按一次')}}
  const stop=e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()};
  ['pointerdown','mousedown','touchstart'].forEach(ev=>window.addEventListener(ev,e=>{if(!MK.on||mine(e.target))return;if(ev!=='touchstart')e.preventDefault();e.stopPropagation()},{capture:true,passive:false}));
- window.addEventListener('click',e=>{const k=e.target.closest&&e.target.closest('#mkBtn');if(k){stop(e);setOn(!MK.on);return}
+ window.addEventListener('click',e=>{if(window.__mkHit&&window.__mkHit(e)){stop(e);setOn(!MK.on);return}const k=e.target.closest&&e.target.closest('#mkBtn');if(k){stop(e);setOn(!MK.on);return}
   if(!MK.on)return;const m=e.target.closest&&e.target.closest('[data-mk]');
   if(m){stop(e);if(m.disabled)return;const a=m.dataset.mk;
    if(a==='end'){setOn(false);if(MK.list.length)toast(`${MK.list.length} 則還沒送，下次按「編修」接著寫`)}
@@ -3575,7 +3575,7 @@ ACT.pcxcopy=v=>{const [id,i]=v.split('|'),p=DB.proj.find(q=>q.id===id),q=p&&proj
 // 交辦詳情：轉成案子、併到案子
 {const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');
  if(a[0]==='cview'&&a[1]==='todo'){const t=DB.todo.find(q=>q.id===a[2]);if(!t)return h;
-  return h+`<section class="sec"><h3>這件接下來</h3><p class="note">交辦＝你交給 AI 的一件事。有交付物或客戶，轉成案子；本來就是某個案子的一步，併進去。原交辦會收掉，72 小時內可救回。</p><div class="btns">${B('轉成案子','jtoproj',t.id,'pri')}${B('併到案子','sheet','jmerge:'+t.id)}</div></section>`}
+  return h+`<section class="sec"><h3>這件接下來</h3><p class="note">任務＝你要做的一件事。有交付物，升成案子；本來就是某個案子的一步，併進去；AI 做得完就交給 AI。原交辦會收掉，72 小時內可救回。</p><div class="btns">${B('轉成案子','jtoproj',t.id,'pri')}${B('併到案子','sheet','jmerge:'+t.id)}</div></section>`}
  if(a[0]==='hjob'){const j=jobs().find(q=>q.id===a.slice(1).join(':')),o=j&&jobOwner(j);
   return o?h+`<div class="mrow">${mb('屬於〈'+esc(clip(o.name,18))+'〉 ›',o.k==='proj'?'page':'sheet',o.k==='proj'?'proj:'+o.id:'cview:todo:'+o.id)}</div>`:h}
  if(a[0]==='jmerge'){const id=a[1],t=DB.todo.find(q=>q.id===id);if(!t)return shHead('這件交辦不在了');
@@ -3612,7 +3612,7 @@ function jobOwner(j){const r=j.raw||{},pj=normT(r.project),tt=normT(j.title||r.t
   return s.replace('</span></div></div>','</span></div>'+own+'</div>')}).join('<div class="rowi" data-card="')}}
 {const _h=homeL2;homeL2=function(){const h=_h();if(E())return h;const k=h.indexOf('正在跑');if(k<0)return h;
  const a=h.indexOf('<div class="seg jseg"',k),b=h.indexOf('<div class="rows">',k),i=a>-1&&(b<0||a<b)?a:b;if(i<0)return h;
- return h.slice(0,i)+`<p class="note jdef"><b>案子</b>有交付物或客戶的事・<b>交辦</b>你交給 AI 的一件事，可轉成案子或併進案子・<b>工作</b>AI 現在在 Mac 上跑的那一棒</p>`+h.slice(i)}}
+ return h.slice(0,i)+`<p class="note jdef"><b>案子</b>有交付物或客戶的事・<b>任務</b>你要做的一件事（自己收到的或交給 AI 的），可交給 AI 做、併進案子或升成案子・<b>工作</b>AI 現在在 Mac 上跑的那一棒</p>`+h.slice(i)}}
 /* ---------- v86（2026-11-23）：監工驗 v85 後收重複 ----------
    詳情頁主卡已有「編輯每一步」，下面那排只留「✎ 編輯」；交辦詳情已有「步驟卡」清單，舊的「步驟」清單拿掉。 */
 {const _p=pageHTML;pageHTML=function(){const h=_p();if(!/^proj:/.test(S.page||'')||h.indexOf('編輯每一步')===h.lastIndexOf('編輯每一步'))return h;
@@ -3633,6 +3633,47 @@ let PREFILL=0;
    const out=[];let keep=false;(ms||[]).forEach(x=>{if(x.kind==='user')keep=String(x.body||'').indexOf(nm)>-1;if(keep)out.push(x)});return out}}
  if(typeof auto==='function'){const a=auto;auto=function(){PREFILL=1;try{return a.apply(this,arguments)}finally{PREFILL=0}}}
  return _o.call(this,b,ctx,el,auto)}}
+/* ---------- v88（2026-11-23）：卡片打開時，上面那顆「編修」也按得到 ----------
+   老大：「編修扭 卡片裡面按不到！」原因：彈出卡打開時上面那排被半透明遮罩蓋住，點「編修」其實點到遮罩，卡片就關了。
+   改成：遮罩蓋著時，點在「編修」那顆的位置，一樣切換編修模式，卡片不關。 */
+{const hit=e=>{if(!(S.sheet||S.page))return false;const k=$('#mkBtn');if(!k)return false;const r=k.getBoundingClientRect();if(!r.width)return false;
+  const x=e.clientX,y=e.clientY;if(x==null)return false;if(x<r.left||x>r.right||y<r.top||y>r.bottom)return false;
+  const t=document.elementFromPoint(x,y);return !(t&&(t===k||k.contains(t)))};
+ ['pointerdown','mousedown','touchstart','pointerup','mouseup'].forEach(ev=>window.addEventListener(ev,e=>{const q=e.touches&&e.touches[0]||e;if(hit(q)){e.preventDefault&&ev!=='touchstart'&&e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()}},{capture:true,passive:false}));
+ window.__mkHit=hit}
+/* ---------- v88b（2026-11-23）：交辦可以變工作、轉公司案子，大器先給建議 ----------
+   老大：「然後交辦的內容也要有變成工作，或併入目前某案子的卡片的功能（要自己評估），我會有公司交派任務，那這樣歸去哪？」
+   交辦詳情「這件接下來」改成：最上面一行大器的建議（依標題比對：像某個進行中的案子就建議併進去；提到公司、客戶就建議轉公司案子；有交付物就轉個人案子；其他交給 AI 做），下面四顆：交給 AI 做（變成工作）、併到案子、轉成案子、轉成公司案子。公司交派的任務＝轉成公司案子，在案子房間標「公司」。 */
+const CO_RE=/公司|好咖|肉咖|客戶|業主|老闆|主管|報價|交片|巴西/,DELIV_RE=/剪|拍|企劃|提案|劇本|分鏡|交付|交件|影片|設計/;
+function jSuggest(t){const ti=String(t.title||'');const L=DB.proj.filter(p=>p.raw&&p.raw.id&&['doing','delivered'].includes(p.raw.status));
+ const m=L.map(p=>{const keys=[p.short,(p.raw&&p.raw.shortTitle)||'',String(p.title||'').split(/[\s｜|：:（(]/)[0]].filter(k=>k&&k.length>=2);return {p,hit:keys.some(k=>ti.includes(k))}}).find(x=>x.hit);
+ if(m)return {k:'merge',p:m.p,why:`標題提到「${clip(m.p.short||m.p.title,12)}」，看起來是這個案子的一步`};
+ if(CO_RE.test(ti))return {k:'co',why:'提到公司或客戶，歸成公司案子比較好追'};
+ if(DELIV_RE.test(ti))return {k:'proj',why:'有交付物，轉成案子才看得到步驟和期限'};
+ return {k:'run',why:'這件 AI 自己做得完，直接交給 AI 做，進度會回到這張卡'}}
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');if(a[0]!=='cview'||a[1]!=='todo')return h;const t=DB.todo.find(q=>q.id===a[2]);if(!t)return h;
+ const g=jSuggest(t),lab={merge:'併到〈'+(g.p?clip(g.p.short||g.p.title,10):'')+'〉',co:'轉成公司案子',proj:'轉成案子',run:'交給 AI 做'}[g.k];
+ const act={merge:['jmergeto',t.id+'|'+(g.p&&g.p.id)],co:['jtoco',t.id],proj:['jtoproj',t.id],run:['jtorun',t.id]}[g.k];
+ const sec=`<section class="sec jnext"><h3>這件接下來</h3><div class="card jsug">${bm('daqi')}<div><p><b>大器建議：${esc(lab)}</b></p><p class="note">${esc(g.why)}</p></div></div><div class="btns">${B(esc(lab),act[0],act[1],'pri wide')}</div><div class="ydmore">${t.run?'':B('交給 AI 做（變成工作）','jtorun',t.id)}${B('併到案子','sheet','jmerge:'+t.id)}${B('轉成案子','jtoproj',t.id)}${B('轉成公司案子','jtoco',t.id)}</div><p class="note">公司交派的任務選「轉成公司案子」，放在案子房間、標「公司」。原交辦會收掉，72 小時內可救回。</p></section>`;
+ return h.replace(/<section class="sec"><h3>這件接下來<\/h3>[\s\S]*?<\/section>/,sec)}}
+ACT.jtorun=id=>{const t=DB.todo.find(q=>q.id===id);if(!t)return;if(t.run){toast('這件已經在跑了');return}closeThen(()=>projDo(id,'run',null,'交給 AI 做了：Mac 開視窗跑，進度回到這張卡'))};
+ACT.jtoco=id=>{const t=DB.todo.find(q=>q.id===id),c=t&&t.raw;if(!c||!LV.api||!LV.api.workAdd){toast('離線中，連上再轉');return}
+ closeThen(async()=>{let n=null;try{n=await LV.api.workAdd(String(c.title||'公司案子').slice(0,120),'company');if(!n||!n.id)throw new Error('案子沒建起來');
+  const why=WHYOF(c).trim();if(why&&LV.api.cardEdit)await LV.api.cardEdit(n.id,{why});const stp=jSnap(c);if(stp.length)await LV.api.act(n.id,'steps',{steps:stp})}
+  catch(e){toast('沒轉成：'+LERR(e));await reload();return}
+  let dropped=true;try{await jDrop(id)}catch(e){dropped=false;toast('公司案子建好了，但原交辦沒收掉（'+LERR(e)+'），請到交辦的「⋯」刪掉')}
+  await reload();if(DB.proj.find(q=>q.id===n.id))setTimeout(()=>ACT.page('proj:'+n.id),150);
+  if(dropped)toast('轉成公司案子了，原交辦收掉',async()=>{try{await jDrop(n.id);await jRestore(id);await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})})};
+WRITE.push('jtorun','jtoco');
+/* ---------- v88c（2026-11-23）：「交辦」改叫「任務」 ----------
+   老大：「我收到的內容很可能不一定跟公司有關，應該是說我收到的要做的類似待辦吧？還是任務？」→ 統一叫「任務」：你要做的一件事，自己收到的或交給 AI 的都算。
+   畫面上的字統一換（資料與程式內部名稱不動）；公司交派的任務一樣是任務，要追交付物就升成案子，選公司。 */
+const REN=s=>s.indexOf('交辦')<0?s:s.replace(/交辦/g,'任務');
+function renameIn(root){if(!root)return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){if(n.nodeValue.indexOf('交辦')>-1)n.nodeValue=REN(n.nodeValue)}
+ root.querySelectorAll('[placeholder*="交辦"],[aria-label*="交辦"]').forEach(e=>{['placeholder','aria-label'].forEach(a=>{const v=e.getAttribute(a);if(v)e.setAttribute(a,REN(v))})})}
+{const _r=render;render=function(d){_r(d);['#view','#sheet','#page','#chat','#dock','#tabs'].forEach(q=>renameIn($(q)))}}
+{const _t=toast;toast=function(m,fn){return _t(REN(String(m||'')),fn)}}
+new MutationObserver(ms=>{ms.forEach(m=>m.addedNodes.forEach(x=>{if(x.nodeType===1)renameIn(x);else if(x.nodeType===3&&x.nodeValue.indexOf('交辦')>-1)x.nodeValue=REN(x.nodeValue)}))}).observe(document.getElementById('app'),{childList:true,subtree:true});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

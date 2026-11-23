@@ -135,7 +135,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v87');
+  const { mockAdapter } = await import('./mock.js?v88');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -321,7 +321,7 @@ function liveAdapter() {
     async hubAnswer(id, k, note) { const r = await rpc(R.hubAnswer, { p_id: id, p_answer_key: k, p_note: note || null }, 0, W); if (k) wake({ act: 'decided' }); return r; },
     async macAct(p) { return macAct(p); },   // 403＝這把金鑰不能替 Borry 回答，不清金鑰
     async todoAdd(title, note) { return card(await rpc(R.todoAdd, { p_title: title, p_note: note || null })); },
-    async workAdd(title) { return card(await rpc(R.workAdd, { p_title: title }, 0, W)); },
+    async workAdd(title, basket) { return card(await rpc(R.workAdd, basket ? { p_title: title, p_basket: basket } : { p_title: title }, 0, W)); },
     async scanRequest(basket) { return rpc(R.scanRequest, { p_basket: BACK_BASKET[basket] || basket }); },   // 立即掃描：留單給集集
     async scanStatus() { return normScan(await rpc(R.scanStatus, {})); },
     async archive(q, year) {   // 封存區：結案與作廢的案子
