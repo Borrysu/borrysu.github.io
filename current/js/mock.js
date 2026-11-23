@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v94';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v95';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -127,6 +127,7 @@ function workRows() {
     base({ id: 'todo-1', status: 'new', basket: 'todo', title: '建一個報價單產生器（示意）', why: '每次報價都要重打，想要填幾個欄位就出 PDF。', source_site: '待辦', folder_status: 'none', folder_path: null }),
     base({ id: 'todo-2', status: 'doing', basket: 'todo', title: '把 IG 貼文排程接上 Notion（示意）', source_site: '待辦', folder_status: 'none', folder_path: null, run_status: 'running',
       progress_steps: [{ name: '查 IG API 能不能排程', status: 'done', note: '〔模型：AGY｜技能：intake〕' }, { name: '寫串接', status: 'current', note: '〔模型：Opus 5.5｜方式：開子視窗｜技能：handy〕' }, { name: '測一篇', status: 'pending' }], run_note: '開跑了，子視窗：【機會雷達】IG 排程接 Notion', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 20 * 60e3).toISOString() }),
+    base({ id: 'todo-4', status: 'new', basket: 'todo', title: '在 Threads 發一則新片預告貼文（示意）', why: '用新片海報，配一句話。', source_site: '待辦', folder_status: 'none', folder_path: null }),
     base({ id: 'todo-3', status: 'doing', basket: 'todo', title: '申請示意平台的開發者帳號（示意）', source_site: '待辦', folder_status: 'none', folder_path: null, run_status: 'queued',
       progress_steps: [{ name: '查申請條件', status: 'done', note: '〔模型：Opus 5.5〕' }, { name: '老大申請帳號', status: 'current' }], progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }),
     base({ id: 'work-gone', status: 'dropped', drop_reason: 'skipped', title: '婚禮紀錄側拍（示意）', folder_status: 'none', folder_path: null, source_site: '接案城', drop_note: '日期跟另一案撞期' }),
@@ -177,6 +178,9 @@ export function mockAdapter(modeStr) {
   hub.events.push({ id: 3, at: new Date(Date.now() - 7 * H).toISOString(), actor: '大器（Claude）', project: '某品牌形象短片導演（示意）', summary: '分鏡第二版 PDF 輸出好了，放在內審資料夾。', path: '/Users/me/案子/11-10_某品牌短片/內審/1124_分鏡v2.pdf' });
   hub.answered.push({ id: 'h5', project: '某品牌形象短片（示意）', question: '拍攝日要不要先訂 12/3', kind: 'choice', asked_by: '大器', origin: '大器', created_at: new Date(Date.now() - D).toISOString(), options: [{ key: 'ok', label: '先訂 12/3' }], status: 'answered', answer_key: 'ok', answer_label: '先訂 12/3', answer_note: '', answered_at: new Date(Date.now() - 6 * H).toISOString(), picked_up_at: new Date(Date.now() - 5 * H).toISOString() });
   hub.jobs.push({ id: 'j6', agent: '老大', machine: 'Borry 的 MacBook', title: '拍板後續｜拍攝日先訂 12/3', status: 'waiting_you', source_key: 'dec-h5', ask: '打給場地確認 12/3 有空', note: '決定 h5｜老大選「先訂 12/3」｜場地要你本人打電話。\n場地資料在 Notion 案子頁\n確認後回「我做好了」，大器接著排通告', updated_at: new Date(Date.now() - 2 * H).toISOString() });
+  // 2026-11-24 v95 示範：來源行白話、英文機器人名換中文、交給霸霸（虛構人名與網址）
+  hub.jobs.push({ id: 'j10', agent: '大器（Claude）', machine: 'Mac', project: '示範活動（示意）', title: '小林在群組丟的活動要不要報', status: 'waiting_you', ask: '看示範市集活動，決定要不要報名', note: '來源：示範群 小林 11/21 01:01「12/8 https://example.org/organize/demo-market 示範市集報名」\n報名到 12/1', updated_at: new Date(Date.now() - 40 * 60e3).toISOString() });
+  hub.jobs.push({ id: 'j11', agent: 'Gig Gig', machine: 'Gig Gig 的電腦', project: '機會雷達', title: '掃創作補助新公告', status: 'running', note: '進度：Gig Gig 讀完 3 份公告，Kim Kim 在對預算', updated_at: new Date(Date.now() - 8 * 60e3).toISOString() });
   // 2026-11-24 v94 示範：網址預覽與「讀不到」換路（虛構網址與內容）
   hub.jobs.push({ id: 'j7', agent: '大器（Claude）', machine: 'Mac', project: '示範工作坊（示意）', title: '看活動頁決定要不要報名', status: 'waiting_you', ask: '看示範工作坊活動頁，決定要不要報名', note: '活動頁：https://example.org/events/demo-workshop\n群組裡的報名表 PDF 大器讀不到（附件打不開）\n想去的話回「我做好了」，大器接著幫你報名', updated_at: new Date(Date.now() - 15 * 60e3).toISOString() });
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }
@@ -325,6 +329,7 @@ export function mockAdapter(modeStr) {
           if (!((r.status === 'delivered' && to === 'doing') || (r.status === 'paid' && to === 'delivered') || r.status === to)) throw new AdapterError('state', 'cannot go from ' + r.status + ' to ' + to, 400);
           if (r.status !== to) { r.status = to; r.paid_at = null; if (to === 'doing') r.delivered_at = null; } break; }
         case 'tdone': if (o.done !== false) { r.status = 'closed'; r.close_result = 'won'; r.closed_at = new Date().toISOString(); } else { r.status = 'new'; r.close_result = null; r.closed_at = null; } break;
+        case 'blocker': r.progress_blocker = o.text || null; r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'runset': r.run_status = o.status; r.run_note = o.note || ''; r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'steps': r.progress_steps = (o.steps || []).map(x => ({ name: x.name, status: x.status, note: x.note || '' })); r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'close': if (!['doing', 'delivered', 'paid', 'closed'].includes(r.status)) throw new AdapterError('state', 'card is ' + r.status, 400); r.status = 'closed'; r.close_result = o.result; r.closed_at = new Date().toISOString(); break;

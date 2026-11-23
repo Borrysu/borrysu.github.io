@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v94');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v95');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4049,6 +4049,99 @@ ACT.reroute=async key=>{const i=key.indexOf(':'),t=key.slice(0,i),id=key.slice(i
  RRS[key]=Date.now();render('keep');
  try{await LV.api.say(o.item,body,'daqi');toast('交給大器換路了，拿到會寫回這張卡')}catch(e){delete RRS[key];render('keep');toast('沒送出：'+LERR(e))}};
 WRITE.push('reroute');
+/* ---------- v95（2026-11-24）：首頁減重、任務去向加霸霸、來源白話、按鈕統一、中文機器人名、卡點可處理 ----------
+   老大原話（逐流「編修」，2026-11-23）：
+   msg 394「我覺得如果偷拍完了的話，這一個格子可能就要低調一點，不然他空在那邊好礙眼」「不曉得為什麼就覺得今天行程這個樣子顯示好像有一點太大塊了，會有點阻礙，我看整體」
+   msg 398「當然也有霸霸可以選」「我的意思是說 跟定定 大器規劃 霸霸是轉告適合機器人去執行或者他自己去執行 會有這個差別，是因為有一些事情大器都不做」「這到底啥」
+   msg 400「去執行 跟變成工作 差別在哪裡？」　msg 407「現在都換成中文名字囉，我說機器人」
+   msg 410「這個描述我整個無法更動也無法進行處理這樣在這裡這樣很不舒服」 */
+// 1 首頁：都拍完了縮成一行小字；今天行程一行一件、最多 3 件
+{const _h=homeL2;homeL2=function(){return _h().replace(/<section class="card" style="margin-top:14px"><h3>都拍完了<\/h3>(?:<p>[^<]*<\/p>)?<\/section>/,`<p class="dnone">✓ 都拍完了，沒有等你決定的事</p>`)}}
+todayStrip=function(){if(S.st==='loading'||S.st==='error')return '';if(S.tab==='today')calKick();
+ const a=calAll().filter(e=>e.d===0&&!e.cancel),ago=calAgo();
+ const row=e=>`<button class="tdi" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${e.all?'全天':esc(e.t)}</span><b>${esc(e.n)}</b>${e.place?`<small>${esc(e.place)}</small>`:''}<i class="tdd" style="--cc:${e.src==='co'?'var(--ink2)':(e.cat&&CAT[e.cat]?CAT[e.cat][1]:'var(--ink2)')}" aria-label="${e.src==='co'?'公司':'個人'}"></i></button>`;
+ return `<section class="sec tday v95"><div class="tdh"><h2>今天行程<small>${a.length?a.length+' 件':'沒有行程'}</small></h2><span class="tdh-r">${mb('＋ 新增','sheet','calnew')}${moreB('看全部','page','cal')}</span></div>${a.length?`<div class="tdl">${a.slice(0,3).map(row).join('')}</div>${a.length>3?`<button class="tdm" data-act="page" data-id="cal">還有 ${a.length-3} 件 ›</button>`:''}`:''}${ago?`<p class="tdu">行事曆 ${esc(ago)}更新${mb('↻','calnow','',' aria-label="現在更新"')}</p>`:''}</section>`};
+
+// 2 任務去向：先想清楚（定定、大器規劃）／交出去做（交給大器做、交給霸霸）
+const BABA_RE=/Grok|社群|發文|貼文|發一則|\bIG\b|Instagram|Threads|臉書|\bFB\b|推特|生圖|出圖|畫一張|找人|找演員|找攝影|聯絡|打給|詢價|比價|下單|代買|訂位|訂票/i;
+function jSug95(t){const g=jSuggest(t);if(g.k==='merge')return g;if(BABA_RE.test(String(t.title||'')+' '+String((t.raw&&t.raw.why)||'')))return {k:'baba',why:'這類事大器不做（要用 Grok Bot 帳號、對外發、生圖或找人），交給霸霸轉給適合的機器人，或它自己做'};return g}
+const JLAB=(g)=>({merge:'併到〈'+(g.p?clip(g.p.short||g.p.title,10):'')+'〉',co:'轉成公司案子',proj:'轉成案子',run:'交給大器做',baba:'交給霸霸'}[g.k]);
+{const _s=sheetHTML;sheetHTML=function(){let h=_s();const m=/^cview:todo:(.+)$/.exec(S.sheet||'');if(!m)return h;const id=m[1],t=DB.todo.find(q=>q.id===id);if(!t)return h;
+ const c=t.raw||{},g=jSug95(t),lab=JLAB(g);
+ const act={merge:['jmergeto',t.id+'|'+(g.p&&g.p.id)],co:['jtoco',t.id],proj:['jtoproj',t.id],run:['jtorun',t.id],baba:['jtobaba',t.id]}[g.k];
+ const run=!!t.run||!!c.runStatus,who=/【霸霸】/.test(c.runNote||'')?'霸霸':'大器';
+ const think=`<div class="jgrp"><span class="jgrp-h">先想清楚</span><div class="jgrp-b">${mb(bm('din')+'跟定定規劃','ai','din|proj:'+id+'||')}${mb(bm('daqi')+'跟大器規劃','ai','daqi|proj:'+id+'||')}</div></div>`;
+ const doit=`<div class="jgrp"><span class="jgrp-h">交出去做</span><div class="jgrp-b">${run?`<span class="jgrp-on">${ic('play')}已交給${who}，進度會寫回這張卡</span>`:mb(bm('daqi')+'交給大器做','jtorun',id)+mb(bm('baba')+'交給霸霸','jtobaba',id)}</div><p class="jgrp-n">大器在 Mac 開視窗做；大器不做的事（Grok Bot 帳號、社群發文、生圖、找人）交給霸霸，它轉給適合的機器人或自己做。</p></div>`;
+ const alt=[mb(ic('folder')+(g.k==='merge'?'併到別的案子':'併到案子'),'sheet','jmerge:'+id),g.k!=='proj'?mb(ic('steps')+'轉成案子','jtoproj',id):'',g.k!=='co'?mb(ic('team')+'轉成公司案子','jtoco',id):''].filter(Boolean);
+ const sug=(run&&(g.k==='run'||g.k==='baba'))?'':`<button class="card jsug jsugb" data-act="${act[0]}" data-id="${esc(act[1])}" aria-label="照大器建議：${esc(lab)}">${bm(g.k==='baba'?'baba':'daqi')}<span class="jsug-t"><small>大器建議・點這張照做</small><b>${esc(lab)}</b><span class="jsug-w">${esc(g.why)}</span></span><span class="jsug-go" aria-hidden="true">${ic('arrow')}</span></button>`;
+ const sec=`<section class="sec jnext v95"><h3>這件接下來</h3>${sug}${think}${doit}<div class="jalt"><span class="jalt-h">或改成</span>${alt.join('')}</div><p class="note">轉成或併到案子時，原任務會收掉，72 小時內可救回。</p></section>`;
+ h=h.replace(/<div class="mrow"><button class="mb" data-act="ai" data-id="din\|proj:[^"]*">[\s\S]*?<\/button><button class="mb" data-act="ai" data-id="daqi\|proj:[^"]*">[\s\S]*?<\/button><\/div>/,'')
+  .replace(/<button class="mb" data-act="run" data-id="[^"]*">▶ 去執行<\/button>/,'');
+ return h.replace(/<section class="sec jnext v94">[\s\S]*?<\/section>/,sec)}}
+// 3 去執行＝變成工作＝交給大器做：同一條路
+{const _r=ACT.run;ACT.run=id=>DB.todo.find(q=>q.id===id)?ACT.jtorun(id):_r(id)}
+ACT.jtobaba=id=>{const t=DB.todo.find(q=>q.id===id),c=t&&t.raw;if(!c)return;if(t.run||c.runStatus){toast('這件已經交出去了');return}
+ if(!LV.api||!LV.api.say||!LV.api.act){toast('離線中，連上再按');return}
+ const why=String(WHYOF(c)||'').trim(),body=`【請霸霸轉派】${clip(String(c.title||'這件'),80)}${why?'\n說明：'+clip(why,300):''}\n卡片：item ${id}\n大器不做這類事。請用 call-baba.sh 交給霸霸：霸霸判斷交給哪隻機器人（或自己做），做完把結果寫回這張卡；要花錢、對外發布的先問老大。`;
+ closeThen(async()=>{try{await LV.api.say(id,body,'daqi')}catch(e){toast('沒送出：'+LERR(e));return}
+  try{const n=await LV.api.act(id,'runset',{status:'running',note:'【霸霸】轉派中，等霸霸回報'});const i=LV.items.findIndex(x=>x.id===id);if(n&&i>-1)LV.items[i]=n;LV.sig='';paint()}catch(e){}
+  toast('交給霸霸了，進度會寫回這張卡');reload()})};
+WRITE.push('jtobaba');
+
+// 5 機器人中文名、按鈕用詞：畫面層統一換（不改上百個呼叫點）
+const ZHN={gig:'集集',tal:'塔塔',pom:'朋朋',mon:'萌萌',din:'定定',kim:'金金',bot:'霸霸',pix:'皮皮',tom:'通通',zap:'渣渣',dom:'當當',zom:'鬆鬆',bon:'幫幫'};
+const ZH_RE=/\b(Gig|Tal|Pom|Mon|Din|Kim|Bot|Pix|Tom|Zap|Dom|Zom|Bon) ?\1\b(?:\s*[（(](集集|塔塔|朋朋|萌萌|定定|金金|霸霸|皮皮|通通|渣渣|當當|鬆鬆|幫幫)[）)])?/gi;
+const CJK=/[　-〿一-鿿＀-￯]/;
+function zhName(s){if(s==null)return s;s=String(s);if(!/(Gig|Tal|Pom|Mon|Din|Kim|Bot|Pix|Tom|Zap|Dom|Zom|Bon) ?\1/i.test(s))return s;
+ return s.replace(ZH_RE,(m,a,cn,off,all)=>{const zh=ZHN[a.toLowerCase()];return zh}).replace(/([一-鿿，。：「]) (集集|塔塔|朋朋|萌萌|定定|金金|霸霸|皮皮|通通|渣渣|當當|鬆鬆|幫幫)/g,'$1$2').replace(/(集集|塔塔|朋朋|萌萌|定定|金金|霸霸|皮皮|通通|渣渣|當當|鬆鬆|幫幫) (?=[一-鿿，。：])/g,'$1')}
+window.zhName=zhName;
+Object.assign(WHN,{'Bot Bot':'霸霸','Din Din':'定定','Mon Mon':'萌萌','Zom Zom':'鬆鬆','Pix Pix':'皮皮','Zap Zap':'渣渣','Dom Dom':'當當','Bon Bon':'幫幫'});
+const WORDX=[[/交給 AI 做（變成工作）/g,'交給大器做'],[/交給 AI 做/g,'交給大器做'],[/去執行/g,'交給大器做']];
+// 6 來源那行：白話一句＋可展開原文
+const SRC_RE=/來源：\s*(\S+)\s+(\S+)\s+(\d{1,2}\/\d{1,2})(?:\s+\d{1,2}:\d{2})?\s*「([^」]*)」?/;
+function siteName(u){let h='';try{h=new URL(String(u).replace(/[…⋯]+$/,'')).hostname.replace(/^www\./,'')}catch(e){return '網頁'}
+ const M=[[/accupass/,'Accupass 活動通'],[/kktix/,'KKTIX'],[/facebook|fb\.(com|me)/,'Facebook'],[/instagram/,'Instagram'],[/youtu/,'YouTube'],[/forms\.gle|docs\.google\.com\/forms/,'Google 表單'],[/docs\.google/,'Google 文件'],[/drive\.google/,'Google 雲端硬碟'],[/notion/,'Notion'],[/line\.me/,'LINE'],[/threads/,'Threads'],[/^(x|twitter)\.com/,'X'],[/beclass/,'BeClass'],[/surveycake/,'SurveyCake']];
+ const f=M.find(x=>x[0].test(h));return f?f[1]:h}
+function srcSay(m){const [,grp,who,date,q]=m;const us=q.match(/https?:\/\/[^\s」]+/g)||[];let txt=q.replace(/https?:\/\/[^\s」]+/g,' ').replace(/[…⋯]+/g,'').replace(/\s+/g,' ').trim();
+ const site=us.length?siteName(us[0]):'';const sum=txt&&site?`${txt}（附 ${site} 連結）`:txt||(site?`${site} 連結`:'（沒有內容）');
+ return {line:`${zhName(who)} ${date} 在${grp}說：${clip(sum,48)}`,orig:q}}
+function textSwap(root){if(!root||!root.querySelectorAll)return;const SKIP=/^(TEXTAREA|INPUT|SCRIPT|STYLE|SELECT)$/;
+ const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentNode;if(!p||SKIP.test(p.nodeName)||(p.closest&&p.closest('.srcw,[contenteditable="true"]')))return NodeFilter.FILTER_REJECT;const v=n.nodeValue;return /(Gig|Tal|Pom|Mon|Din|Kim|Bot|Pix|Tom|Zap|Dom|Zom|Bon) ?\1|去執行|交給 AI 做|來源：/i.test(v)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_SKIP}});
+ const ns=[];while(w.nextNode())ns.push(w.currentNode);
+ ns.forEach(n=>{let v=n.nodeValue;const sm=n.parentNode.closest&&n.parentNode.closest('#sheet,#page')?SRC_RE.exec(v):null;
+  if(sm){const o=srcSay(sm),pre=v.slice(0,sm.index).replace(/來源：\s*$/,''),post=v.slice(sm.index+sm[0].length);const box=document.createElement('span');box.className='srcw';
+   box.innerHTML=`<span class="srcw-t">${esc(o.line)}</span><button type="button" class="srcx" aria-expanded="false">看原文</button><span class="srco" hidden>${esc(o.orig)}</span>`;
+   const f=document.createDocumentFragment();if(pre)f.appendChild(document.createTextNode(zhName(pre)));f.appendChild(box);if(post)f.appendChild(document.createTextNode(zhName(post)));n.parentNode.replaceChild(f,n);return}
+  let x=zhName(v);if(n.parentNode.closest&&n.parentNode.closest('button,.mb,.btn,.note,p,small,.jsug-t'))WORDX.forEach(([r,t])=>{x=x.replace(r,t)});if(x!==v)n.nodeValue=x});
+ root.querySelectorAll('[aria-label],[title]').forEach(e=>['aria-label','title'].forEach(a=>{const v=e.getAttribute(a);if(v&&/(Gig|Tal|Pom|Mon|Din|Kim|Bot) ?\1|去執行|交給 AI 做/i.test(v)){let x=zhName(v);WORDX.forEach(([r,t])=>{x=x.replace(r,t)});e.setAttribute(a,x)}}))}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.srcx');if(!b)return;e.stopPropagation();const o=b.nextElementSibling;if(!o)return;const on=o.hidden;o.hidden=!on;b.setAttribute('aria-expanded',String(on));b.textContent=on?'收起原文':'看原文'},true);
+{const _r=render;render=function(d){_r(d);textSwap(document.getElementById('app'))}}
+{const _t=toast;toast=function(msg,fn){return _t(typeof msg==='string'?zhName(msg).replace(/交給 AI 做/g,'交給大器做'):msg,fn)}}
+new MutationObserver(ms=>{ms.forEach(m=>m.addedNodes.forEach(x=>{if(x.nodeType===1)textSwap(x);else if(x.nodeType===3&&x.parentNode&&x.parentNode.nodeType===1)textSwap(x.parentNode)}))}).observe(document.body,{childList:true,subtree:true});
+
+// 7 卡點：可改、可交給大器、可清掉
+const BLKS={};
+function blkCard(id){const p=DB.proj.find(x=>x.id===id),c=p&&p.raw;return c&&c.progressBlocker?c:null}
+{const _p=pageHTML;pageHTML=function(){const h=_p(),m=/^proj:(.+)$/.exec(S.page||'');if(!m)return h;const id=m[1],c=blkCard(id);if(!c)return h;
+ const sent=BLKS[id]&&Date.now()-BLKS[id]<30*60e3;
+ const box=`<section class="blkx"><p class="blkx-h">▲ 卡在這裡</p><p class="blkx-t">${esc(c.progressBlocker)}</p>${sent?`<p class="blkx-ok">${ic('check')}已交給大器處理，解掉會清掉這條並寫回進度</p>`:''}<div class="blkx-a">${B('✎ 改','sheet','blkedit:'+id,'sm')}${sent?'':B(bm('daqi')+'交給大器處理','blkhand',id,'sm')}${B('✓ 我處理好了','blkdone',id,'sm')}</div></section>`;
+ let x=h.replace(/<div><dt>卡在哪<\/dt><dd>[\s\S]*?<\/dd><\/div>/,'');const i=x.indexOf('<dl class="pk">'),j=i<0?-1:x.indexOf('</dl>',i);
+ return j<0?x.replace(/(<h1 class="pt">[\s\S]*?<\/h1>)/,'$1'+box):x.slice(0,j+5)+box+x.slice(j+5)}}
+{const _s=sheetHTML;sheetHTML=function(){const m=/^blkedit:(.+)$/.exec(S.sheet||'');if(!m)return _s();const c=blkCard(m[1]);if(!c)return shHead('這條卡點已經清掉了');
+ return shHead('改卡點')+`<p class="note">寫現在卡在哪。清空就等於沒有卡住。</p><textarea id="blkIn" class="blkin" rows="3" aria-label="卡點">${esc(c.progressBlocker)}</textarea><div class="btns">${B('存好','blksave',m[1],'pri wide')}</div>`}}
+async function blkSet(id,text,msg,undo){const c=LV.items.find(x=>x.id===id);try{const n=await LV.api.act(id,'blocker',{text});const i=LV.items.findIndex(x=>x.id===id);if(n&&i>-1)LV.items[i]=n;LV.sig='';paint();
+  if(!text&&n&&n.progressBlocker){toast('資料庫沒清掉這條，我請大器處理');return}toast(msg,undo);reload()}catch(e){toast('沒有成功：'+LERR(e))}}
+ACT.blksave=id=>{const el=document.getElementById('blkIn'),c=blkCard(id);if(!el||!c)return;const v=el.value.trim(),old=c.progressBlocker;if(v===old){ACT.close&&ACT.close();return}
+ closeThen(()=>blkSet(id,v,v?'卡點改好了':'清掉了，不算卡住',()=>blkSet(id,old,'還原了')))};
+ACT.blkdone=id=>{const c=blkCard(id);if(!c)return;const old=c.progressBlocker;delete BLKS[id];blkSet(id,'','清掉了，不算卡住',()=>blkSet(id,old,'還原了'))};
+ACT.blkhand=async id=>{const c=blkCard(id);if(!c)return;if(!LV.api||!LV.api.say){toast('離線中，連上再按');return}
+ const body=`【卡點處理】${clip(String(c.title||'這個案子'),60)}\n卡在：${c.progressBlocker}\n卡片：item ${id}\n請想辦法解掉（換路、找替代、問對的人）；解掉後清空卡點（opp_progress_set p_blocker 空字串）並寫回進度；需要老大決定或本人做的，開要你做卡。`;
+ BLKS[id]=Date.now();render('keep');
+ try{await LV.api.say(id,body,'daqi')}catch(e){delete BLKS[id];render('keep');toast('沒送出：'+LERR(e));return}
+ try{const n=await LV.api.act(id,'runset',{status:'running',note:'【大器】處理卡點中'});const i=LV.items.findIndex(x=>x.id===id);if(n&&i>-1)LV.items[i]=n;LV.sig='';paint()}catch(e){}
+ toast('交給大器處理了，解掉會寫回這張卡')};
+WRITE.push('blksave','blkdone','blkhand');
+window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
