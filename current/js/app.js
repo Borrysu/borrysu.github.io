@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v102');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v103');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3922,7 +3922,7 @@ ACT.runstop=async id=>{const c=itemOf(id);if(!c||!['queued','running'].includes(
  if(!LV.api||!LV.api.act){toast('離線中，連上再按');return}
  const old={status:c.runStatus,note:c.runNote||''},w=runWho(c);
  const put=nc=>{if(!nc)return;const j=LV.items.findIndex(q=>q.id===id);if(j>-1)LV.items[j]=nc};
- try{put(await LV.api.act(id,'runset',{status:'failed',note:'老大按停止'}))}catch(e){toast('沒停下：'+LERR(e));return}
+ try{put(await LV.api.act(id,'runset',{status:'stopped',note:'老大按停止'}))}catch(e){toast('沒停下：'+LERR(e));return}
  LV.sig='';paint('keep');
  let sent=true;try{await LV.api.say(id,`【停止】老大按了立刻停止。${w.win?'視窗：'+w.win+'。':''}${w.step?'停在第 '+(w.k+1)+' 步：'+w.step+'。':''}請馬上停掉這張卡正在跑的視窗或背景程序，不要再改檔或對外發送，回報停在哪、做到哪。`,'daqi')}catch(e){sent=false}
  toast(sent?'停下了，已叫大器關掉那個視窗':'面板標停止了，但通知大器沒送出，請到對話跟大器說',async()=>{try{put(await LV.api.act(id,'runset',old));LV.sig='';paint('keep');

@@ -958,3 +958,19 @@
   function run() { document.querySelectorAll('.rcbar').forEach(function (r) { if (/^都分好類了/.test(r.textContent.trim())) r.style.display = 'none'; }); }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* 2026-11-24 案子詳情頁：「叫大器處理」的大器臉旁補霸霸臉（逐流 msg 618、575：執行入口都要大器臉＋霸霸臉；停止後要能再派）。點霸霸臉＝projbaba（同案子卡）。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  function add() {
+    var Z = window.__zl; if (!Z || !Z.S || !/^proj:/.test(Z.S.page || '')) return;
+    var id = Z.S.page.slice(5);
+    document.querySelectorAll('#page .aif[data-act="ai"][data-id^="daqi|proj:"]').forEach(function (d) {
+      if (d.nextElementSibling && d.nextElementSibling.classList.contains('babacf')) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'aif babacf'; b.dataset.act = 'projbaba'; b.dataset.id = id; b.setAttribute('aria-label', '交給霸霸推進這個案子');
+      var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true'); b.appendChild(f);
+      d.after(b);
+    });
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
