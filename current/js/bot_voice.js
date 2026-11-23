@@ -778,8 +778,8 @@
   st.textContent = 'html[data-tab="proj"] [data-act="pjplan"][data-id="din"],[data-act="stplan"][data-id^="din|"],' +
     '.cf-r [data-act="ai"][data-id^="din|proj:"],.cf-r [data-act="ai"][data-id^="din|todo"],' +
     '#sheet .jnext [data-id^="din|"],#sheet [data-act="ai"][data-id^="din|proj:"],#page [data-act="ai"][data-id^="din|proj:"]{display:none!important}' +
-    '.babacf{width:40px;height:40px;min-width:40px;padding:0;border:0;background:transparent;display:inline-grid;place-items:center}' +
-    '.babacf .bbf{width:30px;height:30px;display:block;pointer-events:none}.babaf .bbf{width:22px;height:22px;display:inline-block;vertical-align:middle;margin-right:6px;pointer-events:none}';
+    
+    '.babaf .bbf{width:22px;height:22px;display:inline-block;vertical-align:middle;margin-right:6px;pointer-events:none}';
   (document.head || document.documentElement).appendChild(st);
   function face(btn) {
     // 不用 .bm.bf[data-b]：那組 class 會被 app.js faceSync 再掛一次臉，變兩顆疊在一起（msg 572「破圖跑版」）
@@ -795,10 +795,14 @@
       var isProj = !isTodo && (Z.DB.proj || []).some(function (q) { return q.id === id; });
       if (!isTodo && !isProj) return;
       var r = a.querySelector('.cf-r'); if (!r || r.querySelector('.babacf')) return;
-      var b = document.createElement('button'); b.type = 'button'; b.className = 'babacf';
+      // msg 588（老大：「機器人的位置原本的比較好…霸霸的臉太大了那個尺寸跟大家不搭而且他質感不是很好」）：
+      // 改用跟大器臉同一套 .aif＋.bm.bf[data-b]（由 app.js faceSync 掛臉，尺寸質感一致），放在大器臉旁邊、⋯ 前面
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'aif babacf';
       if (isTodo) { b.dataset.act = 'jtobaba'; b.dataset.id = id; b.setAttribute('aria-label', '交給霸霸'); }
       else { b.dataset.act = 'projbaba'; b.dataset.id = id; b.setAttribute('aria-label', '交給霸霸推進這個案子'); }
-      face(b); r.appendChild(b);
+      var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true'); b.appendChild(f);
+      var dq = r.querySelector('[data-act="ai"][data-id^="daqi|"]'), mine = r.querySelector('.mine');
+      if (dq && dq.parentNode === r) dq.after(b); else if (mine && mine.parentNode === r) r.insertBefore(b, mine); else r.appendChild(b);
     });
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
@@ -946,4 +950,11 @@
     b.disabled = false;
   }, true);
   var tm = 0; new MutationObserver(function () { clearTimeout(tm); tm = setTimeout(addPlan, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+/* 2026-11-24 生活例行：都分好了就不顯示「都分好類了／請朋朋重新分」那行（逐流 msg 588，老大：「這行字還有請皮皮重新分都很多餘」）。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  function run() { document.querySelectorAll('.rcbar').forEach(function (r) { if (/^都分好類了/.test(r.textContent.trim())) r.style.display = 'none'; }); }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
