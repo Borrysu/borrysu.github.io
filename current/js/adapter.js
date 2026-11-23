@@ -30,7 +30,7 @@ export const CONFIG = {
   WAKE_URL: 'https://borrys-macbook-pro-16.tail1f7ef7.ts.net/current-wake', WAKE_MS: 3000,
   RPC: { list: 'opp_list', get: 'opp_get', topic: 'get_opp_realtime_topic',
          dive: 'opp_dive', stash: 'opp_stash', unstash: 'opp_unstash', drop: 'opp_drop', restore: 'opp_restore', build: 'opp_build',
-         close: 'opp_close', reopen: 'opp_reopen', archive: 'opp_archive', purge: 'opp_purge',
+         close: 'opp_close', reopen: 'opp_reopen', todoDone: 'opp_todo_done', archive: 'opp_archive', purge: 'opp_purge',
          scanRequest: 'opp_scan_request', scanStatus: 'opp_scan_status',
          workUpdate: 'opp_work_update', setStatus: 'opp_set_status', workAdd: 'opp_work_add',
          msgList: 'opp_msg_list', msgAdd: 'opp_msg_add', botInbox: 'opp_bot_inbox', todoAdd: 'opp_todo_add', run: 'opp_run', progress: 'opp_progress_set',
@@ -135,7 +135,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v89');
+  const { mockAdapter } = await import('./mock.js?v90');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
@@ -337,6 +337,7 @@ function liveAdapter() {
         case 'restore': return card(await rpc(R.restore, { p_id: id }));
         case 'build': return card(await rpc(R.build, { p_id: id }));
         case 'close': return card(await rpc(R.close, { p_id: id, p_result: o.result }));
+        case 'tdone': return card(await rpc(R.todoDone, { p_id: id, p_done: o.done !== false }));   // v90 任務手動做完／救回
         case 'reopen': return card(await rpc(R.reopen, { p_id: id }));
         case 'purge': await rpc(R.purge, { p_id: id, p_confirm: o.confirm }); return null;
         case 'work': return card(await rpc(R.workUpdate, { p_id: id, p_patch: o.patch || {} }, 0, W));

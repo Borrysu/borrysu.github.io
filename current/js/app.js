@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v89');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v90');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3686,6 +3686,18 @@ const SENT_RE=/送件|交件|送印|交付|交出|提交|上傳|寄出/;
  if(met&&dd!=null&&dd<=0&&c.status==='doing'){x.urg=false;x.due='已交・等下一步';if(x.g==='need'&&!c.progressBlocker&&c.runStatus!=='failed')x.g='doing'}
  if(cs&&c.progressUpdatedBy==='Borry'){x.ask='現在：'+cs.name;x.next=c.progressNote||x.next}
  return x}}
+/* ---------- v90（2026-11-23）：任務可以自己按「做完了」（msg 290） ----------
+   老大：「應該也要有我人工可以的已完成吧」→ 任務詳情最上面「✓ 做完了」，任務清單每張卡也有；收進封存，按「復原」救回。後端 opp_todo_done（遷移檔 20261123_逐流v90_任務做完.sql）。 */
+ACT.tdone=id=>{const t=DB.todo.find(q=>q.id===id);if(!t||!LV.api||!LV.api.act){toast('離線中，連上再按');return}
+ closeThen(async()=>{try{await LV.api.act(id,'tdone',{done:true});await reload();paint('keep');
+  toast('「'+clip(t.title,16)+'」做完了，收進封存',async()=>{try{await LV.api.act(id,'tdone',{done:false});await reload();paint('keep');toast('救回來了')}catch(e){toast('沒救回：'+LERR(e))}})}
+ catch(e){toast('沒標上：'+LERR(e))}})};
+WRITE.push('tdone');
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');if(a[0]!=='cview'||a[1]!=='todo')return h;const id=a.slice(2).join(':');if(!DB.todo.find(q=>q.id===id))return h;
+ return h.replace(/(<div class="grab"[^>]*><\/div><div class="shead">[\s\S]*?<\/div>)/,`$1<div class="btns">${B('✓ 做完了','tdone',id,'pri wide')}</div>`)}}
+{const _zp=zoneProj;zoneProj=function(){const h=_zp();if(S.sub.proj!=='todo')return h;
+ return h.replace(/(<article class="card cardx" data-card="([^"]*)"[\s\S]*?<div class="cf-l">)/g,(m,a,id)=>DB.todo.find(q=>q.id===id)?a+mb('✓ 做完了','tdone',id):m)}}
+{const _ma=mapArch;mapArch=function(c){const x=_ma(c);if(c.basket==='todo'&&c.closeResult==='won')x.st='任務做完';return x}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v89';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v90';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -311,6 +311,7 @@ export function mockAdapter(modeStr) {
         case 'back': { const to = o.to === 'delivered' ? 'delivered' : 'doing';
           if (!((r.status === 'delivered' && to === 'doing') || (r.status === 'paid' && to === 'delivered') || r.status === to)) throw new AdapterError('state', 'cannot go from ' + r.status + ' to ' + to, 400);
           if (r.status !== to) { r.status = to; r.paid_at = null; if (to === 'doing') r.delivered_at = null; } break; }
+        case 'tdone': if (o.done !== false) { r.status = 'closed'; r.close_result = 'won'; r.closed_at = new Date().toISOString(); } else { r.status = 'new'; r.close_result = null; r.closed_at = null; } break;
         case 'steps': r.progress_steps = (o.steps || []).map(x => ({ name: x.name, status: x.status, note: x.note || '' })); r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'close': if (!['doing', 'delivered', 'paid', 'closed'].includes(r.status)) throw new AdapterError('state', 'card is ' + r.status, 400); r.status = 'closed'; r.close_result = o.result; r.closed_at = new Date().toISOString(); break;
         case 'reopen': if (r.status !== 'closed') throw new AdapterError('state', 'card is not closed', 400); r.status = 'doing'; r.close_result = null; r.closed_at = null; break;
