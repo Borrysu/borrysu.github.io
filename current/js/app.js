@@ -128,7 +128,7 @@ const AVEYE='<rect class="ey" x="15.2" y="8.6" width="3.6" height="8" rx="1.8"/>
 const AV={jiji:'<rect class="bd" x="2" y="2" width="28" height="28" rx="8.5"/>'+AVEYE,
  tata:'<circle class="bd" cx="16" cy="16" r="14.5"/><ellipse class="hl" cx="9.5" cy="8.5" rx="4" ry="2.4" transform="rotate(-38 9.5 8.5)"/>'+AVEYE,
  peng:'<circle class="bd" cx="16" cy="16" r="14.5"/><ellipse class="hl" cx="9.5" cy="8.5" rx="4" ry="2.4" transform="rotate(-38 9.5 8.5)"/>'+AVEYE};
-const BFP={daqi:'daqi',jiji:'gig',tata:'tata',peng:'pompom',baba:'baba'},BFC={daqi:'#a37aff',jiji:'#4d86ff',tata:'#ff6700',peng:'#00b351',baba:'#22222A'};
+const BFP={daqi:'daqi',jiji:'gig',tata:'tata',peng:'pompom',baba:'baba'},BFC={daqi:'#a37aff',jiji:'#4d86ff',tata:'#ff6700',peng:'#00b351',baba:'#FFFFFF'};
 const bm=(b,m,c)=>window.BotFace&&BFP[b]?`<span class="bm bf${c?' '+c:''}" data-b="${b}"${m?` data-m="${m}"`:''} aria-hidden="true"></span>`:AV[b]?`<span class="bm av" data-b="${b}" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false">${AV[b]}</svg></span>`:`<span class="bm" data-b="${b}" aria-hidden="true">${BOTS[b].mono}</span>`;
 const chip=(t,u)=>`<span class="chip${u?' urg':''}">${u?'▲ ':''}${esc(t)}</span>`;
 const B=(label,act,id,cls,x)=>`<button class="btn ${cls||''}" data-act="${act}"${id!=null?` data-id="${esc(id)}"`:''}${x||''}>${label}</button>`;
@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v86');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v87');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3619,6 +3619,20 @@ function jobOwner(j){const r=j.raw||{},pj=normT(r.project),tt=normT(j.title||r.t
  return h.replace(/(<div class="mrow"><button class="mb" data-act="sheet" data-id="pedit:[^"]*">✎ 編輯<\/button>)<button class="mb" data-act="sheet" data-id="stepx:[^"]*">🧩 編輯每一步<\/button>/,'$1')}}
 {const _s=sheetHTML;sheetHTML=function(){const h=_s();if(!/^cview:todo:/.test(S.sheet||'')||h.indexOf('步驟卡</p>')<0)return h;
  return h.replace(/<section class="sec"><h3>步驟<\/h3>[\s\S]*?<\/section>/,'')}}
+/* ---------- v87（2026-11-23）：老大面板意見 msg 260、264、270 ----------
+   260「我希望在哪裡或哪塊面板跟大器或者小頭像講話，他就是那邊專屬的小視窗，不要跳回統合的大視窗，這樣很亂。」
+     → 從某張卡或某塊打開的對話，只顯示這張卡的那串：案子、機會卡本來就分開存；目標、拍板、想買、燈號這類沒有卡號的，改成只顯示提到這張卡的那幾則與它的回覆。從最上面頭像打開的才是總對話。
+   264「希望點開任何ai對話都不會預設送訊息出去。」→ 所有「打開對話順便送一句」的按鈕，改成把那句先放進輸入框，你看過按「傳送」才送。
+   270「霸霸是白色的」→ 霸霸改白身體、深色眼睛、淡描邊。 */
+let PREFILL=0;
+{const _s=say;say=function(b,text,ctx){if(!PREFILL)return _s.apply(this,arguments);
+ const put=(n)=>{const t=$('#cText');if(t){t.value=String(text||'');t.focus();try{t.setSelectionRange(t.value.length,t.value.length)}catch(e){}t.dispatchEvent(new Event('input',{bubbles:true}))}else if(n<20)setTimeout(()=>put(n+1),80)};put(0)}}
+{const _o=openChat;openChat=function(b,ctx,el,auto){
+ if(LV.api&&LV.api.msgs&&!LV.api.__ctxWrap){const m=LV.api.msgs.bind(LV.api);LV.api.__ctxWrap=1;
+  LV.api.msgs=async(id,bb)=>{const ms=await m(id,bb);const c=S.chat&&S.chat.ctx;if(id||!c)return ms;let nm='';try{nm=ctxName(c)}catch(e){}if(!nm)return ms;
+   const out=[];let keep=false;(ms||[]).forEach(x=>{if(x.kind==='user')keep=String(x.body||'').indexOf(nm)>-1;if(keep)out.push(x)});return out}}
+ if(typeof auto==='function'){const a=auto;auto=function(){PREFILL=1;try{return a.apply(this,arguments)}finally{PREFILL=0}}}
+ return _o.call(this,b,ctx,el,auto)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');

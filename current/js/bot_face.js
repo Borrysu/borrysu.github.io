@@ -73,7 +73,7 @@
       names: { thinking: '比價中', logged: '比好了', alert: '價格變了' } },
     dinding: { shape: 'hex', color: '#FFFFFF', eye: '#17151E', outline: true, label: '定定',
       names: { thinking: '想一下', logged: '有看法了', alert: '有風險' } },
-    baba:    { shape: 'shield', color: '#22222A', eye: '#F4F4F6', outline: true, label: '霸霸',
+    baba:    { shape: 'shield', color: '#FFFFFF', eye: '#17151E', outline: true, label: '霸霸',   // 老大 2026-11-23：「霸霸是白色的」（Grok Bot 本機資料是 black，以老大為準）
       names: { thinking: '設置中', logged: '設好了', alert: '要你點頭' } },
     kimkim:  { shape: 'star6', color: '#FF6700', label: '金金',
       names: { thinking: '看值不值', logged: '看完了', alert: '先別買' } },
