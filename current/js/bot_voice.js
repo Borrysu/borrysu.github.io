@@ -640,6 +640,7 @@
   }, true);
   var busy = false;
   setInterval(function () {
+    if (!lastAct && window.__actAt) lastAct = window.__actAt;
     if (busy || !lastAct || Date.now() - lastAct > 4000) return;
     var Z = window.__zl, t = document.getElementById('cText');
     if (!Z || !Z.S || !Z.S.chat || !t || !t.value.trim() || !Z.LV || !Z.LV.api || !Z.LV.api.say) return;
@@ -648,7 +649,8 @@
     t.value = ''; var s = document.getElementById('cSug'); if (s) s.remove();
     var name = (text.match(/「([^」]{1,40})」/) || [])[1] || '';
     var verb = b === 'mon' ? '請幫我找' : b === 'kim' ? '請幫我看' : '請幫我處理';
-    var shown = name ? verb + '「' + name + '」' : verb + '這件';
+    var tag = (text.match(/^【([^】]{1,12})】/) || [])[1];
+    var shown = tag ? tag + (name ? '「' + name + '」' : '') : (name ? verb + '「' + name + '」' : verb + '這件');
     var hidden = text.replace(/[［］]/g, function (c) { return c === '［' ? '（' : '）'; }).replace(/\n/g, ' ');
     var body = '［老大在逐流按了動作鈕，給你的指示：' + hidden + '］\n' + shown;
     Z.LV.api.say(null, body, b).then(function () {
@@ -726,4 +728,18 @@
     });
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(fix, 80); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+/* 2026-11-24 生活房間「要買」：拿掉「請朋朋買」那行字，按朋朋的臉就是請朋朋買（逐流 msg 445、487、490，老大：「為什麼要做這個？ 感覺請朋朋買 按臉就好」）。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var st = document.createElement('style'); st.textContent = 'button[data-act="cartbuy"].more{display:none!important}';
+  (document.head || document.documentElement).appendChild(st);
+  document.addEventListener('click', function (e) {
+    var f = e.target && e.target.closest && e.target.closest('[data-act="ai"][data-id^="peng|sup:cart"]');
+    if (!f || document.documentElement.classList.contains('marking')) return;
+    var Z = window.__zl; if (!Z || !Z.ACT || !Z.ACT.cartbuy) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    window.__actAt = Date.now(); Z.ACT.cartbuy();
+  }, true);
 })();
