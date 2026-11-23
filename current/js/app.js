@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v93');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v94');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3936,6 +3936,119 @@ WRITE.push('runstop','stsave','stadd','stdel');
  const i=h.indexOf('</h1>');return i<0?h:h.slice(0,i+5)+runBar(c)+h.slice(i+5)}}
 // 案子步驟詳情：執行一欄白話
 {const _d=pstDetail;pstDetail=function(p,s,i){const h=_d(p,s,i),c=p.raw||{};if(!c.runStatus||!(s.status==='current'||s.status==='blocked'))return h;return h.replace(/(<span>執行<\/span><b>)[^<]*/,'$1'+esc(runSay(c)))}}
+/* ---------- v94（2026-11-24）：按鈕收斂與線條小圖示、大器建議直接點、做完了重設計、主卡鈕無框、肉咖會動的臉、連結預覽、讀不到換路 ----------
+   老大原話（逐流 2026-11-23「編修」）：
+   msg 360「這邊邏輯好怪，然後怎麼會放emoji ，如果要的話應該是畫風相似的小圖示，這邊有好多問大器 請霸霸設置 這些狀態讓我有點混亂」
+   msg 349「當大器建議 轉成案子的時候，就只接點有大器這張卡就好，不用多一個按鈕」「這個按鈕在這邊我不喜歡而且白色很不搭，設計一下吧」
+   msg 378「畫面是不錯但是多這樣的按鈕就會有卡卡的感覺，應該不要有框？我也不確定」
+   msg 388「肉咖的臉請幫我也設計一個會動的。」「紫色應該是大器，桃紅色粉紅色才是肉咖」
+   msg 345「希望這樣貼的時候至少要有網頁簡介活動內容與圖片吧不然我怎麼判斷」
+   msg 357「大器讀不到的時候要想辦法吧？不然有重要資料怎辦」
+   1 全站按鈕的符號（📅 ✕ 🗑 🧩 📁 ☁ 🖥 ↗ ✓ ✎ ▣ ↶ ▶ ■ …）畫面上換成同一套線條小圖示（ic()，1.75 線寬、圓角、跟字同色）。程式裡的字不動，畫上去時換。
+   2 要你做彈出卡：主要 2～3 顆（主鈕實心、次鈕線框），其他收進「更多做法」。
+   3 任務「這件接下來」：大器建議那張卡整張可以點（點了照建議做），下面只列其他做法；「做完了」改成綠色細框小鈕。
+   4 案子詳情主卡動作鈕無框（圖示＋字，按下才有底）。
+   5 肉咖：會動的桃紅臉（bot_face.js preset rouka），派肉咖做的鈕改桃紅。
+   6 彈出卡裡的網址：抓網頁標題、簡介、圖片做成預覽卡（Edge Function link-preview，待監工部署；函式不在時照舊顯示網址鈕）。
+   7 卡片寫「讀不到／看不到／沒權限／打不開」：彈出卡上方一條「請大器換路再讀」，按了直接送【換路再讀】給大器櫃台。 */
+// 1 線條小圖示
+const ICP={check:'<path d="M5 12.5l4.2 4.2L19 7"/>',x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+ cal:'<rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
+ trash:'<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l.9 12.2a1.6 1.6 0 0 0 1.6 1.3h6a1.6 1.6 0 0 0 1.6-1.3L17.5 7M10 11v5.5M14 11v5.5"/>',
+ steps:'<path d="M10 6.5h10M10 12h10M10 17.5h10"/><rect x="3.5" y="4.5" width="4" height="4" rx="1.2"/><rect x="3.5" y="10" width="4" height="4" rx="1.2"/><rect x="3.5" y="15.5" width="4" height="4" rx="1.2"/>',
+ folder:'<path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2.2h7a2 2 0 0 1 2 2v7.8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/>',
+ cloud:'<path d="M7.2 18.5h10.2a4 4 0 0 0 .5-7.96 6 6 0 0 0-11.4-1.3A4.75 4.75 0 0 0 7.2 18.5z"/>',
+ screen:'<rect x="3" y="4.5" width="18" height="12" rx="2.5"/><path d="M9 20h6M12 16.5V20"/>',
+ ext:'<path d="M14 4.5h5.5V10M19.5 4.5L11 13M17 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h4"/>',
+ archive:'<rect x="3.5" y="4" width="17" height="5" rx="1.5"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9M10 13h4"/>',
+ edit:'<path d="M4.5 19.5h4l10.3-10.3a2.1 2.1 0 0 0-3-3L5.5 16.5zM13.8 8.2l3 3"/>',
+ undo:'<path d="M9 5.5L4.5 10 9 14.5"/><path d="M4.5 10H14a5.5 5.5 0 0 1 0 11h-3"/>',
+ redo:'<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4h-4"/>',
+ play:'<path d="M8 5.5v13l10.5-6.5z"/>',stop:'<rect x="6.5" y="6.5" width="11" height="11" rx="2"/>',pause:'<path d="M9 6v12M15 6v12"/>',
+ ff:'<path d="M4.5 6.5v11l7-5.5zM12.5 6.5v11l7-5.5z"/>',swap:'<path d="M7 4.5L3.5 8 7 11.5M3.5 8h14M17 12.5l3.5 3.5-3.5 3.5M20.5 16h-14"/>',
+ money:'<circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.4c-.5-.9-1.6-1.5-2.8-1.5-1.6 0-2.8.8-2.8 2 0 2.9 5.8 1.5 5.8 4.3 0 1.3-1.3 2.1-3 2.1-1.3 0-2.4-.5-2.9-1.5M12 6.2v1.7M12 16.3v1.6"/>',
+ compass:'<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+ team:'<circle cx="9" cy="9" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M15.5 6.2a3 3 0 0 1 0 5.6M17 14.2a5 5 0 0 1 3.5 4.8"/>',
+ clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.9v.2"/>',
+ gem:'<path d="M12 3.5l7 8.5-7 8.5-7-8.5z"/>',star:'<path d="M12 4l2.4 5 5.4.6-4 3.7 1.1 5.4L12 16l-4.9 2.7 1.1-5.4-4-3.7 5.4-.6z"/>',
+ more:'<path d="M6 9.5l6 6 6-6"/>',arrow:'<path d="M5 12h13.5M13 6.5l5.5 5.5-5.5 5.5"/>',hand:'<path d="M5 12.5h9.5M10.5 8l4.5 4.5-4.5 4.5M17 5.5v14"/>',
+ chat:'<path d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v8.5a1.5 1.5 0 0 1-1.5 1.5h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5V7A1.5 1.5 0 0 1 5 5.5z"/>',
+ note:'<path d="M6 3.5h8.5L19 8v11a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 5 19V5a1.5 1.5 0 0 1 1-1.5zM14 3.5V8.5h5M8.5 13h7M8.5 16.5h4.5"/>',
+ wait:'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 12h.1M12 12h.1M15.5 12h.1"/>',route:'<circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8.2 18H15a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h6.8"/>'};
+const ic=(n,c)=>ICP[n]?`<svg class="ic${c?' '+c:''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICP[n]}</svg>`:'';
+const EMO={'✓':'check','✕':'x','📅':'cal','🗑':'trash','🧩':'steps','📁':'folder','☁':'cloud','🖥':'screen','↗':'ext','▣':'archive','✎':'edit','↶':'undo','↺':'undo','↻':'redo',
+ '▶':'play','■':'stop','⏸':'pause','⏩':'ff','⇄':'swap','💰':'money','🧭':'compass','👥':'team','🕘':'clock','ⓘ':'info','◆':'gem','★':'star'};
+const EMO_RE=new RegExp('('+Object.keys(EMO).join('|')+')\\uFE0F?[ 　]?','gu');
+const EMO_SEL='button,a.btn,a.pc-b,.mic,.pdic,[role="button"]';
+function icSwap(root){if(!root||!root.querySelectorAll)return;const els=[];if(root.matches&&root.matches(EMO_SEL))els.push(root);root.querySelectorAll(EMO_SEL).forEach(e=>els.push(e));
+ els.forEach(el=>{const w=document.createTreeWalker(el,NodeFilter.SHOW_TEXT),hit=[];let n;while((n=w.nextNode())){EMO_RE.lastIndex=0;if(EMO_RE.test(n.nodeValue)&&!(n.parentNode&&n.parentNode.closest&&n.parentNode.closest('svg,textarea,input')))hit.push(n)}
+  hit.forEach(t=>{const f=document.createDocumentFragment(),s=t.nodeValue;let last=0;EMO_RE.lastIndex=0;let m;
+   while((m=EMO_RE.exec(s))){if(m.index>last)f.appendChild(document.createTextNode(s.slice(last,m.index)));const tp=document.createElement('template');tp.innerHTML=ic(EMO[m[1]]);f.appendChild(tp.content);last=m.index+m[0].length}
+   if(last<s.length)f.appendChild(document.createTextNode(s.slice(last)));t.parentNode.replaceChild(f,t)})})}
+{const _r=render;render=function(d){_r(d);icSwap(document.getElementById('app'));lpHydrate()}}
+new MutationObserver(ms=>{ms.forEach(m=>m.addedNodes.forEach(x=>{if(x.nodeType===1)icSwap(x);else if(x.nodeType===3&&x.parentNode&&x.parentNode.closest&&x.parentNode.closest(EMO_SEL)){EMO_RE.lastIndex=0;if(EMO_RE.test(x.nodeValue))icSwap(x.parentNode.closest(EMO_SEL))}}))}).observe(document.body,{childList:true,subtree:true,characterData:false});
+// 2 要你做彈出卡：主要 2～3 顆，其他收進「更多做法」
+const YDM={};
+{const _j=pcJob;pcJob=function(r,d){const h=_j(r,d);if((r.status||'')!=='waiting_you')return h;
+ const id=String(r.id),p=ydParse(r),bz=YD.busy?' disabled':'',face=r.ask||askCut(String(r.title||'').replace(/^拍板後續｜/,''),40),Q=`「${face}」`;
+ const main=p.link?`<a class="btn pri pc-main" href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">${ic('ext')}打開連結</a>`:p.act?B(ic('play')+esc(p.actLabel),'ydrun',id,'pri pc-main',bz):B(ic('check')+'我做好了','yddone',id,'pri pc-main',bz);
+ const sec=[p.link||p.act?B(ic('check')+'我做好了','yddone',id,'pc-2',bz):'',B(ic('hand')+'交給大器','ydhand','daqi|'+id,'pc-2'),p.link||p.act?'':B(ic('x')+'不做了','ydskip',id,'pc-2')].filter(Boolean);
+ const more=[p.link||p.act?mb(ic('x')+'不做了','ydskip',id):'',mb(ic('team')+'請霸霸設置','ydhand','baba|'+id),mb(ic('wait')+'還沒好','ydnot',id),mb(ic('note')+'加註記','ydnote',id),mb(ic('chat')+'問大器','ydq',id),mb(ic('cal')+'改期','pcsay',`daqi|${Q}改到＿＿再做，原因：`)].filter(Boolean);
+ const op=!!YDM[id];
+ const acts=`<div class="pc-acts v94">${main}<div class="pc-2s">${sec.join('')}</div></div><div class="pc-mo${op?' open':''}"><button class="mb pc-mot" data-act="ydmore" data-id="${esc(id)}" aria-expanded="${op}">更多做法 ${ic('more','mo-c')}</button><div class="pc-mol"><div>${more.join('')}</div></div></div>`;
+ return h.replace(/<div class="pc-acts">[\s\S]*?<\/div>/,acts).replace(/<div class="mrow pc-alt">[\s\S]*?<\/div>/,'')}}
+ACT.ydmore=id=>{YDM[id]=!YDM[id];document.querySelectorAll('.pc-mo').forEach(el=>{const b=el.querySelector('.pc-mot');if(!b||b.dataset.id!==id)return;el.classList.toggle('open',!!YDM[id]);b.setAttribute('aria-expanded',String(!!YDM[id]))})};
+// 3 任務「這件接下來」：建議卡整張可點；做完了改細框小鈕
+{const _s=sheetHTML;sheetHTML=function(){let h=_s();const a=(S.sheet||'').split(':');if(a[0]!=='cview'||a[1]!=='todo')return h;const id=a.slice(2).join(':'),t=DB.todo.find(q=>q.id===id);if(!t)return h;
+ h=h.replace(/<div class="btns"><button class="btn pri wide" data-act="tdone"[^>]*>[\s\S]*?<\/button><\/div>/,`<div class="tdrow"><button class="btn tdb" data-act="tdone" data-id="${esc(id)}">${ic('check')}做完了</button></div>`);
+ const g=jSuggest(t),lab={merge:'併到〈'+(g.p?clip(g.p.short||g.p.title,10):'')+'〉',co:'轉成公司案子',proj:'轉成案子',run:'交給 AI 做'}[g.k];
+ const act={merge:['jmergeto',t.id+'|'+(g.p&&g.p.id)],co:['jtoco',t.id],proj:['jtoproj',t.id],run:['jtorun',t.id]}[g.k];
+ const alt=[g.k!=='run'&&!t.run?mb(ic('play')+'交給 AI 做','jtorun',t.id):'',mb(ic('folder')+(g.k==='merge'?'併到別的案子':'併到案子'),'sheet','jmerge:'+t.id),g.k!=='proj'?mb(ic('steps')+'轉成案子','jtoproj',t.id):'',g.k!=='co'?mb(ic('team')+'轉成公司案子','jtoco',t.id):''].filter(Boolean);
+ const sec=`<section class="sec jnext v94"><h3>這件接下來</h3><button class="card jsug jsugb" data-act="${act[0]}" data-id="${esc(act[1])}" aria-label="照大器建議：${esc(lab)}">${bm('daqi')}<span class="jsug-t"><small>大器建議・點這張照做</small><b>${esc(lab)}</b><span class="jsug-w">${esc(g.why)}</span></span><span class="jsug-go" aria-hidden="true">${ic('arrow')}</span></button>
+ <div class="jalt"><span class="jalt-h">或改成</span>${alt.join('')}</div><p class="note">原任務會收掉，72 小時內可救回。</p></section>`;
+ return h.replace(/<section class="sec jnext">[\s\S]*?<\/section>/,sec)}}
+// 5 肉咖：會動的桃紅臉
+BFP.rouka='rouka';BFC.rouka='#FF4F9A';
+{const _c=coSection;coSection=function(){return _c().replace(/<div class="sh">(<h2>公司(?:重點)?)/,`<div class="sh">${aiF('rouka','co:')}$1`)}}
+{const _cs=coSheet;coSheet=function(id){return _cs(id).replace(/class="btn pri" data-act="coRouka"/,'class="btn rk" data-act="coRouka"').replace(/>派肉咖做</,'>'+bm('rouka','','sm')+'派肉咖做<')}}
+{const _cr=coRoukaSheet;coRoukaSheet=function(id){return _cr(id).replace(/class="btn pri wide" data-act="cosend"/,'class="btn rk wide" data-act="cosend"')}}
+// 6 連結預覽：彈出卡裡的網址做成預覽卡
+const LPC={};let LPDOWN=false;
+const LP_DEMO={'example.org':{site_name:'示範售票（虛構）',title:'示範工作坊：短片剪接入門',description:'12/14 週六下午兩點，台北。三小時實作，帶自己的素材來剪一支 30 秒短片，名額 20 人，費用 800 元。（示範資料，不是真的活動）',image:'icons/icon-512.png'},
+ 'example.com':{site_name:'示範雲端（虛構）',title:'試看帶第二版',description:'某品牌形象短片試看帶，1 分 12 秒。（示範資料）',image:''}};
+{const _b=pcBtns;pcBtns=function(txt,about,skip){return _b(txt,about,skip).map(x=>{const m=x.match(/^<a class="btn pc-b" href="(https:[^"]+)"[^>]*>↗ (?!開 )/);return m?x.replace('<a class="btn pc-b" ',`<a class="btn pc-b lpb" data-lp="${m[1]}" `):x})}}
+const lpOK=u=>/^https:\/\//.test(String(u||''));
+async function lpGet(u){if(u in LPC)return LPC[u];
+ if(LV.mode!=='live'){let host='';try{host=new URL(u).hostname.replace(/^www\./,'')}catch(e){}LPC[u]=LP_DEMO[host]||null;return LPC[u]}
+ if(LPDOWN||!LV.A||!LV.A.CONFIG)return null;
+ const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),7000);LPC[u]=null;
+ try{const r=await fetch(LV.A.CONFIG.SUPABASE_URL.replace(/\/+$/,'')+'/functions/v1/link-preview?url='+encodeURIComponent(u),{headers:{apikey:LV.A.CONFIG.SUPABASE_ANON_KEY},signal:ac.signal,credentials:'omit',cache:'no-store'});
+  if(r.status===404){LPDOWN=true;return null}if(!r.ok)return null;const j=await r.json();
+  if(!j||!(j.title||j.description))return null;LPC[u]={title:String(j.title||'').slice(0,140),description:String(j.description||'').slice(0,300),site_name:String(j.site_name||'').slice(0,60),image:lpOK(j.image)?String(j.image):''};return LPC[u]}
+ catch(e){return null}finally{clearTimeout(tm)}}
+function lpCard(u,d){let host='';try{host=new URL(u).hostname.replace(/^www\./,'')}catch(e){}
+ return `<a class="lp" href="${esc(u)}" target="_blank" rel="noopener noreferrer">${d.image?`<span class="lp-img"><img src="${esc(d.image)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.remove()"></span>`:''}<span class="lp-tx"><small>${ic('ext')}${esc(d.site_name||host)}</small><b>${esc(d.title||host)}</b>${d.description?`<span class="lp-d">${esc(d.description)}</span>`:''}</span></a>`}
+function lpHydrate(){document.querySelectorAll('a.lpb[data-lp]:not([data-lpd])').forEach(a=>{a.setAttribute('data-lpd','1');const u=a.getAttribute('data-lp');if(!lpOK(u))return;
+ lpGet(u).then(d=>{if(!d||!a.isConnected)return;const t=document.createElement('template');t.innerHTML=lpCard(u,d);const box=a.closest('.pc-tools');a.replaceWith(t.content);if(box)box.classList.add('has-lp')})})}
+// 7 讀不到：請大器換路再讀
+const RR_RE=/讀不到|看不到|沒權限|沒有權限|打不開|無法讀取|無法開啟|下載不了/;const RRS={};
+function rrSrc(txt){return pcLines(txt).filter(l=>RR_RE.test(l)).slice(0,3)}
+function rrInfo(t,id){if(t==='hjob'||t==='youdo'){const r=hubRow('job',id)||((DB.jobs.find(x=>String(x.id)===id)||{}).raw);return r&&{title:r.ask||r.title,txt:[r.title,r.note,r.ask].join('\n'),item:null,k:'job '+id}}
+ if(t==='hevt'){const r=hubRow('event',id)||((DB.events.find(x=>String(x.id)===id)||{}).raw);return r&&{title:r.ask||askCut(r.summary,40),txt:[r.summary,r.path].join('\n'),item:null,k:'event '+id}}
+ if(t==='hdecf'){const d=((LV.hub&&LV.hub.answered)||[]).find(x=>x.id===id),j=d&&decJob(id);return d&&{title:d.question,txt:[d.question,d.detail,j&&j.title,j&&j.note].join('\n'),item:null,k:'decision '+id}}
+ if(t==='dec'||t==='why'){const d=DB.dec.find(x=>x.id===id);return d&&{title:d.ask||d.q,txt:[d.q,d.detail].join('\n'),item:null,k:'decision '+id}}
+ if(t==='cview'&&id.indexOf('todo:')===0){const it=DB.todo.find(q=>q.id===id.slice(5)),c=it&&it.raw;return c&&{title:c.title,txt:[c.title,WHYOF(c),c.runNote,c.progressNote,c.progressBlocker].join('\n'),item:c.id||null,k:'item '+c.id}}
+ return null}
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':'),t=a[0],id=a.slice(1).join(':');const o=rrInfo(t,id);if(!o)return h;const src=rrSrc(o.txt);if(!src.length)return h;
+ const key=t+':'+id,sent=RRS[key]&&Date.now()-RRS[key]<30*60e3;
+ const box=`<div class="rr"><p class="rr-h">▲ 大器有東西讀不到</p><ul class="rr-l">${src.map(s=>`<li>${esc(clip(s,80))}</li>`).join('')}</ul>${sent?`<p class="rr-ok">${ic('check')}已請大器換路，拿到會寫回這張卡</p>`:B(ic('route')+'請大器換路再讀','reroute',key,'rr-b')}</div>`;
+ return h.replace(/(<div class="shead">[\s\S]*?<\/button><\/div>)/,'$1'+box)}}
+ACT.reroute=async key=>{const i=key.indexOf(':'),t=key.slice(0,i),id=key.slice(i+1),o=rrInfo(t,id);if(!o)return;
+ if(RRS[key]&&Date.now()-RRS[key]<30*60e3){toast('剛請過了，大器在換路');return}if(!LV.api||!LV.api.say){toast('離線中，連上再按');return}
+ const src=rrSrc(o.txt),body=`【換路再讀】${clip(String(o.title||'這張卡'),60)}\n讀不到的來源：${src.join('；')}\n卡片：${o.k}\n請照過眼門路階梯換路拿到內容（附件下載、肉咖代抓公司群、網頁讀取、匯出、問來源的人），拿到後把內容摘要寫回這張卡；全部路都試過還拿不到，回報試了哪幾條、還缺什麼。`;
+ RRS[key]=Date.now();render('keep');
+ try{await LV.api.say(o.item,body,'daqi');toast('交給大器換路了，拿到會寫回這張卡')}catch(e){delete RRS[key];render('keep');toast('沒送出：'+LERR(e))}};
+WRITE.push('reroute');
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
