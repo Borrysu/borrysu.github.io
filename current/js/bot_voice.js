@@ -586,3 +586,13 @@
     wrapped.__run = 1; Z.ACT.ydhand = wrapped;
   })();
 })();
+
+/* 2026-11-24 chip 長字不出版面（逐流 msg 403、428，老大：「這邊都傳出去版面了」）。放這支檔避開派工正在改 app.css。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var s = document.createElement('style');
+  s.textContent = '.chip{max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word;height:auto;line-height:1.35;text-align:left}' +
+    '#sheet .chip,#page .chip{display:inline-block;padding-top:3px;padding-bottom:3px}' +
+    '#sheet,#page{overflow-x:hidden}';
+  (document.head || document.documentElement).appendChild(s);
+})();
