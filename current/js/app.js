@@ -684,7 +684,8 @@ window.__chat=()=>({open:!!S.chat,b:S.chat&&S.chat.b,timers:Object.keys(PT).leng
 
 /* 日期：以 11/22（週日）為第 0 天 */
 const WK='日一二三四五六';
-const dOf=n=>{let m=11,d=22+n;if(d>30){m=12;d-=30}return{m,d,w:((n%7)+7)%7}};
+// 2026-11-23 改用台北今天的實際日期（原本寫死 11/22，老大：「行事曆的日期是錯的，那是昨天的日期不是今天的」）
+const dOf=n=>{const t=new Date(Date.now()+8*3600e3);t.setUTCHours(0,0,0,0);t.setUTCDate(t.getUTCDate()+n);return{m:t.getUTCMonth()+1,d:t.getUTCDate(),w:t.getUTCDay()}};
 const dl=n=>{const x=dOf(n);return `${x.m}/${x.d}`},dlw=n=>{const x=dOf(n);return `${x.m}/${x.d}（${WK[x.w]}）`};
 const dayName=n=>n===0?'今天':n===1?'明天':n===2?'後天':dlw(n);
 const isoOf=n=>{const x=dOf(n);return `2026-${String(x.m).padStart(2,'0')}-${String(x.d).padStart(2,'0')}`};
@@ -2485,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v79');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v80');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
