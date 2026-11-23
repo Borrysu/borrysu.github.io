@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v108');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v109');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4520,6 +4520,40 @@ ACT.pmove=async v=>{const [id,to]=String(v).split('|'),p=DB.proj.find(q=>q.id===
   toast(toCo?'移到公司了，原卡收掉（封存可放回）':'移回個人了，原卡收掉（封存可放回）',async()=>{try{await LV.api.act(n.id,'close',{result:'void'});await LV.api.act(id,'reopen',{});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})})};
 
 window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
+/* ---------- v109：首頁目標小卡橫滑（msg 643 第 2 點）＋行事曆忙閒視覺面板（msg 646） ----------
+   老大：「這邊感覺要簡述目標 可以手指左右滑」「行事曆區我覺得要用一個視覺化的方式讓我可以很清楚知道我在哪些日期要忙哪些事情…」
+   目標：首頁目標房間的摘要鈕換成一排小卡（手機橫滑 scroll-snap、桌機並排），點卡進該目標頁，最後一張看全部。
+   行事曆：行事曆頁上方 14 天格子，色塊深淺＝那天排了幾小時，點一天展開那天的行程，空的日子寫有空。資料用既有 calAll()，不新增資料表。
+   退回：刪掉這一段（goalStrip 回到 goalCard、calPage 回到原樣）。 */
+{const gmCard=g=>{const late=g.st==='late',stall=g.st==='stall';
+  const brief=g.next?String(g.next).replace(/[。．.]$/,''):'';
+  return `<button class="gmc${late?' late':stall?' stall':''}" data-act="page" data-id="goal:${esc(g.id)}"><span class="vh">打開目標，</span><b class="gmn">${esc(g.name)}</b>${gSpan(gMeterC(g))}<span class="gmv"><span class="num">${esc(String(g.now))}</span><small>／${esc(String(g.total))} ${esc(g.unit||'')}</small></span><span class="gms">${late?'▲ ':stall?'‖ ':''}${esc(g.stText||'')}</span>${brief?`<span class="gmx">${esc(brief)}</span>`:''}</button>`};
+ const goalMini=function(){if(S.st==='loading'||S.st==='error')return '';const a=gAll(),m=gsum();delete CV.goal;
+  if(!a.length)return `<div class="room groomh gmroom" data-z="goal"><button class="rgo" data-act="page" data-id="goals"><span class="rh">目標</span><span class="rs">還沒立目標</span></button>${bigF('din','goal')}</div>`;
+  const ord=a.slice().sort((x,y)=>(y.st==='late')-(x.st==='late')||(GL.focus===y.id)-(GL.focus===x.id));
+  return `<div class="room groomh gmroom" data-z="goal"><div class="gmh"><span class="rh">目標</span><span class="gsm">${esc(m.t)}</span></div><div class="gmrow" role="list" aria-label="目標，手指左右滑">${ord.map(g=>`<div role="listitem">${gmCard(g)}</div>`).join('')}<div role="listitem"><button class="gmc gmall" data-act="page" data-id="goals"><b class="gmn">看全部目標</b><span class="gms">${a.length} 個 ›</span></button></div></div>${bigF('din','goal')}</div>`};
+ goalStrip=goalMini;
+
+ // 行事曆忙閒：一天的忙碌時數＝把有時間的行程合併重疊後加總，全天行程算 4 小時
+ const hm2=s=>{const m=/^(\d{1,2}):(\d{2})/.exec(s||'');return m?+m[1]+m[2]/60:null};
+ const busyOf=its=>{let all=0;const iv=[];its.forEach(e=>{if(e.cancel)return;if(e.all||!e.t){all++;return}const a=hm2(e.t);let b=hm2(e.e);if(a==null)return;if(b==null||b<=a)b=a+1;iv.push([a,b])});
+  iv.sort((x,y)=>x[0]-y[0]);let h=0,cs=null,ce=null;iv.forEach(([a,b])=>{if(cs==null||a>ce){if(cs!=null)h+=ce-cs;cs=a;ce=b}else ce=Math.max(ce,b)});if(cs!=null)h+=ce-cs;
+  return {h:h+all*4,n:its.filter(e=>!e.cancel).length,all}};
+ const lvOf=h=>h<=0?0:h<=1.5?1:h<=3.5?2:h<=6?3:4;
+ const hTxt=h=>{const r=Math.round(h*2)/2;return (r%1?r.toFixed(1):r)+'h'};
+ function busyPanel(all){const sel=S.calsel;let cells='';
+  for(let n=0;n<14;n++){const its=all.filter(e=>e.d===n&&!e.cancel),b=busyOf(its),lv=lvOf(b.h),x=dOf(n),wk=x.w===0||x.w===6;
+   cells+=`<button class="cbday" data-lv="${lv}" data-act="calpick" data-id="${n}" aria-pressed="${sel===n}" aria-label="${dayName(n)} ${x.m}/${x.d}，${b.n?b.n+' 件，約 '+hTxt(b.h):'有空'}"><span class="cbw${wk?' we':''}">${n===0?'今':WK[x.w]}</span><span class="cbd num">${x.d}</span><span class="cbz" aria-hidden="true">${b.n?`<i style="height:${Math.min(100,Math.round(b.h/8*100))}%"></i>`:''}</span><span class="cbn">${b.n?b.n+' 件':'有空'}</span></button>`}
+  const free=Array.from({length:14},(_,n)=>n).filter(n=>!all.some(e=>e.d===n&&!e.cancel)).length;
+  let h=`<section class="cbusy" aria-label="接下來 14 天忙閒"><div class="cbhd"><b>接下來 14 天</b><small>${free} 天有空</small><span class="cblg" aria-hidden="true"><i data-lv="0"></i><i data-lv="1"></i><i data-lv="2"></i><i data-lv="3"></i><i data-lv="4"></i></span></div><div class="cbgrid">${cells}</div>`;
+  if(sel!=null&&sel>=0&&sel<14){const its=all.filter(e=>e.d===sel),b=busyOf(its);
+   h+=`<div class="cbsel"><div class="cbselh"><b>${dayName(sel)}${sel<3?'　'+dlw(sel):''}</b><small>${b.n?b.n+' 件・約 '+hTxt(b.h):''}</small>${mb('收起','calpick',String(sel))}</div>${its.length?`<div class="rows">${its.map(evRow).join('')}</div>`:`<p class="cbfree">這天有空。</p>`}</div>`}
+  else h+=`<p class="cbhint">點一天看那天的行程</p>`;
+  return h+'</section>'}
+ ACT.calpick=id=>{const n=+id;S.calsel=S.calsel===n?null:n;render('keep')};
+ const _cp=calPage;calPage=function(){const h=_cp();if(E())return h;const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f);
+  const i=h.indexOf('<div class="seg"');return i<0?h:h.slice(0,i)+busyPanel(all)+h.slice(i)};
+ window.__zl=Object.assign(window.__zl||{},{busyOf,goalMini});}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

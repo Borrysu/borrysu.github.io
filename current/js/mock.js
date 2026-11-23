@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v108';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v109';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -205,7 +205,16 @@ export function mockAdapter(modeStr) {
     { id: 'me:1', cal: 'me', title: X || 'E.藍鯨 NOVA 修正', start: at(0, 15), end: at(0, 19), all_day: false, location: X || '家裡' },
     { id: 'co:1', cal: 'co', title: '【藍鯨 NOVA】試看帶回饋會議 @我', start: at(1, 14), end: at(1, 15), all_day: false, location: 'Google Meet', link: flags.has('xss') ? 'javascript:window.__xss=9' : 'https://example.com/' },
     { id: 'me:2', cal: 'me', title: 'L.剪頭髮', start: at(2, 14, 30), end: at(2, 15, 30), all_day: false, location: '' },
-    { id: 'co:2', cal: 'co', title: '【投標截止】示意標案 @我', start: null, end: null, all_day: true, start_date: iso(3), end_date: iso(4) }];
+    { id: 'co:2', cal: 'co', title: '【投標截止】示意標案 @我', start: null, end: null, all_day: true, start_date: iso(3), end_date: iso(4) },
+    // v109 忙閒面板示範：讓 14 天有忙有閒（示意，全部虛構）
+    { id: 'me:3', cal: 'me', title: 'C.新歌副歌詞', start: at(0, 10), end: at(0, 12), all_day: false, location: '家裡' },
+    { id: 'co:3', cal: 'co', title: '【示意品牌】提案會議 @我', start: at(0, 20), end: at(0, 21, 30), all_day: false, location: 'Google Meet' },
+    { id: 'me:4', cal: 'me', title: 'S.示意短片 拍攝', start: at(4, 8), end: at(4, 19), all_day: false, location: '示意攝影棚' },
+    { id: 'me:5', cal: 'me', title: 'E.示意短片 初剪', start: at(6, 10), end: at(6, 13), all_day: false, location: '家裡' },
+    { id: 'co:4', cal: 'co', title: '【示意短片】內審 @我', start: at(6, 15), end: at(6, 16), all_day: false, location: '公司會議室' },
+    { id: 'me:6', cal: 'me', title: 'W.補助申請表', start: at(8, 14), end: at(8, 15), all_day: false, location: '' },
+    { id: 'me:7', cal: 'me', title: 'L.運動', start: at(10, 7), end: at(10, 8), all_day: false, location: '' },
+    { id: 'me:8', cal: 'me', title: 'E.示意短片 Acopy', start: at(12, 9), end: at(12, 18), all_day: false, location: '家裡' }];
   const mlife = [
     { id: 'l1', kind: 'wish', name: X || '乳清蛋白 2.2 kg', url: flags.has('xss') ? 'javascript:window.__xss=10' : 'https://example.com/whey', note: X || '巧克力口味', price: 1280, shop: '示意商城', status: 'active', created_at: new Date().toISOString() },
     { id: 'l2', kind: 'rout', name: X || '洗冷氣濾網', cycle_days: 30, last_date: iso(-41), status: 'active' },
