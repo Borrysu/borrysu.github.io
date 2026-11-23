@@ -1607,8 +1607,9 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .cbhint{margin:10px 2px 0;font-size:12px;color:var(--ink2)}
 @media (min-width:900px){.cbday{min-height:92px}.cbd{font-size:22px}}
 
-/* 2026-11-24 msg 687：首頁目標窄條，標題旁的字輪流帶出各目標重點（bot_voice.js 每 3 秒換 .on） */
-.gsmr{display:inline-grid;min-width:0;overflow:hidden}
-.gsmr>span{grid-area:1/1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transform:translateY(6px);transition:opacity .35s,transform .35s}
-.gsmr>span.on{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.gsmr>span{transition:none}}
+/* 2026-11-24 msg 687／692：首頁目標窄條，標題旁一格一個目標的重點，手指左右滑（不自動輪播）。老大：「不是主動輪播是我可以滑動」 */
+.gtopb{min-width:0}
+.gsmr{display:flex;gap:6px;flex:1 1 auto;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;mask-image:linear-gradient(90deg,#000 88%,transparent)}
+.gsmr::-webkit-scrollbar{display:none}
+.gsmr>span{flex:0 0 auto;scroll-snap-align:start;white-space:nowrap;padding:3px 10px;border-radius:999px;background:rgba(127,127,127,.14);font-size:13px;line-height:1.5}
+.gsmr>span:first-child{background:transparent;padding-left:0}

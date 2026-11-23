@@ -881,7 +881,8 @@
         }
         if (a === 'ydhand' && /^baba\|/.test(id) && sc.querySelector('.babacf, .babaf')) hide = true;
         if (!hide && (a === 'sheet' || a === 'page' || a === 'ai' || a === 'open' || a === 'pcsay')) {
-          var key = a + '=' + id;
+          // msg 694：只藏「同動作、同字」的重複（例：兩顆「編輯每一步」）；標題連結與「深入了解」「看細節」這種明確的鈕不算重複，留著
+          var key = a + '=' + id + '=' + b.textContent.replace(/\s+/g, '');
           if (seen[key] && b !== seen[key] && !seen[key].contains(b) && !b.contains(seen[key])) hide = true; else seen[key] = b;
         }
         if (hide) { b.style.display = 'none'; b.setAttribute('data-zldup', '1'); }
@@ -1127,14 +1128,4 @@
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
-/* 2026-11-24 首頁目標窄條：標題旁的字每 3 秒換下一個目標的重點（逐流 msg 687）。退回：刪掉這一段＋app.css 的 .gsmr。 */
-(function () {
-  if (typeof document === 'undefined') return;
-  var i = 0;
-  setInterval(function () {
-    var r = document.querySelector('.gsmr'); if (!r) return;
-    var s = r.children; if (s.length < 2) return;
-    for (var k = 0; k < s.length; k++) s[k].classList.remove('on');
-    i = (i + 1) % s.length; s[i].classList.add('on');
-  }, 3000);
-})();
+/* 2026-11-24 首頁目標窄條改成手指左右滑（msg 692），自動輪播拿掉。 */

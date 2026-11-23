@@ -1646,7 +1646,7 @@ function goalCard(){if(S.st==='loading'||S.st==='error')return '';const a=gAll()
  if(!a.length){delete CV.goal;return `<div class="room groomh" data-z="goal"><button class="rgo" data-act="page" data-id="goals"><span class="rh">目標</span><span class="rs">還沒立目標</span></button>${bigF('din','goal')}</div>`}
  const car=cvWrap('goal',a.map(goalCardSlide),'目標');
  const gb=g=>`${clip(String(g.short||g.name||''),12)} ${g.now}／${g.total}${g.unit?' '+g.unit:''}${g.st==='late'?'・慢':g.st==='stall'?'・沒動':''}`;
- return `<div class="room groomh" data-z="goal"><button class="gtopb" data-act="page" data-id="goals"><span class="rh">目標</span><span class="gsm gsmr"><span class="on">${esc(m.t)}</span>${a.map(g=>`<span>${esc(gb(g))}</span>`).join('')}</span></button>${car}${bigF('din','goal')}</div>`}
+ return `<div class="room groomh" data-z="goal"><button class="gtopb" data-act="page" data-id="goals"><span class="rh">目標</span><span class="gsm gsmr" aria-label="各目標重點，手指左右滑"><span>${esc(m.t)}</span>${a.map(g=>`<span>${esc(gb(g))}</span>`).join('')}</span></button>${car}${bigF('din','goal')}</div>`}
 goalStrip=goalCard;
 
 /* 目標頁頁首：跟其他房間一樣的大卡 */
@@ -2487,7 +2487,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v111');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v112');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4533,7 +4533,7 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
   if(!a.length)return `<div class="room groomh gmroom" data-z="goal"><button class="rgo" data-act="page" data-id="goals"><span class="rh">目標</span><span class="rs">還沒立目標</span></button>${bigF('din','goal')}</div>`;
   const ord=a.slice().sort((x,y)=>(y.st==='late')-(x.st==='late')||(GL.focus===y.id)-(GL.focus===x.id));
   return `<div class="room groomh gmroom" data-z="goal"><div class="gmh"><span class="rh">目標</span><span class="gsm">${esc(m.t)}</span></div><div class="gmrow" role="list" aria-label="目標，手指左右滑">${ord.map(g=>`<div role="listitem">${gmCard(g)}</div>`).join('')}<div role="listitem"><button class="gmc gmall" data-act="page" data-id="goals"><b class="gmn">看全部目標</b><span class="gms">${a.length} 個 ›</span></button></div></div>${bigF('din','goal')}</div>`};
- // 2026-11-24 msg 687 老大：「改回去我要原本的那種設計只是窄窄的但上面的字要有不同目標的一點內容」→ 回到窄的一條（goalCard），標題旁的字輪流帶出各目標重點（bot_voice.js 輪播 .gsmr）
+ // 2026-11-24 msg 687 老大：「改回去我要原本的那種設計只是窄窄的但上面的字要有不同目標的一點內容」→ 回到窄的一條（goalCard），標題旁的字輪流帶出各目標重點（msg 692 改成手指左右滑，不自動輪播）
  goalStrip=goalCard;
 
  // 行事曆忙閒：一天的忙碌時數＝把有時間的行程合併重疊後加總，全天行程算 4 小時
