@@ -1656,3 +1656,15 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 @media (prefers-reduced-motion:reduce){.tl *{transition:none!important}}
 .tlseg span{display:block;padding:0 4px;font-style:normal;font-size:10.5px;line-height:22px;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tlday:first-of-type,.tlruler+.tlday{border-top:0}
+
+/* v114 時間條（Refero 參考：Daylish 空檔膠囊、Wrike 每天已排／可用、Cron 下一件） */
+.tlgap{display:flex;align-items:center;gap:8px;margin:2px 0;padding-left:16px;position:relative;font-size:13px;color:var(--ink2)}
+.tlgap::before{content:"";position:absolute;left:6px;top:-4px;bottom:-4px;border-left:2px dotted var(--line2)}
+.tlgap span{display:inline-flex;gap:8px;align-items:baseline;padding:4px 12px;border-radius:999px;border:1px dashed var(--line2)}
+.tlgap b{color:var(--ink);font-size:13px}
+.tlday.we .tlrow{background:rgba(127,127,127,.06);border-radius:10px}
+.tlnext{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;margin:10px 2px 4px;padding:10px 12px;border-radius:12px;background:var(--sf2)}
+.tlnext span{font-size:12px;color:var(--ink2)}.tlnext b{font-size:15px}.tlnext small{color:var(--ink2);font-size:12px}
+.tlx .rows{margin:4px 0}
+.tlf small{white-space:nowrap}.tlf .tlbz{opacity:.75}
+.tlruler .tlbar{background:none;overflow:visible}
