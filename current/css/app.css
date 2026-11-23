@@ -1252,3 +1252,9 @@ label.f input:not([type]){width:100%;min-height:48px;padding:10px 12px;border-ra
 .pstbtn .chev{margin-left:auto}
 .pstd{margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
 .pstd .kv{display:flex;gap:10px;justify-content:space-between;padding:4px 0}.pstd .kv span{color:var(--ink2);flex:none}.pstd .kv b{text-align:right;overflow-wrap:anywhere;font-weight:500}
+/* 2026-11-23 v84 詳情頁也能編修；清單字不截斷（老大：「應該要是可以展延的內容而不是自己省略！」） */
+.mkfab{position:fixed;right:16px;bottom:calc(var(--tabh) + 16px + env(safe-area-inset-bottom));z-index:92;height:48px;border-radius:24px;display:inline-flex;align-items:center;gap:6px;padding:0 16px 0 14px;background:#f5b301;color:#1a1300;border:0;font:inherit;font-size:15px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.mkfab[aria-pressed="true"]{background:#1a1300;color:#f5b301;box-shadow:0 0 0 2px #f5b301}
+.rowb .tx b,.rowb .tx small{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.rowb .tx small.d2{-webkit-line-clamp:unset;display:block}
+body:has(#mkBox) .mkfab{display:none}

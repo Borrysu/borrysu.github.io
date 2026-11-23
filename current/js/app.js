@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v83');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v84');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3024,7 +3024,7 @@ ACT.planrun=async v=>{const [b,id]=v.split('|'),t=DB.todo.find(q=>q.id===id);if(
  return h+(st?`<section class="sec"><h3>步驟</h3>${st}</section>`:'')+`<div class="mrow">${mb(bm('din')+'跟定定規劃','ai','din|proj:'+t.id+'||')}${mb(bm('daqi')+'跟大器規劃','ai','daqi|proj:'+t.id+'||')}</div>`}}
 // 首頁：「正在跑」同一條清單加上交辦，標「交辦」，可篩選（全部、交辦、工作）
 S.jf=S.jf||'all';
-function jiaoRows(){return DB.todo.map(t=>`<div class="rowi" data-card="${esc(t.id)}"><div class="rowb">${aiF('daqi','proj:'+t.id,t.run==='running'?'跑中':'')}<button class="tx" data-act="sheet" data-id="cview:todo:${esc(t.id)}" style="min-height:44px;text-align:left"><b>${esc(t.ask)}</b><small>${esc(t.st)}</small></button><span class="rt">${chip('交辦')}</span></div></div>`).join('')}
+function jiaoRows(){return DB.todo.map(t=>`<div class="rowi" data-card="${esc(t.id)}"><div class="rowb">${aiF('daqi','proj:'+t.id,t.run==='running'?'跑中':'')}<button class="tx" data-act="sheet" data-id="cview:todo:${esc(t.id)}" style="min-height:44px;text-align:left"><b>${esc(t.title||t.ask)}</b><small>${esc(t.st)}</small></button><span class="rt">${chip('交辦')}</span></div></div>`).join('')}
 {const _h=homeL2;homeL2=function(){const h=_h();if(E()||!DB.todo.length)return h;const i=h.lastIndexOf('<div class="cols">');if(i<0)return h;
  const k=h.indexOf('正在跑',i);if(k<0)return h;const s0=h.lastIndexOf('<section class="sec">',k),e0=h.indexOf('</section>',k);if(s0<0||e0<0)return h;
  const nj=DB.todo.length,nw=jobs().length,f=nw?S.jf:'all';
@@ -3048,7 +3048,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(MK.list))}catch(e){}};
  const T=s=>String(s||'').replace(/\s+/g,' ').trim();
  const cut=(s,n)=>{s=T(s);return s.length>n?s.slice(0,n)+'…':s};
- const mine=e=>e&&e.closest&&e.closest('#mkBar,#mkBox,#mkBtn');
+ const mine=e=>e&&e.closest&&e.closest('#mkBar,#mkBox,#mkBtn,#mkFab');
  function where(el){const R=document.documentElement,a=[];
   const room=ROOMN[R.dataset.tab||S.tab]||R.dataset.tab||S.tab||'';if(room)a.push(room);
   try{const sb=S.sub&&S.sub[S.tab];if(sb&&!S.page)a.push(sb)}catch(e){}
@@ -3466,7 +3466,7 @@ ACT.beatfix=async v=>{const all=E()?[]:DB.beats,bs=v==='all'?all.filter(b=>b.lat
  try{await LV.api.say(null,beatAsk(bs),'daqi');toast(`交給大器修 ${bs.length} 支，修好回在「跟大器說」`)}catch(e){toast('沒送出：'+LERR(e))}};
 // 3 企劃書、標案類：不顯示收款，改投標・審查
 const BID_RE=/企劃書|企畫書|計畫書|計劃書|標案|投標|服務建議書|評選|審查|提案/;
-const isBid=p=>{const c=p.raw||{};return BID_RE.test([p.title,p.short,p.next,c.title,c.why].join(' '))&&c.quoteAmount==null};
+const isBid=p=>{const c=p.raw||{};return BID_RE.test([p.title,p.short,c.title,c.shortTitle].join(' '))&&c.quoteAmount==null};
 const BID_STEPS=['準備送件資料','送件','資格審查','評選簡報','等決標','簽約'];
 {const _pc=projCard;projCard=function(p){let h=_pc(p);if(!isBid(p))return h;return h.replace(/沒寫金額/g,'投標・審查')}}
 {const _p=pageHTML;pageHTML=function(){let h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!isBid(p))return h;
@@ -3534,6 +3534,16 @@ function pstDetail(p,s,i){const c=p.raw||{},o=stepOf(s),tg=stepTags(o),live=s.st
   return `<li class="pstr${op?' on':''}" data-s="${s}"><button class="pstn pstbtn" data-act="open" data-id="${esc(k)}" aria-expanded="${op}">${inner}<span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></button>`+(op&&st[i]?pstDetail(p,st[i],i):'')})}}
 ACT.pstask=v=>{const [id,i]=v.split('|'),p=DB.proj.find(q=>q.id===id),s=p&&p.raw&&(p.raw.progressSteps||[])[+i];if(!s)return;
  openChat('daqi','proj:'+id,null,()=>{const t=$('#cText');if(t){t.value=`第 ${+i+1} 步「${s.name}」現在做到哪？`;t.focus()}})};
+/* ---------- v84（2026-11-23）：老大面板意見 msg 245、253（先做的部分） ----------
+   245「編修按鈕在卡片點開之後沒辦法顯示，就改不到卡片裡面」→ 詳情頁、彈出卡打開時，右下角浮一顆「✎ 編修」，一樣能進編修模式。
+   253「應該要是可以展延的內容而不是自己省略！」→ 清單的標題與小字不再用「…」截斷，整句顯示。
+   順手修：「直男行不行導演版」被誤判成投標案（只看說明裡的「審查」），投標判斷改成只看案名。 */
+{const fab=()=>{let f=$('#mkFab');const need=!!(S.page||S.sheet)&&!S.chat;
+  if(!need){if(f)f.remove();return}
+  if(!f){f=document.createElement('button');f.id='mkFab';f.type='button';f.className='mkfab';f.innerHTML='<span aria-hidden="true">✎</span><b>編修</b>';
+   f.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const k=$('#mkBtn');if(k)k.click()},true);document.body.appendChild(f)}
+  const on=document.documentElement.classList.contains('marking');f.setAttribute('aria-pressed',on?'true':'false');f.querySelector('b').textContent=on?'完成':'編修'};
+ const _r=render;render=function(d){_r(d);fab()};new MutationObserver(fab).observe(document.documentElement,{attributes:true,attributeFilter:['class']})}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S});
 
 render('stgroot');
