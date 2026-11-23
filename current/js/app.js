@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v92');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v93');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3813,6 +3813,129 @@ function needWhy(p){const c=p.raw||{},a=[];if(c.progressBlocker)a.push('卡在�
  const btn=`<button class="mb ndq" data-act="open" data-id="needhelp" aria-expanded="${op}">ⓘ 什麼會在這裡</button>`;
  const help=op?`<div class="card ndhelp fadein"><p><b>「要你看」</b>＝進行中的案子裡，現在需要你出手的那幾件。</p><p class="pc-h">什麼會進來</p><ul class="pc-l"><li>大器寫了卡點（卡在某件事）</li><li>AI 跑到一半失敗</li><li>期限剩 3 天內，還沒交</li></ul><p class="pc-h">怎麼離開</p><ul class="pc-l"><li>解掉卡點，或在步驟按「✓ 做完」</li><li>請 AI 重跑成功</li><li>改期限，或送件那步做完（會改成「已交・等下一步」）</li></ul><p class="note">每張卡上的「▲ 在這裡因為」寫出它被列進來的原因。</p></div>`:'';
  const j=h.indexOf('</div>',e);return j<0?h:h.slice(0,e)+btn+h.slice(e,j+6)+help+h.slice(j+6)}}
+/* ---------- v93（2026-11-24）：步驟卡改卡片、@掛技能；執行狀態白話；立刻停止 ----------
+   老大原話（逐流 msg 327 第 2 點）：「這邊的排版按鈕字體也很像工程文字，希望設計過視覺，然後步驟卡模型技能也是用卡片的感覺而不是工程器，模型可點選然後技能掛載不是用選的而是我能在卡片下方講任務內容時就 @技能（中英文都可以），然後卡片的上方就會有監工，子視窗，模型等級（絲滑流暢）」
+   msg 330：「要可以立刻停止，然後我不知道去執行是用什麼去執行」　msg 335：「排隊是啥意思」
+   1 步驟卡：一步一張卡，上方一排：監工／子視窗切換、模型、狀態；下方輸入框寫這步做什麼，打 @ 跳技能建議（中英文），選了變成技能小卡。存法照舊（note 開頭〔…〕，多個技能用「、」）。
+     編輯中的內容放在 STD（草稿），背景重畫不會清掉。
+   2 狀態白話：queued＝「已送出，等 Mac 開視窗」；running＝「誰在做：這步」；目前這步要老大做＝「等你：這步」。旁邊 ⓘ 寫誰在執行、什麼模型、哪個視窗。
+   3 ■ 立刻停止：run_status 改 failed＋run_note「老大按停止」（adapter runset，opp_progress_set 既有參數），再寫一則【停止】給櫃台；提示條可復原（復原＝改回原狀態＋寫一則【繼續】）。 */
+const SKZH={archimise:'大意匠',canon:'定本',copybook:'臨帖',craft:'考工','diagram-design':'圖解',distill:'蒸餾',eagle:'素材庫',eyear:'耳目','eyear-meeting-notes':'會議記錄',fieldwork:'采風',folio:'裝幀',glean:'拾穗',handy:'趁手',herald:'喉舌',hyperframes:'逐格渲染',intake:'過眼',last30days:'近況',lilt:'繡口','media-use':'媒體',minimise:'小意匠',mise:'意匠',motion:'走馬',present:'亮相',proof:'校讎',score:'協律',splice:'連綴',stage:'搬演',sweep:'灑掃',tableread:'圍讀',trophy:'奪標',vault:'倉庫',weigh:'執秤'};
+const SKL=k=>(SKZH[k]?SKZH[k]+' ':'')+k;
+const SMDL=[['Opus 5.5','一般主力'],['Fable 5.2','判斷級、驗收'],['Codex','生圖、程式'],['AGY','看片、查證'],['Grok','Grok Bot 隊'],['不指定','照預設']];
+const skSplit=s=>String(s||'').split(/[、,，\s]+/).map(x=>x.trim().toLowerCase()).filter(x=>SSKILL.includes(x));
+const skFind=q=>{q=String(q||'').toLowerCase();return SSKILL.filter(k=>!q||k.includes(q)||(SKZH[k]||'').includes(q)).sort((a,b)=>(a.startsWith(q)||(SKZH[a]||'').startsWith(q)?0:1)-(b.startsWith(q)||(SKZH[b]||'').startsWith(q)?0:1)).slice(0,6)};
+const skExact=w=>{w=String(w||'').toLowerCase();return SSKILL.find(k=>k===w||SKZH[k]===w)||''};
+let STD=null,SSUG=null;
+const stdNew=()=>({name:'',status:'pending',model:'不指定',mode:'監工本身',skills:[],note:'',pk:''});
+function stdLoad(id){const it=todoOf(id),c=it&&it.raw;if(!c)return null;const st=(c.progressSteps||[]).map(s=>{const o=stepOf(s);return {name:o.name,status:o.status,model:SMDL.some(m=>m[0]===o.model)?o.model:'不指定',mode:o.mode==='開子視窗'?'開子視窗':'監工本身',skills:skSplit(o.skill),note:o.note,pk:''}});
+ if(!st.length)st.push(stdNew());return {id,steps:st}}
+const stsL=v=>(STS.find(x=>x[0]===v)||STS[0])[1];
+function stcHTML(o,i){const pk=o.pk,sub=o.mode==='開子視窗';
+ const opts=pk==='model'?SMDL.map(([m,h])=>`<button type="button" class="stc-o${m===o.model?' on':''}" data-act="stcset" data-id="${i}|model|${esc(m)}"><b>${esc(m)}</b><small>${esc(h)}</small></button>`).join('')
+  :pk==='status'?STS.map(([k,l])=>`<button type="button" class="stc-o s-${k}${k===o.status?' on':''}" data-act="stcset" data-id="${i}|status|${k}"><b>${esc(l)}</b></button>`).join(''):'';
+ return `<div class="stc s-${esc(o.status)}" data-i="${i}">
+ <div class="stc-top"><span class="stc-n" aria-hidden="true">${i+1}</span>
+  <div class="stc-seg${sub?' r':''}" role="group" aria-label="第 ${i+1} 步誰來做"><i aria-hidden="true"></i><button type="button" data-act="stcmode" data-id="${i}|監工本身" aria-pressed="${!sub}">監工</button><button type="button" data-act="stcmode" data-id="${i}|開子視窗" aria-pressed="${sub}">子視窗</button></div>
+  <button type="button" class="stc-c mdl${o.model==='不指定'?' dim':''}" data-act="stcpk" data-id="${i}|model" aria-expanded="${pk==='model'}"><span aria-hidden="true">◆</span>${esc(o.model==='不指定'?'模型':o.model)}</button>
+  <button type="button" class="stc-c sts s-${esc(o.status)}" data-act="stcpk" data-id="${i}|status" aria-expanded="${pk==='status'}">${esc(stsL(o.status))}</button>
+  <button type="button" class="stc-x" data-act="stdel" data-id="${i}" aria-label="拿掉第 ${i+1} 步">✕</button></div>
+ <div class="stc-pk${pk?' open':''}" role="group" aria-label="${pk==='model'?'選模型':'選狀態'}"><div>${opts}</div></div>
+ ${o.skills.length?`<div class="stc-sks">${o.skills.map(k=>`<span class="stc-sk">@${esc(SKL(k))}<button type="button" data-act="stcsk" data-id="${i}|${esc(k)}" aria-label="拿掉技能 ${esc(k)}">✕</button></span>`).join('')}</div>`:''}
+ <div class="stc-in"><textarea class="st-name" data-i="${i}" rows="2" maxlength="120" placeholder="這步要做什麼？打 @ 掛技能，例：@意匠 寫第三場分鏡" aria-label="第 ${i+1} 步做什麼">${esc(o.name)}</textarea><div class="stc-sug" role="listbox" aria-label="技能建議" hidden></div></div>
+ <input class="st-note" data-i="${i}" maxlength="160" value="${esc(o.note)}" placeholder="備註（可不填）" aria-label="第 ${i+1} 步備註"></div>`}
+const stcList=()=>STD.steps.map(stcHTML).join('');
+function stcRedraw(i){const box=$('#stRows');if(!box||!STD)return;if(i==null){box.innerHTML=stcList();return}
+ const el=box.querySelector(`.stc[data-i="${i}"]`);if(!el)return;const t=document.createElement('div');t.innerHTML=stcHTML(STD.steps[i],i);const n=t.firstElementChild;el.replaceWith(n);return n}
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='stepx')return _s();
+ const id=S.sheet.slice(6);if(!STD||STD.id!==id)STD=stdLoad(id);if(!STD)return shHead('這件不在了');
+ return shHead('步驟卡')+`<p class="note stc-lead">一步一張卡。上面選誰來做、用哪個模型；下面寫這步要做什麼，打 <b>@</b> 掛技能（中英文都可以）。按「去執行」時，大器照這個架構走。</p>${stPlanRow(id)}<div id="stRows" class="stcs">${stcList()}</div><div class="mrow">${mb('＋ 加一步','stadd','')}</div>${S.err==='stepx'?'<p class="err" role="alert">▲ 每一步都要寫做什麼。</p>':''}<div class="btns">${B('存好','stsave',id,'pri wide')}</div>`}}
+{const _a=ACT.sheet;ACT.sheet=function(id){if(/^stepx:/.test(String(id||'')))STD=null;return _a.apply(this,arguments)}}
+ACT.stadd=()=>{if(!STD)return;if(STD.steps.length>=30){toast('最多 30 步');return}STD.steps.push(stdNew());const box=$('#stRows');if(!box)return;
+ box.insertAdjacentHTML('beforeend',stcHTML(STD.steps[STD.steps.length-1],STD.steps.length-1));const n=box.lastElementChild;if(n){n.classList.add('stpop');const t=n.querySelector('.st-name');if(t)t.focus()}};
+ACT.stdel=i=>{if(!STD)return;i=+i;const old=STD.steps.slice();STD.steps.splice(i,1);if(!STD.steps.length)STD.steps.push(stdNew());stcRedraw();
+ toast(`拿掉第 ${i+1} 步（還沒存）`,()=>{if(!STD)return;STD.steps=old;stcRedraw()})};
+ACT.stcmode=v=>{if(!STD)return;const [i,m]=v.split('|'),o=STD.steps[+i];if(!o)return;o.mode=m;const el=document.querySelector(`#stRows .stc[data-i="${i}"] .stc-seg`);if(!el)return;
+ el.classList.toggle('r',m==='開子視窗');el.querySelectorAll('button').forEach((b,k)=>b.setAttribute('aria-pressed',String((k===1)===(m==='開子視窗'))))};
+ACT.stcpk=v=>{if(!STD)return;const [i,k]=v.split('|'),o=STD.steps[+i];if(!o)return;o.pk=o.pk===k?'':k;STD.steps.forEach((x,j)=>{if(j!==+i)x.pk=''});
+ document.querySelectorAll('#stRows .stc').forEach(el=>{const j=+el.dataset.i,x=STD.steps[j];if(!x)return;const p=el.querySelector('.stc-pk');
+  if(j===+i&&o.pk){const t=document.createElement('div');t.innerHTML=stcHTML(o,j);p.firstElementChild.innerHTML=t.querySelector('.stc-pk>div').innerHTML;p.setAttribute('aria-label',k==='model'?'選模型':'選狀態')}
+  p.classList.toggle('open',!!x.pk);el.querySelectorAll('[data-act="stcpk"]').forEach(b=>b.setAttribute('aria-expanded',String(x.pk===b.dataset.id.split('|')[1])))})};
+ACT.stcset=v=>{if(!STD)return;const [i,k,val]=v.split('|'),o=STD.steps[+i];if(!o)return;o[k]=val;o.pk='';const n=stcRedraw(+i);
+ if(n){const c=n.querySelector(k==='model'?'.stc-c.mdl':'.stc-c.sts');if(c){c.classList.add('stpop');c.focus({preventScroll:true})}}};
+ACT.stcsk=v=>{if(!STD)return;const [i,k]=v.split('|'),o=STD.steps[+i];if(!o)return;o.skills=o.skills.filter(x=>x!==k);stcRedraw(+i)};
+function stcAddSkill(i,k,cut){const o=STD&&STD.steps[i];if(!o||!k)return;if(!o.skills.includes(k)){if(o.skills.length>=3){toast('一步最多掛 3 個技能');return}o.skills.push(k)}
+ if(cut){o.name=(o.name.slice(0,cut[0])+o.name.slice(cut[1])).replace(/[ 　]{2,}/g,' ').replace(/^\s+/,'')}
+ SSUG=null;const n=stcRedraw(i);if(n){const sk=n.querySelector('.stc-sk:last-child');if(sk)sk.classList.add('stpop');const t=n.querySelector('.st-name');if(t){t.focus({preventScroll:true});const p=cut?Math.min(cut[0],t.value.length):t.value.length;try{t.setSelectionRange(p,p)}catch(e){}}}}
+ACT.stcadd=v=>{const [i,k]=v.split('|');const s=SSUG&&SSUG.i===+i?SSUG:null;stcAddSkill(+i,k,s?[s.a,s.b]:null)};
+function stcSug(t){const i=+t.dataset.i,box=t.parentNode.querySelector('.stc-sug'),pos=t.selectionStart==null?t.value.length:t.selectionStart,pre=t.value.slice(0,pos),m=pre.match(/(^|\s)[@＠]([^\s@＠]{0,20})$/);
+ if(!m){SSUG=null;box.hidden=true;box.innerHTML='';return}const q=m[2],list=skFind(q);if(!list.length){SSUG=null;box.hidden=false;box.innerHTML=`<p class="stc-none">沒有叫「${esc(q)}」的技能</p>`;return}
+ SSUG={i,a:pos-q.length-1,b:pos,list,h:SSUG&&SSUG.i===i?Math.min(SSUG.h||0,list.length-1):0};
+ box.hidden=false;box.innerHTML=list.map((k,j)=>`<button type="button" role="option" class="stc-s${j===SSUG.h?' on':''}" aria-selected="${j===SSUG.h}" data-act="stcadd" data-id="${i}|${k}"><b>${esc(SKZH[k]||k)}</b><small>${esc(k)}</small></button>`).join('')}
+document.addEventListener('input',e=>{const t=e.target;if(!STD||!t||!t.closest||!t.closest('#stRows'))return;const i=+t.dataset.i,o=STD.steps[i];if(!o)return;
+ if(t.classList.contains('st-name')){o.name=t.value;stcSug(t)}else if(t.classList.contains('st-note'))o.note=t.value});
+document.addEventListener('keydown',e=>{const t=e.target;if(!SSUG||!t||!t.classList||!t.classList.contains('st-name')||+t.dataset.i!==SSUG.i||e.isComposing)return;
+ if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();SSUG.h=(SSUG.h+(e.key==='ArrowDown'?1:SSUG.list.length-1))%SSUG.list.length;t.parentNode.querySelectorAll('.stc-s').forEach((b,j)=>{b.classList.toggle('on',j===SSUG.h);b.setAttribute('aria-selected',String(j===SSUG.h))})}
+ else if(e.key==='Enter'||e.key==='Tab'){e.preventDefault();stcAddSkill(SSUG.i,SSUG.list[SSUG.h],[SSUG.a,SSUG.b])}
+ else if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();SSUG=null;const b=t.parentNode.querySelector('.stc-sug');b.hidden=true}},true);
+document.addEventListener('focusout',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('st-name'))setTimeout(()=>{const b=t.parentNode&&t.parentNode.querySelector('.stc-sug');if(b&&!b.contains(document.activeElement)&&document.activeElement!==t){b.hidden=true;SSUG=null}},180)});
+ACT.stsave=id=>{if(!STD||STD.id!==id)return;const it=todoOf(id),c=it&&it.raw;if(!c)return;
+ // 沒選建議、直接打完的 @技能 也收進來
+ STD.steps.forEach(o=>{o.name=o.name.replace(/(^|\s)[@＠]([^\s@＠]+)/g,(m,a,w)=>{const k=skExact(w);if(!k)return m;if(!o.skills.includes(k)&&o.skills.length<3)o.skills.push(k);return a}).replace(/\s{2,}/g,' ').trim();o.note=o.note.trim()});
+ const keep=STD.steps.filter(s=>s.name||s.note||s.skills.length);if(keep.some(s=>!s.name)){S.err='stepx';render('keep');return}S.err='';
+ const old=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''}));
+ const body=keep.map(s=>({name:s.name.slice(0,80),status:s.status,note:stepNote({model:s.model,mode:s.mode,skill:s.skills.join('、'),note:s.note})}));
+ if(!LV.api||!LV.api.act){toast('離線中，連上再存');return}
+ STD=null;closeThen(async()=>{try{await LV.api.act(id,'steps',{steps:body});await reload();toast(body.length?`存了 ${body.length} 張步驟卡`:'步驟卡清掉了',async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}catch(e){toast('沒存上：'+LERR(e))}})};
+document.addEventListener('mousedown',e=>{if(e.target&&e.target.closest&&e.target.closest('.stc-s'))e.preventDefault()});
+// 2 狀態白話
+const YOU_RE=/老大|你|申請|登入|付款|本人|親自/;
+RUNST.queued='已送出，等 Mac 開視窗';RUNST2.queued='已送出，等 Mac 開視窗';RUNST2.running='在做';JST.queued[0]='已送出，等接手';PCK.queued='已送出';
+{const _c=coSt;coSt=function(t){const s=_c(t);return s==='排隊中'?'已送出，等接手':s}}
+function runCur(c){const s=c.progressSteps||[];let k=s.findIndex(x=>x.status==='current'||x.status==='blocked');if(k<0&&c.runStatus==='queued')k=s.findIndex(x=>x.status==='pending');return k}
+function runWho(c){const w=((String(c.runNote||'').match(/【[^】]+】[^，。；、\n]{0,30}/)||[''])[0]).trim();let j=null;
+ try{j=jobs().find(q=>{const r=q.raw||{};if(!['running','queued','waiting_you','waiting_mac'].includes(r.status))return false;const o=jobOwner(q);return o&&o.id===c.id})}catch(e){}
+ const r=j&&j.raw||{},k=runCur(c),o=k>-1?stepOf((c.progressSteps||[])[k]):null;
+ return {win:w,agent:r.agent||'',mach:r.machine||'',model:o&&o.model!=='不指定'?o.model:'',mode:o?o.mode:'',skill:o?o.skill:'',step:o?o.name:'',k,n:(c.progressSteps||[]).length,by:c.progressUpdatedBy||''}}
+const stopped=c=>c.runStatus==='failed'&&/老大按停止/.test(c.runNote||'');
+function runSay(c){if(!c||!c.runStatus)return '還沒送出';const w=runWho(c),cnt=w.n&&w.k>-1?`・${w.k+1}/${w.n} 步`:'';
+ if(c.runStatus==='done')return '做完了';
+ if(stopped(c))return '已停止（你按的）'+cnt;
+ if(c.runStatus==='failed')return '卡住了'+(w.step?'：'+w.step:'')+cnt;
+ if(w.step&&YOU_RE.test(w.step))return '等你：'+w.step+cnt;
+ if(c.runStatus==='queued')return '已送出，等 Mac 開視窗'+cnt;
+ const who=w.agent||w.win||'大器';return `${who}${/[A-Za-z0-9]$/.test(who)?' ':''}在做：${w.step||'這件'}${w.model?'（'+w.model+'）':''}${cnt}`}
+jiaoSt=runSay;
+function runInfo(c){const w=runWho(c),you=w.step&&YOU_RE.test(w.step),q=c.runStatus==='queued';
+ const rows=[['誰在執行',you?'你（這步要你本人做）':q?'還沒有人接：Mac 上的櫃台會開一個新的 Claude Code 視窗來做':(w.agent||(w.win?'Claude Code 視窗':'大器（Mac 上的 Claude Code）'))],
+  ['在哪個視窗',w.win||(q?'還沒開，開了會寫在這裡':'大器還沒回報視窗名')],['模型',w.model||'沒指定：用大器預設（Opus 5.5）'],['方式',w.mode||'監工本身'],w.skill?['技能',skSplit(w.skill).map(SKL).join('、')||w.skill]:null,['機器',w.mach||'老大的 Mac'],
+  ['這步',w.step?`第 ${w.k+1} 步：${w.step}`:'還沒排步驟'],['最後回報',c.progressUpdatedAt?LAGO(c.progressUpdatedAt)+(w.by?'・'+w.by:''):'']].filter(x=>x&&x[1]);
+ return `<dl class="rinfo">${rows.map(([k,v])=>`<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl><p class="note">「已送出」＝按了去執行，Mac 還沒開出視窗；通常一兩分鐘內就會變成「在做」。Mac 關機時會等到開機。</p>`}
+const RINFO={};
+function runBar(c){if(!c||!c.id||!c.runStatus)return '';const busy=['queued','running'].includes(c.runStatus),u=c.runStatus==='failed'&&!stopped(c),k=c.id,op=!!RINFO[k];
+ return `<div class="runbar${busy?' live':''}${u?' urg':''}" data-rb="${esc(k)}"><div class="rb-top"><span class="rb-dot" aria-hidden="true"></span><p class="rb-t">${esc(runSay(c))}</p>
+ <button type="button" class="rb-i" data-act="rbinfo" data-id="${esc(k)}" aria-expanded="${op}" aria-label="誰在執行、什麼模型、哪個視窗">ⓘ</button></div>
+ <div class="rb-more${op?' open':''}"><div>${runInfo(c)}</div></div>${busy?`<div class="btns rb-b">${B('■ 立刻停止','runstop',k,'rb-stop')}</div>`:''}</div>`}
+ACT.rbinfo=k=>{RINFO[k]=!RINFO[k];document.querySelectorAll(`.runbar[data-rb="${CSS.escape(k)}"]`).forEach(el=>{el.querySelector('.rb-more').classList.toggle('open',!!RINFO[k]);el.querySelector('.rb-i').setAttribute('aria-expanded',String(!!RINFO[k]))})};
+const itemOf=id=>(LV.items||[]).find(q=>q.id===id);
+ACT.runstop=async id=>{const c=itemOf(id);if(!c||!['queued','running'].includes(c.runStatus)){toast('這件已經沒在跑了');return}
+ if(!LV.api||!LV.api.act){toast('離線中，連上再按');return}
+ const old={status:c.runStatus,note:c.runNote||''},w=runWho(c);
+ const put=nc=>{if(!nc)return;const j=LV.items.findIndex(q=>q.id===id);if(j>-1)LV.items[j]=nc};
+ try{put(await LV.api.act(id,'runset',{status:'failed',note:'老大按停止'}))}catch(e){toast('沒停下：'+LERR(e));return}
+ LV.sig='';paint('keep');
+ let sent=true;try{await LV.api.say(id,`【停止】老大按了立刻停止。${w.win?'視窗：'+w.win+'。':''}${w.step?'停在第 '+(w.k+1)+' 步：'+w.step+'。':''}請馬上停掉這張卡正在跑的視窗或背景程序，不要再改檔或對外發送，回報停在哪、做到哪。`,'daqi')}catch(e){sent=false}
+ toast(sent?'停下了，已叫大器關掉那個視窗':'面板標停止了，但通知大器沒送出，請到對話跟大器說',async()=>{try{put(await LV.api.act(id,'runset',old));LV.sig='';paint('keep');
+   try{await LV.api.say(id,'【繼續】老大收回剛剛的停止，照原本的接著做。','daqi')}catch(e){}toast('收回停止了，照原本的接著做')}catch(e){toast('沒收回：'+LERR(e))}});
+ setTimeout(()=>reload&&reload(),4e3)};
+WRITE.push('runstop','stsave','stadd','stdel');
+// 任務彈出卡（交辦）、案子詳情：最上面放狀態列
+{const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');if(a[0]!=='cview'||a[1]!=='todo')return h;const it=DB.todo.find(q=>q.id===a.slice(2).join(':')),c=it&&it.raw;if(!c||!c.runStatus)return h;
+ return h.replace(/(<div class="shead">[\s\S]*?<\/button><\/div>)/,'$1'+runBar(c))}}
+{const _p=pageHTML;pageHTML=function(){const h=_p(),x=(S.page||'').split(':');if(x[0]!=='proj')return h;const c=itemOf(x[1]);if(!c||!c.runStatus)return h;
+ const i=h.indexOf('</h1>');return i<0?h:h.slice(0,i+5)+runBar(c)+h.slice(i+5)}}
+// 案子步驟詳情：執行一欄白話
+{const _d=pstDetail;pstDetail=function(p,s,i){const h=_d(p,s,i),c=p.raw||{};if(!c.runStatus||!(s.status==='current'||s.status==='blocked'))return h;return h.replace(/(<span>執行<\/span><b>)[^<]*/,'$1'+esc(runSay(c)))}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

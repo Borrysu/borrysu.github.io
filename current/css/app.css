@@ -1337,3 +1337,61 @@ body:has(#mkBox) .mkfab{display:none}
 .ndq{margin-left:auto;color:var(--ink)}
 .ndhelp{margin:0 0 12px;line-height:1.6}.ndhelp .pc-h{margin-top:12px}
 .ndwhy{margin:6px 0 0;font-size:13px;font-weight:700;color:#f3efe0;overflow-wrap:anywhere}
+/* v93：步驟卡卡片化、@技能、執行狀態列與立刻停止 */
+.stc-lead b{color:var(--ink)}
+.stcs{display:flex;flex-direction:column;gap:12px;margin:12px 0 4px}
+.stc{position:relative;padding:12px 12px 10px;border-radius:18px;background:var(--sf2);border:1px solid var(--line);transition:border-color .2s var(--e-std),box-shadow .2s var(--e-std)}
+.stc:focus-within{border-color:var(--line2);box-shadow:0 6px 24px rgba(0,0,0,.18)}
+.stc.s-done{opacity:.72}.stc.s-blocked{border-color:var(--urg)}
+.stc.stpop,.stc .stpop{animation:stpop .32s var(--e-in)}
+@keyframes stpop{from{opacity:.2;transform:scale(.94)}to{opacity:1;transform:none}}
+.stc-top{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding-right:40px}
+.stc-n{display:inline-grid;place-items:center;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--bg);font:700 13px/1 var(--fn);flex:none}
+.stc-seg{position:relative;display:inline-flex;padding:3px;border-radius:999px;background:rgba(127,127,127,.18)}
+.stc-seg i{position:absolute;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:var(--pri);transition:transform .28s var(--e-in)}
+.stc-seg.r i{transform:translateX(100%)}
+.stc-seg button{position:relative;z-index:1;min-width:58px;min-height:38px;padding:0 12px;border:0;background:none;border-radius:999px;font:600 13px/1 var(--zh);color:var(--ink2);transition:color .25s var(--e-std)}
+.stc-seg button[aria-pressed=true]{color:var(--pri-ink)}
+.stc-c{display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:0 12px;border-radius:999px;border:1px solid var(--line2);background:transparent;font:600 13px/1 var(--zh);color:var(--ink);transition:background .2s var(--e-std),transform .15s var(--e-std)}
+.stc-c:active{transform:scale(.96)}.stc-c[aria-expanded=true]{background:var(--ink);color:var(--bg)}
+.stc-c.dim{color:var(--ink2);border-style:dashed}
+.stc-c.mdl span{font-size:10px;opacity:.7}
+.stc-c.sts.s-current{border-color:var(--acc);color:var(--acc)}.stc-c.sts.s-done{border-color:var(--ok);color:var(--ok)}.stc-c.sts.s-blocked{border-color:var(--urg);color:var(--urg)}
+.stc-c[aria-expanded=true].sts{color:var(--bg)}
+.stc-x{position:absolute;top:8px;right:6px;width:44px;height:44px;border:0;border-radius:50%;background:none;color:var(--ink2);font-size:15px}
+.stc-x:hover{background:rgba(127,127,127,.18)}
+.stc-pk{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--e-in),margin .28s var(--e-in)}
+.stc-pk.open{grid-template-rows:1fr;margin-top:8px}
+.stc-pk>div{overflow:hidden;display:flex;flex-wrap:wrap;gap:6px}
+.stc-o{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-height:44px;padding:6px 12px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);text-align:left}
+.stc-o b{font:600 13px/1.2 var(--zh)}.stc-o small{font-size:11px;color:var(--ink2);margin-top:2px}
+.stc-o.on{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.stc-sks{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.stc-sk{display:inline-flex;align-items:center;gap:2px;padding-left:10px;min-height:32px;border-radius:999px;background:var(--acc);color:#000;font:600 12px/1 var(--zh)}
+.stc-sk button{width:32px;height:32px;border:0;background:none;border-radius:50%;color:inherit;font-size:11px}
+.stc-in{position:relative;margin-top:8px}
+.stc-in textarea{display:block;width:100%;min-height:52px;padding:10px 12px;border-radius:14px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:16px;line-height:1.45;resize:vertical}
+.stc-in textarea:focus{outline:2px solid var(--acc);outline-offset:1px}
+.stc-sug{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:5;display:flex;flex-direction:column;padding:4px;border-radius:14px;background:var(--solid);border:1px solid var(--line2);box-shadow:0 10px 30px rgba(0,0,0,.35);animation:stpop .18s var(--e-in)}
+.stc-s{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:none;color:var(--ink);text-align:left}
+.stc-s b{font:600 14px/1 var(--zh)}.stc-s small{font-size:12px;color:var(--ink2)}
+.stc-s.on,.stc-s:hover{background:var(--sf2)}
+.stc-none{padding:10px 12px;font-size:13px;color:var(--ink2)}
+.stc .st-note{display:block;width:100%;margin-top:6px;min-height:40px;padding:0 12px;border-radius:12px;border:1px dashed var(--line);background:transparent;color:var(--ink);font-size:14px}
+.runbar{margin:10px 0 14px;padding:12px 14px;border-radius:18px;background:var(--sf2);border:1px solid var(--line)}
+.runbar.urg{border-color:var(--urg)}
+.rb-top{display:flex;align-items:center;gap:10px}
+.rb-dot{width:10px;height:10px;border-radius:50%;background:var(--ink2);flex:none}
+.runbar.live .rb-dot{background:var(--ok);animation:pulse 1.6s infinite}.runbar.urg .rb-dot{background:var(--urg)}
+.rb-t{flex:1;min-width:0;font:600 15px/1.4 var(--zh);color:var(--ink);overflow-wrap:anywhere}
+.rb-i{flex:none;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:none;color:var(--ink);font-size:17px}
+.rb-i[aria-expanded=true]{background:var(--ink);color:var(--bg)}
+.rb-more{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--e-in)}
+.rb-more.open{grid-template-rows:1fr}.rb-more>div{overflow:hidden}
+.rinfo{display:grid;gap:6px;margin:10px 0 6px}
+.rinfo div{display:grid;grid-template-columns:5.5em 1fr;gap:8px;font-size:13px}
+.rinfo dt{color:var(--ink2)}.rinfo dd{margin:0;color:var(--ink);overflow-wrap:anywhere}
+.rb-b{margin-top:10px}
+.btn.rb-stop{width:100%;background:transparent;color:var(--urg);border:1.5px solid var(--urg);box-shadow:none}
+.btn.rb-stop:active{background:var(--urg-bg);color:var(--urg-ink)}
+@media (prefers-reduced-motion:reduce){.stc-seg i,.stc-pk,.rb-more,.stc-c{transition:none}.stc.stpop,.stc .stpop,.stc-sug{animation:none}}

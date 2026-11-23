@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v92';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v93';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -126,7 +126,7 @@ function workRows() {
       career: { line: '教學授權', actual_hours: 4, advance_amount: 300, advance_recovered_date: dayOff(-5) } }),
     base({ id: 'todo-1', status: 'new', basket: 'todo', title: '建一個報價單產生器（示意）', why: '每次報價都要重打，想要填幾個欄位就出 PDF。', source_site: '待辦', folder_status: 'none', folder_path: null }),
     base({ id: 'todo-2', status: 'doing', basket: 'todo', title: '把 IG 貼文排程接上 Notion（示意）', source_site: '待辦', folder_status: 'none', folder_path: null, run_status: 'running',
-      progress_steps: [{ name: '查 IG API 能不能排程', status: 'done' }, { name: '寫串接', status: 'current' }, { name: '測一篇', status: 'pending' }], run_note: '開跑了，子視窗：【機會雷達】IG 排程接 Notion', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 20 * 60e3).toISOString() }),
+      progress_steps: [{ name: '查 IG API 能不能排程', status: 'done', note: '〔模型：AGY｜技能：intake〕' }, { name: '寫串接', status: 'current', note: '〔模型：Opus 5.5｜方式：開子視窗｜技能：handy〕' }, { name: '測一篇', status: 'pending' }], run_note: '開跑了，子視窗：【機會雷達】IG 排程接 Notion', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 20 * 60e3).toISOString() }),
     base({ id: 'todo-3', status: 'doing', basket: 'todo', title: '申請示意平台的開發者帳號（示意）', source_site: '待辦', folder_status: 'none', folder_path: null, run_status: 'queued',
       progress_steps: [{ name: '查申請條件', status: 'done', note: '〔模型：Opus 5.5〕' }, { name: '老大申請帳號', status: 'current' }], progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 40 * 60e3).toISOString() }),
     base({ id: 'work-gone', status: 'dropped', drop_reason: 'skipped', title: '婚禮紀錄側拍（示意）', folder_status: 'none', folder_path: null, source_site: '接案城', drop_note: '日期跟另一案撞期' }),
