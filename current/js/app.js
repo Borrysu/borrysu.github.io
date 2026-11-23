@@ -2486,7 +2486,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v95');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v96');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4141,6 +4141,128 @@ ACT.blkhand=async id=>{const c=blkCard(id);if(!c)return;if(!LV.api||!LV.api.say)
  try{const n=await LV.api.act(id,'runset',{status:'running',note:'【大器】處理卡點中'});const i=LV.items.findIndex(x=>x.id===id);if(n&&i>-1)LV.items[i]=n;LV.sig='';paint()}catch(e){}
  toast('交給大器處理了，解掉會寫回這張卡')};
 WRITE.push('blksave','blkdone','blkhand');
+/* ---------- v96（2026-11-24）：生活房間小臉收斂、朋朋安排就地選時段、萌萌進度頁重排、步驟卡寬裕與選 CLI ----------
+   msg 445：「這個案件好像有點多雨，只要有他的小臉就可以」「這邊有好多重複的小臉」→ 備品「要買」整段只留一張朋朋的臉（按了＝請朋朋買），列上的萌萌臉與底下那排小臉拿掉。
+   msg 463：「這邊我想要就是小小的按鈕，可以選時間這樣 不想要點了，又是打開朋朋的對話視窗 只希望他針對那一個代辦的安排顯示在那邊，然後我可以有選項或者是空格往下執行」
+     → 待辦「請朋朋安排」直接送（不開對話），卡上顯示「朋朋排時段中」；朋朋回的 2～3 個時段變成卡上的小按鈕，點了送「就這個時段」，卡上改「已選 <時段>，朋朋代辦中」；也可以「自己填時間」。
+   msg 466：「這邊也是這個排版很怪」→ 想買詳情（wdet:）重排：上面圖、價格、通路，萌萌狀態一條，三格資訊，萌萌回覆一塊，按鈕一排。
+   msg 414：「這邊排版有點擁堵 可以再寬裕一點」「我希望這邊也可以讓我選擇各種C L I然後會有對應指令跟模型」→ 步驟卡放寬；多一個 CLI 選擇，選了顯示對應指令與帳號，模型清單跟著換，存進 note〔…｜CLI：codex B〕。 */
+
+// 1 備品「要買」：一張朋朋的臉
+{const f=zoneLife;zoneLife=function(){const h=f();if(S.sub.life!=='sup')return h;
+ const tp=document.createElement('template');tp.innerHTML=h;const cb=tp.content.querySelector('[data-act="cartbuy"]');if(!cb)return h;
+ const sec=cb.closest('section');let asked=false;try{const c=JSON.parse(localStorage.getItem('zl_cart_ask')||'null');asked=!!(c&&Date.now()-c.at<3*864e5)}catch(e){}
+ const nb=document.createElement('template');nb.innerHTML=`<button class="cartf" data-act="cartbuy" aria-label="請朋朋買這幾樣" title="請朋朋買">${bm('peng',asked?'thinking':'')}</button>`;cb.replaceWith(nb.content);
+ if(sec){sec.querySelectorAll('.aifs').forEach(x=>x.remove());sec.querySelectorAll('.rowi .bm,.cartst .bm').forEach(x=>x.remove());
+  sec.querySelectorAll('[data-act="supcmp"]').forEach(b=>{b.textContent=b.textContent.replace(/請萌萌比價/,'比價').trim()})}
+ return tp.innerHTML}}
+
+// 2 待辦：朋朋安排就地選時段
+const LTP='zl_lt_pick';let ltPicks={};try{ltPicks=JSON.parse(localStorage.getItem(LTP)||'{}')}catch(e){}
+const LT2={own:{}};
+function ltOk(m){return m&&Date.now()-m.at<14*864e5&&String(m.body||'').indexOf('【測試】')<0}
+function ltYear(mo){const n=new Date();let y=n.getFullYear();if(mo<n.getMonth()+1-2)y++;return y}
+function ltSlots(txt){const out=[],seen={};const re=/(\d{1,2})\s*\/\s*(\d{1,2})[^\n\d]{0,10}?(上午|中午|下午|晚上)?\s*(\d{1,2})(?:\s*[:：]\s*(\d{2})|\s*點(半)?)(?:\s*[-~～到至]\s*(上午|中午|下午|晚上)?\s*(\d{1,2})(?:\s*[:：]\s*(\d{2})|\s*點(半)?)?)?/g;let m;
+ const H=(ap,h)=>{h=+h;if((ap==='下午'||ap==='晚上')&&h<12)h+=12;if(ap==='中午'&&h<11)h+=12;return h};
+ while((m=re.exec(String(txt||'')))&&out.length<3){const mo=+m[1],d=+m[2];if(mo<1||mo>12||d<1||d>31)continue;const h1=H(m[3],m[4]);if(h1>23)continue;
+  const mi1=m[5]||(m[6]?'30':'00'),dt=new Date(ltYear(mo),mo-1,d),wd=WD[dt.getDay()];
+  let lab=`${mo}/${d}（${wd}）${String(h1).padStart(2,'0')}:${mi1}`;if(m[8]){const h2=H(m[7]||m[3],m[8]);if(h2<=24)lab+=`～${String(h2).padStart(2,'0')}:${m[9]||(m[10]?'30':'00')}`}
+  if(!seen[lab]){seen[lab]=1;out.push(lab)}}
+ return out}
+function ltSt2(t){const ms=(lpMsgs||[]).filter(ltOk);let q=-1,p=-1;
+ ms.forEach((m,i)=>{if(m.kind!=='user'||String(m.body).indexOf('待辦編號 '+t.id)<0)return;if(/就這個時段/.test(m.body))p=i;else q=i});
+ const lp=ltPicks[t.id]&&Date.now()-ltPicks[t.id].at<7*864e5?ltPicks[t.id]:null,la=ltAsks[t.id]&&Date.now()-ltAsks[t.id]<864e5?ltAsks[t.id]:0;
+ if(p>q&&p>-1){const sl=(ltClean(ms[p].body).match(/就這個時段[：:]\s*(.+)$/)||[])[1]||(lp&&lp.slot)||'';const r=ms.slice(p+1).find(m=>m.kind!=='user');return {k:'picked',slot:sl.trim(),at:ms[p].at,r}}
+ if(q<0){if(lp)return {k:'picked',slot:lp.slot,at:lp.at};if(la)return {k:'wait',at:la};return null}
+ if(lp&&lp.at>ms[q].at)return {k:'picked',slot:lp.slot,at:lp.at};
+ const later=ms.slice(q+1).filter(m=>m.kind!=='user');if(!later.length)return {k:'wait',at:ms[q].at};
+ const withS=later.slice().reverse().find(m=>ltSlots(m.body).length),r=withS||later[later.length-1];return {k:'slots',slots:withS?ltSlots(withS.body):[],r}}
+const ltClean=s=>String(s||'').replace(/^［[^］]*］\s*/,'').replace(/\s+/g,' ').trim();
+function lt2HTML(t){const st=ltSt2(t),id=esc(t.id),own=LT2.own[t.id];
+ const ownBox=own?`<div class="lt2-own"><input id="lt2In_${id}" type="text" maxlength="60" autocomplete="off" placeholder="例：11/28 下午三點、週末都可以" aria-label="自己填時間"><button type="button" class="lt2-go" data-act="ltown" data-id="${id}">送出</button></div>`:'';
+ const ownC=`<button type="button" class="lt2-c dim" data-act="ltownt" data-id="${id}" aria-expanded="${!!own}">${own?'收起':'自己填時間'}</button>`;
+ if(!st)return `<div class="lt2"><button type="button" class="lt2-c ask" data-act="ltplan" data-id="${id}">${bm('peng','','sm')}<span>請朋朋排時間</span></button>${ownC}</div>${ownBox}`;
+ if(st.k==='wait')return `<div class="lt2"><span class="lt2-st run">${bm('peng','thinking','sm')}<span>朋朋排時段中・${LHM(st.at)} 送出</span></span></div>`;
+ if(st.k==='slots')return `<div class="lt2 col">${st.slots.length?`<p class="lt2-h">${bm('peng','','sm')}<span>朋朋排了這幾個時段，點一個：</span></p>`:`<p class="lt2-h">${bm('peng','','sm')}<span>朋朋：${esc(clip(ltClean(st.r.body),60))}</span></p>`}<div class="lt2-sl">${st.slots.map((s,i)=>`<button type="button" class="lt2-c slot" data-act="ltslot" data-id="${id}|${i}">${esc(s)}</button>`).join('')}${ownC}<button type="button" class="lt2-c dim" data-act="ltchat" data-id="${id}">看朋朋回什麼</button></div></div>${ownBox}`;
+ return `<div class="lt2 col"><p class="lt2-st ok">${ic('check')}<span>已選 ${esc(st.slot||'時段')}，朋朋代辦中</span></p>${st.r?`<p class="lt2-r">朋朋：${esc(clip(ltClean(st.r.body),70))}</p>`:''}<div class="lt2-sl">${ownC.replace('自己填時間','改時間')}${st.r?`<button type="button" class="lt2-c dim" data-act="ltchat" data-id="${id}">看朋朋回什麼</button>`:''}</div></div>${ownBox}`}
+{const f=zoneLife;zoneLife=function(){const h=f();if(S.sub.life!=='todo'||!LV.life)return h;
+ const tp=document.createElement('template');tp.innerHTML=h;let ch=0;
+ tp.content.querySelectorAll('.rowi[data-card]').forEach(r=>{const t=LT(r.getAttribute('data-card'));r.querySelectorAll('.lta').forEach(x=>{x.remove();ch=1});if(!t||t.done)return;r.insertAdjacentHTML('beforeend',lt2HTML(t));ch=1});
+ return ch?tp.innerHTML:h}}
+async function ltSend(t,body,shown){if(!LV.api||!LV.api.say){toast('離線中，連上再按');return false}
+ try{await LV.api.say(null,`［老大在逐流按了動作鈕，給你的指示：${body.replace(/[［］]/g,c=>c==='［'?'（':'）').replace(/\n/g,' ')}］\n${shown}`,'peng')}catch(e){toast('沒送出：'+LERR(e));return false}
+ lpAt=0;setTimeout(lpLoad,600);return true}
+ACT.ltplan=async id=>{const t=LT(id);if(!t)return;const free=calFree(14).join('；');ltAsks[id]=Date.now();try{localStorage.setItem(LTA,JSON.stringify(ltAsks))}catch(e){}LV.sig='';paint();
+ const ok=await ltSend(t,`【請朋朋安排】待辦「${t.name}」（待辦編號 ${id}）${t.note?'，備註：'+t.note:''}。請先看我未來 14 天的行事曆空檔，列 2 到 3 個適合的時段給我選，每個時段一行，格式「時段：11/26（三）14:00～15:00」，我會在逐流點一個。我選定前先不要訂。選定後能代辦的（預約、訂位、訂票）先處理；要付款一律開付款授權單，等我在逐流按付款鈕，不要直接付。我的行事曆（9:00 到 21:00 之間至少 1 小時的空檔）：${free}`,`請幫我排「${t.name}」的時間`);
+ if(ok)toast('交給朋朋了，時段排好會出現在這張卡上');else{delete ltAsks[id];try{localStorage.setItem(LTA,JSON.stringify(ltAsks))}catch(e){}LV.sig='';paint()}};
+async function ltPick(id,slot){const t=LT(id);if(!t||!slot)return;const prev=ltPicks[id];ltPicks[id]={slot,at:Date.now()};try{localStorage.setItem(LTP,JSON.stringify(ltPicks))}catch(e){}delete LT2.own[id];LV.sig='';paint();
+ const ok=await ltSend(t,`待辦「${t.name}」（待辦編號 ${id}）老大選了時段，就這個時段：${slot}。能代辦的（預約、訂位、訂票）先處理；要付款開付款授權單等老大在逐流按，不要直接付。好了或訂不到在逐流回我`,`就這個時段：${slot}`);
+ if(ok)toast('跟朋朋說好了：'+slot);else{if(prev)ltPicks[id]=prev;else delete ltPicks[id];try{localStorage.setItem(LTP,JSON.stringify(ltPicks))}catch(e){}LV.sig='';paint()}}
+ACT.ltslot=v=>{const [id,i]=String(v).split('|'),t=LT(id);if(!t)return;const st=ltSt2(t);const s=st&&st.slots&&st.slots[+i];if(s)ltPick(id,s)};
+ACT.ltownt=id=>{LT2.own[id]=!LT2.own[id];LV.sig='';paint();if(LT2.own[id])setTimeout(()=>{const x=document.getElementById('lt2In_'+id);if(x)x.focus()},60)};
+ACT.ltown=id=>{const x=document.getElementById('lt2In_'+id),v=x?x.value.trim():'';if(!v){toast('寫一下想要的時間');if(x)x.focus();return}if(x)x.blur();ltPick(id,v.slice(0,60))};
+ACT.ltchat=(id,el)=>openChat('peng','lt:'+id,el,null);
+document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||e.isComposing||!t||!t.id||t.id.indexOf('lt2In_')!==0)return;e.preventDefault();ACT.ltown(t.id.slice(6))});
+setInterval(()=>{if(document.hidden||S.tab!=='life'||S.sub.life!=='todo'||S.sheet||!LV.life)return;if(ltodos().some(t=>{if(t.done)return false;const s=ltSt2(t);return s&&(s.k==='wait'||(s.k==='picked'&&!s.r))})){lpAt=0;lpLoad()}},8000);
+WRITE.push('ltplan','ltslot','ltown');
+
+// 3 想買詳情重排
+{const _s=sheetHTML;sheetHTML=function(){const a=(S.sheet||'').split(':');if(a[0]!=='wdet')return _s();const w=W(a.slice(1).join(':'));if(!w)return shHead('這項不在了');
+ const f=wfInfo(w),fr=f.fresh,any=fr.price||fr.shop||fr.pay||fr.url||fr.img,rp=f.rp;
+ const st=rp&&rp.msg?`<p class="wd2-st">${bm('mon','','sm')}<span>萌萌回了・${LMD(rp.msg.at)} ${LHM(rp.msg.at)}</span></p>`:rp&&rp.run?`<p class="wd2-st run">${bm('mon','thinking','sm')}<span>萌萌找資料中・${LHM(rp.at)} 送出，回來會出現在這裡</span></p>`:`<p class="wd2-st dim">${bm('mon','','sm')}<span>還沒請萌萌找</span></p>`;
+ const cell=(l,v,nw)=>`<div class="wd2-c${v?'':' none'}"><small>${l}${nw?'<i>新</i>':''}</small><b>${esc(v||'還沒找到')}</b></div>`;
+ const KEY=/^(價格|通路|付款方式|付費方式|連結|網址|圖片)\s*[：:]/;
+ const rest=rp&&rp.msg?String(rp.msg.body).replace(/^［[^］]*］\s*/,'').split(/\n+/).map(l=>l.trim()).filter(l=>l&&!KEY.test(l.replace(/^[\-•*\d.、)）]+\s*/,''))):[];
+ let site='';try{site=f.url?new URL(f.url).hostname.replace(/^www\./,''):''}catch(e){}
+ return shHead(esc(w.name))
+  +`<div class="wd2-hero">${wimgH(w,1)}<div class="wd2-hm"><p class="wd2-p">${esc(f.price||'還沒有價格')}</p><p class="wd2-s">${esc(f.shop||'通路還沒找到')}</p>${f.url?`<a class="wd2-l" href="${esc(f.url)}" target="_blank" rel="noopener noreferrer">${esc(site||'商品頁')} ↗</a>`:''}</div></div>`
+  +st+`<div class="wd2-g">${cell('價格',f.price,fr.price)}${cell('通路',f.shop,fr.shop)}${cell('付款方式',f.pay,fr.pay)}</div>`
+  +(rest.length?`<div class="wd2-rp"><p class="wd2-rh">萌萌說</p>${rest.slice(0,12).map(l=>`<p>${esc(clip(l,160))}</p>`).join('')}</div>`:'')
+  +(!rp?`<p class="note">按「萌萌先找」，她會找價格、通路、付款方式；沒指定品牌會先問你需求。</p>`:'')
+  +(any?`<div class="btns">${B('把新找到的存到這張卡','wfsave',w.id,'pri wide')}</div>`:'')
+  +`<div class="wd2-a">${rp?mb('開萌萌的對話','wfchat',w.id):B(bm('mon','','sm')+'萌萌先找','wishfind',w.id,'pri')}${mb('✎ 編輯','ledit',w.id)}</div>`}}
+
+// 4 步驟卡：寬裕＋選 CLI（2026-11-24 現查：agy models、cursor-agent --list-models、codex debug models、grok models）
+const SCLI=[
+ {k:'claude',acct:'好咖帳號',cmd:'claude -p "…" --model {m}',models:[['claude-opus-5-5','Opus 5.5'],['claude-fable-5-2','Fable 5.2'],['claude-sonnet-5-5','Sonnet 5.5'],['claude-haiku-5-5','Haiku 5.5']]},
+ {k:'claude B',acct:'個人帳號',cmd:'CLAUDE_CONFIG_DIR=~/.claude-b claude -p "…" --model {m}',models:[['claude-opus-5-5','Opus 5.5'],['claude-fable-5-2','Fable 5.2'],['claude-sonnet-5-5','Sonnet 5.5'],['claude-haiku-5-5','Haiku 5.5']]},
+ {k:'codex',acct:'好咖帳號（Team）',cmd:'CODEX_HOME=~/.codex-company codex exec -m {m} "…"',models:[['gpt-6.1-sol','預設'],['gpt-6.2-sol',''],['gpt-6.2-astra',''],['gpt-6.1-terra',''],['gpt-6-luna','']]},
+ {k:'codex B',acct:'個人帳號（Pro Lite）',cmd:'CODEX_HOME=~/.codex-personal codex exec -m {m} "…"',models:[['gpt-6.1-sol','預設'],['gpt-6.2-sol',''],['gpt-6.2-astra',''],['gpt-6.1-terra',''],['gpt-6-luna','']]},
+ {k:'agy',acct:'好咖帳號',cmd:'agy -p "…" --model {m}',models:[['gemini-3.8-flash-high','預設・查證'],['gemini-3.8-flash-medium','快查'],['gemini-3.8-flash-low','格式整理'],['gemini-4-argon-medium','長推理'],['gemini-4-argon-high','吃重任務']]},
+ {k:'agy B',acct:'個人帳號',cmd:'agy B -p "…" --model {m}',models:[['gemini-3.8-flash-high','預設・查證'],['gemini-3.8-flash-medium','快查'],['gemini-3.8-flash-low','格式整理'],['gemini-4-argon-medium','長推理'],['gemini-4-argon-high','吃重任務']]},
+ {k:'cursor',acct:'本人帳號',cmd:'Cursor -p "…" --model {m} --output-format text',models:[['auto','預設'],['composer-2.5',''],['gpt-5.3-codex',''],['claude-opus-5-thinking-high','第三方，另計'],['cursor-grok-4.5-high','']]},
+ {k:'grok',acct:'本人帳號',cmd:'grok -p "…" -m {m} --permission-mode plan',models:[['grok-4.6','預設'],['grok-4.5','']]}];
+const SCLIK=SCLI.map(c=>c.k),cliOf=k=>SCLI.find(c=>c.k===k)||null;
+const cliMdl=(c,m)=>c.models.some(x=>x[0]===m)?m:c.models[0][0];
+const cliCmd=(c,m)=>c.cmd.replace('{m}',m);
+{const _o=stepOf;stepOf=function(s){const o=_o(s);o.cli='';const m=SMETA.exec(s.note||'');if(m)m[1].split('｜').forEach(kv=>{const i=kv.indexOf('：');if(kv.slice(0,i)==='CLI'&&SCLIK.includes(kv.slice(i+1)))o.cli=kv.slice(i+1)});return o}}
+{const _n=stepNote;stepNote=function(o){const r=_n(o);if(!o.cli)return r;const m=SMETA.exec(r);return m?`〔${m[1]}｜CLI：${o.cli}〕`+r.slice(m[0].length):`〔CLI：${o.cli}〕`+r}}
+stdLoad=function(id){const it=todoOf(id),c=it&&it.raw;if(!c)return null;const st=(c.progressSteps||[]).map(s=>{const o=stepOf(s),cl=cliOf(o.cli);
+ return {name:o.name,status:o.status,cli:cl?cl.k:'',model:cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定'),mode:o.mode==='開子視窗'?'開子視窗':'監工本身',skills:skSplit(o.skill),note:o.note,pk:''}});
+ if(!st.length)st.push(Object.assign(stdNew(),{cli:''}));return {id,steps:st}};
+{const _h=stcHTML;stcHTML=function(o,i){const cl=cliOf(o.cli);let h;
+ if(o.pk==='cli'){const sv=o.pk;o.pk='';h=_h(o,i);o.pk=sv;
+  const opts=`<button type="button" class="stc-o${!cl?' on':''}" data-act="stcset" data-id="${i}|cli|"><b>不指定</b><small>照預設</small></button>`+SCLI.map(c=>`<button type="button" class="stc-o${cl&&cl.k===c.k?' on':''}" data-act="stcset" data-id="${i}|cli|${esc(c.k)}"><b>${esc(c.k)}</b><small>${esc(c.acct)}</small></button>`).join('');
+  h=h.replace('<div class="stc-pk" role="group" aria-label="選狀態"><div></div></div>',`<div class="stc-pk open" role="group" aria-label="選 CLI"><div>${opts}</div></div>`)}
+ else if(o.pk==='model'&&cl){const sv=o.pk;o.pk='';h=_h(o,i);o.pk=sv;
+  const opts=cl.models.map(([m,n])=>`<button type="button" class="stc-o${m===o.model?' on':''}" data-act="stcset" data-id="${i}|model|${esc(m)}"><b>${esc(m)}</b><small>${esc(n||cl.k)}</small></button>`).join('');
+  h=h.replace('<div class="stc-pk" role="group" aria-label="選狀態"><div></div></div>',`<div class="stc-pk open" role="group" aria-label="選模型"><div>${opts}</div></div>`).replace(/(data-act="stcpk" data-id="\d+\|model" aria-expanded=")false/,'$1true')}
+ else h=_h(o,i);
+ const chip=`<button type="button" class="stc-c cli${cl?'':' dim'}" data-act="stcpk" data-id="${i}|cli" aria-expanded="${o.pk==='cli'}"><span aria-hidden="true">›_</span>${esc(cl?cl.k:'CLI')}</button>`;
+ h=h.replace(/(<button type="button" class="stc-c mdl)/,chip+'$1');
+ if(cl)h=h.replace(/(<span aria-hidden="true">◆<\/span>)[^<]*/,'$1'+esc(o.model)).replace('class="stc-c mdl dim"','class="stc-c mdl"');
+ if(cl){const pkEnd=h.indexOf('</div></div>',h.indexOf('class="stc-pk'))+12;h=h.slice(0,pkEnd)+`<div class="stc-cmd"><small>${esc(cl.acct)}</small><code>${esc(cliCmd(cl,o.model))}</code></div>`+h.slice(pkEnd)}
+ return h}}
+{const _p=ACT.stcpk;ACT.stcpk=v=>{const [i,k]=String(v).split('|');if(k!=='cli'&&!(k==='model'&&STD&&STD.steps[+i]&&cliOf(STD.steps[+i].cli)))return _p(v);
+ if(!STD)return;const o=STD.steps[+i];if(!o)return;o.pk=o.pk===k?'':k;STD.steps.forEach((x,j)=>{if(j!==+i&&x.pk){x.pk='';stcRedraw(j)}});stcRedraw(+i)}}
+{const _s=ACT.stcset;ACT.stcset=v=>{const [i,k,val]=String(v).split('|');if(k!=='cli')return _s(v);if(!STD)return;const o=STD.steps[+i];if(!o)return;
+ const cl=cliOf(val);o.cli=cl?cl.k:'';o.model=cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定');o.pk='';const n=stcRedraw(+i);if(n){const c=n.querySelector('.stc-c.cli');if(c){c.classList.add('stpop');c.focus({preventScroll:true})}}}}
+{const _a=ACT.stadd;ACT.stadd=()=>{_a();if(STD){const o=STD.steps[STD.steps.length-1];if(o&&o.cli==null)o.cli=''}}}
+{const _v=ACT.stsave;ACT.stsave=id=>{if(STD&&STD.id===id){const _n2=stepNote;let k=0;
+  // 存檔時照順序把每步的 CLI 帶進 stepNote（原本的 stsave 只傳模型、方式、技能、備註）
+  const live=STD.steps.filter(s=>s.name||s.note||s.skills.length);const q=live.map(s=>s.cli||'');
+  stepNote=function(o){return _n2(Object.assign({},o,{cli:q[k++]||''}))};try{return _v(id)}finally{stepNote=_n2}}return _v(id)}}
+
 window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
