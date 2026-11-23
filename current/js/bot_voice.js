@@ -596,3 +596,33 @@
     '#sheet,#page{overflow-x:hidden}';
   (document.head || document.documentElement).appendChild(s);
 })();
+
+/* 2026-11-24 對話框打開時輸入框留空（逐流 msg 264、449）。老大：「這邊一點開就一大堆預設文字準備送出去，我覺得有點太誇張了，我很不好打字」。
+   程式幫忙起頭的那句不放進輸入框，改成輸入框上方一顆「建議：…」小條，點了才放進去。老大自己打的字不動。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var typed = false, lastOpen = false, sug = '';
+  document.addEventListener('input', function (e) { if (e.target && e.target.id === 'cText' && e.isTrusted) typed = true; }, true);
+  document.addEventListener('keydown', function (e) { if (e.target && e.target.id === 'cText') typed = true; }, true);
+  function chip(text) {
+    var cin = document.querySelector('#chat .cin'); if (!cin) return;
+    var old = document.getElementById('cSug'); if (old) old.remove();
+    var b = document.createElement('button'); b.type = 'button'; b.id = 'cSug';
+    b.style.cssText = 'display:block;width:100%;text-align:left;margin:0 0 6px;padding:8px 12px;min-height:40px;border-radius:12px;border:1px dashed var(--line2,rgba(255,255,255,.3));background:transparent;color:var(--ink2,#aaa);font:inherit;font-size:13px;line-height:1.4;overflow-wrap:anywhere';
+    b.textContent = '建議這樣問（點了才放進去）：' + (text.length > 80 ? text.slice(0, 80) + '…' : text);
+    b.onclick = function () { typed = true; sug = ''; var t = document.getElementById('cText'); if (t) { t.value = text; t.focus(); try { t.setSelectionRange(t.value.length, t.value.length); } catch (e) {} } b.remove(); };
+    cin.parentNode.insertBefore(b, cin);
+  }
+  function tick() {
+    var c = document.getElementById('chat'), open = !!(c && !c.hidden && c.classList.contains('in'));
+    if (open && !lastOpen) { typed = false; sug = ''; }
+    if (open && !typed) {
+      var t = document.getElementById('cText');
+      if (t && t.value.trim()) { sug = t.value; t.value = ''; chip(sug); }
+      else if (sug && !document.getElementById('cSug')) chip(sug);
+    }
+    if (!open) { var s = document.getElementById('cSug'); if (s) s.remove(); sug = ''; }
+    lastOpen = open;
+  }
+  setInterval(tick, 150);
+})();
