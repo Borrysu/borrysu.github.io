@@ -873,7 +873,7 @@
         // 臉本身（沒字、或只有狀態小字）不藏
         if (b.querySelector('svg, canvas, .bf, [class*="face"]') && b.textContent.trim().length < 4) return;
         var a = b.dataset.act, id = b.dataset.id || '', hide = false;
-        if (CHATONLY[a]) {
+        if (CHATONLY[a] && !/規劃/.test(b.textContent)) {   // 規劃鈕（跟大器規劃）不算單純聊天，留著（msg 626）
           // ai：id 結尾是「||」才是單純開聊天；ydq＝問大器
           var who = a === 'ydq' ? 'daqi' : id.split('|')[0];
           if (faces[who] && (a === 'ydq' || /\|\|$/.test(id))) hide = true;
@@ -972,5 +972,43 @@
       d.after(b);
     });
   }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+/* 2026-11-24 全面板規劃入口一律「請大器規劃」＋「請霸霸規劃」（逐流 msg 626，接 578 定案；老大：「請霸霸規劃 就會是他打過去叫定定思考 霸霸想辦法推進」）。
+   定定的規劃鈕在案子房間已藏（msg 501）；這裡在每個有定定規劃鈕的列（步驟卡 stplanr、任務詳情規劃列、這件接下來「先想清楚」）補一顆霸霸，
+   點了＝經大器送【請霸霸規劃】：霸霸叫定定想、把步驟寫回這張卡，霸霸推進。任務房新增列（pjplan）另有 pjbaba。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  function idOf(b) {
+    var a = b.dataset.act, v = b.dataset.id || '';
+    if (a === 'stplan') return v.split('|')[1] || '';
+    if (a === 'ai') { var m = v.match(/^din\|proj:([^|]+)/); return m ? m[1] : ''; }
+    return '';
+  }
+  function add() {
+    document.querySelectorAll('[data-act="stplan"][data-id^="din|"], .mrow [data-act="ai"][data-id^="din|proj:"], .jgrp-b [data-act="ai"][data-id^="din|proj:"]').forEach(function (d) {
+      var row = d.parentNode; if (!row || row.querySelector('[data-act="bbplan"]')) return;
+      var id = idOf(d); if (!id) return;
+      var dq = row.querySelector('[data-act="' + d.dataset.act + '"][data-id^="daqi|"]');
+      var b = document.createElement('button'); b.type = 'button'; b.className = (dq || d).className; b.dataset.act = 'bbplan'; b.dataset.id = id;
+      var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true'); b.appendChild(f);
+      b.appendChild(document.createTextNode(d.dataset.act === 'stplan' ? '請霸霸規劃步驟' : '請霸霸規劃'));
+      if (dq) dq.after(b); else row.appendChild(b);
+    });
+  }
+  function toast(t) { var e = document.getElementById('toast'), m = document.getElementById('toastMsg'), u = document.getElementById('toastUndo'); if (!e || !m) return; m.textContent = t; if (u) u.hidden = true; e.classList.add('in'); clearTimeout(toast.t); toast.t = setTimeout(function () { e.classList.remove('in'); }, 3200); }
+  document.addEventListener('click', async function (e) {
+    var b = e.target.closest && e.target.closest('[data-act="bbplan"]');
+    if (!b || document.documentElement.classList.contains('marking')) return;
+    e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation();
+    var Z = window.__zl, L = Z && Z.LV; if (!L || !L.api || !L.api.say) { toast('離線中，連上再按'); return; }
+    var id = b.dataset.id, c = (L.items || []).find(function (q) { return q.id === id; }) || {};
+    var name = String(c.title || '這件').slice(0, 100);
+    var body = '［老大在逐流按了「請霸霸規劃」，給你的指示：用 call-baba.sh 交給霸霸。霸霸去叫定定思考、把這件拆成步驟寫回這張卡（opp_progress_set 的 steps），然後霸霸負責推進（交給適合的機器人或自己做）；要花錢、對外發布的先問老大。］\n【請霸霸規劃】「' + name + '」';
+    b.disabled = true; window.__actAt = Date.now();
+    try { await L.api.say(id, body, 'daqi'); toast('交給霸霸規劃了，步驟會寫回這張卡'); } catch (err) { toast('沒送出，再按一次'); }
+    b.disabled = false;
+  }, true);
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
