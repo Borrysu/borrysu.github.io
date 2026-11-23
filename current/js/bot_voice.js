@@ -593,7 +593,8 @@
   var s = document.createElement('style');
   s.textContent = '.chip{max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word;height:auto;line-height:1.35;text-align:left}' +
     '#sheet .chip,#page .chip{display:inline-block;padding-top:3px;padding-bottom:3px}' +
-    '#sheet,#page{overflow-x:hidden}';
+    '#sheet,#page{overflow-x:hidden}' +
+    '.card .amt,.cardx .amt{white-space:normal;overflow-wrap:anywhere;word-break:break-word}';   // 逐流 msg 458：機會卡金額長字（「按影片類型…計酬」）橫向撐破卡片
   (document.head || document.documentElement).appendChild(s);
 })();
 
