@@ -743,3 +743,28 @@
     window.__actAt = Date.now(); Z.ACT.cartbuy();
   }, true);
 })();
+
+/* 2026-11-24 任務已交給大器時，「這件接下來」也要有霸霸的臉可以改交霸霸（逐流 msg 497，老大：「為什麼我這邊沒有可以拍給霸霸做的小臉」）。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  function add() {
+    var Z = window.__zl; if (!Z || !Z.S || !/^cview:todo:/.test(Z.S.sheet || '')) return;
+    var on = document.querySelector('#sheet .jnext .jgrp-on'); if (!on || on.parentNode.querySelector('.babaf')) return;
+    if (/霸霸/.test(on.textContent)) return;
+    var id = Z.S.sheet.slice('cview:todo:'.length);
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'mb babaf';
+    var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true');
+    f.style.cssText = 'width:24px;height:24px;display:inline-block;vertical-align:middle;margin-right:6px;pointer-events:none';
+    b.appendChild(f); b.appendChild(document.createTextNode('改交給霸霸'));
+    b.onclick = async function (ev) {
+      ev.stopPropagation(); var L = Z.LV, t = (Z.DB.todo || []).find(function (q) { return q.id === id; }), c = t && t.raw; if (!c || !L.api) return;
+      var body = '【請霸霸轉派】' + String(c.title || '這件').slice(0, 80) + '\n卡片：item ' + id + '\n老大改成交給霸霸（原本已交給大器，請先停掉大器那邊）。請用 call-baba.sh 交給霸霸判斷給哪隻機器人或自己做，做完把結果寫回這張卡；要花錢、對外發布的先問老大。';
+      b.disabled = true;
+      try { await L.api.say(id, body, 'daqi'); await L.api.act(id, 'runset', { status: 'running', note: '【霸霸】轉派中，等霸霸回報' }); b.textContent = '已改交給霸霸'; if (Z.paint) Z.paint('keep'); }
+      catch (e) { b.disabled = false; b.textContent = '沒送出，再按一次'; }
+    };
+    on.parentNode.appendChild(b);
+    try { if (window.BotFace) window.BotFace.mount(f, { preset: 'baba', color: '#FFFFFF', size: 0 }); } catch (e) {}
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
