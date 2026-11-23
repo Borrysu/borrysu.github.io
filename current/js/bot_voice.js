@@ -656,3 +656,57 @@
     }).catch(function () { t.value = text; }).then(function () { busy = false; });
   }, 120);
 })();
+
+/* 2026-11-24 機器人回覆有排版、網址改成短連結（逐流 msg 472、476）。
+   老大：「最好他們的回覆也是有排版有格式，然後不是一大串的這樣工程文字的東西我很難辨識」「我不需要完整連結，我要的是一個超連結，這樣才不會版面一堆奇怪的文字」。
+   只動畫面：對話框裡機器人的回覆照行分段、清單變條列、**粗體**、網址變「網站名 ↗」短連結；卡片與彈出卡裡露出來的長網址也換成短連結。用 DOM 組，不把原文當 HTML。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var URL_RE = /https?:\/\/[^\s「」『』（）()<>，。、]+/g;
+  function host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return '連結'; } }
+  function link(u) { var a = document.createElement('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = host(u) + ' ↗'; a.className = 'zlink'; return a; }
+  function inline(parent, text) {
+    var parts = text.split(/(\*\*[^*]+\*\*)/);
+    parts.forEach(function (p) {
+      if (/^\*\*[^*]+\*\*$/.test(p)) { var b = document.createElement('b'); b.textContent = p.slice(2, -2); parent.appendChild(b); return; }
+      var last = 0; p.replace(URL_RE, function (m, i) { if (i > last) parent.appendChild(document.createTextNode(p.slice(last, i))); parent.appendChild(link(m)); last = i + m.length; return m; });
+      if (last < p.length) parent.appendChild(document.createTextNode(p.slice(last)));
+    });
+  }
+  function fmtBubble(el) {
+    if (el.dataset.fmt || el.classList.contains('card') || el.querySelector('.dots')) return;
+    var raw = el.textContent; if (!raw || raw.length < 2) return;
+    el.dataset.fmt = '1'; el.textContent = '';
+    var lines = raw.split(/\n/), list = null;
+    lines.forEach(function (ln) {
+      var t = ln.trim(); if (!t) { list = null; return; }
+      var m = t.match(/^(?:[-•・*]|\d+[.、)）])\s*(.+)$/);
+      if (m) { if (!list) { list = document.createElement(/^\d/.test(t) ? 'ol' : 'ul'); list.className = 'zlist'; el.appendChild(list); } var li = document.createElement('li'); inline(li, m[1]); list.appendChild(li); return; }
+      list = null; var p = document.createElement('p'); p.className = /[：:]$/.test(t) && t.length < 24 ? 'zh' : 'zp'; inline(p, t); el.appendChild(p);
+    });
+  }
+  function linkify(root) {
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
+      if (!n.nodeValue || n.nodeValue.indexOf('http') < 0) return NodeFilter.FILTER_REJECT;
+      var p = n.parentElement; if (!p || p.closest('a,button,textarea,input,script,style,#clog,.zlink')) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT; } });
+    var nodes = [], n; while ((n = w.nextNode())) nodes.push(n);
+    nodes.forEach(function (tn) {
+      var s = tn.nodeValue; if (!URL_RE.test(s)) return; URL_RE.lastIndex = 0;
+      var f = document.createDocumentFragment(), last = 0;
+      s.replace(URL_RE, function (m, i) { if (i > last) f.appendChild(document.createTextNode(s.slice(last, i))); f.appendChild(link(m)); last = i + m.length; return m; });
+      if (last < s.length) f.appendChild(document.createTextNode(s.slice(last)));
+      tn.parentNode.replaceChild(f, tn);
+    });
+  }
+  var st = document.createElement('style');
+  st.textContent = '.zlink{color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:.9;word-break:keep-all}' +
+    '#clog .cm.bot .zp{margin:0 0 6px;line-height:1.55}#clog .cm.bot .zh{margin:8px 0 4px;font-weight:700}' +
+    '#clog .cm.bot .zlist{margin:2px 0 8px;padding-left:20px;line-height:1.55}#clog .cm.bot .zlist li{margin:2px 0}';
+  (document.head || document.documentElement).appendChild(st);
+  function run() {
+    document.querySelectorAll('#clog .cm.bot').forEach(fmtBubble);
+    ['view', 'sheet', 'page'].forEach(function (id) { var e = document.getElementById(id); if (e) linkify(e); });
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
