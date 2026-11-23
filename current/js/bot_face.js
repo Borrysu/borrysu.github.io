@@ -75,7 +75,7 @@
       names: { thinking: '想一下', logged: '有看法了', alert: '有風險' } },
     // 肉咖：公司 Mac 的 AI（好咖）。老大 2026-11-23 定 F2：桃紅底、黑剪影、黃色只放在眼睛（README 1123_PixPix_肉咖臉）；
     // 老大：「肉咖的臉請幫我也設計一個會動的。」「紫色應該是大器，桃紅色粉紅色才是肉咖」。會動版：桃紅身體、黃眼、黑描邊，黃只在眼睛
-    rouka:   { shape: 'sphere', color: '#FF4F9A', eye: '#FFBD6B', outline: true, label: '肉咖',
+    rouka:   { shape: 'gecko', color: '#FF4F9A', eye: '#FFBD6B', outline: true, label: '肉咖',
       names: { thinking: '在做', logged: '做好了', alert: '要你看' } },
     baba:    { shape: 'shield', color: '#FFFFFF', eye: '#17151E', outline: true, label: '霸霸',   // 老大 2026-11-23：「霸霸是白色的」（Grok Bot 本機資料是 black，以老大為準）
       names: { thinking: '設置中', logged: '設好了', alert: '要你點頭' } },
@@ -134,6 +134,13 @@
       eye: { w: 1, h: 0.92, gap: 1, shiftY: 0.02 },
       pose: { yaw: -12, pitch: 10, roll: -8, k: 0.55 },
       path: function (S) { return scalePath('M-0.86 -0.72Q-0.86 -0.92 -0.66 -0.92H0.66Q0.86 -0.92 0.86 -0.72V0.06C0.86 0.52 0.46 0.82 0 1C-0.46 0.82 -0.86 0.52 -0.86 0.06Z', S); }
+    },
+    // gecko：肉咖（老大 2026-11-23：「肉咖要像是一隻守宮」）。守宮頭：寬扁、兩眼在頭頂兩側鼓起、吻端圓，3D 照 extrusion
+    gecko: {
+      kind: 'slab', half: 0.96, corner: 0, depth: 0.32,
+      eye: { w: 2.1, h: 0.62, gap: 2.45, shiftY: -0.50 }, eyeY: -0.50,
+      pose: { yaw: -8, pitch: 12, roll: -5, k: 0.55 },
+      path: function (S) { return scalePath('M-1 0.10C-1 0.52 -0.58 0.70 0 0.70C0.58 0.70 1 0.52 1 0.10C1 -0.10 0.97 -0.26 0.92 -0.40C0.92 -0.70 0.76 -0.92 0.56 -0.92C0.38 -0.92 0.24 -0.76 0.22 -0.52C0.12 -0.48 -0.12 -0.48 -0.22 -0.52C-0.24 -0.76 -0.38 -0.92 -0.56 -0.92C-0.76 -0.92 -0.92 -0.70 -0.92 -0.40C-0.97 -0.26 -1 -0.10 -1 0.10Z', S); }
     },
     tablet: {
       kind: 'pill', half: 0.98, radius: 74 / 114,
