@@ -525,3 +525,36 @@
   if (root.BotFace) attach(root.BotFace);
   if (typeof module !== 'undefined' && module.exports) module.exports = BotVoice;
 })(typeof window !== 'undefined' ? window : this);
+
+/* 2026-11-23 逐流自動更新（放在這支檔，避免跟主程式同時改版衝突）。
+   老大一直看到舊版（畫面開著不重新整理就停在舊版），新功能都看不到。每 2 分鐘看一次線上版號：
+   沒在打字、沒開卡片、沒在編修時直接重新載入；正在操作就在上方放一顆「有新版，點這裡更新」。 */
+(function () {
+  if (typeof window === 'undefined' || !/\/current\//.test(location.pathname) || /[?&]mock=/.test(location.search)) return;
+  var cur = (function () { var l = document.querySelector('link[href*="app.css?v"]'); var m = l && l.getAttribute('href').match(/\?v(\d+)/); return m ? +m[1] : 0; })();
+  if (!cur) return;
+  function busy() {
+    var a = document.activeElement, d = document.documentElement;
+    if (a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)) return true;
+    if (d.classList.contains('marking')) return true;
+    var ids = ['sheet', 'page', 'chat'];
+    for (var i = 0; i < ids.length; i++) { var e = document.getElementById(ids[i]); if (e && !e.hidden && e.classList.contains('in')) return true; }
+    return false;
+  }
+  function bar(v) {
+    if (document.getElementById('updBar')) return;
+    var b = document.createElement('button'); b.id = 'updBar'; b.type = 'button';
+    b.textContent = '有新版（v' + v + '），點這裡更新';
+    b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top) + 64px);z-index:96;min-height:44px;padding:0 18px;border-radius:22px;border:0;background:#f5b301;color:#1a1300;font:inherit;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.35)';
+    b.onclick = function () { location.reload(); };
+    document.body.appendChild(b);
+  }
+  function check() {
+    fetch('sw.js?t=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (t) {
+      var m = t.match(/opp-shell-v(\d+)/); var v = m ? +m[1] : 0;
+      if (v > cur) { if (busy()) bar(v); else location.reload(); }
+    }).catch(function () {});
+  }
+  setTimeout(check, 15000); setInterval(check, 120000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) check(); });
+})();
