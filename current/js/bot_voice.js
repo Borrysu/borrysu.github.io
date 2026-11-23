@@ -1126,3 +1126,15 @@
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* 2026-11-24 首頁目標窄條：標題旁的字每 3 秒換下一個目標的重點（逐流 msg 687）。退回：刪掉這一段＋app.css 的 .gsmr。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var i = 0;
+  setInterval(function () {
+    var r = document.querySelector('.gsmr'); if (!r) return;
+    var s = r.children; if (s.length < 2) return;
+    for (var k = 0; k < s.length; k++) s[k].classList.remove('on');
+    i = (i + 1) % s.length; s[i].classList.add('on');
+  }, 3000);
+})();
