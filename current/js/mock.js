@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v117';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v118';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -315,6 +315,14 @@ export function mockAdapter(modeStr) {
       const hit = cl.filter(r => (!year || yr(r) === +year) && (!q || [r.title, r.short_title, r.org, r.folder_name].join(' ').toLowerCase().includes(String(q).toLowerCase())));
       return { items: hit.map(r => normalize(view(r))), years: [...new Set(cl.map(yr))].sort((a, b) => b - a) };
     },
+    async aiQuota() { await wait(150); return [   // 示範用虛構數字
+      { account: 'claude', tool: 'claude', label: 'Claude 好咖（claude）', wk_pct: 100, wk_reset: '2026-11-27T07:00:00Z' },
+      { account: 'claude-b', tool: 'claude', label: 'Claude 個人（claude B）', h5_pct: 30, wk_pct: 11 },
+      { account: 'codex', tool: 'codex', label: 'Codex 好咖（codex／codex BW）', wk_pct: 0 },
+      { account: 'codex-p', tool: 'codex', label: 'Codex 個人（codex B）', wk_pct: 70 },
+      { account: 'codex-s', tool: 'codex', label: 'Codex Sam（codex s）・指定才用', wk_pct: 0 },
+      { account: 'agy-b', tool: 'agy', label: 'AGY 個人（agy B）', wk_pct: 2 },
+      { account: 'cursor', tool: 'cursor', label: 'Cursor', note: 'CLI 沒有查額度指令，只能看 cursor.com/dashboard' }]; },
     async get(id) { await wait(200); return normalize(Object.assign(view(find(id)), { full_text: find(id).full_text })); },
     async act(id, action, o = {}) {
       await wait(450); sorry();

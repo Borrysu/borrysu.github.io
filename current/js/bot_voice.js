@@ -1129,3 +1129,39 @@
 })();
 
 /* 2026-11-24 首頁目標窄條改成手指左右滑（msg 692），自動輪播拿掉。 */
+
+/* 2026-11-25 派工前看 AI 額度（逐流 msg 709，老大：「在排步驟卡片以及要執行的時候好像似乎必須查詢一下當下A I帳號的額度，不然好像會不小心就用光」）。
+   「就這樣交給…」那顆上方、步驟卡上方各放一行：各帳號本週用了幾 %，≥85% 標紅提醒換帳號。資料來自 hub_ai_quota（Mac 每 30 分鐘、有變才推）；面板只在打開時讀，10 分鐘內共用一次結果。
+   Sam 指定才用，不列入建議。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var cache = null, at = 0, busy = false;
+  function get() {
+    var Z = window.__zl; if (!Z || !Z.LV || !Z.LV.api || !Z.LV.api.aiQuota) return Promise.resolve(null);
+    if (cache && Date.now() - at < 600000) return Promise.resolve(cache);
+    if (busy) return Promise.resolve(cache); busy = true;
+    return Z.LV.api.aiQuota().then(function (d) { cache = Array.isArray(d) ? d : []; at = Date.now(); busy = false; return cache; }).catch(function () { busy = false; return cache; });
+  }
+  var SHORT = { 'claude': 'Claude 好咖', 'claude-b': 'Claude 個人', 'codex': 'Codex 好咖', 'codex-p': 'Codex 個人', 'agy-b': 'AGY 個人' };
+  function html(rows) {
+    var show = rows.filter(function (r) { return SHORT[r.account] && r.wk_pct != null; });
+    if (!show.length) return '';
+    var hi = show.filter(function (r) { return Math.max(r.wk_pct || 0, r.h5_pct || 0) >= 85; });
+    var ok = show.filter(function (r) { return Math.max(r.wk_pct || 0, r.h5_pct || 0) < 60; }).sort(function (a, b) { return (a.wk_pct || 0) - (b.wk_pct || 0); });
+    var chips = show.map(function (r) { var p = Math.max(r.wk_pct || 0, r.h5_pct || 0); return '<span class="aq' + (p >= 85 ? ' hot' : p >= 60 ? ' mid' : '') + '">' + SHORT[r.account] + ' <b>' + Math.round(p) + '%</b></span>'; }).join('');
+    var tip = hi.length ? '<small class="aqt">' + hi.map(function (r) { return SHORT[r.account]; }).join('、') + '快用完' + (ok.length ? '，建議改用 ' + SHORT[ok[0].account] : '') + '</small>' : '';
+    return '<div class="aqrow" aria-label="AI 帳號本週額度"><span class="aqh">額度</span>' + chips + tip + '</div>';
+  }
+  function put(where) {
+    if (!where || where.querySelector('.aqrow')) return;
+    get().then(function (rows) { if (!rows || where.querySelector('.aqrow')) return; var h = html(rows); if (h) where.insertAdjacentHTML('afterbegin', h); });
+  }
+  var st = document.createElement('style');
+  st.textContent = '.aqrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px;font-size:12px;color:var(--ink2)}.aqh{margin-right:2px}' +
+    '#cBaba .aqrow{flex-basis:100%;margin-bottom:2px}.aq{padding:2px 8px;border-radius:999px;border:1px solid var(--line)}.aq b{color:var(--ink)}.aq.mid b{color:#f2a93b}.aq.hot{border-color:#f0605a}.aq.hot b{color:#f0605a}.aqt{flex-basis:100%;color:#f0605a}';
+  (document.head || document.documentElement).appendChild(st);
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () {
+    var c = document.getElementById('cBaba'); if (c) put(c.parentNode.querySelector('#cBaba') ? c : null);
+    var s = document.querySelector('#sheet .stplanr'); if (s) put(s.parentNode);
+  }, 120); }).observe(document.documentElement, { childList: true, subtree: true });
+})();

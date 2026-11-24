@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v117');
+  const { mockAdapter } = await import('./mock.js?v118');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -293,6 +293,7 @@ function liveAdapter() {
       return { items: all, serverTime: ts(d.server_time) };
     },
     async get(id) { return card(await rpc(R.get, { p_id: id })); },
+    async aiQuota() { return rpc('hub_ai_quota_list', {}); },   // 2026-11-25 msg 709：各 AI 帳號額度（Mac 每 30 分鐘、有變才推）
     async history(id) {   // 卡片動作紀錄：誰、什麼時候、做了什麼（opp_get 的 history）
       const d = await rpc(R.get, { p_id: id }); const r = Array.isArray(d) ? d[0] : d;
       return normHistory(r && r.history);
