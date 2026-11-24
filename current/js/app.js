@@ -2068,7 +2068,7 @@ async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id
   if(!ms.length&&!pend.length)CH[b]=[{w:'bot',t:HI(b),b}];
   const lb=ms.filter(m=>m.kind==='bot').pop();if(lb)seenMark(b,lb.id);
   if(fresh){logSync();if(had&&last&&last.kind!=='user'){mood(b,'speaking');hop($('#cAv'));setTimeout(()=>{if(S.chat&&S.chat.b===b)mood(b,'idle')},2200)}else mood(b,waiting?'thinking':'idle')}
-  clearTimeout(CPOLL);if(waiting&&!document.hidden)CPOLL=setTimeout(loadMsgs,8000)}
+  clearTimeout(CPOLL);if(waiting&&!document.hidden)CPOLL=setTimeout(loadMsgs,20000)}   // 2026-11-24 DB 降載：等回覆時 8 秒改 20 秒
  catch(e){CH[b]=[{w:'bot',t:'對話讀不到：'+LERR(e),b}];logSync()}}
 {const _o=openChat;openChat=function(b,ctx,el,auto){if(!CH[b])CH[b]=[];clearTimeout(CPOLL);
  LV.thread='';CH[b]=[{w:'bot',t:'讀取中…',b}];delete UNREAD[b];setTimeout(loadMsgs,0);
@@ -2481,19 +2481,19 @@ function calKick(force){if(LV.mode!=='live'||!LV.api||!LV.api.calRefresh||LV.cal
  return LV.api.calRefresh().then(()=>{[30000,60000].forEach(ms=>setTimeout(()=>LV.api.cal(14).then(d=>{LV.cal=d;applyCal();render('keep')}).catch(()=>{}),ms));return true}).catch(e=>{if(NOFN(e))LV.calNo=1;return false})}
 ACT.calnow=()=>{if(LV.calNo)return toast('資料庫還沒更新，現在更新還沒上線；Mac 每 2 分鐘會自己同步');calKick(true).then(ok=>toast(ok?'叫 Mac 現在同步了，約 30 秒到':'沒叫到，Mac 每 2 分鐘會自己同步'))};
 const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行事曆更新於 ${a}</small>${mb('↻ 現在更新','calnow')}</div>`:''};
-{const _p=pageHTML;pageHTML=function(){let h=_p();if(S.page==='cal'){calKick();h=h.replace('每 30 分鐘從 Google 行事曆同步一次。','Mac 每 2 分鐘從 Google 行事曆同步一次，Mac 關機時停在最後一次。').replace(/(<h1 class="pt">行事曆<\/h1>)/,'$1'+calUpd())}return h}}
+{const _p=pageHTML;pageHTML=function(){let h=_p();if(S.page==='cal'){/* 2026-11-24 DB 降載：打開行事曆頁不再自動叫同步，只有按「現在更新」才同步 */h=h.replace('每 30 分鐘從 Google 行事曆同步一次。','Mac 每 2 分鐘從 Google 行事曆同步一次，Mac 關機時停在最後一次。').replace(/(<h1 class="pt">行事曆<\/h1>)/,'$1'+calUpd())}return h}}
 {const _t=todayStrip;todayStrip=function(){const h=_t();if(!h)return h;if(S.tab==='today')calKick();const i=h.lastIndexOf('</section>');return i<0?h:h.slice(0,i)+calUpd()+h.slice(i)}}
 {const _x=loadExtra;loadExtra=async function(){await _x();if(LV.mode==='live')await payPoll()}}
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v115');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v116');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
  if(LV.api.subscribe)LV.api.subscribe(()=>reload(),()=>{});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden&&LV.net!=='auth')reload()});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&LV.net!=='auth'&&Date.now()-(LV.visAt||0)>120000){LV.visAt=Date.now();reload()}});   // 2026-11-24 DB 降載：切回面板最多 2 分鐘重讀一次
  addEventListener('online',()=>reload());addEventListener('offline',()=>{if(LV.at){LV.net='offline';S.st='offline';paint()}});
 }catch(e){LV.net='error';LV.err=LERR(e);S.st='error';render()}})();
 // 機會卡（老大 2026-11-22：「應該要有完整標題 以及他是幹嘛的還有他可以拿多少錢」「記得有暫存扭跟深入了解的鈕 還有個不要的鈕吧？」）
@@ -4204,7 +4204,7 @@ ACT.ltownt=id=>{LT2.own[id]=!LT2.own[id];LV.sig='';paint();if(LT2.own[id])setTim
 ACT.ltown=id=>{const x=document.getElementById('lt2In_'+id),v=x?x.value.trim():'';if(!v){toast('寫一下想要的時間');if(x)x.focus();return}if(x)x.blur();ltPick(id,v.slice(0,60))};
 ACT.ltchat=(id,el)=>openChat('peng','lt:'+id,el,null);
 document.addEventListener('keydown',e=>{const t=e.target;if(e.key!=='Enter'||e.isComposing||!t||!t.id||t.id.indexOf('lt2In_')!==0)return;e.preventDefault();ACT.ltown(t.id.slice(6))});
-setInterval(()=>{if(document.hidden||S.tab!=='life'||S.sub.life!=='todo'||S.sheet||!LV.life)return;if(ltodos().some(t=>{if(t.done)return false;const s=ltSt2(t);return s&&(s.k==='wait'||(s.k==='picked'&&!s.r))})){lpAt=0;lpLoad()}},8000);
+setInterval(()=>{if(document.hidden||S.tab!=='life'||S.sub.life!=='todo'||S.sheet||!LV.life)return;if(ltodos().some(t=>{if(t.done)return false;const s=ltSt2(t);return s&&(s.k==='wait'||(s.k==='picked'&&!s.r))})){lpAt=0;lpLoad()}},60000);   // 2026-11-24 DB 降載：8 秒改 60 秒
 WRITE.push('ltplan','ltslot','ltown');
 
 // 3 想買詳情重排

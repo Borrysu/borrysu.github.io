@@ -21,8 +21,10 @@ export const CONFIG = {
   SUPABASE_ANON_KEY: 'sb_publishable_yXl1iCBorFdHNsTl1A4UPg_MQLMYukO',
   KEY_STORAGE: 'opp_key',
   SNAPSHOT_KEY: 'opp.snapshot.v2',
-  POLL_MS: 15000,          // 輪詢備援
-  FAST_POLL_MS: 3000,      // 有「讀全文中」或「建資料夾中」時加快
+  // 2026-11-24 資料庫 Disk I/O 爆掉（老大：「碰到大問題囉，資料庫爆炸了整個面板無法讀取」「你先幫我停止逐流的自動更新部分」）：
+  // 自動整頁重讀從每 15 秒改成每 10 分鐘，忙碌加快從 3 秒改 60 秒。要立刻看新資料就下拉／切回面板（切回最多 2 分鐘一次）。退回：改回 15000、3000。
+  POLL_MS: 600000,         // 輪詢備援（原 15000）
+  FAST_POLL_MS: 60000,     // 有「讀全文中」或「建資料夾中」時加快（原 3000）
   TIMEOUT_MS: 15000,       // 一般請求逾時
   SLOW_MS: 3000,           // 超過這麼久還沒回來，就顯示「載入比較久」
   GONE_HOURS: 72,
@@ -135,7 +137,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v115');
+  const { mockAdapter } = await import('./mock.js?v116');
   return mockAdapter(forceMock ? mockFlag : '');
 }
 
