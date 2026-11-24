@@ -1685,3 +1685,6 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .tlfit{position:absolute;top:1px;bottom:1px;border-radius:5px;border:2px solid #34c27a;background:rgba(52,194,122,.25)}
 .tlbar.nofit{outline:1px dashed rgba(240,96,90,.7);outline-offset:1px}
 .tlv b{font-size:18px}.tlv.ok b{color:#34c27a}.tlv.no b{color:#f0605a}
+/* 2026-11-25 按需載入：某區沒讀到時的小提示 */
+.zerr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:6px 10px;border-radius:10px;background:rgba(243,239,224,.08);font-size:12px;color:var(--mut,#aaa)}
+.zerr .btn{min-height:32px;padding:0 12px}

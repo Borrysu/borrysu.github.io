@@ -1869,13 +1869,28 @@ const scanOpen=()=>Object.values(LV.scan||{}).some(v=>v&&v.open&&v.open.status!=
 
 /* ---------- 讀資料 ---------- */
 let LPOLL=0,LBUSY=false;
+/* 2026-11-25 按需載入（11/24 資料庫事故，批次一）：每次只讀核心＋目前所在的房間，其餘切到那間房且資料超過 5 分鐘才讀。
+   核心＝list、hubToday。各區 key：goals、cal、scan、money、mo、mtr、pay、life、lifeGone、mon、co。
+   退回：git revert 這個 commit（舊版是 loadAll 一次讀全部）。 */
+const ZK={home:['goals','cal'],proj:['goals','co'],opp:['goals','scan'],money:['goals','money','mo','mtr','pay'],life:['goals','life','lifeGone','mon']};
+const LZ={cur:null,run:null,at:{},err:{},q:Promise.resolve(),seen:''};
+const ZN=k=>!LZ.cur||LZ.cur.has(k);
+const ZE=k=>{if(LZ.run)LZ.run.add(k)};
+const zoneOf=t=>({today:'home',daqi:'home',proj:'proj',opp:'opp',money:'money',life:'life'}[t]||'home');
+const zStale=k=>!LZ.at[k]||Date.now()-LZ.at[k]>300000;
+function zKeys(){const z=zoneOf(S.tab),a=ZK[z].slice();if(S.page==='cal'&&a.indexOf('cal')<0)a.push('cal');return a}
+function loadZones(keys){keys=[...new Set(keys)];return LZ.q=LZ.q.catch(()=>{}).then(async()=>{LZ.cur=new Set(keys);LZ.run=new Set();
+ try{await loadMoney();await loadExtra()}finally{const now=Date.now(),bad=LZ.run;LZ.cur=null;LZ.run=null;keys.forEach(k=>{if(bad.has(k))LZ.err[k]=now;else{LZ.at[k]=now;delete LZ.err[k]}})}})}
+async function loadMoney(){const api=LV.api;
+ if(ZN('money')&&api.moneySubs&&!LV.moneyNo){try{LV.money=await api.moneySubs();LV.moneyErr=''}catch(e){LV.money=null;LV.moneyNo=!!(e&&e.kind==='forbidden');LV.moneyErr=LV.moneyNo?'這把金鑰不能看錢的資料，只有老大本人的網址能看':LERR(e);if(e&&e.kind==='auth')throw e;if(!LV.moneyNo)ZE('money')}}
+ if(ZN('scan')&&api.scanStatus)LV.scan=await api.scanStatus().catch(e=>{ZE('scan');return LV.scan||{}})}
 async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
  try{
-  const [l,h,sc]=await Promise.all([api.list(),api.hubToday?api.hubToday():null,api.scanStatus?api.scanStatus().catch(()=>({})):{}]);
-  LV.items=l.items;LV.hub=h;LV.scan=sc||{};LV.at=Date.now();LV.net='ok';
-  if(api.moneySubs&&!LV.moneyNo){try{LV.money=await api.moneySubs();LV.moneyErr=''}catch(e){LV.money=null;LV.moneyNo=!!(e&&e.kind==='forbidden');LV.moneyErr=LV.moneyNo?'這把金鑰不能看錢的資料，只有老大本人的網址能看':LERR(e);if(e&&e.kind==='auth')throw e}}
+  const [l,h]=await Promise.all([api.list(),api.hubToday?api.hubToday():null]);
+  LV.items=l.items;LV.hub=h;LV.at=Date.now();LV.net='ok';
   if(first&&api.archive){api.archive('',null).then(r=>{LV.arch=r.items||[];paint()}).catch(()=>{})}
-  await loadExtra();
+  const ks=zKeys();if(first||scanOpen())ks.push('scan');
+  await loadZones(ks);LZ.seen=zoneOf(S.tab)+(S.page==='cal'?':cal':'');
   if(LV.mode==='live')snapSave();
   S.st='ok';S.scan=scanOpen()?1:0;paint(first?'stgroot':'');
   if(first&&S.chat)loadMsgs();pollInbox();
@@ -1911,8 +1926,8 @@ gcNote=()=>'';projSync=()=>'';   // v41：目標接上 hub_goals（見檔尾「�
 monthSelf=()=>subs().filter(s=>s.payer==='自付').reduce((a,s)=>a+(s.mo||0),0);
 {const _z=zsum;zsum=function(z){const s=_z(z);
  if(z==='opp'){s.b='';const a=opps('all');s.s=a.length?`最急：${a[0].org||a[0].title}，${a[0].due}`:'現在沒有新機會'}
- if(z==='money'&&!LV.mo){s.b='';if(!LV.money){s.n='—';s.sm=0;s.u=LV.moneyErr?'看不到錢的資料':'帳戶還沒接上';s.s='';s.none=false;s.hot=false}else{const d=due7();s.n=nt(monthSelf());s.sm=1;s.u='每月固定支出（自付）';s.s=d.length?`7 天內扣 ${d.length} 筆`:'7 天內沒有要扣的';s.none=false;s.hot=subs().some(x=>x.cancel&&x.in<=3)}}
- if(z==='life'&&!LV.life){s.n=0;s.u='生活讀不到';s.s='';s.none=false;s.hot=false}
+ if(z==='money'&&!LV.mo){s.b='';if(!LV.money){s.n='—';s.sm=0;s.u=LV.moneyErr?'看不到錢的資料':LZ.at.money||LZ.err.money?'帳戶還沒接上':'點進去才讀';s.s='';s.none=false;s.hot=false}else{const d=due7();s.n=nt(monthSelf());s.sm=1;s.u='每月固定支出（自付）';s.s=d.length?`7 天內扣 ${d.length} 筆`:'7 天內沒有要扣的';s.none=false;s.hot=subs().some(x=>x.cancel&&x.in<=3)}}
+ if(z==='life'&&!LV.life){s.n=0;s.u=LZ.at.life||LZ.err.life?'生活讀不到':'點進去才讀';s.s='';s.none=false;s.hot=false}
  if(z==='proj'){const u=urgentProj();s.s=u?`${u.short}${u.due}`:(projs().length?`進行中 ${projs('doing').length} 件`:'沒有急件')}
  return s}}
 errorBox=function(z){const n=ZONE[z]?ZONE[z].n:'逐流';
@@ -2104,10 +2119,10 @@ ACT.cmd=id=>{const i=id.indexOf(':'),b=id.slice(0,i),c=id.slice(i+1);if(b==='jij
    設計稿的卡片、整頁、各房間色卡目標頁照原樣；只換資料與會寫回去的動作。 */
 LV.goals=null;LV.goalsErr='';LV.cal=null;LV.life=null;LV.mo=null;LV.moErr='';
 async function loadExtra(){const api=LV.api,jobs=[];
- if(api.goals)jobs.push(api.goals().then(d=>{LV.goals=d;LV.goalsErr=''}).catch(e=>{LV.goalsErr=LERR(e)}));
- if(api.cal)jobs.push(api.cal(14).then(d=>{LV.cal=d}).catch(()=>{}));
- if(api.life)jobs.push(api.life().then(d=>{LV.life=d}).catch(()=>{}));
- if(api.moneyOverview&&!LV.moNo)jobs.push(api.moneyOverview().then(d=>{LV.mo=d;LV.moErr=''}).catch(e=>{LV.mo=null;LV.moNo=!!(e&&e.kind==='forbidden');LV.moErr=LV.moNo?'這把金鑰不能看錢的資料，只有老大本人的網址能看':LERR(e)}));
+ if(ZN('goals')&&api.goals)jobs.push(api.goals().then(d=>{LV.goals=d;LV.goalsErr=''}).catch(e=>{LV.goalsErr=LERR(e);ZE('goals')}));
+ if(ZN('cal')&&api.cal)jobs.push(api.cal(14).then(d=>{LV.cal=d}).catch(()=>{ZE('cal')}));
+ if(ZN('life')&&api.life)jobs.push(api.life().then(d=>{LV.life=d}).catch(()=>{ZE('life')}));
+ if(ZN('mo')&&api.moneyOverview&&!LV.moNo)jobs.push(api.moneyOverview().then(d=>{LV.mo=d;LV.moErr=''}).catch(e=>{LV.mo=null;LV.moNo=!!(e&&e.kind==='forbidden');LV.moErr=LV.moNo?'這把金鑰不能看錢的資料，只有老大本人的網址能看':LERR(e);if(!LV.moNo)ZE('mo')}));
  await Promise.all(jobs)}
 const CLN=s=>String(s==null?'':s).replace(/[<>&"'`]/g,'');
 const ISOD=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -2483,11 +2498,11 @@ ACT.calnow=()=>{if(LV.calNo)return toast('資料庫還沒更新，現在更新�
 const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行事曆更新於 ${a}</small>${mb('↻ 現在更新','calnow')}</div>`:''};
 {const _p=pageHTML;pageHTML=function(){let h=_p();if(S.page==='cal'){/* 2026-11-24 DB 降載：打開行事曆頁不再自動叫同步，只有按「現在更新」才同步 */h=h.replace('每 30 分鐘從 Google 行事曆同步一次。','Mac 每 2 分鐘從 Google 行事曆同步一次，Mac 關機時停在最後一次。').replace(/(<h1 class="pt">行事曆<\/h1>)/,'$1'+calUpd())}return h}}
 {const _t=todayStrip;todayStrip=function(){const h=_t();if(!h)return h;if(S.tab==='today')calKick();const i=h.lastIndexOf('</section>');return i<0?h:h.slice(0,i)+calUpd()+h.slice(i)}}
-{const _x=loadExtra;loadExtra=async function(){await _x();if(LV.mode==='live')await payPoll()}}
+{const _x=loadExtra;loadExtra=async function(){await _x();if(ZN('pay')&&LV.mode==='live')await payPoll()}}
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v116');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v117');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2577,8 +2592,8 @@ ACT.supcmp=(id,el)=>{const u=DB.sup.find(x=>x.id===id);if(!u)return;if(supCmp(u)
 {const _n=ctxName;ctxName=function(ctx){const a=(ctx||'').split(':');if(a[0]==='sup'){const u=DB.sup.find(x=>x.id===a[1]);return u?'備品：'+u.name:(a[1]==='cart'?'要買的備品':'')}
  if(a[0]==='ltodo'){const t=LT(a[1]);return t?'待辦：'+clip(t.name,24):''}if(a[0]==='massets')return '資產與配置';return _n(ctx)}}
 {const _x=loadExtra;loadExtra=async function(){await _x();const api=LV.api,jobs=[];
- if(api.lifeGone&&!LV.goneNo)jobs.push(api.lifeGone().then(d=>{LV.lifeGone=Array.isArray(d)?d:[]}).catch(e=>{if(NOFN(e))LV.goneNo=1}));
- if(LV.life&&((LV.life.items||[]).some(x=>x.kind==='sup'&&x.need)||Object.keys(LV.supRun).length))jobs.push(loadMon());
+ if(ZN('lifeGone')&&api.lifeGone&&!LV.goneNo)jobs.push(api.lifeGone().then(d=>{LV.lifeGone=Array.isArray(d)?d:[]}).catch(e=>{if(NOFN(e))LV.goneNo=1}));
+ if(ZN('mon')&&LV.life&&((LV.life.items||[]).some(x=>x.kind==='sup'&&x.need)||Object.keys(LV.supRun).length))jobs.push(loadMon());
  await Promise.all(jobs)}}
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='ltIn'){e.preventDefault();ACT.ltadd()}});
 WRITE.push('ltadd','ltdone','ltundo','ltdel','ltrestore','ltsave','supcmp');
@@ -2774,7 +2789,7 @@ function kmTrend(){if(!LV.mo)return '';
 {const _q=quick;quick=function(on){const k=(on.ctx||'').split(':')[0];if(on.b==='kim'&&k==='mtrend')return['收入為什麼往下','下個月要省嗎','存下來的夠不夠'];return _q(on)}}
 {const _n=ctxName;ctxName=function(ctx){return (ctx||'').split(':')[0]==='mtrend'?'收支趨勢':_n(ctx)}}
 {const _x=loadExtra;loadExtra=async function(){await _x();const api=LV.api;
- if(api.moneyTrend&&LV.mo&&!LV.mtrNo)await api.moneyTrend(12).then(d=>{LV.mtr=d&&Array.isArray(d.months)?d:null;LV.mtrErr=''}).catch(e=>{if(NOFN(e))LV.mtrNo='nofn';else if(e&&e.kind==='forbidden')LV.mtrNo='forbidden';else LV.mtrErr=LERR(e)})}}
+ if(ZN('mtr')&&api.moneyTrend&&LV.mo&&!LV.mtrNo)await api.moneyTrend(12).then(d=>{LV.mtr=d&&Array.isArray(d.months)?d:null;LV.mtrErr=''}).catch(e=>{if(NOFN(e))LV.mtrNo='nofn';else if(e&&e.kind==='forbidden')LV.mtrNo='forbidden';else{LV.mtrErr=LERR(e);ZE('mtr')}})}}
 zoneMoney=function(){if(!LV.mo)return mzHero()+kmLedger2();
  return mzHero()+`<div id="mz2">${mz2HTML()}</div>`+kmTrend()+kmAssets()+kmBig()+mzIn()+mzOut()+kmLedger2()};
 window.__zl=Object.assign(window.__zl||{},{loadMon});
@@ -2926,8 +2941,8 @@ ACT.cosend=async id=>{const t=$('#coText'),v=t?t.value.trim():'';if(!v){S.err='c
 {const _q=quick;quick=function(on){if((on.ctx||'').indexOf('co:')===0&&on.b==='daqi')return['這張現在卡在哪','幫我想怎麼回','整理成我能直接回的一句'];return _q(on)}}
 async function coLoad(){const api=LV.api;if(LV.mode!=='live'||!api||!api.company||LV.coNo)return;
  await api.company().then(d=>{LV.co=d&&typeof d==='object'?{meta:d.meta||null,cards:Array.isArray(d.cards)?d.cards:[],tasks:Array.isArray(d.tasks)?d.tasks:[]}:null;LV.coErr=''})
-  .catch(e=>{if(NOFN(e))LV.coNo='nofn';else if(e&&e.kind==='forbidden')LV.coNo='forbidden';else LV.coErr=LERR(e)})}
-{const _x=loadExtra;loadExtra=async function(){await _x();await coLoad()}}
+  .catch(e=>{if(NOFN(e))LV.coNo='nofn';else if(e&&e.kind==='forbidden')LV.coNo='forbidden';else{LV.coErr=LERR(e);ZE('co')}})}
+{const _x=loadExtra;loadExtra=async function(){await _x();if(ZN('co'))await coLoad()}}
 {const _sg=sigOf;sigOf=function(){let s=_sg();try{const d=LV.co;if(d)s+='|co'+d.cards.length+':'+(d.meta&&d.meta.written_at||'')+':'+d.tasks.map(t=>t.id+(t.job_status||t.status)).join(',')}catch(e){}return s}}
 /* ---------- 要你做（2026-11-22，拍板後續第三輪） ----------
    老大原話：「要我做的東西不就應該在上面跟我講嗎？」「我希望這個面板可以讓我在上面操作就完成，我所有要做的事情可以不用離開面板」
@@ -4634,6 +4649,17 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
   if(seg2)x=x.replace(seg2[0],'');
   return x.slice(0,i)+(seg2?seg2[0]:'')+tlPanel(all)+x.slice(i)};
  window.__zl=Object.assign(window.__zl||{},{tlDay:dayInfo});}
+/* ---------- 2026-11-25 按需載入：切房間時補讀、讀失敗的區顯示重試 ---------- */
+{const _r=render;render=function(){const r=_r.apply(this,arguments);try{roomWatch()}catch(e){}return r}}
+function roomWatch(){if(!LV.at||!LZ.seen||S.st==='loading')return;const k=zoneOf(S.tab)+(S.page==='cal'?':cal':'');if(k===LZ.seen)return;LZ.seen=k;
+ const ks=zKeys().filter(zStale);if(ks.length)loadZones(ks).then(()=>{LV.sig='';paint()})}
+function zhm(ks){const t=Math.max(0,...ks.map(k=>LZ.at[k]||0));if(!t)return '還沒讀到';const d=new Date(t);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function zbanner(keys){if(S.st==='loading'||S.st==='error')return '';const bad=keys.filter(k=>LZ.err[k]);if(!bad.length)return '';
+ return `<div class="zerr" role="status"><span>這區有資料沒讀到，上次更新 ${zhm(keys)}</span><button class="btn sm" data-act="zretry">重試</button></div>`}
+{const _v=viewHTML;viewHTML=function(){const h=_v.apply(this,arguments);return S.page?h:zbanner(zKeys())+h}}
+{const _p=pageHTML;pageHTML=function(){const h=_p.apply(this,arguments);return S.page==='cal'?zbanner(['cal'])+h:h}}
+ACT.zretry=()=>{const ks=zKeys().filter(k=>LZ.err[k]||zStale(k));toast('重新讀取中');loadZones(ks).then(()=>{LV.sig='';paint();if(zKeys().some(k=>LZ.err[k]))toast('還是沒讀到，等一下再試')})};
+window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

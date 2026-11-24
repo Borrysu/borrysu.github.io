@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v116';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v117';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -269,7 +269,7 @@ export function mockAdapter(modeStr) {
     async goalSet(id, patch) { await wait(200); sorry(); let g = mgoals.find(x => x.id === id); if (!g) { g = { id: 'mg' + (++nextN), status: 'active', now_val: 0, total: 1, kind: 'pips', unit: '步', label: '走到', room: 'life', bot: 'din', sort: 999, updated_at: new Date().toISOString() }; mgoals.push(g); }
       if (patch.focus) mgoals.forEach(x => { x.focus = false; }); Object.assign(g, patch, { updated_at: new Date().toISOString() }); return g; },
     async cal() { await wait(100); return { items: mcal, synced: { me: new Date().toISOString(), co: new Date().toISOString() } }; },
-    async life() { await wait(100); return { items: mlife.filter(x => x.status !== 'dropped') }; },
+    async life() { await wait(100); if (flags.has('lifefail')) throw new AdapterError('network', '連不上伺服器'); return { items: mlife.filter(x => x.status !== 'dropped') }; },
     async lifeSet(id, kind, patch) { await wait(200); sorry(); let x = mlife.find(y => y.id === id); if (!x) { x = { id: 'ml' + (++nextN), kind, status: 'active', created_at: new Date().toISOString() }; mlife.push(x); } Object.assign(x, patch); return x; },
     async lifeGone() { await wait(80); return mlife.filter(x => x.status === 'dropped').map(x => ({ id: x.id, kind: x.kind, name: x.name, cat: x.cat, at: new Date().toISOString() })); },
     async moneyOverview() { await wait(150); return mmoney; },

@@ -133,12 +133,15 @@ export async function signOut() {
 export function saveKey(k) { KEY = k; LS.set(CONFIG.KEY_STORAGE, k); try { const u = new URL(location.href); u.hash = ''; u.searchParams.set('k', k); history.replaceState(null, '', u.pathname + u.search); } catch (e) {} }  // 網址也一起換，不然重新整理會讀回舊的 ?k=
 export const keyTag = () => KEY ? KEY.slice(0, 6) : (SESS ? 'sess' : '');        // 快照用，不是完整金鑰
 
+// 2026-11-25 量測：每次呼叫後端 +1，依函式名分類（window.__rpcCount = {total, by:{name:n}}）。退回：刪這段與 rpcCount( 呼叫
+function rpcCount(name) { try { const c = window.__rpcCount || (window.__rpcCount = { total: 0, by: {} }); c.total++; c.by[name] = (c.by[name] || 0) + 1; } catch (e) {} }
+function countWrap(api) { const o = {}; for (const k of Object.keys(api)) { const f = api[k]; o[k] = typeof f === 'function' ? function () { rpcCount(k); return f.apply(this, arguments); } : f; } return o; }
 export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v116');
-  return mockAdapter(forceMock ? mockFlag : '');
+  const { mockAdapter } = await import('./mock.js?v117');
+  return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
 // ---------- 正規化：後端欄位 → 前端欄位 ----------
@@ -241,6 +244,7 @@ function liveAdapter() {
   const base = CONFIG.SUPABASE_URL.replace(/\/+$/, '');
   const headers = { 'content-type': 'application/json', apikey: CONFIG.SUPABASE_ANON_KEY };
   async function rpc(name, body, timeout, opt) {
+    rpcCount(name);   // 2026-11-25 量測：window.__rpcCount
     // v60：有網址金鑰照舊帶 p_key；沒有金鑰就用登入的 token（p_key 送 null，資料庫 _opp_cap 認 auth.uid()）
     let tok = '';
     if (!(KEY.length >= 20) && SESS) { try { tok = await freshToken(opt && opt.retried); } catch (e) { if (e.kind === 'auth') throw new AdapterError('auth', '登入過期，請重新登入', 401); throw e; } }
