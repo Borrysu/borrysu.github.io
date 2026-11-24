@@ -2215,9 +2215,9 @@ async function startRealtime(){
       .subscribe(st=>{KD.rt=st==='SUBSCRIBED';const lv=$('#live');lv&&lv.classList.toggle('off',!KD.rt&&S.scn!=='normal');if(KD.rt)scheduleRefresh()});
   }catch(e){}
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')scheduleRefresh()});
+let visAt=0;document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&Date.now()-visAt>120000){visAt=Date.now();scheduleRefresh()}});   // 2026-11-24 DB 降載：切回最多 2 分鐘重讀一次；別台裝置記帳的即時通知照舊馬上更新
 window.addEventListener('focus',scheduleRefresh);window.addEventListener('pageshow',scheduleRefresh);window.addEventListener('online',scheduleRefresh);
-setInterval(()=>{if(document.visibilityState==='visible'&&KD.loaded&&S.per===0)kkLoad({silent:true})},15000);
+setInterval(()=>{if(document.visibilityState==='visible'&&KD.loaded&&S.per===0)kkLoad({silent:true})},600000);   // 2026-11-24 資料庫 Disk I/O 事故降載（老大：「直接放慢」）：15 秒改 10 分鐘，退回改回 15000
 /* ---------- PWA：網址留金鑰、主畫面圖示帶金鑰（照 v30.3） ---------- */
 function normalizeUrl(){try{if(KEY_FROM_URL||KEY){const u=new URL(location.href);u.searchParams.set('k',KEY);if(/\/k\/[^/]+\/?$/.test(u.pathname))u.pathname=u.pathname.replace(/\/k\/[^/]+\/?$/,'/');history.replaceState(history.state,'',u.pathname+u.search+location.hash)}}catch(e){}keyManifest()}
 function keyManifest(){
@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.3', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.4', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4781,7 +4781,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
   }, true);
   window.KKFX = { state: F, load: load, open: function () { F.open = true; draw(); load(true); } };
   var tries = 0, iv = setInterval(function () { if (C('o')) { clearInterval(iv); load(true); } else if (++tries > 60) clearInterval(iv); }, 1000);
-  setInterval(function () { if (!document.hidden) load(false); }, 60000);
+  setInterval(function () { if (!document.hidden) load(false); }, 600000);   // 2026-11-24 DB 降載：60 秒改 10 分鐘
 })();
 </script>
 
