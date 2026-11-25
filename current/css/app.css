@@ -1857,3 +1857,7 @@ section.tl .tlpg.tlin-l{animation:tlInL .22s ease-out}section.tl .tlpg.tlin-r{an
 .ckbox .ck.want .cklp .ckdel.ckx svg{width:20px;height:20px}
 .ckbox .ck.want .cklp{transform:translateX(calc(144px + var(--sx,0px)))!important}
 @media (hover:hover) and (pointer:fine){.ckbox .ck.want:hover{--sx:-144px}}
+/* v145 msg 917 老大：「不要白底框 可能是虛線透明底？不然看起來好厚重」 */
+.tlpop{background:rgba(20,20,26,.62);color:var(--ink,#f3efe0);border:1px dashed rgba(243,239,224,.55);box-shadow:none;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:6px 10px;font-size:12.5px;border-radius:10px}
+.tlpop small{opacity:.65}.tlpop em{color:#c3a6ff;font-weight:600}
+@media (prefers-color-scheme:light){.tlpop{background:rgba(255,255,255,.55);color:#1a1a1f;border-color:rgba(26,26,31,.45)}.tlpop em{color:#6a3df0}}
