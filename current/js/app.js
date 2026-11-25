@@ -2544,7 +2544,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v147');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v148');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4829,7 +4829,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   const k=calKey(w.note.text);if(k.length<2)return null;return pool.find(p=>[calKey(p.short),calKey(p.title)].some(x=>x&&x.length>=2&&(k.includes(x)||(k.length>=3&&x.includes(k)))))||null};
  function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
   // v146 msg 920 老大：「這邊有說同時多項的時候要幫我拆解 想一想怎麼樣可以無感無痛順暢不卡不用等」→ 已經存成一件、其實寫了好幾件的，背景自動拆開，不用按
-  wantsOf(day).filter(w=>wstOf(String(w.id))==='open'&&String(w.id).indexOf('tmp')!==0&&!SPLIT[w.id]&&splitWants(splitTm(w.note.text).text||w.note.text).length>1).forEach(w=>{SPLIT[w.id]=1;setTimeout(()=>autoSplit(w),0)});
+  wantsOf(day).filter(w=>wstOf(String(w.id))==='open'&&String(w.id).indexOf('tmp')!==0&&!SPLIT[w.id]&&!w.note.src&&!w.note.card&&!/[＠@]/.test(String(w.note.text||''))&&splitWants(splitTm(w.note.text).text||w.note.text).length>1).forEach(w=>{SPLIT[w.id]=1;setTimeout(()=>autoSplit(w),0)});
   const wants=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop').slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))),/* 照寫下的先後，新的在下面靠近輸入列 */have=new Set(wants.map(w=>w.note.src).filter(Boolean)),hk=wants.map(w=>calKey(w.note.text)).filter(x=>x.length>=2);
   const seen=t=>{const k=calKey(t);return k.length>=2&&hk.some(x=>x.includes(k)||k.includes(x))};
   const miss=[],tOf=e=>e.t+(e.e?'～'+e.e:'');
@@ -4896,6 +4896,8 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  async function autoSplit(w){const sp=splitTm(w.note.text),parts=splitWants(sp.text||w.note.text);if(parts.length<2)return;if(!await undoWant(String(w.id)))return;
   for(let i=0;i<parts.length;i++){const q=splitTm(parts[i]),nt={type:'want',text:q.text||parts[i],day:w.note.day};const tm2=i===0?(w.note.time||sp.tm||q.tm):q.tm;if(tm2)nt.time=tm2;const r=relOf({note:nt});if(r)nt.card=r.id;else if(i===0&&w.note.card)nt.card=w.note.card;await wantAdd(nt)}
   tlLoad(true);toast(`「${clip(sp.text||w.note.text,10)}」拆成 ${parts.length} 件`)}
+ // v148 msg 930 老大：「我在這一個欄位點選的時候有些地方沒反應我一定要點到字他才會跳出出來」→ 點那一列任何地方（打勾、小臉、相關除外）都打開編修
+ document.addEventListener('click',e=>{const li=e.target.closest&&e.target.closest('.ckbox .ck.want:not(.edit):not(.done):not(.swl)');if(!li||e.target.closest('button,a,input,.cklp'))return;const wid=li.dataset.wid;if(wid&&wid.indexOf('tmp')!==0)ACT.ckedit(wid)});
  ACT.ckedit=wid=>{S.ckEdit=String(wid);render('keep');setTimeout(()=>{const i=$('#ckEt');if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}}},30)};
  ACT.ckcancel=()=>{S.ckEdit='';render('keep')};
  async function undoWant(wid){const day=ymdT(dayN()),note={type:'undo',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
@@ -5212,6 +5214,21 @@ function rqBar(){const cin=document.querySelector('#chat .cin');if(!cin)return;l
  document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-rqx]')){RQ='';rqBar();return}if(Date.now()-ate<600&&e.target.closest&&e.target.closest('#clog .cm')){e.preventDefault();e.stopPropagation()}},true);
  new MutationObserver(()=>{if(RQ&&!document.getElementById('cReply'))rqBar()}).observe(document.body,{childList:true,subtree:true});
  {const _o=openChat;openChat=function(){RQ='';return _o.apply(this,arguments)}}}
+/* v148 逐流 msg 927 老大：「點這些按鈕的時候畫面也會跳動 希望你整個面板都檢查一下，不要有這種跳動，我希望他可以流暢絲滑」
+   原因：幾乎每顆鈕按下去都整頁重畫，內容變短時瀏覽器把畫面往上拉，按的那顆也跟著位移。
+   做法（全面板一條規則）：重畫前記下你剛按的那顆在螢幕上的位置，重畫後把它放回同一個位置；同一頁內不讓內容瞬間變短（換房間、開新頁照舊回頂端）。 */
+{let TAP=null;const KEEP={win:0,page:0};
+ document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.closest('[data-act]');if(!b){TAP=null;return}TAP={act:b.dataset.act,id:b.dataset.id||'',top:b.getBoundingClientRect().top,at:Date.now(),inPage:!!b.closest('#page')}},true);
+ const sel=t=>`[data-act="${t.act}"]`+(t.id?`[data-id="${(window.CSS&&CSS.escape)?CSS.escape(t.id):t.id}"]`:'');
+ const release=()=>{const v=document.getElementById('view');if(v)v.style.minHeight='';const pg=document.getElementById('page');if(pg&&pg.firstElementChild)pg.firstElementChild.style.minHeight=''};
+ const _r=render;render=function(d){const t=TAP&&Date.now()-TAP.at<2500?TAP:null,pv=S.page,tv=S.tab,v=document.getElementById('view'),pg=document.getElementById('page');
+  const vh=v?v.offsetHeight:0,ph=pg&&pg.firstElementChild?pg.firstElementChild.offsetHeight:0;
+  if(t&&!t.inPage&&v)v.style.minHeight=Math.max(vh,parseFloat(v.style.minHeight)||0)+'px';
+  const out=_r.apply(this,arguments);
+  if(S.page!==pv||S.tab!==tv||(d&&d!=='keep')){release();TAP=null;return out}
+  if(t&&t.inPage&&pg&&pg.firstElementChild&&ph)pg.firstElementChild.style.minHeight=ph+'px';
+  if(t){const root=t.inPage?pg:document,el=root&&root.querySelector(sel(t));if(el){const dy=el.getBoundingClientRect().top-t.top;if(Math.abs(dy)>1){if(t.inPage&&pg)pg.scrollTop+=dy;else window.scrollBy(0,dy)}t.top=el.getBoundingClientRect().top}}
+  return out}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

@@ -1865,3 +1865,6 @@ section.tl .tlpg.tlin-l{animation:tlInL .22s ease-out}section.tl .tlpg.tlin-r{an
 button[data-act="sheet"][data-id="beats"].wide{white-space:nowrap;overflow:hidden}button[data-act="sheet"][data-id="beats"].wide>span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0}
 .aqsheet .aqr{grid-template-columns:7.5em 1fr 3em}.aqsheet .aqr .aqd{grid-column:1/-1;margin-top:-2px;font-size:11px;color:var(--ink2)}
 .aqsheet .aqr{grid-template-columns:minmax(8.5em,auto) 1fr 3em}.aqsheet .aqr em{white-space:nowrap}
+.ckbox .ck.want:not(.done){cursor:pointer}.ckbox .ck.want .ckm{flex:1;min-width:0}
+/* v148 msg 932：刪除＝透明底 X */
+.ckbox .ck.want .cklp .ckdel.ckx{background:transparent!important;color:var(--ink2,#aaa);box-shadow:none!important;border:1.5px solid rgba(127,127,127,.45)}
