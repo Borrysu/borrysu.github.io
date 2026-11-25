@@ -1999,3 +1999,5 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .ring .rg[data-st=past] .rgf{stroke:rgba(127,127,127,.5)}.ring .rg[data-st=past] .rgn{opacity:.6}
 .mkpg .pgai{font-size:11px;opacity:.7;border:1px dashed var(--line);border-radius:999px;padding:1px 6px}
 .ckrcb small{margin-left:4px;font-size:11px;opacity:.7}.ckrcb.old{opacity:.8;border-style:dashed}.ckrcm{font:inherit;font-size:13px;padding:5px 10px;border-radius:999px;border:1px dashed var(--line);background:transparent;color:inherit;min-height:32px}
+.ckrr{margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}.ckrr .ckrl{margin:0 0 6px;font-size:13px;opacity:.8}.ckrr #ckRelQ{width:100%;box-sizing:border-box}.ckrr .ckrb{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.ckrel.me{color:var(--ink);font-weight:600}
+.ckrsb{font:inherit;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:inherit;cursor:pointer;min-height:32px}.ckrsb small{margin-left:4px;font-size:11px;opacity:.7}.ckrsb.old{opacity:.8;border-style:dashed}

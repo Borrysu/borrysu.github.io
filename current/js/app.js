@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v195');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v196');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4922,11 +4922,16 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const doneAtOf=wid=>{const e=(TL||[]).find(x=>x.note&&x.note.ref==='want:'+wid&&(x.note.type==='done'||x.note.type==='undo'));if(!e||e.note.type!=='done'||!e.at)return '';const x=new Date(Date.parse(e.at)+8*3600e3);return isNaN(x)?'':String(x.getUTCHours()).padStart(2,'0')+':'+String(x.getUTCMinutes()).padStart(2,'0')};   // v184 msg 1144：打勾後時間留著，並寫幾點打勾
  const TMRE=/^(\d{1,2}[:：]\d{2})(?:\s*[～~-]\s*(\d{1,2}[:：]\d{2}))?\s+/;
  const splitTm=t=>{const m=TMRE.exec(String(t||''));return m?{tm:m[1].replace('：',':'),te:m[2]?m[2].replace('：',':'):'',text:String(t).slice(m[0].length)}:{tm:'',te:'',text:String(t||'')}};   // msg 860：有時間欄，標題就不再寫時間
- const relOf=w=>{const pool=[].concat(DB.proj||[],DB.todo||[]);if(w.note.card){const c=pool.find(p=>p.id===w.note.card);if(c)return c;const x=ckCards().find(q=>q.id===w.note.card);if(x)return {id:x.id,short:x.shortTitle,title:x.title,ext:1,st:CK_ST[x.status]||''}}
-  const k=calKey(w.note.text);if(k.length<2)return null;const hit=pool.find(p=>[calKey(p.short),calKey(p.title)].some(x=>x&&x.length>=2&&(k.includes(x)||(k.length>=3&&x.includes(k)))));if(hit)return hit;
-  // v154 msg 964 老大：「如果寫了台江簡報那是不是應該要有對應的卡片啊？我記得這個有耶」→ 標題對不到時，看卡片內容（下一步、步驟、說明）：開頭兩個字加上至少再一段兩個字都出現才算
-  const cj=(String(w.note.text||'').match(/[\u3400-\u9fff]{2,}/g)||[]).join('');if(cj.length<3)return null;const ch=[];for(let i=0;i+2<=cj.length;i++)ch.push(cj.slice(i,i+2));
-  let best=null,bs=0;pool.forEach(p=>{const r=p.raw||{};const tx=[p.title,p.short,p.next,r.progressNote,r.why,(r.progressSteps||[]).map(x=>x.name).join(' ')].join(' ');if(tx.indexOf(ch[0])<0)return;const n=new Set(ch.filter(c=>tx.indexOf(c)>-1)).size;if(n>=2&&n>bs){bs=n;best=p}});return best};
+ // v196（msg 1195、1197）：關聯分「你指定」與「自動」。你指定（note.cardBy='user'）優先、不被覆蓋，note.card 空字串＝你選了不關聯；沒指定才自動分析，而且要有把握（名稱對得上，或至少 3 個非常見詞對得上）才顯示，寧可不顯示。
+ const cardOf=id=>{const c=(DB.proj||[]).find(p=>p.id===id)||(DB.todo||[]).find(p=>p.id===id);if(c)return c;const x=ckCards().find(q=>q.id===id);return x?{id:x.id,short:x.shortTitle,title:x.title,ext:1,st:CK_ST[x.status]||''}:null};
+ const autoMatch=w=>{const pool=[].concat(DB.proj||[],DB.todo||[]),k=calKey(w.note.text);if(k.length<2)return null;
+  const GEN=new Set(['處理','整理','確認','閱讀','思考','討論','啟動','相關','工作','評估','簡報','報告','專案','案子','內容','資料','檔案','事項','明天','今天','進行','安排','準備','完成','開始','繼續','需要']);
+  let hit=null,hs=0;pool.forEach(p=>{[calKey(p.short),calKey(p.title)].forEach(x=>{if(!x)return;let v=0;if(x.length>=3&&k.includes(x))v=100+x.length;else if(x.length>=3&&k.length>=4&&x.includes(k))v=60+k.length;else if(x===k&&x.length>=2)v=90;if(v>hs){hs=v;hit=p}})});if(hit)return hit;
+  const cj=(String(w.note.text||'').match(/[㐀-鿿]{2,}/g)||[]).join('');if(cj.length<4)return null;const ch=[];for(let i=0;i+2<=cj.length;i++){const g=cj.slice(i,i+2);if(!GEN.has(g)&&ch.indexOf(g)<0)ch.push(g)}if(ch.length<3)return null;
+  let best=null,bs=0;pool.forEach(p=>{const r=p.raw||{},nm=[p.title,p.short].join(' '),tx=[nm,p.next,r.progressNote,r.why,(r.progressSteps||[]).map(x=>x.name).join(' ')].join(' ');const n=ch.filter(c=>tx.indexOf(c)>-1).length,inName=ch.some(c=>nm.indexOf(c)>-1);if(n>=3&&inName&&n>bs){bs=n;best=p}});return best};
+ const relOf=w=>{const n=w.note||{};if(n.cardBy==='user'){if(!n.card)return null;const c=cardOf(n.card);return c?Object.assign({},c,{by:'user'}):null}
+  if(n.card){const c=cardOf(n.card);if(c){const sc=ckScoreOf(c.ext?{title:c.title,shortTitle:c.short}:{title:c.title,shortTitle:c.short,why:(c.raw||{}).why},n.text);if(sc>=3)return Object.assign({},c,{by:'auto'})}}
+  const m=autoMatch(w);return m?Object.assign({},m,{by:'auto'}):null};
  function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
   // v146 msg 920 老大：「這邊有說同時多項的時候要幫我拆解 想一想怎麼樣可以無感無痛順暢不卡不用等」→ 已經存成一件、其實寫了好幾件的，背景自動拆開，不用按
   // v192 msg 1173：不再自動拆。一條節奏不管多長都只算一條（老大寫長內容是在留一段時間整理、分派那些事）；要拆，編修時點「拆開」。
@@ -4960,9 +4965,9 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   // 做法：一列＝打勾｜時間｜標題｜小臉。點標題就地編修（標題、時間、刪除）；列往左滑露出「刪除」；標題列左右滑切今日／明日；最下面一格空白列，灰字是第一個建議，點進去跳出「別漏了」選單。
   const ed=S.ckEdit||'';
   const wrow=w=>{const wid=String(w.id),d=doneOf(wid),r=relOf(w),tmp=wid.indexOf('tmp')===0,sg=SG[wid],da=d?doneAtOf(wid):'',sp=splitTm(w.note.text),title=sp.text||String(w.note.text||'');
-   const rel=r&&r.ext?`<span class="ckrel">相關：${esc(clip(r.short||r.title,14))}${r.st?'（'+r.st+'）':''}</span>`:r?`<button class="ckrel" data-act="${(DB.proj||[]).some(p=>p.id===r.id)?'cerel':'sheet'}" data-id="${(DB.proj||[]).some(p=>p.id===r.id)?esc(r.id):'cview:todo:'+esc(r.id)}">相關：${esc(clip(r.short||r.title,14))} ›</button>`:'';
+   const relTx=r?`${r.by==='user'?'你指定':'自動'}：${esc(clip(r.short||r.title,14))}${r.st?'（'+r.st+'）':''}`:'',rel=r?(d||tmp?`<span class="ckrel">${relTx}</span>`:`<button class="ckrel${r.by==='user'?' me':''}" data-act="ckedit" data-id="${esc(wid)}" aria-label="關聯：${relTx.replace(/<[^>]*>/g,'')}，點開可更換或取消">${relTx} ›</button>`):'';
    if(ed===wid&&!d){const t0=w.note.time||sp.tm||'';
-    return `<li class="ck want edit" data-ref="want:${esc(wid)}"><div class="cke"><input id="ckEt" type="text" value="${esc(title)}" aria-label="要做的事"><div class="ckerow"><label class="cketm">時間<input id="ckEtm" type="time" value="${esc(t0)}" data-day="${n}"></label>${B('存好','cksave',wid,'pri sm')}${splitWants(title).length>1?B('拆開','cksplit',wid,'sm'):''}${B('取消','ckcancel','','sm')}${B('刪除','ckdrop',wid,'sm warn')}</div><p class="ckhit" id="ckHit" aria-live="polite">${esc(hitOf(n,t0))}</p></div></li>`}
+    return `<li class="ck want edit" data-ref="want:${esc(wid)}"><div class="cke"><input id="ckEt" type="text" value="${esc(title)}" aria-label="要做的事"><div class="ckerow"><label class="cketm">時間<input id="ckEtm" type="time" value="${esc(t0)}" data-day="${n}"></label>${B('存好','cksave',wid,'pri sm')}${splitWants(title).length>1?B('拆開','cksplit',wid,'sm'):''}${B('取消','ckcancel','','sm')}${B('刪除','ckdrop',wid,'sm warn')}</div><p class="ckhit" id="ckHit" aria-live="polite">${esc(hitOf(n,t0))}</p></div><div class="ckrr" data-wid="${esc(wid)}"><p class="ckrl">關聯：${r?relTx:'沒有'}</p><input id="ckRelQ" type="text" placeholder="換成別張：打案名" autocomplete="off" aria-label="換成別張專案卡"><div id="ckRelS" class="ckrc"></div><div class="ckrb"><button type="button" class="btn sm" data-rs="none" data-wid="${esc(wid)}">不關聯</button><button type="button" class="btn sm" data-rs="auto" data-wid="${esc(wid)}">重新自動分析</button>${r&&(DB.proj||[]).some(q=>q.id===r.id)?`<button type="button" class="btn sm" data-rs="view" data-wid="${esc(wid)}" data-cid="${esc(r.id)}">看這張卡 ›</button>`:''}</div></div></li>`}
    return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${da?`<small class="ckdn">${esc(da)} 打勾</small>`:''}${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}<button class="ckdel ckx" data-act="ckdrop" data-id="${esc(wid)}" aria-label="刪除這件"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="ckxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a80"/><stop offset=".55" stop-color="#f0453a"/><stop offset="1" stop-color="#b8231b"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35"><path d="M12 12l16 16M28 12L12 28" stroke="#000" stroke-width="8.5" stroke-linecap="round"/></g><path d="M12 12l16 16M28 12L12 28" stroke="url(#ckxg)" stroke-width="8" stroke-linecap="round"/><path d="M13.2 12.4l4.6 4.6M26.8 12.4l-2.4 2.4" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/></svg></button></span>`}</li>`};   // v145 msg 914：刪除改成跟小臉同風格的圓形 ✕
   const sug=miss[0];
   let h=`<section class="sec ckbox" aria-label="${n?'明日':'今日'}節奏" data-day="${n}"><div class="ckh"><h2><span class="ckseg" role="tablist" aria-label="今日或明日"><button role="tab" data-act="ckday" data-id="0" aria-selected="${!n}">今日節奏</button><button role="tab" data-act="ckday" data-id="1" aria-selected="${!!n}">明日節奏</button></span><small>${wants.length?`做完 ${done}／${wants.length}`:''}</small></h2></div>`;
@@ -5009,6 +5014,25 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  ACT.ckdrop=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');S.ckEdit='';if(!w)return;
   const twins=(TL||[]).filter(x=>x.note&&x.note.type==='want'&&String(x.id)!==String(wid)&&String(x.id).indexOf('tmp')!==0&&wstOf(String(x.id))!=='drop'&&wkey(x.note)===wkey(w.note)).map(x=>String(x.id));
   if(await undoWant(wid)){for(const t of twins)await undoWant(t);tlLoad(true);toast('刪掉了',async()=>{const nt=Object.assign({},w.note);delete nt.src;await wantAdd(nt)})}};
+// v196：編修列的關聯（換張、不關聯、重新自動分析、看這張卡）
+document.addEventListener('input',e=>{const t=e.target;if(!t||t.id!=='ckRelQ'||e.isComposing)return;ckRelQShow()});
+document.addEventListener('compositionend',e=>{if(e.target&&e.target.id==='ckRelQ')ckRelQShow()});
+function ckRelQShow(){const q=$('#ckRelQ'),box=$('#ckRelS'),row=q&&q.closest('.ckrr');if(!q||!box||!row)return;const list=q.value.trim().length>=2?ckRelFind(q.value).slice(0,6):[];
+ box.innerHTML=list.map(p=>`<button type="button" class="ckrsb${CK_ST[p.status]?' old':''}" data-rs="${esc(p.id)}" data-wid="${esc(row.dataset.wid)}">${esc(clip(p.shortTitle||p.title,12))}${CK_ST[p.status]?`<small>${CK_ST[p.status]}</small>`:''}</button>`).join('')||(q.value.trim().length>=2?'<span class="ckrcl">沒有對得上的卡</span>':'')}
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('.ckrr [data-rs]'))e.preventDefault()});
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.ckrr [data-rs]');if(!b)return;const v=b.dataset.rs,wid=b.dataset.wid;
+ if(v==='view'){ACT.cerel(b.dataset.cid);return}ACT.ckrelset(wid,v)});
+ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w||wstOf(String(wid))==='drop'||CKSAVING[wid])return;
+ if(S.st==='offline'||navigator.onLine===false){toast('離線中，連上再改');return}
+ const t=(($('#ckEt')||{}).value||'').trim(),tm=($('#ckEtm')||{}).value||'',sp=splitTm(t),n2=Object.assign({},w.note);
+ if(t){n2.text=(sp.text||t).trim();if(tm||sp.tm)n2.time=tm||sp.tm;else delete n2.time}
+ let msg;
+ if(val==='none'){n2.card='';n2.cardBy='user';msg='取消關聯了（你指定不關聯）'}
+ else if(val==='auto'){delete n2.card;delete n2.cardBy;const m=autoMatch({note:n2});if(m)n2.card=m.id;msg=m?'重新自動分析：關聯到「'+clip(m.short||m.title,12)+'」':'重新自動分析：沒有把握，不關聯'}
+ else{const c=cardOf(val);if(!c)return;n2.card=val;n2.cardBy='user';msg='關聯改成「'+clip(c.short||c.title,12)+'」（你指定）'}
+ CKSAVING[wid]=1;setTimeout(()=>{delete CKSAVING[wid]},4000);S.ckEdit='';try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur()}catch(e){}   // 焦點還在輸入框時節奏區不會重畫，先放開
+ if(await undoWant(wid)&&await wantAdd(n2)){tlLoad(true);ckSwap();toast(msg)}};
+
  const CKSAVING={};
  ACT.cksplit=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w||wstOf(String(wid))==='drop'||CKSAVING[wid])return;
   const t=(($('#ckEt')||{}).value||w.note.text||'').trim(),tm=($('#ckEtm')||{}).value||'',sp=splitTm(t),parts=splitWants(sp.text||t);if(parts.length<2){toast('這條拆不開，它就是一件');return}
@@ -5049,7 +5073,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){const sg=el&&el.dataset.sug;if(sg&&MISS[sg]){ACT.ckadd(sg);return}if(el)el.focus();return}
   // 2026-11-25 msg 826 老大：「如果我一行裡面打得多個項目，你們自己讀取之後要自己懂得分開」→ 逗號、頓號、分號、換行都拆；空白前面是三個字以上的中文詞就拆（「木星 Reels」這種短詞＋英文不拆；時間、時數跟著前一件）
   const parts=[txt];if(el)el.value='';let ok=0;   // v192：不拆，一次輸入就是一條
-  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&ckCards().some(x=>x.id===S.ckRel))note.card=S.ckRel;S.ckRelAll=false;if(await wantAdd(note))ok++}
+  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&ckCards().some(x=>x.id===S.ckRel)){note.card=S.ckRel;note.cardBy='user'}S.ckRelAll=false;if(await wantAdd(note))ok++}
   {const rc=$('#ckRc');if(rc)rc.remove();S.ckRel=''}
   if(ok)toast(parts.length>1?`拆成 ${parts.length} 件記下了，沒寫時間的先照空檔建議`:'記下了，沒寫時間的先照空檔建議')};
  function splitWants(txt){const CJK=/[\u3400-\u9fff]/,out=[];
@@ -5071,7 +5095,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   if(!window.__zlAsk){openChat(b,ctx,null,null);return}
   window.__zlAsk({id:isItem?r.id:'want:'+wid,who,label:'就這樣做',what:txt.slice(0,30),title:txt,ctx,go:async said=>{const body='【就這樣做】老大今天要做：「'+txt+'」'+(isItem?'（卡片 item '+r.id+'）':'')+'。請處理並回報；要花錢、對外發布的先問老大。'+(said?'\n老大交代：'+said:'');
    await LV.api.say(isItem?r.id:null,body,'daqi')}})};
- WRITE.push('ckwant','ckadd','ckdone','ckundone','ckchat','cksave','ckdrop','cksplit');
+ WRITE.push('ckwant','ckadd','ckdone','ckundone','ckchat','cksave','ckdrop','cksplit','ckrelset');
  {const _t=todayStrip;todayStrip=function(){const h=_t();return h?h+tideCheck():h}}}
 /* ---------- v124（2026-11-25）：行事曆直覺操作＋寫回 Google 行事曆（趁手 handy） ----------
    老大原話：「操作要直覺 我點按下去可以對應過去卡片什麼的？或者是按住移動可以托拉換時間段？然後新增編輯可以在面板上操作 直接替換更新到我行事曆上？
@@ -5554,6 +5578,7 @@ const CK_ACT=new Set(['doing','delivered','paid','new','snoozed','stashed']);
 const CK_ST={dropped:'已放棄',closed:'已完成',expired:'已過期'};
 function ckCards(){const m=new Map();[].concat(LV.items||[],LV.arch||[]).forEach(c=>{if(c&&c.id&&!m.has(c.id))m.set(c.id,c)});return [...m.values()]}
 function ckGrams(t){const q=ckNorm(t),g=new Set();(q.match(/[㐀-鿿]+/g)||[]).forEach(r=>{for(let i=0;i+2<=r.length;i++){const b=r.slice(i,i+2);if(!CK_STOP.has(b))g.add(b)}if(r.length===1)g.add(r)});(q.match(/[a-z0-9]{2,}/g)||[]).forEach(w=>g.add(w));return g}
+function ckScoreOf(c,txt){const G=ckGrams(txt),nm=ckNorm([c.title,c.shortTitle,c.org,c.folderName].join(' '));let sc=0;G.forEach(g=>{if(nm.includes(g))sc+=3});return sc}
 function ckRelFind(txt){const sp=(typeof splitTm==='function'?splitTm(txt):{text:txt}),raw=sp.text||txt,q=ckNorm(raw);if(q.length<2)return [];const G=ckGrams(raw);if(!G.size)return [];
  const out=[];ckCards().forEach(c=>{if(c.basket==='todo'&&0)return;const nm=ckNorm([c.title,c.shortTitle,c.org,c.folderName,c.ask,c.pageTitle].join(' ')),ys=ckNorm(String(c.why||'').slice(0,240)+' '+(c.quick||[]).join(' ')+' '+(c.facts||[]).map(f=>typeof f==='string'?f:(f&&(f.v||f.t||f.label))||'').join(' '));
   let sc=0,hit=0;G.forEach(g=>{if(nm.includes(g)){sc+=3;hit++}else if(ys.includes(g)){sc+=1}});
