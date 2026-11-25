@@ -1790,3 +1790,14 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 @keyframes bmiTalk{0%,100%{transform:translateY(0)}30%{transform:translateY(-3px)}60%{transform:translateY(1px)}}
 .bm.bmicon{animation:bmiSway 5s ease-in-out infinite}.bm.bmicon[data-m="thinking"]{animation:bmiThink 1.4s ease-in-out infinite}.bm.bmicon[data-m="speaking"]{animation:bmiTalk .5s ease-in-out 3}
 @media (prefers-reduced-motion:reduce){.bm.bmicon{animation:none!important}}
+/* v135 msg 894：刪除改長按，跳出時佔掉小臉的位置，不再被擋 */
+.ck.want .ckdel{position:static;transform:none;width:auto;transition:none}
+.ck.want .cklp{display:none;gap:6px}.ck.want.lp .cklp{display:flex}.ck.want.lp .ckb{display:none}
+.ck.want .cklp button{min-height:44px;padding:0 14px;border:0;border-radius:12px;font:inherit;font-weight:700}.ck.want .cklp .ckdel{background:#f0605a;color:#fff}.ck.want .cklp .ckno{background:rgba(127,127,127,.18);color:var(--ink)}
+.ck.want.lp{background:rgba(240,96,90,.08);border-radius:10px}
+.ckbox .ckblank::after{content:"長按一件可以刪除・左右滑換今天明天";display:block;margin-top:6px;font-size:11px;color:var(--ink2)}
+/* v135 msg 895 老大：「按鈕太大顆」→ 看起來 24px 小圈，手指按的範圍維持 36px */
+.ckbx{width:36px;height:36px;border:0!important;background:transparent!important;position:relative;font-size:13px;font-weight:700}
+.ckbx::before{content:"";position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid var(--line2,#666);box-sizing:border-box}
+.ck.want.done .ckbx::before{background:var(--ok,#2fb26a);border-color:var(--ok,#2fb26a)}.ck.want.done .ckbx{color:#000}
+.ckbx{z-index:0}.ckbx::before{z-index:-1}
