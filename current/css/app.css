@@ -1978,3 +1978,13 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .rb-i:hover{background:var(--sf2);color:var(--ink)}
 .rb-i:focus-visible{outline:2px solid var(--acc,#4da6ff);outline-offset:-2px}
 .rb-i[aria-expanded=true]{background:rgba(127,127,127,.2);color:var(--ink)}
+
+/* v177 要發的訊息：收件人、全文、兩顆鈕 */
+.sendok{display:grid;gap:8px;width:100%}
+.sendok .sk-to{margin:0;font-size:13px}.sendok .sk-to b{margin-right:6px}.sendok .sk-to small{color:var(--ink2)}
+.sendok .sk-txt{margin:0;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--sf2);color:var(--ink);font:inherit;font-size:14px;line-height:1.6;white-space:normal;overflow-wrap:anywhere}
+.sendok textarea.sk-txt{width:100%;min-height:96px;resize:vertical}
+.sendok .sk-btns{display:flex;flex-wrap:wrap;gap:8px}
+.sendok .sk-btns .mb{min-height:44px}
+.sendok .sk-go{flex:1 1 220px;text-align:center;overflow-wrap:anywhere}
+.sendok .sk-note{color:var(--ink2);font-size:12px;line-height:1.5}

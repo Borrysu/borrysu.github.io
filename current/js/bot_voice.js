@@ -1,3 +1,12 @@
+/* v177：畫面畫好後的補丁（補頭像、藏重複鈕）原本等 60～150 毫秒才跑，瀏覽器會先畫出「缺東西」的畫面再補回來（老大看到的閃一下）。
+   改成同一個任務結束、瀏覽器畫之前就補好（微任務）。每個補丁都會先檢查「已經有就不加」，所以第二次跑不會再改畫面。
+   防呆：同一個補丁連續 4 次微任務都還在改畫面，就退回 90 毫秒延遲，避免卡死。 */
+window.__bvKick = function (st, fn) {
+  if (st.p) return; st.p = 1;
+  if (st.n++ === 0) setTimeout(function () { st.n = 0; }, 0);
+  if (st.n <= 4) queueMicrotask(function () { st.p = 0; fn(); });
+  else setTimeout(function () { st.p = 0; fn(); }, 90);
+};
 /*!
  * bot_voice.js  Grok Bot 隊的叫聲（逐流版 1122-K 可愛小生物，2026-11-22）
  * 單檔、零依賴、不用音檔：全部用 Web Audio 即時合成（不花點數、不用 AI 生成、不取樣任何遊戲或角色）。
@@ -718,7 +727,7 @@
     document.querySelectorAll('#clog .cm.bot').forEach(fmtBubble);
     ['view', 'sheet', 'page'].forEach(function (id) { var e = document.getElementById(id); if (e) linkify(e); });
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, run); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 行事曆「個人 ?」的問號拿掉（逐流 msg 481，老大：「為什麼個人帳戶會有一個問號」）。
@@ -735,7 +744,7 @@
       tn.nodeValue = '個人' + (c && CATN[c] ? '・' + CATN[c] : '');
     });
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(fix, 80); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, fix); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 生活房間「要買」：拿掉「請朋朋買」那行字，按朋朋的臉就是請朋朋買（逐流 msg 445、487、490，老大：「為什麼要做這個？ 感覺請朋朋買 按臉就好」）。 */
@@ -775,7 +784,7 @@
     on.parentNode.appendChild(b);
     try { if (window.BotFace) window.BotFace.mount(f, { preset: 'baba', color: '#FFFFFF', size: 0 }); } catch (e) {}
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, add); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 定定只留在目標頁；案子與任務的執行入口只留大器臉＋霸霸臉（逐流 msg 501）。
@@ -813,7 +822,7 @@
       if (dq && dq.parentNode === r) dq.after(b); else if (mine && mine.parentNode === r) r.insertBefore(b, mine); else r.appendChild(b);
     });
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, add); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 生活待辦：點這一列就地看朋朋排的時段，不開對話、不跳編輯（逐流 msg 463、546，老大：「然後要顯示在這裡我可以直接點開看選卡片不是連到他的對話啊」）。
@@ -857,10 +866,10 @@
     parts.forEach(function (p) { var s = document.createElement('span'); s.textContent = p.trim(); sub.appendChild(s); });
     el.appendChild(sub);
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () {
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, function () {
     // 2026-11-24 v98：想買詳情（wdet:）改成比較卡（app.js「v98」段，價格用 .wc-p／.wc-ps 自己拆），.wd2-p、.wd2-c 在 wdet 已不出現；這裡只處理舊結構與卡片上的 .amt，不要把 .wc-p 加進來。
     document.querySelectorAll('#sheet .wd2-p, #sheet .wd2-c b, #sheet .wdh .amt, #view .cardx .amt').forEach(split);
-  }, 80); }).observe(document.documentElement, { childList: true, subtree: true });
+  }); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 // 2026-11-24 監工：全面板去重複（逐流 msg 445／487／490／497／501／560／562，老大：「這邊感覺有很多按鈕重複了」）。
@@ -897,9 +906,9 @@
       });
     });
   }
-  var t = 0; new MutationObserver(function (m) {
+  var t = { p: 0, n: 0 }; new MutationObserver(function (m) {
     if (m.every(function (x) { return x.type === 'attributes'; })) return;
-    clearTimeout(t); t = setTimeout(run, 100);
+    __bvKick(t, run);
   }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
@@ -961,14 +970,14 @@
     } catch (err) { toast('沒存上，再按一次'); }
     b.disabled = false;
   }, true);
-  var tm = 0; new MutationObserver(function () { clearTimeout(tm); tm = setTimeout(addPlan, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+  var tm = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(tm, addPlan); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 生活例行：都分好了就不顯示「都分好類了／請朋朋重新分」那行（逐流 msg 588，老大：「這行字還有請皮皮重新分都很多餘」）。退回：刪掉這一段。 */
 (function () {
   if (typeof document === 'undefined') return;
   function run() { document.querySelectorAll('.rcbar').forEach(function (r) { if (/^都分好類了/.test(r.textContent.trim())) r.style.display = 'none'; }); }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, run); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 案子詳情頁：「叫大器處理」的大器臉旁補霸霸臉（逐流 msg 618、575：執行入口都要大器臉＋霸霸臉；停止後要能再派）。點霸霸臉＝projbaba（同案子卡）。退回：刪掉這一段。 */
@@ -992,7 +1001,7 @@
       bb.after(r);
     });
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, add); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 全面板規劃入口一律「請大器規劃」＋「請霸霸規劃」（逐流 msg 626，接 578 定案；老大：「請霸霸規劃 就會是他打過去叫定定思考 霸霸想辦法推進」）。
@@ -1030,7 +1039,7 @@
     window.__actAt = 0;
     if (window.__zlAsk) window.__zlAsk({ id: id, who: '霸霸', label: '就這樣請霸霸規劃', go: async function (said) { await L.api.say(id, body + (said ? '\n老大交代：' + said : ''), 'daqi'); toast('交給霸霸規劃了，步驟會寫回這張卡'); } });
   }, true);
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, add); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 
@@ -1185,7 +1194,7 @@
       b.insertBefore(f, b.firstChild);
     });
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 60); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, run); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-24 首頁目標窄條改成手指左右滑（msg 692），自動輪播拿掉。 */
@@ -1268,11 +1277,11 @@
     '.aqrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px;font-size:12px;color:var(--ink2)}.aqh{margin-right:2px}' +
     '#cBaba .aqrow{flex-basis:100%;margin-bottom:2px}.aq{padding:2px 8px;border-radius:999px;border:1px solid var(--line)}.aq b{color:var(--ink)}.aq.mid b{color:#f2a93b}.aq.hot{border-color:#f0605a}.aq.hot b{color:#f0605a}.aqt{flex-basis:100%;color:#f0605a}';
   (document.head || document.documentElement).appendChild(st);
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () {
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, function () {
     var c = document.getElementById('cBaba'); if (c) put(c.parentNode.querySelector('#cBaba') ? c : null);
     var s = document.querySelector('#sheet .stplanr'); if (s) put(s.parentNode);
     dot();
-  }, 120); }).observe(document.documentElement, { childList: true, subtree: true });
+  }); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-25 每張「要你決定」卡都有「已經處理了」（老大：「我看卡片跟大家還是會把已經做完或正在做的事當成沒做推給我欸」）。
@@ -1287,7 +1296,7 @@
       b.textContent = '✓ 已經處理了'; host.appendChild(b);
     });
   }
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 80); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, run); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
 /* 2026-11-25 今天頁「今天的節奏」（張弛 tide 轉單，【監工】節律技能）：讀 hub_tide_plan_list，只列今天、明天，照時間排，一列一行；
@@ -1388,5 +1397,5 @@
     '.tdh,.ckh{display:flex;align-items:center}.tdh h2,.ckh h2{flex:1}' +
     '.zcol>*:not(.tdh):not(.ckh):not(.tlhd){display:none!important}.zcol .tlhd>*:not(.zcolb):not(.tlsum){display:none!important}.zcol .tlhd{display:flex;align-items:center}.zcol .tlhd .tlsum{flex:1;margin:0;font-size:14px}';
   (document.head || document.documentElement).appendChild(css);
-  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 100); }).observe(document.documentElement, { childList: true, subtree: true });
+  var t = { p: 0, n: 0 }; new MutationObserver(function () { __bvKick(t, run); }).observe(document.documentElement, { childList: true, subtree: true });
 })();

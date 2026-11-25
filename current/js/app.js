@@ -334,11 +334,11 @@ function render(dir){const R=document.documentElement;fixTop();
  R.dataset.layout=S.layout;R.dataset.skin=S.skin;if(decs().length)delete R.dataset.calm;else R.dataset.calm='1';R.dataset.tab=S.page&&S.page.indexOf('zone:')===0?S.page.split(':')[1]:S.tab;
  const fl=$('#fontlink'),href=`https://fonts.googleapis.com/css2?${FONTS[S.skin]}&display=swap`;if(fl.getAttribute('href')!==href)fl.setAttribute('href',href);
  renderProto();renderTabs();$('#offline').hidden=S.st!=='offline';
- const v=$('#view');v.innerHTML=viewHTML();v.className='';
+ const v=$('#view'),vh=viewHTML();if(v.__h!==vh||!v.firstChild){v.innerHTML=vh;v.__h=vh}v.className='';   /* v177：畫面字串沒變就不重寫，不然補丁加上的頭像會被清掉再閃一下 */
  if(dir&&dir!=='keep'){void v.offsetWidth;v.className=dir}
  const pg=$('#page'),sh=$('#sheet'),sc=$('#scrim'),bgs=[v,$('#top'),$('#dock'),document.querySelector('.tabs')];
- if(S.page){pg.innerHTML=pageHTML();pg.hidden=false;if(shownPage!==S.page){if(!shownPage){pg.scrollTop=0;requestAnimationFrame(()=>pg.classList.add('in'))}const b=$('#pBack');if(b&&!S.sheet)b.focus({preventScroll:true})}}
- else if(shownPage){pg.classList.remove('in');setTimeout(()=>{if(!S.page){pg.hidden=true;pg.innerHTML=''}},RM?0:210)}
+ if(S.page){const ph=pageHTML();if(pg.__h!==ph||pg.hidden||!pg.firstChild){pg.innerHTML=ph;pg.__h=ph}pg.hidden=false;if(shownPage!==S.page){if(!shownPage){pg.scrollTop=0;requestAnimationFrame(()=>pg.classList.add('in'))}const b=$('#pBack');if(b&&!S.sheet)b.focus({preventScroll:true})}}
+ else if(shownPage){pg.classList.remove('in');setTimeout(()=>{if(!S.page){pg.hidden=true;pg.innerHTML='';pg.__h=null}},RM?0:210)}
  shownPage=S.page;
  if(S.sheet){const sp=S.sheet.split(':');sh.dataset.b=sp[0]==='bot'?sp[1]:({opp:'jiji',sub:'tata',rout:'peng',bind:'peng',proj:'daqi',talk:'daqi'}[sp[0]]||'');sh.innerHTML=sheetHTML();sh.hidden=false;sc.hidden=false;if(shownSheet!==S.sheet){if(!shownSheet)requestAnimationFrame(()=>{sh.classList.add('in');sc.classList.add('in')});sh.scrollTop=0;const c=$('#sClose');if(c)c.focus({preventScroll:true})}}
  else if(shownSheet){sh.classList.remove('in');sc.classList.remove('in');setTimeout(()=>{if(!S.sheet){sh.hidden=true;sc.hidden=true;sh.innerHTML=''}},RM?0:210)}
@@ -1783,7 +1783,7 @@ function nlFill(P){const g=id=>$('#'+id),set=(id,v)=>{const e=g(id);if(e)e.value
  S.cfMan=0;S.nl.fix={};nlSync(true)}
 let nlT=0;
 ACT.nlgo=()=>{const t=$('#nlT'),txt=t?t.value.trim():'';if(!txt){const x=$('#cfErr');if(x)x.hidden=false;if(t)t.focus();return}
- if(S.nl.busy)return;S.nl.txt=txt;const x=$('#cfErr');if(x)x.hidden=true;nlFace(true);const mk=$('#nlMk');if(mk){mk.disabled=true;mk.textContent='大器整理中…'}
+ if(S.nl.busy)return;S.nl.txt=txt;const x=$('#cfErr');if(x)x.hidden=true;nlFace(true);const mk=$('#nlMk');if(mk){mk.disabled=true;mk.textContent='大器整理中…';{const _v=$('#view'),_p=$('#page');if(_v)_v.__h=null;if(_p)_p.__h=null}}
  clearTimeout(nlT);nlT=setTimeout(()=>{const P=nlParse(txt);S.nl.p=P;nlFace(false);if(mk)mk.disabled=false;nlFill(P);
   const p=$('#cfPred');if(p)p.hidden=false},RM?150:900)};
 ACT.nlfix=k=>{const d=$('#nlDet');if(d)d.open=true;S.nl.open=1;const id={title:'cfT',date:'cfD',time:'cfS',place:'cfP'}[k]||'cfT';const e=$('#'+id);if(e){e.scrollIntoView({block:'center'});e.focus()}};
@@ -2581,7 +2581,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v176');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v177');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2932,7 +2932,7 @@ function loginHTML(){const e=esc(LG.email),err=LG.err?`<p class="err" role="aler
  <section class="card login" style="margin-top:14px">${body}</section>
  <div class="mrow" style="margin-top:12px">${mb('我有專屬網址','pastekey')}${mb('先看示範','lgdemo')}</div>`}
 function loginShow(msg){LV.login=1;if(msg)LG.err=msg;
- const v=$('#view');if(!v)return;v.innerHTML=loginHTML();
+ const v=$('#view');if(!v)return;v.innerHTML=loginHTML();v.__h=null;
  [document.querySelector('.tabs'),$('#dock'),$('#hav'),$('#chead'),$('#offline')].forEach(x=>{if(x)x.hidden=true});
  const st=$('#stamp');if(st)st.textContent='請先登入';
  const f=$(LG.step==='code'?'#lgCode':'#lgEmail');if(f&&!LG.busy)try{f.focus({preventScroll:true})}catch(e){}}
@@ -3174,7 +3174,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  async function send(){if(!MK.list.length)return;const ver=(document.querySelector('link[href*="app.css?v"]')||{}).href||'';const v=(ver.match(/\?v(\d+)/)||[])[1]||'';
   const dark=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'';
   const body=`【面板修改意見】逐流 v${v}，${MK.list.length} 則（螢幕 ${innerWidth}×${innerHeight}${/dark/.test(dark)?'，深色':''}）\n`+MK.list.map((m,i)=>`${i+1}. ${m.note}\n   位置：${m.where||'（沒判斷出來）'}${m.txt?'；點的是「'+m.txt+'」':''}\n   元件：${m.code}`).join('\n');
-  const bs=document.querySelectorAll('#mkBar [data-mk="send"],#mkBox [data-mk="send"]');bs.forEach(b=>{b.disabled=true;b.textContent='送出中…'});
+  const bs=document.querySelectorAll('#mkBar [data-mk="send"],#mkBox [data-mk="send"]');bs.forEach(b=>{b.disabled=true;b.textContent='送出中…'});{const _v=$('#view'),_p=$('#page');if(_v)_v.__h=null;if(_p)_p.__h=null}
   try{if(!LV.api||!LV.api.say)throw new Error('還沒連上');await LV.api.say(null,body,'jian');   // 2026-11-25 v131 老大：「編修應該是直接與逐流監工對話，逐流的大器才是櫃檯」
    const n=MK.list.length;MK.list=[];save();setOn(false);toast(`${n} 則意見送給逐流監工了，改好回在編修列的「監工」對話`)}
   catch(e){bs.forEach(b=>{b.disabled=false;b.textContent=b.closest('#mkBox')?'全部送出':'送出'});toast('沒送出：'+(typeof LERR==='function'?LERR(e):e.message)+'。清單還在，可以再按一次')}}
@@ -3886,6 +3886,7 @@ const PSR={};
  const c=p.raw,st=c.progressSteps||[],busy=['running','queued'].includes(c.runStatus);let i=-1;
  return h.replace(/(<li class="pstr[^"]*" data-s="([^"]*)">[\s\S]*?<div class="pstb">)/g,(m,a,s)=>{i++;const k=p.id+'|'+i;
   if(s==='done'||s==='skipped')return m;
+  {const o=stepOf(st[i]||{});if(o.mode==='老大')return a+(sendStep(o)?sendBox(p,i,o):`<span class="chip">要你本人做，做完按「⋯」的「這步做完」</span>`)}   /* v177：〔方式：老大〕的步驟不給「▶ 執行這步」 */
   if((busy&&(s==='current'||s==='blocked'))||(PSR[k]&&Date.now()-PSR[k]<15*60e3))return a+`<span class="chip urg pstrun-on">${busy&&(s==='current'||s==='blocked')?'跑中':'已送出'}</span>`;
   return a+`<button class="mb pstrun" data-act="pstrun" data-id="${esc(k)}">▶ 執行這步</button>`})}}
 ACT.pstrun=async v=>{const [id,si]=v.split('|'),i=+si,p=DB.proj.find(q=>q.id===id),c=p&&p.raw,s=c&&(c.progressSteps||[])[i];if(!s)return;
@@ -5368,6 +5369,39 @@ const engBar=()=>{const e=engBeat();if(!e||e.tone==='g'||e.b.late)return '';cons
 {const _a=homeL1;homeL1=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
 {const _a=homeL2;homeL2=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
 {const _a=homeL3;homeL3=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
+
+/* ── v177 木星「發」不執行（msg 1072 第 3 點）：〔方式：老大〕的步驟不給「▶ 執行這步」（那會變成請大器去執行「老大看草稿」）。
+   要對外發送的步驟（步驟名或備註有「回發／同意發送／發給」）改成兩顆鈕：「同意發送」「改字」。草稿與收件人從這張卡的對話讀（大器那則「要發的訊息（收件人…）：全文」）。
+   「同意發送」鈕上寫收件人，鈕上面就是要發的全文；按下去就是老大本人明確同意，送一則【老大同意發送】（含收件人與全文）給櫃檯，由櫃檯經喉舌發出。
+   面板與這個程式都不發訊；AI協作金鑰寫的訊息不算同意。照第 3 條付款鈕的概念。退回：git revert v177。 */
+const SENDD={},SENDE={},SENDT={};
+const sendStep=o=>o.mode==='老大'&&/(回\s*[「『"“]?\s*發|同意發送|發給|發出|經喉舌)/.test((o.name||'')+(o.note||''));
+function sendDraft(id){let d=SENDD[id];if(d)return d;SENDD[id]=d={state:'load'};
+ if(!LV.api||!LV.api.msgs){d.state='none';return d}
+ LV.api.msgs(id,'daqi').then(ms=>{const m=(ms||[]).slice().reverse().find(x=>x.kind==='daqi'&&/要發的訊息/.test(x.body||''));
+  const r=m&&/要發的訊息\s*[（(]([^）)]*)[）)]\s*[：:]\s*\n?([\s\S]*?)(?:\n\s*\n|\n?你要做的|$)/.exec(m.body);
+  if(!r||!r[2].trim()){SENDD[id]={state:'none'}}else{const who=r[1].trim(),i=who.search(/各\s*\d|各一/);SENDD[id]={state:'ok',msg:m.id,to:(i>0?who.slice(0,i):who).replace(/[，,\s]+$/,''),note:i>0?who.slice(i):'',text:r[2].trim()}}
+  LV.sig='';render('keep')}).catch(()=>{SENDD[id]={state:'none'};render('keep')});
+ return d}
+function sendBox(p,i,o){const c=p.raw,id=c.id,k=id+'|'+i,d=sendDraft(id);
+ if(d.state==='load')return '<span class="chip">讀草稿中…</span>';
+ if(d.state!=='ok')return `<span class="chip urg">這張卡的對話裡找不到要發的草稿</span>`;
+ if(SENDT[k]&&Date.now()-SENDT[k]<30*60e3)return '<span class="chip">已同意，等櫃檯發出</span>';
+ const ed=SENDE[k],txt=ed!==undefined?ed:d.text;
+ return `<div class="sendok"><p class="sk-to"><b>要發給</b>${esc(d.to)}${d.note?` <small>${esc(d.note)}</small>`:''}</p>`+
+  (ed!==undefined?`<textarea id="skTxt" class="sk-txt" rows="5" data-k="${esc(k)}" aria-label="要發的全文">${esc(txt)}</textarea>`:`<blockquote class="sk-txt">${esc(txt).replace(/\n/g,'<br>')}</blockquote>`)+
+  `<div class="sk-btns"><button class="mb pri sk-go" data-act="sendok" data-id="${esc(k)}" aria-label="同意發送給${esc(d.to)}，全文如上">同意發送給${esc(d.to)}</button><button class="mb sk-ed" data-act="sendedit" data-id="${esc(k)}">${ed!==undefined?'還原原稿':'改字'}</button></div>`+
+  `<small class="sk-note">按下去就是你本人同意：${esc(d.to)}各收到上面這句，由大器櫃檯經喉舌發出，發完讀回確認。</small></div>`}
+ACT.sendedit=v=>{const [id,si]=v.split('|'),k=id+'|'+si,d=SENDD[id];if(!d||d.state!=='ok')return;if(SENDE[k]!==undefined)delete SENDE[k];else SENDE[k]=d.text;render('keep')};
+document.addEventListener('input',e=>{const t=e.target;if(t&&t.id==='skTxt'&&t.dataset.k)SENDE[t.dataset.k]=t.value});
+ACT.sendok=async v=>{const [id,si]=v.split('|'),i=+si,k=id+'|'+i,d=SENDD[id];if(!d||d.state!=='ok')return;
+ if(SENDT[k]&&Date.now()-SENDT[k]<30*60e3){toast('剛同意過了，櫃檯在發');return}
+ if(!LV.api||!LV.api.say){toast('離線中，連上再送');return}
+ const el=document.getElementById('skTxt'),cur=el&&el.dataset.k===k?el.value:SENDE[k],text=(cur!==undefined?cur:d.text).trim();if(!text){toast('全文是空的，沒送出');return}
+ const body=`【老大同意發送】我看過草稿了，同意經喉舌發給 ${d.to}${d.note?'（'+d.note+'）':''}。全文如下，一字不改照發：\n「${text}」\n（這是我本人在面板按「同意發送」。收件人與全文以上面為準；發完讀回確認，再把第 ${i+1}、${i+2} 步打勾。）`;
+ SENDT[k]=Date.now();render('keep');
+ try{await LV.api.say(id,body,'daqi');LV.sig='';paint('keep');toast(`已同意，送給櫃檯：發給 ${d.to}`)}catch(e){delete SENDT[k];render('keep');toast('沒送出：'+LERR(e))}};
+WRITE.push('sendok','sendedit');
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}

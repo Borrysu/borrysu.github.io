@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v176';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v177';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -118,6 +118,8 @@ function workRows() {
     base({ id: 'work-doing', status: 'doing', title: '某品牌形象短片導演（示意）', folder_path: '/Users/me/案子/11-10_某品牌短片', links: [{ kind: 'pool', label: 'Pool（官方文件、成品）', path: '/Users/me/案子/11-10_某品牌短片/Pool' }, { kind: 'review', label: '內審', path: '/Users/me/案子/11-10_某品牌短片/內審' }, { kind: 'other', label: '雲端資料夾', url: 'https://example.com/drive/brand-film' }], run_status: 'running', progress_note: '分鏡第二版寫好，等客戶回。', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 2 * H).toISOString(),
       progress_steps: [{ name: '讀客戶 brief', status: 'done' }, { name: '分鏡第一版', status: 'done' }, { name: '分鏡第二版', status: 'current', note: '等客戶回覆' }, { name: '拍攝', status: 'pending' }, { name: '剪接交片', status: 'pending' }], quote_amount: 120000, signed: true, deposit_amount: 36000, deposit_date: dayOff(-6), final_amount: 84000, final_due: dayOff(30), payment_terms: '簽約付三成，交片後 30 天付尾款',
       career: { line: '個人導演', public_identity: '導演 林遠', status_gain: '中', status_gain_note: '品牌會在片尾掛導演名', est_hours: 60, tax_withheld: true, referrer: '朋友介紹', kim_judgment: '錢普通，但能放作品集。' } }),
+    base({ id: 'work-send', status: 'doing', title: '某品牌短片追客戶回饋（示意）', folder_path: '/Users/me/案子/11-12_追回饋', links: [], run_status: null, progress_blocker: '等你看草稿回「發」或改字',
+      progress_steps: [{ name: '擬追回饋訊息', status: 'done', note: '〔模型：Opus｜方式：櫃檯｜技能：喉舌 herald〕草稿在這張卡的留言' }, { name: '你看草稿，回「發」或改字', status: 'current', note: '〔模型：無｜方式：老大｜技能：無〕' }, { name: '經喉舌發給小明、小華，讀回確認送達', status: 'pending', note: '〔模型：Opus｜方式：櫃檯｜技能：喉舌 herald〕' }] }),
     base({ id: 'work-need', status: 'doing', title: '某咖啡品牌開幕短片（示意）', deadline: new Date(Date.now() + 2 * D).toISOString(), folder_path: '/Users/me/案子/11-20_咖啡開幕', links: [], run_status: 'failed', progress_blocker: '客戶還沒給 Logo 向量檔', progress_note: '粗剪好了，片尾要放 Logo。', progress_updated_by: 'AI協作', progress_updated_at: new Date(Date.now() - 3 * H).toISOString(),
       progress_steps: [{ name: '粗剪', status: 'done' }, { name: '片尾放 Logo', status: 'blocked', note: '〔模型：Opus 5.5｜方式：開子視窗｜技能：splice〕等客戶 Logo' }, { name: '調色', status: 'pending' }, { name: '交片', status: 'pending' }], quote_amount: 45000, career: {} }),
     base({ id: 'work-co1', basket: 'company', status: 'doing', title: '示意客戶形象片（公司案）', org: '示意客戶股份有限公司', deadline: new Date(Date.now() + 9 * D).toISOString(), folder_path: '（示意，公司案）', links: [], why: '［皮條客 d3］\n示意：客戶要 60 秒形象片，公司電腦先做初剪。（示意資料）',
@@ -162,7 +164,8 @@ export function mockAdapter(modeStr) {
   // 萌萌比較卡示範（全部虛構）：三個方案的新格式、舊格式一則
   const MON3 = '（示範回覆）比了三家：\n\n方案：示範官網\n價格：NT$ 2,490（含運）\n規格：標準版、保固 2 年、黑色\n運費：免運\n付款方式：信用卡、分期 3 期\n連結：https://example.com/a\n查核：2026-11-24\n\n方案：示範電商\n價格：NT$ 2,280（含運，折價券後）\n規格：標準版、保固 1 年、黑或白\n運費：滿千免運\n付款方式：信用卡、超商取貨付款\n連結：https://example.com/b\n查核：2026-11-24\n\n方案：示範量販（升級版）\n價格：NT$ 3,150（含運）\n規格：升級版、降噪加強、保固 2 年\n運費：門市自取免運\n付款方式：信用卡、現金\n連結：https://example.com/c\n查核：2026-11-23\n標記：規格最好\n\n推薦示範電商，差一年保固但便宜兩百。';
   const msgs = [{ id: 1, item_id: 'work-doing', kind: 'user', author: 'Borry', body: '客戶說片長要縮到 60 秒', created_at: new Date(Date.now() - 3 * H).toISOString() },
-    { id: 2, item_id: 'work-doing', kind: 'daqi', author: '大器', body: '收到，分鏡第二版照 60 秒改，第 4、7 顆合併。', created_at: new Date(Date.now() - 2 * H).toISOString() }];
+    { id: 2, item_id: 'work-doing', kind: 'daqi', author: '大器', body: '收到，分鏡第二版照 60 秒改，第 4、7 顆合併。', created_at: new Date(Date.now() - 2 * H).toISOString() },
+    { id: 5, item_id: 'work-send', kind: 'daqi', author: '大器', body: '要發的訊息（小明、小華各一則，同一句）：\n【大器】哈囉～想跟你確認一下上週傳的兩支短片，客戶那邊看過了嗎？有沒有需要修改的地方，有的話直接丟給我，我們接著調。\n\n你要做的：在這裡回「發」，我就經喉舌發出並讀回確認；要改字直接打給我。', created_at: new Date(Date.now() - 3 * H).toISOString() }];
   msgs.push({ id: 90, item_id: null, kind: 'user', bot: 'mon', author: 'Borry', body: '【萌萌先找】老大想買「示意鏡頭 35mm」（想買編號 l6）。', created_at: new Date(Date.now() - 5 * H).toISOString() },
     { id: 91, item_id: null, kind: 'bot', bot: 'mon', author: '萌萌', body: '（示範回覆）找到了：\n價格：NT$ 59,800\n通路：示範相機店二館\n付款方式：信用卡、分期 12 期\n連結：https://example.com/lens', created_at: new Date(Date.now() - 4 * H).toISOString() });
   if (flags.has('xss')) msgs.push({ id: 3, item_id: null, kind: 'daqi', author: '大器', body: '<img src=x onerror="window.__xss=6">', created_at: new Date().toISOString() }, { id: 4, item_id: null, kind: 'bot', bot: 'tata', author: '塔塔', body: '<img src=x onerror="window.__xss=7">', created_at: new Date().toISOString() });
