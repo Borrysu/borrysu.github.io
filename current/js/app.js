@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v187');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v188');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3180,8 +3180,12 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  // v186（mcp-31bc89630ca0）：編修「進度」＝老大送給逐流監工的每一則意見，顯示票號（msg 編號）與狀態：已收／處理中／已上線 vN。
  // 狀態由監工的回覆推算（沒有狀態欄）：有回覆＝處理中；監工回「vN 已上線」就依先後結掉最早還沒結的一則。
  let PG={ms:null,err:'',busy:0};
- function progState(ms){const out=[];(ms||[]).forEach(m=>{if(m.kind==='user'){const b=String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,'');if(/^［前情｜/.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:''})}
-   else if(m.kind==='bot'){const open=out.filter(x=>x.st!=='done');if(!open.length)return;const t=String(m.body||''),v=/v(\d{2,4})\s*已上線/.exec(t);if(v){open[0].st='done';open[0].ver='v'+v[1]}else open.forEach(x=>{if(x.st==='recv')x.st='work'})}});
+ function progState(ms){const out=[],byT={},TK=/mcp-[0-9a-f]{12}/i;   // v188（mcp-e61d33cc9e0b）：AI 轉單帶 mcp-票號，狀態只認同票號的回覆；老大自己的意見照舊用先後配
+  (ms||[]).forEach(m=>{const body=String(m.body||''),tk=(TK.exec(body)||[''])[0].toLowerCase(),vv=/v(\d{2,4})\s*已上線/.exec(body);
+   if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk};byT[tk]=e;out.push(e);if(vv){e.st='done';e.ver='v'+vv[1]}return}
+    if(vv){e.st='done';e.ver='v'+vv[1]}else if(e.st==='recv')e.st='work';return}
+   if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'');if(/^［前情｜/.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:''})}
+   else if(m.kind==='bot'){const open=out.filter(x=>x.st!=='done'&&!x.tk);if(!open.length)return;if(vv){open[0].st='done';open[0].ver='v'+vv[1]}else open.forEach(x=>{if(x.st==='recv')x.st='work'})}});
   return out.reverse()}
  function progLoad(){if(PG.busy)return;PG.busy=1;PG.err='';(LV.api&&LV.api.msgs?LV.api.msgs(null,'jian'):Promise.reject(new Error('還沒連上'))).then(ms=>{PG.ms=ms}).catch(e=>{PG.err=typeof LERR==='function'?LERR(e):e.message}).then(()=>{PG.busy=0;if(MK.box==='prog')box('prog')})}
  function progHTML(){if(PG.err)return `<p class="mkw">讀不到進度</p><p class="mkp">${esc(PG.err)}</p><div class="btns"><button class="btn ghost" data-mk="prog">再讀一次</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`;
@@ -3189,7 +3193,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   const L=progState(PG.ms).slice(0,15),lab={recv:'已收',work:'處理中',done:'已上線'};
   const first=b=>{const t=String(b).replace(/^【面板修改意見】[^\n]*\n/,'');const m=/^\s*\d+\.\s*(.+)/m.exec(t);return cut((m?m[1]:t).replace(/\s+/g,' ').trim(),46)},cnt=b=>{const n=(String(b).match(/^\s*\d+\. /gm)||[]).length;return n>1?`（共 ${n} 則）`:''};
   const tm=at=>{if(!at)return '';const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)};
-  return `<p class="mkw">編修進度（最近 ${L.length} 則）</p>`+(L.length?`<ul class="mkpg">${L.map(x=>`<li class="pg-${x.st}"><div class="pgh"><b>#${esc(String(x.id))}</b><span class="pgs">${lab[x.st]}${x.ver?' '+esc(x.ver):''}</span><small>${esc(tm(x.at))}</small></div><p>${esc(first(x.body))}${cnt(x.body)}</p></li>`).join('')}</ul>`:'<p class="mkp">還沒有送過意見。</p>')+`<p class="mkp">狀態由監工的回覆推算：有回覆是處理中，回「已上線」才算做完。</p><div class="btns"><button class="btn ghost" data-mk="prog">重新整理</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
+  return `<p class="mkw">編修進度（最近 ${L.length} 則）</p>`+(L.length?`<ul class="mkpg">${L.map(x=>`<li class="pg-${x.st}"><div class="pgh"><b>${x.tk?esc(x.tk):'#'+esc(String(x.id))}</b>${x.tk?'<span class="pgai">AI 轉單</span>':''}<span class="pgs">${lab[x.st]}${x.ver?' '+esc(x.ver):''}</span><small>${esc(tm(x.at))}</small></div><p>${esc(first(x.body))}${cnt(x.body)}</p></li>`).join('')}</ul>`:'<p class="mkp">還沒有送過意見。</p>')+`<p class="mkp">狀態由監工的回覆推算：有回覆是處理中，回「已上線」才算做完。AI 轉單用 mcp 票號對回覆，老大的意見照先後配。</p><div class="btns"><button class="btn ghost" data-mk="prog">重新整理</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
  function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
   MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
   if(kind==='prog'){x.setAttribute('aria-label','編修進度');x.innerHTML=progHTML();return}

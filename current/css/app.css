@@ -1997,3 +1997,4 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .brand[role=button]{-webkit-tap-highlight-color:transparent}
 .mkpg{list-style:none;margin:8px 0;padding:0;display:flex;flex-direction:column;gap:8px}.mkpg li{border:1px solid var(--line);border-radius:12px;padding:9px 11px}.mkpg .pgh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.mkpg .pgh small{margin-left:auto;opacity:.6;font-size:12px}.mkpg p{margin:4px 0 0;font-size:14px;line-height:1.45;overflow-wrap:anywhere}.mkpg .pgs{font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--line)}.mkpg .pg-work .pgs{background:rgba(240,180,41,.22)}.mkpg .pg-done .pgs{background:rgba(52,199,89,.22)}
 .ring .rg[data-st=past] .rgf{stroke:rgba(127,127,127,.5)}.ring .rg[data-st=past] .rgn{opacity:.6}
+.mkpg .pgai{font-size:11px;opacity:.7;border:1px dashed var(--line);border-radius:999px;padding:1px 6px}
