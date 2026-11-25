@@ -405,7 +405,7 @@ const ACT={
  undo(){if(undoFn){const f=undoFn;undoFn=null;$('#toast').classList.remove('in');f()}}
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const a=el.dataset.act;
- if(S.st==='offline'&&WRITE.indexOf(a)>-1){toast('離線中，這個動作連上線再做');return}
+ if(S.st==='offline'&&WRITE.indexOf(a)>-1){if(navigator.onLine!==false){reload()}else{toast('離線中，這個動作連上線再做');return}}   /* v178：瀏覽器說有網路就放行並重讀，不被舊的離線旗標卡死 */
  if(ACT[a])ACT[a](el.dataset.id,el)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(S.chat||S.sheet||S.page))back()});
 $('#protoToggle')&&$('#protoToggle').addEventListener('click',()=>{const p=$('#protoPanel'),o=p.hidden;p.hidden=!o;$('#protoToggle').setAttribute('aria-expanded',o);$('#protoArrow').textContent=o?'收起 ▴':'展開 ▾';fixTop()});
@@ -1907,7 +1907,7 @@ async function loadMoney(){const api=LV.api;
 async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
  try{
   const [l,h]=await Promise.all([api.list(),api.hubToday?api.hubToday():null]);
-  LV.items=l.items;LV.hub=h;LV.at=Date.now();LV.net='ok';
+  LV.items=l.items;LV.hub=h;LV.at=Date.now();LV.net='ok';LV.nfail=0;LV.sfail=0;
   if(first&&api.archive){api.archive('',null).then(r=>{LV.arch=r.items||[];paint()}).catch(()=>{})}
   const ks=zKeys();if(first||scanOpen())ks.push('scan');
   await loadZones(ks);LZ.seen=zoneOf(S.tab)+(S.page==='cal'?':cal':'');
@@ -1917,6 +1917,8 @@ async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
  }catch(e){
   if(e&&e.kind==='auth'){LV.net='auth';S.st='error';paint();}
   else if(first&&!LV.retried){LV.retried=1;LBUSY=false;setTimeout(()=>loadAll(true),1500);return}
+  else if(LV.at&&e&&(e.kind==='server'||e.kind==='rate'||e.kind==='state')){LV.net='stale';LV.sfail=(LV.sfail||0)+1;setTimeout(()=>{if(!LBUSY)loadAll()},LV.sfail<3?4000:30000)}   // v178：伺服器回錯（5xx、429）不是離線，不擋寫入，稍後自動再讀
+  else if(LV.at&&navigator.onLine!==false&&(LV.nfail||0)<2){LV.nfail=(LV.nfail||0)+1;LV.net='stale';setTimeout(()=>{if(!LBUSY)loadAll()},3000)}   // v178：瀏覽器說有網路，連線失敗先靜靜重試兩次，還是不行才標離線
   else if(LV.at){LV.net='offline';S.st='offline';paint()}
   else if(snapLoad()){LV.net='offline';S.st='offline';paint(first?'stgroot':'')}
   else{LV.net='error';S.st='error';LV.err=LERR(e);paint()}
@@ -2581,7 +2583,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v177');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v178');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
