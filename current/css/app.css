@@ -1991,3 +1991,7 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 
 /* v180 電腦板大色卡：滑鼠游標是抓手，拖的時候不選字 */
 @media (hover:hover) and (pointer:fine){.mzv[data-cv]{cursor:grab}.mzv[data-cv].drag{cursor:grabbing}.mzv[data-cv] img{-webkit-user-drag:none;user-drag:none}.mzv[data-cv] button,.mzv[data-cv] a{cursor:pointer}}
+
+.ckdn{display:inline-block;margin-left:8px;font-size:12px;opacity:.62;white-space:nowrap;vertical-align:baseline}.ck.done .cksg{opacity:.7}
+.ckrc{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0 2px}.ckrcl{font-size:12px;opacity:.65}.ckrcb{font:inherit;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:inherit;cursor:pointer;min-height:32px}.ckrcb.on{background:var(--pri,#f0b429);color:#1a1a1a;border-color:transparent}
+.brand[role=button]{-webkit-tap-highlight-color:transparent}
