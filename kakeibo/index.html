@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.8', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.9', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4053,7 +4053,9 @@ function debtTxs(x) {
   var pool = TX.concat((KD.prevL || []).map(mapTx)), names = x.acc ? acctNamesOf(x.acc) : null, tk = cardTokens(x.name.replace(/ 卡費$/, ''));
   return pool.filter(function (t) { if (t.v0) return false; if (names) return t.transfer && names.indexOf(t.to) >= 0; return tk.some(function (k) { return String(t.m || '').indexOf(k) >= 0 || String(t.note || '').indexOf(k) >= 0 || String(t.to || '').indexOf(k) >= 0; }); }).slice(0, 12);
 }
-function debtActs(key, sk, sid) { return '<div class="acts">' + B('debtAsk', '請塔塔處理', { cls: 'pri', id: key }) + B('debtPaid', '我還了一筆', { id: key }) + (sk ? B('sheet', '看明細', { k: sk, id: sid }) : '') + '</div>'; }
+function debtActs(key, sk, sid) { return '<div class="acts">' + B('debtAsk', '請塔塔處理', { cls: 'pri', id: key }) + B('debtPaid', '我還了一筆', { id: key }) + (sk === 'acct' ? B('sheet', '改這筆', { k: 'acctEdit', id: sid }) : sk ? B('debtEditAsk', '請塔塔改', { id: key }) : '') + (sk ? B('sheet', '看明細', { k: sk, id: sid }) : '') + '</div>'; }
+/* kk-v36.9（老大 11/25 意見 1120：細項們點了要能編輯）：帳戶型走既有帳戶編輯（update_account，有改動紀錄）；欠款與分期沒有更新函式，先請塔塔改，不假裝能改 */
+Object.assign(ACT, { debtEditAsk(el) { const x = debtFind(D(), el.dataset.id); if (!x) return; thSendDirect('debt:' + x.key, x.name, '請塔塔改「' + x.name + '」', '[面板請塔塔改負債資料] 「' + x.name + '」老大想改這筆的資料（名稱、金額、還款日、備註），目前還剩 NT$' + fmt(x.rem) + '，還款日 ' + x.due + '。請先問清楚要改什麼再改，改完回報。') } });
 function debtText(x) { return '[面板請塔塔處理負債] 「' + x.name + '」' + (x.per2 ? '（' + x.per2 + '，' + (x.sub || '') + '）' : '') + '還剩 NT$' + fmt(x.rem) + '，還款日 ' + x.due + (x.prin != null ? '，本金 NT$' + fmt(x.prin) + '，已還 NT$' + fmt(x.paid || 0) : '') + (x.per ? '，每期 NT$' + fmt(x.per) : '') + '。請你看怎麼處理（還款、分期或繳費），處理完回報。'; }
 /* 信用卡帳單期 */
 function cardTxsOf(a) {
@@ -4898,7 +4900,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
 
 <style id="kkfb-css">
 /* kk-v35 編修模式（老大 2026-11-23：「點下去之後會變成編修模式」）。只加不改，class 一律 kkfb- 開頭。 */
-.kkfb-pen{flex:none;width:44px;height:44px;min-width:44px;border-radius:50%;display:inline-grid;place-items:center;background:transparent;border:0;color:inherit;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.kkfb-pen{z-index:12;flex:none;width:44px;height:44px;min-width:44px;border-radius:50%;display:inline-grid;place-items:center;background:transparent;border:0;color:inherit;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .kkfb-pen svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .kkfb-pen[aria-pressed="true"]{background:#1F0E00;color:#FF6700;box-shadow:0 0 0 2px #fff}
 .kkfb-pen .kkfb-dot{position:absolute;margin:-18px 0 0 18px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#FF6700;color:#1F0E00;font:700 10px/16px system-ui,sans-serif}
@@ -5113,7 +5115,7 @@ html.kkfb-on body{cursor:crosshair}
       d.innerHTML = '<h3>第 ' + n + ' 處：' + esc(p.block_text || p.block_name || '（沒有字的地方）') + '</h3>' +
         '<p class="kkfb-w">' + esc(p.page) + (p.block_id ? '｜' + esc(p.block_id) : '') + '</p>' +
         '<label for="kkfbIn" class="vh" style="position:absolute;left:-9999px">意見</label><textarea id="kkfbIn" rows="4" maxlength="2000" placeholder="這裡哪裡怪、想改成怎樣（可以按鍵盤上的麥克風用講的）">' + esc(p.comment || '') + '</textarea>' +
-        '<div class="kkfb-row">' + (p.isNew ? '' : '<button type="button" class="kkfb-btn bad" data-fb="del">刪掉這處</button>') +
+        '<div class="kkfb-row">' + (p.isNew && p._el && p._el.closest && p._el.closest('[data-act="sheet"],[data-x="bdet"]') ? '<button type="button" class="kkfb-btn" data-fb="peek">先開來看</button>' : '') + (p.isNew ? '' : '<button type="button" class="kkfb-btn bad" data-fb="del">刪掉這處</button>') +
         '<button type="button" class="kkfb-btn" data-fb="cancel">取消</button><button type="button" class="kkfb-btn pri" data-fb="ok">' + (p.isNew ? '標上去' : '存好') + '</button></div>';
       document.body.appendChild(d);
       setTimeout(function () { var i = document.getElementById('kkfbIn'); if (i) { try { i.focus({ preventScroll: true }); } catch (e) { i.focus(); } } }, 60);
@@ -5226,6 +5228,7 @@ html.kkfb-on body{cursor:crosshair}
     if (a === 'mine') { dlg('mine'); return; }
     if (a === 'resend') { send(F.sent.filter(function (x) { return x.local; }), true); return; }
     if (a === 'cancel') { closeDlg(); return; }
+    if (a === 'peek') { var pc = F.cur, pe = pc && pc._el; closeDlg(); if (pe && pe.isConnected) { F.pass = true; try { pe.click(); } finally { setTimeout(function () { F.pass = false; }, 0); } toast('抽屜開了：點裡面哪一行就能標；點外面灰色處收起來'); } return; }
     if (a === 'pin') { var p = F.draft.filter(function (x) { return String(x.pin_no) === b.dataset.n; })[0]; if (p) { F.cur = p; dlg('pin'); } return; }
     if (a === 'del') { var c = F.cur; F.draft = F.draft.filter(function (x) { return x !== c; }); F.draft.forEach(function (x, i) { x.pin_no = i + 1; }); save(); closeDlg(); bar(); penDot(); toast('刪掉了，剩 ' + F.draft.length + ' 處'); return; }
     if (a === 'ok') {
@@ -5238,11 +5241,14 @@ html.kkfb-on body{cursor:crosshair}
   }
   /* ---------- 事件：編修中全部在 window 捕獲階段攔下 ---------- */
   var stop = function (e) { e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); };
+  /* kk-v36.9：編修中也要能收起抽屜（點灰色遮罩、關閉、返回），以及「先開來看」放行一次點擊；這些不選取、不插圖釘 */
+  function passThru(t) { return !!(F.pass || (t && t.closest && t.closest('#scrim,#det_back,.sheet [data-act="close"],.sheet [data-act="back"],[data-act="closeAll"]'))); }
   var tx = 0, ty = 0, tt = 0;
   window.addEventListener('click', function (e) {
     var b = e.target && e.target.closest && e.target.closest('#kkfbPen,[data-fb]');
     if (b && mine(b)) { e.preventDefault(); stop(e); if (b.disabled) return; act(b.id === 'kkfbPen' ? 'pen' : b.dataset.fb, b); return; }
     if (!F.on || mine(e.target)) return;
+    if (passThru(e.target)) return;
     e.preventDefault(); stop(e);
     if (Date.now() - F.lastTouch < 700) return;
     if (F.dlg && F.dlg !== 'pin') return;
@@ -5266,6 +5272,7 @@ html.kkfb-on body{cursor:crosshair}
     stop(e);
     var t = e.changedTouches[0];
     if (Math.abs(t.clientX - tx) < 10 && Math.abs(t.clientY - ty) < 10 && Date.now() - tt < 800) {
+      if (passThru(e.target) || passThru(document.elementFromPoint(t.clientX, t.clientY))) return; /* 不 preventDefault，讓瀏覽器補出 click 交給頁面收抽屜 */
       e.preventDefault(); F.lastTouch = Date.now();
       if (F.dlg && F.dlg !== 'pin') return;
       choose(document.elementFromPoint(t.clientX, t.clientY) || e.target);

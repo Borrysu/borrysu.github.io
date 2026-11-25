@@ -4320,7 +4320,7 @@ function kkExDecorate() {
   document.querySelectorAll('.cardrow.acr[data-aid]').forEach(function (b) { var a = acctId(b.dataset.aid), box = b.querySelector('div[style*="flex:1"]'); if (a && box) kkExSet(box, KKCF.pdHtml('acct', a.name)); });
   var top = DET[DET.length - 1], ds = document.querySelector('#det .dsum'); if (top && top.t === 'acct' && ds) { var a2 = acctId(top.arg && top.arg.id != null ? top.arg.id : top.arg); if (a2) kkExSet(ds, KKCF.pdHtml('acct', a2.name)); }
 }
-var KK_VER = 'kk-v36.8', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v36.9', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4637,7 +4637,7 @@ function eDebtItems() {
   return L;
 }
 function eDebtFind(key) { return eDebtItems().filter(function (x) { return x.key === key; })[0]; }
-function eDebtActs(key, withDet) { return '<div class="dbtn2"><button type="button" class="dbtn" data-edebt="ask" data-key="' + key + '">請塔塔處理</button><button type="button" class="dbtn n" data-edebt="paid" data-key="' + key + '">我還了一筆</button></div>' + (withDet ? '<button type="button" class="dbtn n th-askb" data-edebt="det" data-key="' + key + '">看明細</button>' : ''); }
+function eDebtActs(key, withDet) { return '<div class="dbtn2"><button type="button" class="dbtn" data-edebt="ask" data-key="' + key + '">請塔塔處理</button><button type="button" class="dbtn n" data-edebt="paid" data-key="' + key + '">我還了一筆</button></div><button type="button" class="dbtn n th-askb" data-edebt="' + (/^(acct|ccp):/.test(key) ? 'edit' : 'askedit') + '" data-key="' + key + '">' + (/^(acct|ccp):/.test(key) ? '改這筆' : '請塔塔改') + '</button>' + (withDet ? '<button type="button" class="dbtn n th-askb" data-edebt="det" data-key="' + key + '">看明細</button>' : ''); }
 function eDebtText(x) { return '[面板請塔塔處理負債] 「' + x.name + '」' + (x.per2 ? '（' + x.per2 + '，' + (x.sub || '') + '）' : '') + '還剩 NT$' + nt(x.rem) + '，還款日 ' + x.due + (x.prin != null ? '，本金 NT$' + nt(x.prin) + '，已還 NT$' + nt(x.paid || 0) : '') + (x.per ? '，每期 NT$' + nt(x.per) : '') + '。請你看怎麼處理（還款、分期或繳費），處理完回報。'; }
 function eAskAmount(what) { var v = window.prompt(what + '（只填數字）'); if (v == null) return null; var n = Number(String(v).replace(/[,\s，]/g, '')); if (!(n > 0)) { showErr('要填大於 0 的數字'); return null; } return Math.round(n); }
 var CARDH = null, CARDHB = 0;
@@ -4691,6 +4691,8 @@ document.addEventListener('click', function (e) {
   if (!e.target.closest) return; var u = e.target.closest('[data-eupd]'); if (u) { e.stopPropagation(); eUpdSend(u.getAttribute('data-eupd')); return; }
   var b = e.target.closest('[data-edebt]'); if (b) { e.stopPropagation(); var x = eDebtFind(b.getAttribute('data-key')); if (!x) return; var k = b.getAttribute('data-edebt');
     if (k === 'det') { openDet(x.sk, x.sid); return; }
+    if (k === 'edit') { var ea = acctId(x.sid); if (ea) openAcct(ea); return; } /* kk-v36.9 意見 1120：帳戶型直接進既有帳戶編輯 */
+    if (k === 'askedit') { eSend('debt:' + x.key, x.name, '請塔塔改「' + x.name + '」', '[面板請塔塔改負債資料] 「' + x.name + '」老大想改這筆的資料（名稱、金額、還款日、備註），目前還剩 NT$' + nt(x.rem) + '，還款日 ' + x.due + '。請先問清楚要改什麼再改，改完回報。'); return; }
     if (k === 'ask') { eSend('debt:' + x.key, x.name, '請塔塔處理「' + x.name + '」', eDebtText(x)); return; }
     var v = eAskAmount('「' + x.name + '」這次還了多少？'); if (!v) return; eSend('debt:' + x.key, x.name, '我還了「' + x.name + '」NT$' + nt(v), '[面板：老大還了一筆] 「' + x.name + '」' + (x.per2 ? '（' + x.per2 + '）' : '') + '還了 NT$' + nt(v) + '，請記帳並更新還剩（帳上目前還剩 NT$' + nt(x.rem) + '）。'); return; }
   var c = e.target.closest('[data-ecard]'); if (c) { e.stopPropagation(); var a = acctId(Number(c.getAttribute('data-aid2'))); if (!a) return; var s = eCardSegs(a).segs[+c.getAttribute('data-i')]; if (!s) return;
@@ -5395,7 +5397,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)
 
 <style id="kkfb-css">
 /* kk-v35 編修模式（老大 2026-11-23：「點下去之後會變成編修模式」）。只加不改，class 一律 kkfb- 開頭。 */
-.kkfb-pen{flex:none;width:44px;height:44px;min-width:44px;border-radius:50%;display:inline-grid;place-items:center;background:transparent;border:0;color:inherit;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.kkfb-pen{z-index:12;flex:none;width:44px;height:44px;min-width:44px;border-radius:50%;display:inline-grid;place-items:center;background:transparent;border:0;color:inherit;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .kkfb-pen svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .kkfb-pen[aria-pressed="true"]{background:#1F0E00;color:#FF6700;box-shadow:0 0 0 2px #fff}
 .kkfb-pen .kkfb-dot{position:absolute;margin:-18px 0 0 18px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#FF6700;color:#1F0E00;font:700 10px/16px system-ui,sans-serif}
@@ -5610,7 +5612,7 @@ html.kkfb-on body{cursor:crosshair}
       d.innerHTML = '<h3>第 ' + n + ' 處：' + esc(p.block_text || p.block_name || '（沒有字的地方）') + '</h3>' +
         '<p class="kkfb-w">' + esc(p.page) + (p.block_id ? '｜' + esc(p.block_id) : '') + '</p>' +
         '<label for="kkfbIn" class="vh" style="position:absolute;left:-9999px">意見</label><textarea id="kkfbIn" rows="4" maxlength="2000" placeholder="這裡哪裡怪、想改成怎樣（可以按鍵盤上的麥克風用講的）">' + esc(p.comment || '') + '</textarea>' +
-        '<div class="kkfb-row">' + (p.isNew ? '' : '<button type="button" class="kkfb-btn bad" data-fb="del">刪掉這處</button>') +
+        '<div class="kkfb-row">' + (p.isNew && p._el && p._el.closest && p._el.closest('[data-act="sheet"],[data-x="bdet"]') ? '<button type="button" class="kkfb-btn" data-fb="peek">先開來看</button>' : '') + (p.isNew ? '' : '<button type="button" class="kkfb-btn bad" data-fb="del">刪掉這處</button>') +
         '<button type="button" class="kkfb-btn" data-fb="cancel">取消</button><button type="button" class="kkfb-btn pri" data-fb="ok">' + (p.isNew ? '標上去' : '存好') + '</button></div>';
       document.body.appendChild(d);
       setTimeout(function () { var i = document.getElementById('kkfbIn'); if (i) { try { i.focus({ preventScroll: true }); } catch (e) { i.focus(); } } }, 60);
@@ -5723,6 +5725,7 @@ html.kkfb-on body{cursor:crosshair}
     if (a === 'mine') { dlg('mine'); return; }
     if (a === 'resend') { send(F.sent.filter(function (x) { return x.local; }), true); return; }
     if (a === 'cancel') { closeDlg(); return; }
+    if (a === 'peek') { var pc = F.cur, pe = pc && pc._el; closeDlg(); if (pe && pe.isConnected) { F.pass = true; try { pe.click(); } finally { setTimeout(function () { F.pass = false; }, 0); } toast('抽屜開了：點裡面哪一行就能標；點外面灰色處收起來'); } return; }
     if (a === 'pin') { var p = F.draft.filter(function (x) { return String(x.pin_no) === b.dataset.n; })[0]; if (p) { F.cur = p; dlg('pin'); } return; }
     if (a === 'del') { var c = F.cur; F.draft = F.draft.filter(function (x) { return x !== c; }); F.draft.forEach(function (x, i) { x.pin_no = i + 1; }); save(); closeDlg(); bar(); penDot(); toast('刪掉了，剩 ' + F.draft.length + ' 處'); return; }
     if (a === 'ok') {
@@ -5735,11 +5738,14 @@ html.kkfb-on body{cursor:crosshair}
   }
   /* ---------- 事件：編修中全部在 window 捕獲階段攔下 ---------- */
   var stop = function (e) { e.stopPropagation(); if (e.stopImmediatePropagation) e.stopImmediatePropagation(); };
+  /* kk-v36.9：編修中也要能收起抽屜（點灰色遮罩、關閉、返回），以及「先開來看」放行一次點擊；這些不選取、不插圖釘 */
+  function passThru(t) { return !!(F.pass || (t && t.closest && t.closest('#scrim,#det_back,.sheet [data-act="close"],.sheet [data-act="back"],[data-act="closeAll"]'))); }
   var tx = 0, ty = 0, tt = 0;
   window.addEventListener('click', function (e) {
     var b = e.target && e.target.closest && e.target.closest('#kkfbPen,[data-fb]');
     if (b && mine(b)) { e.preventDefault(); stop(e); if (b.disabled) return; act(b.id === 'kkfbPen' ? 'pen' : b.dataset.fb, b); return; }
     if (!F.on || mine(e.target)) return;
+    if (passThru(e.target)) return;
     e.preventDefault(); stop(e);
     if (Date.now() - F.lastTouch < 700) return;
     if (F.dlg && F.dlg !== 'pin') return;
@@ -5763,6 +5769,7 @@ html.kkfb-on body{cursor:crosshair}
     stop(e);
     var t = e.changedTouches[0];
     if (Math.abs(t.clientX - tx) < 10 && Math.abs(t.clientY - ty) < 10 && Date.now() - tt < 800) {
+      if (passThru(e.target) || passThru(document.elementFromPoint(t.clientX, t.clientY))) return; /* 不 preventDefault，讓瀏覽器補出 click 交給頁面收抽屜 */
       e.preventDefault(); F.lastTouch = Date.now();
       if (F.dlg && F.dlg !== 'pin') return;
       choose(document.elementFromPoint(t.clientX, t.clientY) || e.target);
