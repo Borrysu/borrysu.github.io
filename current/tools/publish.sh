@@ -5,6 +5,8 @@
 set -e
 MSG="$1"; [ -n "$MSG" ] || { echo "用法：tools/publish.sh \"說明\"" >&2; exit 2; }
 cd "$(dirname "$0")/.."
+# 2026-11-26 總驗收：發布前一定先跑回歸測試（示範資料，不碰真資料庫），沒過就不准發布；要跳過只能明寫 SKIP_REGRESS=1 並在說明寫原因
+if [ "$SKIP_REGRESS" != "1" ]; then python3 tools/regress.py || { echo "回歸測試沒過，不發布。修好再發。" >&2; exit 3; }; fi
 export HOME=/Users/borry
 git pull -q --rebase --autostash
 git status -s .; git add -A .; git diff --cached --stat

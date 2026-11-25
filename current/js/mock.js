@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v221';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v222';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -388,7 +388,7 @@ export function mockAdapter(modeStr) {
         case 'tdone': if (o.done !== false) { r.status = 'closed'; r.close_result = 'won'; r.closed_at = new Date().toISOString(); } else { r.status = 'new'; r.close_result = null; r.closed_at = null; } break;
         case 'blocker': r.progress_blocker = o.text || null; r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'runset': r.run_status = o.status; r.run_note = o.note || ''; r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
-        case 'steps': r.progress_steps = (o.steps || []).map(x => ({ name: x.name, status: x.status, note: x.note || '' })); r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
+        case 'steps': r.progress_steps = (o.steps || []).map(x => Object.assign({}, x, { name: x.name, status: x.status, note: x.note || '' })); /* v222：示範模式也保留關聯、結果等欄位，不然驗收會誤判 */ r.progress_updated_by = 'Borry'; r.progress_updated_at = new Date().toISOString(); break;
         case 'close': if (!['doing', 'delivered', 'paid', 'closed'].includes(r.status)) throw new AdapterError('state', 'card is ' + r.status, 400); r.status = 'closed'; r.close_result = o.result; r.closed_at = new Date().toISOString(); break;
         case 'reopen': if (r.status !== 'closed') throw new AdapterError('state', 'card is not closed', 400); r.status = 'doing'; r.close_result = null; r.closed_at = null; break;
         case 'purge': if (!['closed', 'dropped', 'expired', 'doing', 'delivered', 'paid'].includes(r.status)) throw new AdapterError('state', 'cannot purge', 400); if (o.confirm !== r.title && o.confirm !== (r.short_title || r.title)) throw new AdapterError('state', 'confirm text does not match title', 400); rows.splice(rows.indexOf(r), 1); ping(); return null;

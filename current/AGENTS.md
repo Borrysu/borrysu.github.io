@@ -107,3 +107,9 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 - 老大在面板按「就這樣做」派工時，面板會寫一筆 `hub_jobs`（`source_key`＝`dispatch:<卡片id>`，agent＝被派的那隻，note 帶卡片 id 與老大交代原文），卡片 `run_note` 開頭是 `【霸霸】`或`【大器】`。接手的人做完照上面收卡規則收掉這筆。
 - 「今天要做」是老大自己寫的清單（`hub_tide_log`，note.type＝`want`／`done`／`undo`，ref＝`want:<id>`）。被請到的機器人要看懂：`want` 是老大確認要做的事，`done` 是他打勾做完。
 - 老大按派工臉會先開那隻自己的對話並送一則「［前情｜…］」，內容是先別動手；等他說「就這樣」或按「就這樣做」才是真的派下來。
+
+## 發布前回歸測試（2026-11-26 總驗收後加）
+- `tools/publish.sh` 會先跑 `tools/regress.py`（示範資料、桌機 1688 與手機 390），沒過就不發布。
+- 修好老大回報的一個問題，就在 `regress.py` 加一條對應檢查，讓它以後壞了會被擋下。
+- 在 `js/app.js` 加程式要插在檔尾最後一個 `})();` 之前（整份包在 IIFE 裡）；`js/adapter.js` 的 normalize 不可以丟掉資料庫欄位（步驟的 rel、result、result_at、result_by、result_link 曾被丟掉，結果一直看不到）。
+- 畫面更新用 `morphInto` 逐節點比對（render 已內建），不要對整個 #view／#page 直接 innerHTML，會整頁重建、頭像閃動。

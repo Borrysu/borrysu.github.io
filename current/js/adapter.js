@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v221');
+  const { mockAdapter } = await import('./mock.js?v222');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -233,7 +233,9 @@ export function normalize(r) {
       .filter(l => l && (l.url || (l.path && (l.kind === 'pool' || l.kind === 'review')))),
     // 進度與去執行（大器寫回）
     progressSteps: (Array.isArray(r.progress_steps) ? r.progress_steps : []).filter(x => x && typeof x === 'object' && str(x.name)).slice(0, 30)
-      .map(x => ({ name: str(x.name), note: str(x.note), status: ['pending', 'current', 'done', 'skipped', 'blocked'].includes(x.status) ? x.status : 'pending' })),
+      .map(x => { const o = { name: str(x.name), note: str(x.note), status: ['pending', 'current', 'done', 'skipped', 'blocked'].includes(x.status) ? x.status : 'pending' };
+        /* v222：結果、成果連結、關聯原本在這裡被丟掉，畫面看不到結果，面板存步驟時還會把資料庫裡的結果洗掉 */
+        ['rel', 'result', 'result_at', 'result_by', 'result_link'].forEach(k => { if (x[k] != null && x[k] !== '') o[k] = str(x[k]); }); return o; }),
     progressNote: str(r.progress_note), progressBlocker: str(r.progress_blocker), progressUpdatedAt: ts(r.progress_updated_at), progressUpdatedBy: nick(str(r.progress_updated_by)),
     runStatus: ['queued', 'running', 'done', 'failed'].includes(r.run_status) ? r.run_status : '', runNote: str(r.run_note), runSession: str(r.run_session),
   };

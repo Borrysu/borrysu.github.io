@@ -329,21 +329,44 @@ function viewHTML(){if(S.st==='loading')return skeleton();if(S.st==='error')retu
 let shownSheet=null,shownPage=null;
 function fixTop(){const pr=document.querySelector('.proto');document.documentElement.style.setProperty('--ph',Math.max(0,Math.round(pr?pr.getBoundingClientRect().bottom:0))+'px')}
 addEventListener('scroll',fixTop,{passive:true});addEventListener('resize',fixTop);
+/* v222（msg 1072②⑤、1088①）：點一下不再整頁重寫。原本畫面字串一變就 innerHTML 整段換掉，560 個節點與 30 個頭像全部重建，頭像動畫重來＝閃一下。
+   改成逐節點比對，只改有變的地方；頭像（.bm.bf）的內容交給 BotFace 自己管，不動它，所以不會重建。 */
+function morphInto(el,html){const t=document.createElement('template');t.innerHTML=html;const w=document.createElement('div');w.appendChild(t.content);
+ // 先把事後補丁（改名、圖示換成 svg、字詞替換）套在新樹上，跟畫面上現有的一樣，比對時圖示才會沿用、不重建
+ try{if(typeof renameIn==='function')renameIn(w)}catch(e){}try{if(typeof icSwap==='function')icSwap(w)}catch(e){}try{if(typeof textSwap==='function')textSwap(w)}catch(e){}try{if(typeof pathScrub==='function')pathScrub(w)}catch(e){}
+ morphKids(el,w)}
+function morphKey(e){if(e.nodeType!==1)return null;if(e.id)return '#'+e.id;const d=e.dataset;if(!d)return null;const k=d.id||d.i||d.k||d.card||d.b;return k!=null?e.nodeName+'|'+(d.act||'')+'|'+k:null}
+function morphKids(a,b){const keyed=new Map();for(let c=a.firstChild;c;c=c.nextSibling){const k=morphKey(c);if(k&&!keyed.has(k))keyed.set(k,c)}
+ let x=a.firstChild,y=b.firstChild;const used=new Set();
+ const INJ=c=>c&&c.nodeType===1&&c.matches&&c.matches('.babacf,.babaf');
+ while(y){while(INJ(x)){used.add(x);x=x.nextSibling}const ny=y.nextSibling,k=morphKey(y);let o=null;
+  if(k&&keyed.has(k)&&!used.has(keyed.get(k)))o=keyed.get(k);
+  else if(!k&&x&&!morphKey(x)&&x.nodeType===y.nodeType&&x.nodeName===y.nodeName)o=x;
+  if(o){used.add(o);if(o!==x)a.insertBefore(o,x);else x=x.nextSibling;if(!morphNode(o,y)){a.replaceChild(y,o);used.add(y)}}
+  else{a.insertBefore(y,x);used.add(y)}
+  y=ny}
+ for(let c=a.firstChild;c;){const n=c.nextSibling;if(!used.has(c)&&!INJ(c))a.removeChild(c);c=n}}   // bot_voice.js 事後插的霸霸鈕原地留著，不然頭像會重建、也會被重插
+function morphNode(o,n){if(o.nodeType!==n.nodeType)return false;if(o.nodeType===3||o.nodeType===8){if(o.nodeValue!==n.nodeValue)o.nodeValue=n.nodeValue;return true}if(o.nodeType!==1||o.nodeName!==n.nodeName)return false;
+ const oa=o.attributes,na=n.attributes;for(let i=oa.length-1;i>=0;i--){const k=oa[i].name;if(!n.hasAttribute(k))o.removeAttribute(k)}for(let i=0;i<na.length;i++){const k=na[i].name,v=na[i].value;if(o.getAttribute(k)!==v)o.setAttribute(k,v)}
+ const act=document.activeElement===o;if(/^(INPUT|TEXTAREA|SELECT)$/.test(o.nodeName)){if(!act&&o.value!==n.value)o.value=n.value;if(o.nodeName==='INPUT'&&o.checked!==n.checked)o.checked=n.checked;if(o.nodeName!=='SELECT')return true}
+ if(o.classList&&o.classList.contains('bm')&&o.classList.contains('bf')&&o.firstChild)return true;
+ if(o.nodeName==='SVG'||o.nodeName==='svg'){if(o.innerHTML!==n.innerHTML)o.innerHTML=n.innerHTML;return true}
+ morphKids(o,n);return true}
 function render(dir){const R=document.documentElement;fixTop();
  if(tabsOf().indexOf(S.tab)<0)S.tab='today';
  R.dataset.layout=S.layout;R.dataset.skin=S.skin;if(decs().length)delete R.dataset.calm;else R.dataset.calm='1';R.dataset.tab=S.page&&S.page.indexOf('zone:')===0?S.page.split(':')[1]:S.tab;
  const fl=$('#fontlink'),href=`https://fonts.googleapis.com/css2?${FONTS[S.skin]}&display=swap`;if(fl.getAttribute('href')!==href)fl.setAttribute('href',href);
  renderProto();renderTabs();$('#offline').hidden=S.st!=='offline';
- const v=$('#view'),vh=viewHTML();if(v.__h!==vh||!v.firstChild){v.innerHTML=vh;v.__h=vh}v.className='';   /* v177：畫面字串沒變就不重寫，不然補丁加上的頭像會被清掉再閃一下 */
+ const v=$('#view'),vh=viewHTML();if(v.__h!==vh||!v.firstChild){if(v.firstChild&&v.__h&&(!dir||dir==='keep'))morphInto(v,vh);else v.innerHTML=vh;v.__h=vh}v.className='';   /* v177：畫面字串沒變就不重寫，不然補丁加上的頭像會被清掉再閃一下 */
  if(dir&&dir!=='keep'){void v.offsetWidth;v.className=dir}
  const pg=$('#page'),sh=$('#sheet'),sc=$('#scrim'),bgs=[v,$('#top'),$('#dock'),document.querySelector('.tabs')];
- if(S.page){const ph=pageHTML();if(pg.__h!==ph||pg.hidden||!pg.firstChild){pg.innerHTML=ph;pg.__h=ph}pg.hidden=false;if(shownPage!==S.page){if(!shownPage){pg.scrollTop=0;requestAnimationFrame(()=>pg.classList.add('in'))}const b=$('#pBack');if(b&&!S.sheet)b.focus({preventScroll:true})}}
+ if(S.page){const ph=pageHTML();if(pg.__h!==ph||pg.hidden||!pg.firstChild){if(!pg.hidden&&pg.firstChild&&shownPage===S.page)morphInto(pg,ph);else pg.innerHTML=ph;pg.__h=ph}pg.hidden=false;if(shownPage!==S.page){if(!shownPage){pg.scrollTop=0;requestAnimationFrame(()=>pg.classList.add('in'))}const b=$('#pBack');if(b&&!S.sheet)b.focus({preventScroll:true})}}
  else if(shownPage){pg.classList.remove('in');setTimeout(()=>{if(!S.page){pg.hidden=true;pg.innerHTML='';pg.__h=null}},RM?0:210)}
  shownPage=S.page;
  if(S.sheet){const sp=S.sheet.split(':');sh.dataset.b=sp[0]==='bot'?sp[1]:({opp:'jiji',sub:'tata',rout:'peng',bind:'peng',proj:'daqi',talk:'daqi'}[sp[0]]||'');sh.innerHTML=sheetHTML();sh.hidden=false;sc.hidden=false;if(shownSheet!==S.sheet){if(!shownSheet)requestAnimationFrame(()=>{sh.classList.add('in');sc.classList.add('in')});sh.scrollTop=0;const c=$('#sClose');if(c)c.focus({preventScroll:true})}}
  else if(shownSheet){sh.classList.remove('in');sc.classList.remove('in');setTimeout(()=>{if(!S.sheet){sh.hidden=true;sc.hidden=true;sh.innerHTML=''}},RM?0:210)}
  shownSheet=S.sheet;
- {const wide=matchMedia('(min-width:1000px)').matches,tb=document.querySelector('.tabs');bgs.forEach(e=>{if(e)e.inert=!!(S.sheet||(S.page&&!(wide&&e===tb)))})}pg.inert=!!S.sheet;   /* v179：寬螢幕開著任務頁時，左邊房間導覽（.tabs）沒被頁面蓋住，不能設成 inert，不然整排點不動（老大 msg 1099） */
+ {const wide=matchMedia('(min-width:1000px)').matches,tb=document.querySelector('.tabs'),tp=$('#top');if(tp)R.style.setProperty('--toph',tp.offsetHeight+'px');bgs.forEach(e=>{if(e)e.inert=!!((S.sheet||S.page)&&!(wide&&(e===tb||e===tp)))})}   /* v222（msg 1095／1099／1148）：寬螢幕開著卡片或詳情時，左邊房間與頂列「逐流」仍可按 */pg.inert=!!S.sheet;   /* v179：寬螢幕開著任務頁時，左邊房間導覽（.tabs）沒被頁面蓋住，不能設成 inert，不然整排點不動（老大 msg 1099） */
  $('#app').classList.toggle('over',!!(S.sheet||S.page));
  try{localStorage.setItem('zl3',JSON.stringify({layout:S.layout,skin:S.skin}))}catch(e){}}
 
@@ -1893,9 +1916,9 @@ function mapProj(c){const st=c.status,dl=c.deadline||(c.deliveryDate?Date.parse(
  let steps=c.progressSteps.map(s=>s.name),cur;
  if(steps.length){const i=c.progressSteps.findIndex(s=>s.status==='current'||s.status==='blocked'||s.status==='pending');cur=i<0?steps.length:i}
  else{steps=['製作','交件','收款'];cur=st==='doing'?0:st==='delivered'?2:3}
- const urg=dd!=null&&dd<=3&&st==='doing';
+ const urg=dd!=null&&dd<=3&&st==='doing'&&!cardWaitLab(c);
  const g=st==='delivered'?'delivered':st==='paid'?'paid':(c.progressBlocker||c.runStatus==='failed'||urg)?'need':'doing';
- const due=st==='paid'?(c.paidAt?LMD(c.paidAt)+' 入帳':'已收款'):st==='delivered'?(c.expectedPayDate?`約定 ${fmtMD(c.expectedPayDate)} 前付`:'等收款'):dd!=null?(dd<0?'已過期限':dd===0?'今天要交':`剩 ${dd} 天`):'沒有期限';
+ const due=st==='paid'?(c.paidAt?LMD(c.paidAt)+' 入帳':'已收款'):st==='delivered'?(c.expectedPayDate?`約定 ${fmtMD(c.expectedPayDate)} 前付`:'等收款'):dd!=null?(cardWaitLab(c)&&dd<=0?cardWaitLab(c):dd<0?'已過期限':dd===0?'今天要交':`剩 ${dd} 天`):'沒有期限';
  const money=st==='paid'&&c.receivedAmount!=null?'實收 '+nt(c.receivedAmount):st==='delivered'&&c.finalAmount!=null?'待收 '+nt(c.finalAmount):c.quoteAmount!=null?'報價 '+nt(c.quoteAmount):(c.amountDisplay||'');   // v150 msg 946：沒金額就不顯示
  return {id:c.id,g,short:c.shortTitle||c.title,title:c.title,next:c.progressNote||c.firstStep||c.why||'還沒寫下一步',steps,cur,due,urg,who:c.progressUpdatedBy||'大器',money,hist:LV.hist[c.id]||[],raw:c}}
 const RUNST={queued:'排隊中',running:'進行中',done:'做完了',failed:'失敗'};
@@ -1912,7 +1935,8 @@ function applyData(){const it=LV.items;applyExtra();
  DB.todo=it.filter(c=>c.basket==='todo'&&c.status==='new').map(mapTodo);
  DB.arch=LV.arch.map(mapArch);
  const h=LV.hub||{open:[],jobs:[],events:[],beats:[]};
- DB.dec=h.open.map(mapDec);Object.keys(PD).forEach(k=>{delete PD[k]});DB.dec.forEach(d=>{const pj=d.projFull||d.proj,p=DB.proj.find(x=>x.title===pj||x.short===pj);if(p)PD[d.id]=p.id});DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
+ DB.dec=h.open.map(mapDec).filter(d=>!/^逐流 msg \d/.test(String(d.proj||'')));   /* v222：「逐流 msg …轉不進」這類內部轉單故障，不是要老大決定的事，不放進要你決定 */
+ Object.keys(PD).forEach(k=>{delete PD[k]});DB.dec.forEach(d=>{const pj=d.projFull||d.proj,p=DB.proj.find(x=>x.title===pj||x.short===pj);if(p)PD[d.id]=p.id});DB.jobs=h.jobs.filter(j=>j.status!=='done').map(mapJob);DB.events=h.events.map(mapEvt);DB.beats=h.beats.map(mapBeat);
  DB.subs=LV.money?LV.money.items.filter(s=>s.status!=='cancel'||s.cancelBy).map(mapSub).sort((a,b)=>a.in-b.in):[];
  const t=LV.at?LHM(LV.at):'';FRESH.daqi=LV.forced?'示範資料':t?t+' 更新':'讀取中';
  const ls=lastScan();FRESH.jiji=ls?LHM(ls.at)+' 整理':'還沒掃描過';FRESH.tata=LV.mo?t+' 讀取':LV.money?'訂閱 '+t+' 讀取':'看不到帳戶';FRESH.peng=LV.life?t+' 更新':'讀不到';
@@ -2052,7 +2076,7 @@ pxOf=function(p){const c=p.raw||{},dates=[],money=[],files=[];
  if(c.finalAmount!=null)money.push(['尾款',nt(c.finalAmount)+(c.finalDue?'，'+fmtMD(c.finalDue)+' 前':'')]);if(c.receivedAmount!=null)money.push(['已收',nt(c.receivedAmount)]);if(c.paymentTerms)money.push(['付款條件',c.paymentTerms]);
  if(c.earnings&&c.earnings.net!=null)money.push(['實拿',nt(c.earnings.net)+(c.earnings.hourly!=null?`，時薪 ${nt(c.earnings.hourly)}`:'')]);if(!money.length)money.push(['狀態',p.money]);
  if(c.folderPath&&/^\//.test(c.folderPath))files.push(['案子資料夾',c.folderPath]);(c.links||[]).forEach(l=>files.push([l.label||({pool:'Pool（素材與專案檔）',review:'內審（給你看的版本）',pay:'付款',other:'連結'}[l.kind]),l.path||l.url]));
- return {client:c.org||'沒寫',doNext:p.next,block:c.progressBlocker||(p.g==='delivered'?'等對方付款':'沒有卡住'),left:p.due,leftSub:'',dates,money,team:[[p.who,'負責'],['你','拍板']],files}};
+ return {client:c.org||'沒寫',doNext:p.next,block:c.progressBlocker||(p.g==='delivered'?'等對方付款':'沒有卡住'),left:p.due,leftSub:'',dates,money,team:(p.who==='你'||!p.who?[['你','負責、拍板']]:[[p.who,'負責'],['你','拍板']]),files}};
 {const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj;if(s==='proj')return _zp();   // v39：待辦、封存卡照設計稿（標籤、標題、一句話），舊版正式功能收進「⋯」
  const h=_zp(),k=s==='todo'?'待辦':'封存',i=h.indexOf(`<section class="sec"><h2 class="vh">${k}</h2>`);if(i<0)return h;const a=DB[s];
  return h.slice(0,i)+`<section class="sec"><h2 class="vh">${k}</h2><div class="stack stg">${a.map(t=>`<article class="card cardx" data-card="${esc(t.id)}">${mineB(s+':'+t.id,t.title)}<div class="meta">${chip(t.st)}</div><h3>${esc(t.title)}</h3>${t.next?`<p>${esc(t.next)}</p>`:''}</article>`).join('')}</div></section>`}}
@@ -2618,7 +2642,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v221');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v222');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3220,8 +3244,8 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   if(!PG.ms)return `<p class="mkw">編修進度</p><p class="mkp">讀取中…</p>`;
   const all=progState(PG.ms),lab={recv:'已收',work:'處理中',replied:'已回覆',done:'已處理'},week=Date.now()-7*864e5;
   const pend=x=>x.st==='recv'||x.st==='work'||(x.tk&&x.st!=='done');
-  const open=all.filter(x=>pend(x)||Date.parse(x.at)>=week&&!x.old),fold=all.filter(x=>!pend(x)&&Date.parse(x.at)<week);
-  const np=all.filter(pend).length,L=PG.all?all.slice(0,40):all.filter(x=>pend(x)||Date.parse(x.at)>=week).slice(0,15),hid=all.length-L.length;
+  const TS=v=>typeof v==='number'?v:Date.parse(v);const open=all.filter(x=>pend(x)||TS(x.at)>=week&&!x.old),fold=all.filter(x=>!pend(x)&&TS(x.at)<week);
+  const np=all.filter(pend).length,L=PG.all?all:all.filter(x=>pend(x)||TS(x.at)>=week).slice(0,15),hid=all.length-L.length;
   const first=b=>{const t=String(b).replace(/^【面板修改意見】[^\n]*\n/,'');const m=/^\s*\d+\.\s*(.+)/m.exec(t);return cut((m?m[1]:t).replace(/\s+/g,' ').trim(),46)},cnt=b=>{const n=(String(b).match(/^\s*\d+\. /gm)||[]).length;return n>1?`（共 ${n} 則）`:''};
   const tm=at=>{if(!at)return '';const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)};
   const tt=PG.at?new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(PG.at)):'';
@@ -3649,8 +3673,8 @@ ACT.bidsteps=async id=>{const it=todoOf(id),c=it&&it.raw;if(!c||!LV.api||!LV.api
 // 4 案子詳情：每一步 做完、略過、改、刪
 const stepRelTag=(pid,i,rid)=>{const c=ckCards().find(q=>q.id===rid);const nm=c?(c.shortTitle||c.title):'（找不到這張卡）',st=c&&CK_ST[c.status];return `<button type="button" class="pstrl" data-act="pstrelmenu" data-id="${esc(pid)}|${i}" aria-label="關聯：${esc(nm)}，點開可看卡、換別張或取消">→ ${esc(clip(nm,16))}${st?'（'+st+'）':''}</button>`};
 // v204（msg 1378）：步驟做完的結果回填在這一步的卡上（result 摘要、result_link 成果位置、result_at、result_by）。執行端呼叫 opp_step_result 寫回。
-const stepResultBox=s=>{const when=s.result_at?(()=>{const d=new Date(s.result_at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)})():'',lk=String(s.result_link||''),lkH=/^https?:\/\//.test(lk)?`<a href="${esc(lk)}" target="_blank" rel="noopener noreferrer">${esc(clip(lk,48))} ↗</a>`:lk?`<code>${esc(clip(lk,72))}</code>`:'';
- return `<div class="pstres" data-s="${esc(s.status)}"><b>${s.status==='blocked'?'卡住：':s.status==='done'?'結果：':'回報：'}</b>${esc(s.result)}${lkH?`<div class="pstresl">${lkH}</div>`:''}<small>${esc([s.result_by,when].filter(Boolean).join('・'))}</small></div>`};
+const stepResultBox=s=>{const when=s.result_at?(()=>{const d=new Date(s.result_at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)})():'',lk=String(s.result_link||''),lkH=/^https?:\/\//.test(lk)?`<a class="btn sm" href="${esc(lk)}" target="_blank" rel="noopener noreferrer">打開成果 ↗</a>`:'';   // v222：本機路徑老大手機打不開，不顯示；只顯示打得開的網址
+ return `<div class="pstres" data-s="${esc(s.status)}"><b>${s.status==='blocked'?'卡住：':s.status==='done'?'結果：':'回報：'}</b>${esc(typeof cleanTxt==='function'?cleanTxt(s.result):s.result)}${lkH?`<div class="pstresl">${lkH}</div>`:''}<small>${esc([s.result_by,when].filter(Boolean).join('・'))}</small></div>`};
 const STL={done:'做完',current:'正在做',pending:'還沒',skipped:'略過',blocked:'卡住'};
 {const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw||!p.raw.id)return h;
  const st=p.raw.progressSteps||[];
@@ -4006,7 +4030,7 @@ const PDI={step:'🧭',date:'📅',money:'💰',team:'👥',file:'📁',hist:'�
   `${a}<span class="pdic" aria-hidden="true">${PDI[k]||'•'}</span><span class="tx"><small class="pdt">${t}</small><b class="pdv">${sm.replace(/(NT\$ ?[\d,]+|剩 \d+ 天|\d+ 步做到第 \d+ 步)/g,'<em>$1</em>')}</b></span>`)}}
 // 5 「要你看」：定義、怎麼進來、怎麼離開；每張卡寫為什麼在這裡
 function needWhy(p){const c=p.raw||{},a=[];if(c.progressBlocker)a.push('卡在：'+c.progressBlocker);if(c.runStatus==='failed')a.push('AI 跑到一半失敗');
- const dl=c.deadline||(c.deliveryDate?Date.parse(c.deliveryDate):null),dd=c.id?LDAYS(dl):null;if(dd!=null&&dd<=3)a.push(dd<0?'已過期限':dd===0?'今天到期':dd+' 天內到期');else if(!c.id&&p.urg)a.push('3 天內到期');
+ const dl=c.deadline||(c.deliveryDate?Date.parse(c.deliveryDate):null),dd=c.id?LDAYS(dl):null;if(dd!=null&&dd<=3&&!cardWaitLab(c))a.push(dd<0?'已過期限':dd===0?'今天到期':dd+' 天內到期');else if(!c.id&&p.urg)a.push('3 天內到期');
  return a.join('・')||'有事要你看'}
 {const _pc=projCard;projCard=function(p){const h=_pc(p);if(p.g!=='need')return h;return h.replace(/(<\/h3>)/,`$1<p class="ndwhy">▲ 在這裡因為：${esc(needWhy(p))}</p>`)}}
 {const _zp=zoneProj;zoneProj=function(){const h=_zp();const i=h.indexOf('<h2>要你看<');if(i<0)return h;const e=h.indexOf('</h2>',i)+5,op=!!S.open.needhelp;
@@ -4104,7 +4128,10 @@ function runSay(c){if(!c||!c.runStatus)return '還沒送出';const w=runWho(c),c
  if(c.runStatus==='failed')return '卡住了'+(w.step?'：'+w.step:'')+cnt;
  if(w.step&&YOU_RE.test(w.step))return '等你：'+w.step+cnt;
  if(c.runStatus==='queued')return '已送出，等 Mac 開視窗'+cnt;
- const who=w.agent||w.win||'大器';return `${who}${/[A-Za-z0-9]$/.test(who)?' ':''}在做：${w.step||'這件'}${w.model?'（'+w.model+'）':''}${cnt}`}
+ const who=w.agent||w.win||'大器';
+ // v222（msg 1325）：標著在跑但 2 小時以上沒回報，就照實說可能沒在跑，不要假裝在做（下面有「查進度／續做」可以恢復）
+ {const t=+c.progressUpdatedAt||Date.parse(c.progressUpdatedAt)||0;if(c.runStatus==='running'&&t&&Date.now()-t>2*3600e3)return `可能沒在跑：${who} ${Math.round((Date.now()-t)/3600e3)} 小時沒回報・${w.step||'這件'}${cnt}`}
+ return `${who}${/[A-Za-z0-9]$/.test(who)?' ':''}在做：${w.step||'這件'}${w.model?'（'+w.model+'）':''}${cnt}`}
 jiaoSt=runSay;
 function runInfo(c){const w=runWho(c),you=w.step&&YOU_RE.test(w.step),q=c.runStatus==='queued';
  const rows=[['誰在執行',you?'你（這步要你本人做）':q?'還沒有人接：Mac 上的櫃台會開一個新的 Claude Code 視窗來做':(w.agent||(w.win?'Claude Code 視窗':'大器（Mac 上的 Claude Code）'))],
@@ -4626,7 +4653,10 @@ const coSrcOf=c=>{const m=CO_MKR.exec(String((c&&c.why)||'').replace(EDM,''));re
 const coRowOf=c=>{const sid=coSrcOf(c),d=coData();return sid&&d&&Array.isArray(d.cards)?d.cards.find(x=>String(x.source_id)===sid)||null:null};
 function isCoStd(id){id=String(id);if(id.indexOf('co:')===0)return true;const p=DB.proj.find(q=>q.id===id);return isCoCase(p)}
 const coCaseTasks=c=>{const d=coData(),r=coRowOf(c);return d&&Array.isArray(d.tasks)?d.tasks.filter(t=>(r&&t.card_id===r.id)||t.card_id===c.id||(!t.card_id&&t.card_title===c.title)):[]};
-const coAdoptedIds=()=>{const s=new Set();DB.proj.filter(isCoCase).forEach(p=>{const c=p.raw,k=coSrcOf(c);if(k)s.add(k);const why=String(c.why||'');for(const m of why.matchAll(/【合併來源：[^】]*皮條客\s+([^】\s；]+)/g))s.add(m[1])});return s};
+const coAdoptedIds=()=>{const s=new Set();DB.proj.filter(isCoCase).forEach(p=>{const c=p.raw,k=coSrcOf(c);if(k)s.add(k);const why=String(c.why||'');for(const m of why.matchAll(/【合併來源：[^】]*皮條客\s+([^】\s；]+)/g))s.add(m[1])});
+ // v222（msg 1473①）：已結案、放棄、過期、封存的案子，它的皮條客來源也算「已處理過」，不再出現在匯入區、也不能再轉一次
+ try{[].concat(LV.items||[],LV.arch||[]).forEach(c=>{if(!c||['closed','dropped','expired'].indexOf(c.status)<0&&!c.archived)return;const k=coSrcOf(c);if(k)s.add(String(k));for(const m of String(c.why||'').matchAll(/【合併來源：[^】]*皮條客\s+([^】\s；]+)/g))s.add(m[1])})}catch(e){}
+ return s};
 const coMergedSourceIds=()=>{const s=new Set();DB.proj.filter(isCoCase).forEach(p=>{const why=String(p.raw.why||'');for(const m of why.matchAll(/【合併來源：[^】]*皮條客\s+([^】\s；]+)/g))s.add(m[1])});return s};
 async function coPush(c,text){
  if(LV.mode!=='live'){const d=coData();d.tasks.unshift({id:Date.now()+Math.random(),card_id:c.id,card_title:c.title,assignee:'rouka',body:text,status:'queued',created_at:new Date().toISOString()});return true}
@@ -4645,7 +4675,7 @@ const coCaseLink=c=>coRowOf(c)?`皮條客 id ${coSrcOf(c)}`:'皮條客上還沒�
  try{_v(id)}finally{stepNote=_n2}
  if(c&&live.length)setTimeout(()=>coPush(c,`【改步驟】老大在逐流改了公司案子「${c.title}」的步驟（${coCaseLink(c)}），共 ${live.length} 步。請在皮條客對應欄目照這份更新進度與步數，做完回報一句。\n${sum}`.slice(0,2000)),300)}}
 // 3 公司分頁＝原生公司案子
-{const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,merged=coMergedSourceIds(),nat=all.filter(p=>isCoCase(p)&&!scriptOnly(p)&&!(merged.has(coSrcOf(p.raw))&&!String(p.raw.why||'').includes('【合併來源：'))),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?d.cards.filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
+{const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,merged=coMergedSourceIds(),nat=all.filter(p=>isCoCase(p)&&!scriptOnly(p)&&!(merged.has(coSrcOf(p.raw))&&!String(p.raw.why||'').includes('【合併來源：'))),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?(typeof coVisible==='function'?coVisible(d.cards):d.cards).filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
   btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:co">公司 ${n}</button>`,segRe=/(<div class="seg" role="group" aria-label="案子分類">)([\s\S]*?)(<\/div>)/,fix=h=>h.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,'');
   if(s!=='co'){window.__allProj=all;if(s!=='script')DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all;window.__allProj=null}   // v168 msg 1017：劇本分頁跨個人與公司，公司的劇本案（例：直男行不行）也列
    return /data-id="proj:co"/.test(h)?h.replace(/(data-id="proj:co">)公司 \d+/,`$1公司 ${n}`):h.replace(segRe,(x,a,b,c)=>a+b+btn(false)+c)}
@@ -4669,7 +4699,7 @@ async function coAdoptOne(c){const ad=coAdoptedIds();if(ad.has(String(c.source_i
  if(c.due)await LV.api.act(n.id,'work',{patch:{delivery_date:String(c.due).slice(0,10)}});return n}
 ACT.coadopt=async id=>{const c=coFind(id);if(!c||!LV.api||!LV.api.workAdd){toast('離線中，連上再轉');return}
  try{const n=await coAdoptOne(c);await reload();paint('keep');toast(n?'轉成原生案子了，原卡留著':'這張已經轉過了')}catch(e){await reload();paint('keep');toast('沒轉成：'+LERR(e))}};
-ACT.coadoptall=async()=>{const d=coData(),ad=coAdoptedIds(),left=(d&&d.cards||[]).filter(c=>!ad.has(String(c.source_id)));if(!left.length||!LV.api||!LV.api.workAdd)return;let ok=0,bad='';
+ACT.coadoptall=async()=>{const d=coData(),ad=coAdoptedIds(),left=(typeof coVisible==='function'?coVisible(d&&d.cards||[]):(d&&d.cards||[])).filter(c=>!ad.has(String(c.source_id)));if(!left.length||!LV.api||!LV.api.workAdd)return;let ok=0,bad='';
  for(const c of left){try{if(await coAdoptOne(c))ok++}catch(e){bad=LERR(e)}}await reload();paint('keep');toast(`轉成原生案子 ${ok} 張，原卡留著${bad?'；有沒轉成的：'+bad:''}`)};
 // 4 新增公司案子
 function coWrapAdd(){if(!LV.api||LV.api.__coW)return;const w=LV.api.workAdd,ce=LV.api.cardEdit;LV.api.workAdd=function(t,b){const f=LV.coAdd;LV.coAdd=false;return w.call(this,t,b||(f?'company':undefined))};
@@ -4681,7 +4711,11 @@ coWrapAdd();
 {const _h=projHero;projHero=function(p,h1){let h=_h(p,h1);const c=p.raw||{};if(!c.id)return h;
  if(isCoCase(p)){const ts=coCaseTasks(c).filter(t=>t.assignee==='rouka'),lt=ts[0],stt=lt?coSt(lt):'';
   h=h.replace(/(<div class="pcx-act">)/,`$1${B(bm('rouka')+'派肉咖做','sheet','cocase:'+p.id,'pcx-b')}${B('同步到皮條客','cosync',p.id,'pcx-b')}`);
-  h=h.replace(/(<p class="pcx-now[^>]*>[\s\S]*?<\/p>)/,`$1<p class="note">公司案子・${esc(coCaseLink(c))}${stt?'・肉咖：'+esc(stt):''}</p>`)}
+  h=h.replace(/(<p class="pcx-now[^>]*>[\s\S]*?<\/p>)/,`$1<p class="note">公司案子・${esc(coCaseLink(c))}${stt?'・肉咖：'+esc(stt):''}</p>`)
+  // v222（msg 1259）：皮條客帶來的現況直接放在卡頭，不用去別處找（最新一次做完的「請帶來內容與步驟」）
+  {const got=coCaseTasks(c).filter(t=>/^【請帶來內容與步驟】/.test(String(t.body||''))&&t.status==='done'&&t.result).sort((a,b)=>String(b.done_at||b.updated_at||'').localeCompare(String(a.done_at||a.updated_at||'')))[0];
+   if(got){const when=(()=>{const d=new Date(got.done_at||got.updated_at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)})(),li=String(got.result).replace(/^【[^】]*】\s*/,'').split(/[；;]\s*/).filter(Boolean);
+    h=h.replace(/(<p class="note">公司案子・[\s\S]*?<\/p>)/,`$1<div class="card cobring"><p class="h4">皮條客帶來的現況・${esc(when)}</p><ul>${li.map(x=>`<li>${esc(cleanTxt(x))}</li>`).join('')}</ul></div>`)}}}
  return h}}
 // 6 詳情「⋯」與案子「⋯」多一項：移到公司／移回個人
 {const _s=sheetHTML;sheetHTML=function(){const t=S.sheet||'',h=_s();if(t.indexOf('mine:proj:')!==0)return h;const id=t.slice(10),p=DB.proj.find(q=>q.id===id);if(!p||!p.raw||!p.raw.id)return h;
@@ -4806,7 +4840,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
   const d0=days[0].i;d0.freeNow=Math.max(0,d0.free.reduce((t,[a,b])=>t+Math.max(0,b-Math.max(a,now)),0)-(d0.est||0));
   const wk=days.slice(0,7),freeWk=wk.reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
   const best=wk.slice(1).sort((p,q)=>q.i.freeH-p.i.freeH)[0];
-  const full=wk.filter(d=>(d.n===0?d0.freeNow:d.i.freeH)<2).length;
+  const full=wk.filter(d=>{if(d.n!==0)return d.i.freeH<2;const R=Math.max(0,FW1-Math.max(now,FW0));return R>0&&d0.freeNow/R<0.3}).length;   // v222（msg 1158）：今天看剩下的時間被排掉幾成，不因為晚上快收工就算滿
   let nx=null;for(const d of days){const c=d.i.segs.filter(s=>d.n>0||s.a>now).sort((p,q)=>p.a-q.a)[0];if(c){nx={d,s:c};break}}
   const nxt=nx?(()=>{const mins=Math.round(((nx.d.n*24+nx.s.a)-now)*60),wait=mins<60?mins+' 分鐘後':mins<1440?Math.floor(mins/60)+' 小時'+(mins%60?(mins%60)+' 分':'')+'後':(nx.d.n===1?'明天':'週'+WK[nx.d.x.w]);
    return `<button class="tlnext" data-act="sheet" data-id="cal:${esc(String(nx.s.e.id||''))}"><span>下一件</span><b>${esc(String(nx.s.e.n||'').replace(/^張弛排：/,''))}</b><small>${nx.d.n===0?'今天':nx.d.n===1?'明天':'週'+WK[nx.d.x.w]} ${fmt(nx.s.a)}・${wait}</small><em>點開看 ›</em></button>`})():'';
@@ -4877,7 +4911,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
  ACT.ringpick=id=>{calGo(+id);return;const n=+id;S.calsel=n;S.tlwk=n>=7?1:0;render('keep');setTimeout(()=>{const r=document.querySelector(`.tlrow[data-id="${n}"]`);if(r)r.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})},60)};
  function ringHTML(days,d0,now){const shut=ringShut(),need=S.tlneed||0,R0=15,C=2*Math.PI*R0,SPAN=FW1-FW0;
   const one=d=>{const fh=d.n===0?d0.freeNow:d.i.freeH,busy=Math.max(0,Math.min(1,(SPAN-fh)/SPAN)),fit=need?fitOf(d.i,need,d.n===0?now:0):null,
-    over=d.n===0&&now>=FW1,st=over?'past':need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok'),lab=d.n===0?'今':WK[d.x.w],we=d.x.w===0||d.x.w===6;
+    over=d.n===0&&now>=FW1,st=over||(d.n===0&&FW1-Math.max(now,FW0)<1)?'past':need?(fit?'ok':'no'):(d.n===0?(()=>{const R=Math.max(0,FW1-Math.max(now,FW0)),r=R>0?fh/R:1;return r>=0.6?'ok':r>=0.3?'mid':'no'})():(fh<2?'no':fh<5?'mid':'ok')),lab=d.n===0?'今':WK[d.x.w],we=d.x.w===0||d.x.w===6;
    const rw=calAll().some(x=>x.d===d.n&&x.src==='rest'&&x.restT==='week');
    return `<button class="rg${we?' we':''}${rw?' rw':''}${S.calsel===d.n?' on':''}" data-act="ringpick" data-id="${d.n}" data-st="${st}" aria-label="${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]} ${d.x.m}/${d.x.d}，${d.i.n?d.i.n+' 件，':''}${over?'今天已過 22 點':'還空 '+hrs(fh)+' 小時'}${need?(fit?'，放得下 '+need+' 小時':'，放不下 '+need+' 小時'):''}">
     <svg viewBox="0 0 40 40" aria-hidden="true"><circle class="rgb" cx="20" cy="20" r="${R0}"/><circle class="rgf" cx="20" cy="20" r="${R0}" stroke-dasharray="${(busy*C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 20 20)"/>
@@ -4959,9 +4993,9 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  // v146 msg 919 老大：「滑明天流暢來 但滑回來會跳動」→ 原因：回今天時重讀節奏紀錄，讀到後整頁重畫。改成只換節奏這一塊（高度不變處理），其他頁照舊重畫。
  function ckRefresh(){const box=document.querySelector('.ckbox');if(!box||S.sheet||S.ckEdit||typeof tideCheck!=='function'){LV.sig='';paint();return}
   if(typeof CKBUSY!=='undefined'&&CKBUSY){setTimeout(ckRefresh,300);return}
-  const a=document.activeElement;if(a&&box.contains(a)&&/^(INPUT|TEXTAREA)$/.test(a.tagName))return;
+  const a=document.activeElement;let refocus=false;if(a&&box.contains(a)&&/^(INPUT|TEXTAREA)$/.test(a.tagName)){if(a.id==='ckIn'&&!a.value)refocus=true;else{if(!LV.ckPend){LV.ckPend=1;setTimeout(()=>{LV.ckPend=0;ckRefresh()},900)}return}}   // v222：剛新增完（輸入框空著）也要重畫，不然新那條看不到；正在打字就稍後再試，不放棄
   const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;if(!nb)return;if(nb.outerHTML===box.outerHTML)return;
-  keepCol(box,nb,'.ckh');box.replaceWith(nb);try{faceSync()}catch(_){}}
+  keepCol(box,nb,'.ckh');box.replaceWith(nb);if(refocus){const ni=document.getElementById('ckIn');if(ni)ni.focus()}try{faceSync()}catch(_){}}
  // 2026-11-25 v125：「今天的節奏」＝老大自己寫的今天要做（老大：「我寫下來是確認我自己吸收了那天要做的事情…節奏那邊輔助我 不要漏」）
  let MISS={};
  const wantsOf=day=>(TL||[]).filter(x=>x.note&&x.note.type==='want'&&x.note.day===day);
@@ -5003,10 +5037,10 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
     const sp=splitTm(t);if(sp.tm){SG[wid]={t:sp.tm+(sp.te?'～'+sp.te:''),own:1};return}
     const tm=/(?:(上午|下午|晚上|早上|中午)\s*)?(\d{1,2})(?:[:：](\d{2})|點(半)?)/.exec(t);if(tm){let h=+tm[2];if(/下午|晚上/.test(tm[1]||'')&&h<12)h+=12;SG[wid]={t:f2(h+(tm[3]?+tm[3]/60:tm[4]?0.5:0)),own:1};return}
     const tr=(window.__tideRows||[]).find(r=>r.ref==='want:'+wid&&r.at);if(tr){const x=new Date(Date.parse(tr.at)+8*3600e3),h=x.getUTCHours()+x.getUTCMinutes()/60,e=+((tr.meta||{}).est_hours||0);SG[wid]={t:f2(h)+(e?'～'+f2(Math.min(24,h+e)):''),tide:1};return}
-    if(dn)return;
+    if(dn){const kp=(LV.sgKeep||{})[wid];if(kp)SG[wid]=kp;return}   // v222（msg 1144）：打勾後保留原本建議的時間
     const hrs=+(w.note.hours||((/(\d+(?:\.\d+)?)\s*(?:小時|h)/i.exec(t)||[])[1])||1);
     const g=gaps.find(f=>f[1]-f[0]>=hrs-1e-6);if(!g){SG[wid]={t:'排不下',none:1};return}
-    SG[wid]={t:f2(g[0])+'～'+f2(g[0]+hrs)};g[0]+=hrs});}
+    SG[wid]={t:f2(g[0])+'～'+f2(g[0]+hrs)};(LV.sgKeep=LV.sgKeep||{})[wid]=SG[wid];g[0]+=hrs});}
   // v134（逐流 msg 794、800、825、829、857、859、860、879）老大：「點下去，我覺得應該要可以直接接編修…請善用左右滑動」「他只有一列 下去就是 標題 我可以打字寫時間，我也可以選時間」
   // 「我按了加入，沒有返回按鈕 左右滑也沒有刪除之類的選項」「我希望是清單列表，下面會有一個空白欄位 裡面會有灰色的字推薦一個建議」「改成今日節奏跟明日節奏」「左右滑動可以跳到明天」
   // 「如果有一個時間的位置了，那標題裡面就可以不用再寫時間」「不要漏了的部分…再列表空白列裡面我點了進去之後再顯示給我看」
@@ -5019,7 +5053,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${da?`<small class="ckdn">${esc(da)} 打勾</small>`:''}${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}<button class="ckdel ckx" data-act="ckdrop" data-id="${esc(wid)}" aria-label="刪除這件"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="ckxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a80"/><stop offset=".55" stop-color="#f0453a"/><stop offset="1" stop-color="#b8231b"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35"><path d="M12 12l16 16M28 12L12 28" stroke="#000" stroke-width="8.5" stroke-linecap="round"/></g><path d="M12 12l16 16M28 12L12 28" stroke="url(#ckxg)" stroke-width="8" stroke-linecap="round"/><path d="M13.2 12.4l4.6 4.6M26.8 12.4l-2.4 2.4" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/></svg></button></span>`}</li>`};   // v145 msg 914：刪除改成跟小臉同風格的圓形 ✕
   const sug=miss[0];
   let h=`<section class="sec ckbox" aria-label="${n?'明日':'今日'}節奏" data-day="${n}"><div class="ckh"><h2><span class="ckseg" role="tablist" aria-label="今日或明日"><button role="tab" data-act="ckday" data-id="0" aria-selected="${!n}">今日節奏</button><button role="tab" data-act="ckday" data-id="1" aria-selected="${!!n}">明日節奏</button></span><small>${wants.length?`做完 ${done}／${wants.length}`:''}</small></h2></div>`;
-  h+=`<ul class="cklist">${wants.slice().sort((x,y)=>{const k=w=>{const g=SG[String(w.id)],t=w.note.time||(g&&!g.none?g.t:'')||splitTm(w.note.text).tm;const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?(+m[1])*60+(+m[2]):9999};return k(x)-k(y)}).map(wrow).join('')}<li class="ck ckblank"><div class="ckadd"><input id="ckIn" type="text" placeholder="${esc(sug?'建議：'+splitTm(sug.text).text:(n?'明天':'今天')+'要做什麼？寫一件')}" aria-label="加一件要做的事"${sug?` data-sug="${esc(sug.ref)}"`:''} autocomplete="off">${B('＋','ckwant',String(n),'pri sm')}</div>${miss.length?`<div class="ckdd" id="ckDD" hidden><p>別漏了・點一下加進來</p>${miss.map(m=>{const q=splitTm(m.text);return `<button class="ckddi" data-act="ckadd" data-id="${esc(m.ref)}"><span class="num">${esc(m.tm||q.tm||'')}</span><b>${esc(q.text)}</b><small>${esc(m.k)}</small></button>`}).join('')}</div>`:''}</li></ul>`;
+  h+=`<ul class="cklist">${wants.slice().sort((x,y)=>{const k=w=>{const g=SG[String(w.id)],t=w.note.time||(g&&!g.none?g.t:'')||splitTm(w.note.text).tm;const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?(+m[1])*60+(+m[2]):9999};return k(x)-k(y)}).map(wrow).join('')}${typeof stepRows==='function'?stepRows(day):''}<li class="ck ckblank"><div class="ckadd"><input id="ckIn" type="text" placeholder="${esc(sug?'建議：'+splitTm(sug.text).text:(n?'明天':'今天')+'要做什麼？寫一件')}" aria-label="加一件要做的事"${sug?` data-sug="${esc(sug.ref)}"`:''} autocomplete="off">${B('＋','ckwant',String(n),'pri sm')}</div>${miss.length?`<div class="ckdd" id="ckDD" hidden><p>別漏了・點一下加進來</p>${miss.map(m=>{const q=splitTm(m.text);return `<button class="ckddi" data-act="ckadd" data-id="${esc(m.ref)}"><span class="num">${esc(m.tm||q.tm||'')}</span><b>${esc(q.text)}</b><small>${esc(m.k)}</small></button>`}).join('')}</div>`:''}</li></ul>`;
   if(!wants.length)h+=`<p class="cknone">寫下來就是確認你吸收了，張弛會幫你排時段，大家也會知道。</p>`;
   return h+'</section>'}
  // v144 msg 909、912 老大：「現在左右滑動換天版面會跳動⋯」「還是跳動」
@@ -5150,13 +5184,13 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   document.addEventListener('click',e=>{if(!(e.target.closest&&e.target.closest('.ck.want.swl')))shutAll()},true);}
  const wkey=n=>[n&&n.day,String(n&&n.text||'').replace(/\s+/g,'').toLowerCase(),n&&n.time||''].join('|');   // v191 msg 1169：同一天、同字、同時間算同一件
  async function wantAdd(note,opt){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再加');return false}
-  if(!(opt&&opt.force)&&note&&note.type==='want'&&(TL||[]).some(x=>x.note&&x.note.type==='want'&&wstOf(String(x.id))!=='drop'&&wkey(x.note)===wkey(note))){toast('這件已經有了，沒重複加');return true}
+  if(!(opt&&opt.force)&&note&&note.type==='want'&&(TL||[]).some(x=>x.note&&x.note.type==='want'&&wstOf(String(x.id))!=='drop'&&wkey(x.note)===wkey(note))){toast('這件已經有了，沒重複加');return 'dup'}
   (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
   try{await LV.api.tideLogAdd('note',{ref:note.src||undefined,source:'面板',note});tlLoad(true);return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){const sg=el&&el.dataset.sug;if(sg&&MISS[sg]){ACT.ckadd(sg);return}if(el)el.focus();return}
   // 2026-11-25 msg 826 老大：「如果我一行裡面打得多個項目，你們自己讀取之後要自己懂得分開」→ 逗號、頓號、分號、換行都拆；空白前面是三個字以上的中文詞就拆（「木星 Reels」這種短詞＋英文不拆；時間、時數跟著前一件）
   const parts=[txt];if(el)el.value='';let ok=0;   // v192：不拆，一次輸入就是一條
-  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&ckCards().some(x=>x.id===S.ckRel)){note.card=S.ckRel;note.cardBy='user'}S.ckRelAll=false;if(await wantAdd(note))ok++}
+  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&ckCards().some(x=>x.id===S.ckRel)){note.card=S.ckRel;note.cardBy='user'}S.ckRelAll=false;if((await wantAdd(note))===true)ok++}
   {const rc=$('#ckRc');if(rc)rc.remove();S.ckRel=''}
   if(ok)toast(parts.length>1?`拆成 ${parts.length} 件記下了，沒寫時間的先照空檔建議`:'記下了，沒寫時間的先照空檔建議')};
  function splitWants(txt){const CJK=/[\u3400-\u9fff]/,out=[];
@@ -5429,7 +5463,7 @@ ACT.chgo=v=>{const i=v.indexOf('|'),act=v.slice(0,i),id=v.slice(i+1);if(!act||!A
   const drafts=[...new Set([...String(txt).matchAll(/「([^」]{12,})」/g)].map(m=>m[1]))];
   const ask=(String(txt).match(/(等你[^。；\n]*|你要做的[:：][^。\n]*)/)||[])[1]||'';
   if(!drafts.length&&!ask)return h;window.__pdrafts=drafts;
-  const box=`<section class="pres" aria-label="成果與要你做">${drafts.length?`<p class="h4">擬好的成果</p>${drafts.map((d,i)=>`<blockquote class="pdraft"><p>${esc(d)}</p><button class="btn sm" data-act="cpdraft" data-id="${i}">複製</button></blockquote>`).join('')}`:''}${ask?`<p class="pask"><b>要你做</b>${esc(ask)}</p>`:''}</section>`;
+  const box=`<section class="pres" aria-label="成果與要你做">${drafts.length?`<p class="h4">擬好的成果</p>${drafts.map((d,i)=>`<blockquote class="pdraft"><p>${esc(d)}</p><button class="btn sm" data-act="cpdraft" data-id="${i}">複製</button></blockquote>`).join('')}`:''}${ask?`<button type="button" class="pask" data-act="paskgo" data-id="${esc(p.id)}"><b>要你做</b>${esc(ask)}<span class="chev" aria-hidden="true">›</span></button>`:''}</section>`;
   const k=h.indexOf('</dl>',h.indexOf('<dl class="pk">'));return k<0?h:h.slice(0,k+5)+box+h.slice(k+5)}catch(e){return h}}}
 ACT.cpdraft=i=>{const d=(window.__pdrafts||[])[+i];if(!d)return;(navigator.clipboard?navigator.clipboard.writeText(d):Promise.reject()).then(()=>toast('複製好了')).catch(()=>toast('複製不了，長按文字複製'))};
 /* v142 逐流 msg 906 老大：「聊天視窗幫我改長按訊息可以回覆該訊息」
@@ -5619,7 +5653,7 @@ function plRow(l,id){const q=(f,h)=>`data-pid="${esc(id)}" data-lid="${l.id}" da
   <button type="button" class="btn ghost plq" data-pq="del" data-pid="${esc(id)}" data-lid="${l.id}" aria-label="刪掉這筆">刪掉</button></div></div>`}
 {const _mb=moneyBody;moneyBody=function(p,id,summary){const c=p&&p.raw;if(!c||!c.id)return summary;
  const nt0=c.career&&c.career.tax_withheld===false;
- let h=summary+`<p class="h4" style="margin-top:14px">勞報扣繳</p><div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>勞報扣繳</b><small>${nt0?'現在：不扣，報價就是實拿':'現在：要扣勞務 10% 與健保 2.11%'}</small></div><select class="pmt" data-pid="${esc(id)}" aria-label="金額性質" style="flex:0 0 auto;max-width:52%"><option value="net"${nt0?' selected':''}>不扣勞報（實拿）</option><option value="tax"${nt0?'':' selected'}>扣勞報</option></select></div></div>`;
+ let h=summary+`<div class="dt" style="margin-top:14px"><div class="li"><div style="flex:1;min-width:0"><b>勞報扣繳</b><small>${nt0?'現在：不扣，報價就是實拿':'現在：要扣勞務 10% 與健保 2.11%'}</small></div><select class="pmt" data-pid="${esc(id)}" aria-label="金額性質" style="flex:0 0 auto;max-width:52%"><option value="net"${nt0?' selected':''}>不扣勞報（實拿）</option><option value="tax"${nt0?'':' selected'}>扣勞報</option></select></div></div>`;
  plLoad(id);const L=LV.pl[id];
  if(Array.isArray(L)){const tot=L.reduce((a,x)=>a+Number(x.amount||0),0),got=L.filter(x=>x.received).reduce((a,x)=>a+Number(x.amount||0),0);
   h+=`<p class="h4" style="margin-top:14px">分筆收款</p>`+(L.length?L.map(l=>plRow(l,id)).join(''):'<p class="note">還沒分筆。一案分幾支、先後收款，就在這裡一筆一筆加。</p>')
@@ -5751,6 +5785,10 @@ window.__pst={stepsOf,saveSteps};
  const pend=coCaseTasks(c).filter(t=>/^【請帶來內容與步驟】/.test(String(t.body||''))&&!t.result&&['queued','taken','running'].indexOf(t.status)>-1).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];
  const hm=at=>{const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)},age=pend?(Date.now()-Date.parse(pend.created_at))/60000:0;
  const st=pend?`<p class="note" role="status">⏳ 等肉咖帶來：${hm(pend.created_at)} 送出${pend.taken_at?'，'+hm(pend.taken_at)+' 肉咖接手了':'，肉咖還沒接手'}，還在整理，帶來後這裡會出現。</p>`:'';
+ // v222（msg 1259）：帶來了就顯示在這裡（最新一次做完的單），不用去別處找
+ const got=coCaseTasks(c).filter(t=>/^【請帶來內容與步驟】/.test(String(t.body||''))&&t.status==='done'&&t.result).sort((a,b)=>String(b.done_at||b.updated_at||'').localeCompare(String(a.done_at||a.updated_at||'')))[0];
+ const gtx=got?String(got.result).replace(/^【[^】]*】\s*/,'').split(/[；;]\s*/).filter(Boolean):[];
+ const gb=got?`<div class="card"><p class="h4">皮條客帶來的現況・${esc(hm(got.done_at||got.updated_at))}</p><ul>${gtx.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:'';
  return h.replace(EMPTY,`<div class="card bidtip"><p><b>此案步驟在好咖皮條客</b>：點下面請肉咖把內容與步驟帶來，逐流只顯示、不回寫皮條客。</p>${st}<div class="btns">${pend&&age<30?'':B(bm('rouka','','sm')+(pend?'再請肉咖帶來一次':'請肉咖帶來'),'coMirrorAsk',p.id,'rk')}</div></div>`)}catch(e){return h}}}
 const CMA={};
 ACT.coMirrorAsk=async id=>{const p=DB.proj.find(q=>q.id===id),c=p&&p.raw;if(!c)return;
@@ -5806,6 +5844,10 @@ WRITE.push('pwait');
 /* ---------- v213（2026-11-26，msg 1261、1427）：案子清單依時間流程排序，列右側顯示日期 ----------
    依據：交件日（delivery_date）→ 公告截止（deadline）→ 尾款期限／預計付款日；沒有就用名稱開頭的 MMDD（如 1130_台江評選簡報，已過 200 天以上算明年）。
    逾期（早於今天）排最前、紅色，越久越前；之後期限由近到遠；同一天「總表」排在各張前；沒日期的放最後，再依最近有動。 */
+/* v222（2026-11-26，msg 1441／1473②）：「在等」的共用判斷。卡點、階段、現況第一行、why 前兩行寫了等待開標／等結果／等回覆…就是在等，不算逾期、不進「要你看」的急件。 */
+function cardWaitLab(c){c=c||{};const src=[c.progressBlocker,c.progressStage,c.status_text,String(c.why||'').split('\n').slice(0,3).join(' '),c.progressNote].map(x=>String(x||'')).join(' ｜ ');
+ const m=/等待(開標|評選|結果|通知|回覆|審查|簽約|付款|收款|決標|公告|中)|等(開標|評選|結果|通知|回覆|對方|客戶|主辦|審查|簽約|決標|公告|收款|付款)/.exec(src);if(!m)return '';
+ if(/^等你/.test(String(c.progressBlocker||'').trim()))return '';return '等'+(m[1]||m[2]||'')}
 function projMeta(p){if(p.__m)return p;p.__m=1;const raw=p.raw||{},T=new Date(Date.now()+8*3600e3),today=Date.UTC(T.getUTCFullYear(),T.getUTCMonth(),T.getUTCDate()),DAY=864e5;
  const ymd=v=>{if(!v)return null;const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));if(m)return Date.UTC(+m[1],+m[2]-1,+m[3]);return null};
  const fromTs=v=>{if(!v)return null;const t=typeof v==='number'?v:Date.parse(v);if(!t||isNaN(t))return null;const x=new Date(t+8*3600e3);return Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),x.getUTCDate())};
@@ -5813,7 +5855,7 @@ function projMeta(p){if(p.__m)return p;p.__m=1;const raw=p.raw||{},T=new Date(Da
  if(!dt){const m=/^(\d{2})(\d{2})(?:[_\-\s]|$)/.exec(String(p.title||p.short||''));if(m&&+m[1]>=1&&+m[1]<=12&&+m[2]>=1&&+m[2]<=31){let y=T.getUTCFullYear(),d0=Date.UTC(y,+m[1]-1,+m[2]);if(d0<today-200*DAY)d0=Date.UTC(y+1,+m[1]-1,+m[2]);dt=d0;src='名稱'}}
  p.dts=dt;p.dsrc=src;p.dtotal=/總表/.test(String(p.title||''));
  // v217（msg 1441）：等待中（交件後等收款、卡點寫「等…」、老大標了等待中）不算逾期，顯示「等 X」；名稱備援日期也不算逾期，只有欄位上的日期過了且不是在等才標逾期
- const blk=String(raw.progressBlocker||'').trim(),waiting=p.g==='delivered'||(/^(等|等待)(?!你)/.test(blk)||/等(待|回|對方|客戶|主辦|通知|結果)/.test(blk))&&!/^等你/.test(blk);p.dwait=waiting;p.dwlab=waiting?('等 '+(blk.replace(/^等待中[：:]?\s*/,'').replace(/^等\s*/,'')||'對方').slice(0,12)):'';
+ const blk=String(raw.progressBlocker||'').trim(),wl=cardWaitLab(raw),waiting=p.g==='delivered'||!!wl||(/^(等|等待)(?!你)/.test(blk)||/等(待|回|對方|客戶|主辦|通知|結果)/.test(blk))&&!/^等你/.test(blk);p.dwait=waiting;p.dwlab=waiting?(blk&&!/^等你/.test(blk)&&/等/.test(blk)?'等 '+(blk.replace(/^等待中[：:]?\s*/,'').replace(/^等\s*/,'')||'對方').slice(0,12):(wl?wl.replace(/^等/,'等 '):'等 對方')):'';
  if(dt!=null){const n=Math.round((dt-today)/DAY),x=new Date(dt),md=`${x.getUTCMonth()+1}/${x.getUTCDate()}`;p.dlate=n<0&&!waiting&&src==='欄位';p.dn=n;
   p.dlab=`${md}・${n<0?(waiting?'已過 '+(-n)+' 天・'+p.dwlab:src==='欄位'?'逾期 '+(-n)+' 天':'已過 '+(-n)+' 天'):n===0?'今天':n===1?'明天':'還有 '+n+' 天'}${waiting&&n>=0?'・'+p.dwlab:''}`}
  else if(waiting)p.dlab=p.dwlab
@@ -5869,7 +5911,8 @@ function addCardWaits(){try{if(E()||!LV.items)return;DB.dec=(DB.dec||[]).filter(
 {const _da=decActs;decActs=function(d){if(d.kind!=='cardwait')return _da(d);
  return `<div data-dec="${esc(d.id)}"><p class="note">來源：${esc(d.origin)}（${esc(d.by)}）。要你拍板的事寫在這張卡上，這裡幫你集中。</p><div class="btns">${B('看這張卡 ›','cwview',d.id,'pri big')}${B(d.si>-1?'這步我處理了':'我處理了，清掉卡點','cwdone',d.id,'ghost')}</div></div>`}}
 function cwAsk(d){try{if(!LV.api||!LV.api.say||S.st!=='ok'||LV.mode!=='live')return;let o={};try{o=JSON.parse(localStorage.getItem('zl_cwask')||'{}')}catch(e){}const k=d.cid+'|'+String(d.q).length;if(o[k])return;o[k]=Date.now();localStorage.setItem('zl_cwask',JSON.stringify(o));
- LV.api.say(d.cid,`【面板自動請求】這張卡上標了「${clip(d.q.replace(/^等你：/,''),50)}」要老大拍板，但首頁「要你決定」只顯示決定卡。請原視窗用 hub_decision_add 建一張決定卡（p_project 填「${d.proj}」，題目一句、選項 2～3 個、建議放第一、細節放 detail），建好後把卡點清掉。`,'daqi').catch(()=>{})}catch(e){}}
+ (async()=>{try{const ms=LV.api.msgs?await LV.api.msgs(d.cid):[];if((ms||[]).some(m=>/^【面板自動請求】/.test(String(m.body||m.text||''))&&Date.now()-(+m.at||Date.parse(m.at)||0)<36*3600e3))return}catch(e){return}   // v222：先查卡上 36 小時內發過沒，換裝置也不重發
+ LV.api.say(d.cid,`【面板自動請求】這張卡上標了「${clip(d.q.replace(/^等你：/,''),50)}」要老大拍板，但首頁「要你決定」只顯示決定卡。請原視窗用 hub_decision_add 建一張決定卡（p_project 填「${d.proj}」，題目一句、選項 2～3 個、建議放第一、細節放 detail），建好後把卡點清掉。`,'daqi').catch(()=>{})})()}catch(e){}}
 ACT.cwview=id=>{const d=(LV.cw||[]).find(x=>x.id===id)||DB.dec.find(x=>x.id===id);if(!d)return;if(d.si>-1)S.open['pst:'+d.cid+':'+d.si]=1;if(DB.proj.some(p=>p.id===d.cid))ACT.page('proj:'+d.cid);else toast('這張卡不在案子清單裡')};
 ACT.cwdone=async id=>{const d=(LV.cw||[]).find(x=>x.id===id)||DB.dec.find(x=>x.id===id);if(!d||!LV.api||!LV.api.act){toast('離線中，連上再按');return}
  try{if(d.si>-1){const P=window.__pst,old=P&&P.stepsOf(d.cid);if(!old||!old[d.si]){toast('找不到那一步');return}const nw=old.map(s=>({...s}));nw[d.si].status='done';const n=nw.findIndex((s,k)=>k>d.si&&s.status==='pending');if(n>-1&&!nw.some(s=>s.status==='current'))nw[n].status='current';await P.saveSteps(d.cid,nw,old,'這步標成做完了')}
@@ -5881,7 +5924,7 @@ WRITE.push('cwdone');
 /* ---------- v220（2026-11-26）：案子房間各分類底下，每張卡顯示「要你看」 ----------
    同一筆資料（首頁「要你決定」的卡片等待、決策卡、新進度待檢閱），只多一個入口：在案子清單每張卡底下列出，點進去回那張卡，標已看／已處理後兩處一起消失。 */
 function cardPending(p){const out=[],nm=p.short||p.title;(LV.cw||[]).forEach(d=>{if(d.cid===p.id)out.push({l:d.q.replace(/^等你：/,''),act:'cwview',id:d.id,ok:'cwdone',tag:'等內容整理'})});(DB.dec||[]).forEach(d=>{if(false){}
-  else if(d.kind!=='cardwait'&&(d.proj===nm||d.proj===p.title||(d.projFull&&d.projFull===p.title)))out.push({l:d.q,act:'sheet',id:'why:'+d.id,tag:'決策卡'})});
+  else if(d.kind!=='cardwait'&&(d.proj===nm||d.proj===p.title||(d.projFull&&d.projFull===p.title)))out.push({l:d.q,act:'sheet',id:'dec:'+d.id,tag:'決策卡'})});
  try{rvItems().filter(x=>x.id===p.id).forEach(x=>out.push({l:x.step.replace(/^[\s·]+/,'')+'：'+clip(String(x.res).replace(/\s+/g,' '),50),act:'rvopen',id:x.k,tag:x.st==='blocked'?'卡住，等你看':'做完，等你檢閱'}))}catch(e){}return out}
 {const _pc=projCard;projCard=function(p){let h=_pc(p);const L=cardPending(p);if(!L.length)return h;
  const box=`<div class="cwl" role="group" aria-label="這張卡有事等你">${L.slice(0,3).map(x=>`<div class="cwi"><button type="button" class="cwb" data-act="${x.act}" data-id="${esc(x.id)}"><span class="cwt">${esc(x.tag)}</span>${esc(clip(x.l,56))} ›</button>${x.ok?`<button type="button" class="cwok" data-act="${x.ok}" data-id="${esc(x.id)}" aria-label="我處理了">✓</button>`:''}</div>`).join('')}${L.length>3?`<p class="note">還有 ${L.length-3} 件</p>`:''}</div>`;
@@ -5889,7 +5932,7 @@ function cardPending(p){const out=[],nm=p.short||p.title;(LV.cw||[]).forEach(d=>
 
 /* ---------- v220（2026-11-26，老大：決定卡密密麻麻、連結點不開）：決定卡面改版 ----------
    卡面只放：一句問題（粗體）、一句為什麼、建議、2～3 顆大按鈕（建議第一顆）；長內容收進「看細節」分段條列；本機路徑與 .md 不顯示；沒有可決定的內容就寫「內容整理中」，不擺按鈕。 */
-function cleanTxt(t){return String(t||'').replace(/(?:~|\/Users)\/[^\s，。；、）)」』]*/g,'').replace(/[^\s，。；、（(「『]*AI工作夾[^\s，。；、）)」』]*/g,'').replace(/[A-Za-z0-9_\-㐀-鿿./]*\.(?:md|json|html|py|sh|txt)\b/g,'').replace(/[ \t]{2,}/g,' ').replace(/（\s*）|\(\s*\)|「\s*」/g,'')}
+function cleanTxt(t){return String(t||'').replace(/(?:~|\/Users)\/[^\s，。；、）)」』]*/g,'').replace(/[^\s，。；、（(「『]*AI工作夾[^\s，。；、）)」』]*/g,'').replace(/[A-Za-z0-9_\-㐀-鿿./]*\.(?:md|json|html|py|sh|txt)\b/g,'').replace(/[ \t]{2,}/g,' ').replace(/（\s*）|\(\s*\)|「\s*」/g,'').replace(/\s+([，。；、：）)])/g,'$1').replace(/[，、；：]+(?=[。，；、])/g,'').replace(/([。，；、])\1+/g,'$1').replace(/(?:在|到|見|放在|存在|用)(?:本機|案夾|檔案)?\s*(?=[。，；、]|$)/g,'').replace(/^[，、；。\s]+/,'')}
 function decFmt(t){const L=cleanTxt(t).split(/\n+/).map(x=>x.trim()).filter(Boolean);if(!L.length)return '';let h='',ul=false;L.forEach(x=>{const m=/^(?:\d+[.、)）]|[-•・])\s*(.*)$/.exec(x);if(m){if(!ul){h+='<ol class="dcl">';ul=true}h+=`<li>${esc(m[1])}</li>`}else{if(ul){h+='</ol>';ul=false}h+=`<p>${esc(x)}</p>`}});if(ul)h+='</ol>';return h}
 function decWhy(d){const f=cleanTxt(d.detail||'').split(/[。\n]/).map(x=>x.trim()).find(x=>x.length>3);return f?clip(f,44):(d.kind==='cardwait'?`${d.by||'大器'}在卡上標了等你`:`${d.by||'大器'}問・${d.ago||''}`)}
 function decFace(d){const q=clip(cleanTxt(d.ask||d.q).replace(/^神將皇后[:：]|^等你[:：]/,function(m){return m}),26)||clip(cleanTxt(d.q),26);
@@ -5909,5 +5952,41 @@ decRow=function(d){return `<div class="rowi">${decCardX(d)}</div>`};
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
-})();
+/* v222（msg 1268）：詳情頁「要你做」點了要能動：有這案的決定卡就打開決定卡，沒有就捲到等你的那一步 */
+ACT.paskgo=id=>{try{const did=Object.keys(PD).find(k=>PD[k]===id)||((DB.dec||[]).find(d=>{const p=DB.proj.find(x=>x.id===id);return p&&(d.proj===p.title||String(d.projFull||'').indexOf(p.title)>-1)})||{}).id;
+ if(did){ACT.sheet('dec:'+did);return}
+ const pg=document.getElementById('page'),st=pg&&([...pg.querySelectorAll('.pstr')].find(li=>li.dataset.s!=='done'&&li.dataset.s!=='skipped'&&/等你|待老大|你決定|你確認/.test(li.textContent))||pg.querySelector('.pstr:not([data-s="done"]):not([data-s="skipped"])')||pg.querySelector('.pst,.psteps'));
+ if(st){st.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'});st.classList.add('flashpick');setTimeout(()=>st.classList.remove('flashpick'),1600)}else toast('這件要你做的事還沒有對應的決定卡或步驟')}catch(e){toast('打不開：'+e.message)}};
+/* v222（msg 1095／1099）：開著卡片或詳情時按左邊房間，先收掉卡片再換房間，一次到位 */
+{const _t=ACT.tab;ACT.tab=function(){if(S.sheet)S.sheet=null;if(S.page&&matchMedia('(min-width:1000px)').matches)S.page=null;return _t.apply(this,arguments)}}
+/* v222（msg 1088②）：步驟展開後，直接點步驟名稱就進編修（只改這一步）；收合時點名稱照舊是展開 */
+document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('.pstfold > b');if(!b)return;const f=b.closest('.pstfold');if(!f||f.getAttribute('aria-expanded')!=='true')return;
+ const m=/^pst:(.+):(\d+)$/.exec(f.dataset.id||'');if(!m||typeof ACT.pst!=='function')return;e.preventDefault();e.stopPropagation();ACT.pst(m[1]+'|'+m[2]+'|edit')},true);
+/* v222（C 組）：首頁「最近做完」不顯示本機路徑（老大手機點不開） */
+{const _m=mapEvt;mapEvt=function(r){const x=_m(r);try{if(x.text)x.text=cleanTxt(x.text);if(x.ask&&typeof x.ask==='string')x.ask=cleanTxt(x.ask)}catch(e){}return x}}
+/* v222（msg 1492）：一張決定卡裡有好幾件（細節寫「1. …：建議X（另一選項：Y）」），每件各給兩顆鈕直接點，不用打字；預設全選建議，按「照我選的送出」 */
+const DPK={};
+function decItems(d){const out=[];String((d&&d.detail)||'').split(/\n+/).forEach(l=>{const m=/^\s*(\d+)[.．、]\s*(.+?)[：:]\s*建議(.+?)（另一選項[：:]\s*(.+?)）[。．]?\s*$/.exec(l);if(m)out.push({n:m[1],t:m[2].trim(),a:m[3].replace(/^[，、：\s]+/,'').trim(),b:m[4].trim()})});return out.length>=2?out:[]}
+function decItemsHTML(d){const it=decItems(d);if(!it.length)return '';const sel=DPK[d.id]||(DPK[d.id]={});
+ return `<section class="dpk" aria-label="逐件選"><p class="h4">逐件選（預設全照建議）</p>${it.map(x=>{const v=sel[x.n]||'a';return `<div class="dpki"><p><b>${esc(x.n)}.</b> ${esc(x.t)}</p><div class="dpkb" role="radiogroup" aria-label="第 ${esc(x.n)} 件"><button type="button" class="btn sm${v==='a'?' pri':''}" role="radio" aria-checked="${v==='a'}" data-act="dpkset" data-id="${esc(d.id)}|${esc(x.n)}|a">建議：${esc(x.a)}</button><button type="button" class="btn sm${v==='b'?' pri':''}" role="radio" aria-checked="${v==='b'}" data-act="dpkset" data-id="${esc(d.id)}|${esc(x.n)}|b">${esc(x.b)}</button></div></div>`}).join('')}<button type="button" class="btn pri" data-act="dpksend" data-id="${esc(d.id)}">照我選的送出</button></section>`}
+ACT.dpkset=v=>{const [id,n,k]=String(v).split('|');(DPK[id]=DPK[id]||{})[n]=k;LV.sig='';paint('keep');render('keep')};
+ACT.dpksend=async id=>{const d=(DB.dec||[]).find(x=>x.id===id);if(!d||!LV.api||!LV.api.hubAnswer){toast('離線中，連上再送');return}const it=decItems(d),sel=DPK[id]||{};
+ const allA=it.every(x=>(sel[x.n]||'a')==='a'),rec=(d.opts||[]).find(o=>o.rec)||(d.opts||[])[0],cus=(d.opts||[]).find(o=>/custom|逐項|逐件|我自己/.test(o.k+o.label))||(d.opts||[]).slice(-1)[0];
+ const note=it.map(x=>`${x.n} ${(sel[x.n]||'a')==='a'?'照建議：'+x.a:x.b}`).join('；');
+ try{await LV.api.hubAnswer(id,allA&&rec?rec.k:(cus?cus.k:'_other'),note);toast('記下了：'+clip(note,40));S.sheet=null;LV.hub.open=(LV.hub.open||[]).filter(x=>x.id!==id);LV.sig='';paint();if(typeof loadHub==='function')loadHub()}catch(e){toast('沒送出：'+LERR(e))}};
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();try{const t=String(S.sheet||'');if(t.indexOf('dec:')!==0)return h;const d=(DB.dec||[]).find(x=>x.id===t.slice(4));const blk=d&&decItemsHTML(d);if(!blk)return h;const k=h.lastIndexOf('<p class="note">刪掉的');return k>-1?h.slice(0,k)+blk+h.slice(k):h+blk}catch(e){return h}}}
+/* v222（msg 1319）：步驟排了執行時間，那天就出現在今日／明日節奏（點了跳到那張卡的那一步），不用另外記 */
+function stepRows(day){try{const out=[];(DB.proj||[]).forEach(p=>{const st=typeof projSteps==='function'?projSteps(p):[];st.forEach((x,i)=>{if(x.status==='done'||x.status==='skipped')return;const w=(pstMeta(x)['執行時間']||'').trim();if(!w||w.slice(0,10)!==String(day).slice(0,10))return;
+  out.push({t:w.slice(11,16)||'',h:`<li class="ck stepck"><button type="button" class="ckstep" data-act="stepgo" data-id="${esc(p.id)}|${i}"><span class="num">${esc(w.slice(11,16)||'')}</span><b>${esc(x.name)}</b><small>步驟・${esc(p.short||p.title||'')}</small></button></li>`})})});
+ return out.sort((a,b)=>a.t.localeCompare(b.t)).map(x=>x.h).join('')}catch(e){return ''}}
+ACT.stepgo=v=>{const [id,i]=String(v).split('|');S.open['pst:'+id+':'+i]=1;ACT.page('proj:'+id);setTimeout(()=>{const li=document.querySelector(`#page .pstr[data-i="${i}"]`);if(li)li.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})},350)};
+/* v222（msg 1072①）：桌機不再滑鼠移過就冒小臉；改成在節奏那一列按右鍵叫出（等同手機左滑），點別處就收起 */
+document.addEventListener('contextmenu',e=>{const li=e.target&&e.target.closest&&e.target.closest('.ckbox .ck.want');if(!li||li.classList.contains('edit'))return;e.preventDefault();document.querySelectorAll('.ckbox .ck.want.swl').forEach(x=>{if(x!==li)x.classList.remove('swl')});li.classList.toggle('swl')});
+document.addEventListener('mousedown',e=>{if(e.button!==0)return;const li=e.target&&e.target.closest&&e.target.closest('.ckbox .ck.want.swl');document.querySelectorAll('.ckbox .ck.want.swl').forEach(x=>{if(x!==li&&matchMedia('(hover:hover) and (pointer:fine)').matches)x.classList.remove('swl')})});
 
+/* v222：老大手機點不開的本機路徑（~/…、/Users/…、AI工作夾/…、.md 檔名）不顯示在任何畫面文字裡（待辦、提醒、回報都適用）；輸入框與程式碼區不動 */
+const PATH_RE=/(?:~|\/Users)\/|AI工作夾|\.(?:md|json|py|sh|env)\b/;
+function pathScrub(root){if(!root||!root.querySelectorAll||typeof cleanTxt!=='function')return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;const hit=[];while((n=w.nextNode())){if(PATH_RE.test(n.nodeValue)&&!(n.parentNode&&n.parentNode.closest&&n.parentNode.closest('textarea,input,code,pre,[contenteditable],script,style')))hit.push(n)}hit.forEach(t=>{const v=cleanTxt(t.nodeValue);if(v!==t.nodeValue)t.nodeValue=v})}
+{const _r=render;render=function(){const r=_r.apply(this,arguments);try{['#view','#page','#sheet'].forEach(q=>pathScrub(document.querySelector(q)))}catch(e){}return r}}
+
+})();

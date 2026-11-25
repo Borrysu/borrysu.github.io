@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+"""逐流發布前回歸測試（2026-11-26 總驗收後加，publish.sh 會先跑這支，不過就不准發布）。
+用示範資料（?mock=1）跑，不碰真資料庫。每一條都對應老大罵過的問題，壞了就會擋下。
+用法：python3 tools/regress.py   （需要 Python playwright；本機會自己開 8844 埠的暫用伺服器，跑完關掉）
+"""
+import asyncio, json, os, subprocess, sys, time
+from playwright.async_api import async_playwright
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PORT = 8844
+URL = f'http://localhost:{PORT}/?mock=1'
+fails = []
+
+def check(name, ok, detail=''):
+    print(('PASS ' if ok else 'FAIL ') + name + (('  ' + str(detail)[:200]) if detail and not ok else ''))
+    if not ok: fails.append(name)
+
+PATH_JS = r"""()=>{const out=[];['#view','#page','#sheet'].forEach(q=>{const r=document.querySelector(q);if(!r)return;const w=document.createTreeWalker(r,NodeFilter.SHOW_TEXT);let n;while((n=w.nextNode())){if(/(?:~|\/Users)\/|AI工作夾\//.test(n.nodeValue)&&!(n.parentNode&&n.parentNode.closest('textarea,input,code,pre')))out.push(n.nodeValue.slice(0,60))}});return out}"""
+
+async def page_for(p, w, h):
+    b = await p.chromium.launch()
+    ctx = await b.new_context(viewport={'width': w, 'height': h}, color_scheme='dark', has_touch=w < 700, is_mobile=w < 700)
+    pg = await ctx.new_page(); errs = []
+    pg.on('pageerror', lambda e: errs.append(str(e)[:160]))
+    await pg.goto(URL); await pg.wait_for_timeout(3000)
+    return b, pg, errs
+
+async def run_size(p, w, h):
+    tag = f'{w}寬'
+    b, pg, errs = await page_for(p, w, h)
+    try:
+        sw = await pg.evaluate("()=>document.documentElement.scrollWidth-document.documentElement.clientWidth")
+        check(f'{tag} 首頁沒有橫向捲動', sw <= 1, sw)
+        paths = await pg.evaluate(PATH_JS)
+        check(f'{tag} 首頁沒有本機路徑', not paths, paths)
+        # 節奏：長內容只算一條、新增後立刻看得到、重複不再加
+        n0 = await pg.evaluate("()=>document.querySelectorAll('.ckbox .ck.want').length")
+        await pg.fill('#ckIn', '回歸測試：整理分派、台江簡報，木星回饋；寫標書')
+        await pg.press('#ckIn', 'Enter'); await pg.wait_for_timeout(2000)
+        n1 = await pg.evaluate("()=>document.querySelectorAll('.ckbox .ck.want').length")
+        check(f'{tag} 節奏長內容新增只多一條且立刻出現', n1 == n0 + 1, (n0, n1))
+        await pg.fill('#ckIn', '回歸測試：整理分派、台江簡報，木星回饋；寫標書')
+        await pg.press('#ckIn', 'Enter'); await pg.wait_for_timeout(2000)
+        n2 = await pg.evaluate("()=>document.querySelectorAll('.ckbox .ck.want').length")
+        check(f'{tag} 節奏重複輸入不再多一條', n2 == n1, (n1, n2))
+        # 詳情頁：點收合不整頁重建、頭像保留
+        await pg.evaluate("()=>{const z=window.__zl;const p=z.DB.proj.find(x=>(x.raw&&x.raw.progressSteps||[]).length>=3);window.__rp=p&&p.id;if(p)z.ACT.page('proj:'+p.id)}")
+        await pg.wait_for_timeout(1200)
+        pid = await pg.evaluate("()=>window.__rp")
+        if pid:
+            await pg.evaluate("()=>{const p=document.getElementById('page');window.__f=[...p.querySelectorAll('.bm.bf')];window.__all=[...p.querySelectorAll('*')]}")
+            await pg.click('.pstr[data-i="0"] .pstfold'); await pg.wait_for_timeout(900)
+            r = await pg.evaluate("()=>({faces:window.__f.filter(e=>e.isConnected).length,facesN:window.__f.length,kept:window.__all.filter(e=>e.isConnected).length,all:window.__all.length})")
+            check(f'{tag} 步驟收合不閃（頭像全保留）', r['faces'] == r['facesN'], r)
+            check(f'{tag} 步驟收合不閃（九成節點保留）', r['kept'] >= 0.9 * r['all'], r)
+            sw = await pg.evaluate("()=>document.getElementById('page').scrollWidth-document.getElementById('page').clientWidth")
+            check(f'{tag} 詳情頁沒有橫向溢出', sw <= 1, sw)
+            paths = await pg.evaluate(PATH_JS)
+            check(f'{tag} 詳情頁沒有本機路徑', not paths, paths)
+            # 示範模式存步驟不能讓卡片消失、結果欄位要留著
+            r = await pg.evaluate("""async()=>{const z=window.__zl,id=window.__rp,p=z.DB.proj.find(x=>x.id===id);const st=(p.raw.progressSteps||[]).map((s,i)=>i===0?Object.assign({},s,{result:'回歸測試結果',result_link:'https://example.com/x'}):s);
+              await z.LV.api.act(id,'steps',{steps:st});const q=await z.LV.api.get(id);const s0=q&&(q.progressSteps||[])[0];return {alive:!!q,status:q&&q.status,res:s0&&s0.result,link:s0&&s0.result_link}}""")
+            check(f'{tag} 存步驟後卡片還在、結果欄位沒被丟掉', r.get('alive') and r.get('status') not in ('closed',) and r.get('res') == '回歸測試結果', r)
+        check(f'{tag} 主控台沒有錯誤', not errs, errs)
+    except Exception as e:
+        check(f'{tag} 測試本身跑完', False, repr(e))
+    finally:
+        await b.close()
+
+async def main():
+    srv = subprocess.Popen([sys.executable, '-m', 'http.server', str(PORT)], cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        time.sleep(1.2)
+        async with async_playwright() as p:
+            await run_size(p, 1688, 1032)
+            await run_size(p, 390, 844)
+    finally:
+        srv.terminate()
+    print('\n回歸測試：' + ('全部通過' if not fails else f'{len(fails)} 項沒過：' + '、'.join(fails)))
+    sys.exit(1 if fails else 0)
+
+asyncio.run(main())

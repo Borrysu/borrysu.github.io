@@ -1965,7 +1965,7 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
   opacity:0;visibility:hidden;pointer-events:none;
   transition:opacity .15s ease,visibility 0s linear .15s;
  }
- .ckbox .ck.want:not(.edit):hover .cklp,
+ /* v222（msg 1072①）：老大不要「沒點沒滑就冒圖示」，拿掉滑鼠移過就浮出，只在點到（focus）或滑開時出現 */
  .ckbox .ck.want:not(.edit):focus-within .cklp,
  .ckbox .ck.want.swl .cklp {
   opacity:1;visibility:visible;pointer-events:auto;transition:opacity .15s ease,visibility 0s;
@@ -2038,3 +2038,37 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .cwl{margin-top:10px;padding-top:8px;border-top:1px dashed var(--line);display:flex;flex-direction:column;gap:6px}.cwi{display:flex;gap:6px;align-items:stretch}.cwb{flex:1;min-width:0;text-align:left;font:inherit;font-size:13px;line-height:1.4;padding:7px 10px;border-radius:10px;border:1px solid rgba(240,69,58,.45);background:rgba(240,69,58,.08);color:inherit}.cwb .cwt{display:inline-block;margin-right:6px;font-size:11px;padding:1px 7px;border-radius:999px;background:#f0453a;color:#fff}.cwok{flex:0 0 40px;border-radius:10px;border:1px solid var(--line);background:transparent;color:inherit;font-size:15px}
 .dcx h3.dcq{font-size:18px;line-height:1.4;margin:8px 0 2px;font-weight:700}.dcx .dcw{margin:0 0 6px;opacity:.75;font-size:14px;line-height:1.5}.dcx .dcr{margin:0 0 10px;font-size:14px}.dcx .dcr b{color:#f0b429;margin-right:4px}.dcx .dcb{display:flex;flex-direction:column;gap:8px}.dcx .dcb .btn.big{width:100%;min-height:48px;justify-content:flex-start;text-align:left}.dcx .dcb .btn.big small{margin-left:auto;opacity:.8}.dcx .dcdb{margin-top:10px;width:100%;min-height:44px;border:0;border-top:1px solid var(--line);background:none;color:var(--ink2,#9aa);font:inherit}.dcx .dcd{padding:6px 2px 4px}.dcx .dcd p{margin:0 0 10px;line-height:1.8;font-size:14.5px;overflow-wrap:anywhere}.dcx .dcl{margin:0 0 10px;padding-left:1.3em}.dcx .dcl li{margin:0 0 8px;line-height:1.75;font-size:14.5px;overflow-wrap:anywhere}.dcx .dcwait{padding:10px 12px;border-radius:10px;background:rgba(127,127,127,.12)}
 .dslide.dcx .dcdb{color:inherit;opacity:.8}.dslide.dcx h3.dcq{margin-top:10px}
+
+/* ---------- v222（2026-11-26）總驗收修正 ---------- */
+/* msg 1321：這步備註有子步驟時，標題在上、子步驟整列寬，不再擠在右欄；主步驟做完不連帶把子步驟劃掉 */
+.pstr .pstd .kv:has(.pstsub-wrap){display:block}
+.pstr .pstd .kv:has(.pstsub-wrap)>span{display:block;margin-bottom:8px}
+.pstr[data-s="done"] .pstd b,.pstr[data-s="skipped"] .pstd b{text-decoration:none;opacity:1}
+/* msg 1302／1330：手機上來源字串不撐破版面 */
+.pstr,.pstd,.pstd .kv,.pstd .kv>*,.pstsub-wrap{min-width:0;max-width:100%}
+.pstsub-wrap .srcw,.pstd .srcw{display:inline;max-width:100%;white-space:normal;overflow-wrap:anywhere;word-break:break-word}
+/* msg 1088⑥：「已同意，等櫃檯發出」標籤不被按鈕列拉高 */
+.pstb .chip{align-self:center;height:auto}
+/* msg 1072③：同意發送是主要按鈕，要看得出來 */
+.sk-btns .mb.pri{background:var(--pri);color:var(--pri-ink);border-color:var(--pri);font-weight:700}
+/* msg 1499：案子卡底下的「等你／決定卡」連結浮在整卡連結之上，點得到 */
+.cwl{position:relative;z-index:2}.cwl .cwb,.cwl button,.cwl a{position:relative;z-index:2}
+/* msg 1268：要你做可以點 */
+button.pask{display:flex;align-items:center;gap:8px;width:100%;text-align:left;font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button.pask .chev{margin-left:auto;color:var(--ink2)}
+.pstr.flashpick{outline:2px solid var(--ink);outline-offset:2px;border-radius:10px}
+/* v222（msg 1095／1099／1148）：寬螢幕時詳情與遮罩不蓋住左邊房間和頂列 */
+@media (min-width:1000px){.page{top:calc(var(--ph,0px) + var(--toph,56px))}.scrim{left:220px;top:calc(var(--ph,0px) + var(--toph,56px))}}
+/* v222（msg 1492）：決定卡逐件選 */
+.dpk{margin-top:14px;display:grid;gap:12px}.dpki{padding:10px 12px;border:1px solid var(--line);border-radius:12px}.dpki p{margin:0 0 8px;line-height:1.55}
+.dpkb{display:flex;flex-wrap:wrap;gap:8px}.dpkb .btn{white-space:normal;text-align:left;height:auto;min-height:40px;line-height:1.4}
+/* v222：提示條不被「編修」浮鈕蓋住 */
+.toast{z-index:96}
+/* v222（msg 1319）：節奏裡排了時間的步驟 */
+.ck.stepck{list-style:none}.ckstep{display:flex;align-items:baseline;gap:8px;width:100%;text-align:left;background:none;border:0;color:inherit;font:inherit;padding:10px 4px;cursor:pointer;flex-wrap:wrap}.ckstep small{color:var(--ink2);font-size:12px;width:100%;padding-left:3.2em}
+/* v222 複驗修正（B 組）：全域 .kv div 的 flex 也套到備註與子步驟，造成文字並排、擠出卡外。備註區一律直排、靠左 */
+.pstr .pstd .kv .pstsub-wrap,.pstr .pstd .kv .pstsub li>div{display:block;text-align:left;padding:0;border:0}
+.pstr .pstd .kv .pstsub-wrap b,.pstr .pstd .pstsub b{text-align:left}
+.pstr .pstd .kv:has(.pstsub-wrap){padding:6px 0}
+/* 步驟展開後點名稱進編修，名稱只佔文字寬，標題列其餘地方照舊是收合 */
+.pstr .pstfold[aria-expanded="true"] > b{flex:0 1 auto;cursor:text;text-decoration:underline dotted;text-underline-offset:3px}
