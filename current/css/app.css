@@ -1955,3 +1955,26 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .engbar>span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
 .engbar.engr{border-color:var(--urg);background:var(--urg-bg);color:var(--urg-ink)}
 .engbar.engr>span:nth-child(2){color:var(--urg-ink)}
+
+/* v176 老大小意見 1：今日節奏那列的小臉與刪除，只在互動時出現（原本桌面版被改成永遠可見）。
+   電腦：滑鼠移上去、鍵盤選到、或已經滑開（.swl）才浮出來，蓋在列的右邊不推擠標題；手機照舊靠左滑。 */
+@media (hover:hover) and (pointer:fine) {
+ .ckbox .ck.want:not(.edit) .cklp {
+  position:absolute!important;top:0;bottom:0;right:0;width:auto!important;
+  background:var(--sf,#1c1c22);padding:0 2px 0 10px;
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .15s ease,visibility 0s linear .15s;
+ }
+ .ckbox .ck.want:not(.edit):hover .cklp,
+ .ckbox .ck.want:not(.edit):focus-within .cklp,
+ .ckbox .ck.want.swl .cklp {
+  opacity:1;visibility:visible;pointer-events:auto;transition:opacity .15s ease,visibility 0s;
+ }
+}
+/* v176 老大小意見 4：案子詳情「誰在執行」的 ⓘ。原本是 44px 圓框裡再放一個圓形 ⓘ（圈中圈），框線只有 14% 白幾乎看不見、
+   圖示 19.5px 比同頁其他圖示（22px）小。改成跟旁邊的 snd、hav 一樣的無框 44px 圖示鈕，圖示 22px；展開時才有淡底。 */
+.rb-i{border:0;background:none;color:var(--ink2);display:grid;place-items:center;padding:0}
+.rb-i svg.ic{width:22px;height:22px}
+.rb-i:hover{background:var(--sf2);color:var(--ink)}
+.rb-i:focus-visible{outline:2px solid var(--acc,#4da6ff);outline-offset:-2px}
+.rb-i[aria-expanded=true]{background:rgba(127,127,127,.2);color:var(--ink)}
