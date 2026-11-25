@@ -611,7 +611,7 @@ function chatShell(on){const b=on.b,bot=BOTS[b],cn=ctxName(on.ctx);
  return `<div class="cav" id="cAv">${bm(b,'idle')}</div>
  <header class="chd"><div class="cwho"><h2 id="cTitle">${bot.name}</h2><small>${ROLE[b]}</small></div><button class="btn ghost" data-act="chatinfo" id="cInfoB" aria-expanded="false" aria-controls="cInfo">能做什麼</button><button class="btn ghost" data-act="chatclose" id="cClose">關閉 ✕</button></header>
  <div class="cinfo" id="cInfo" hidden><div class="can" style="margin:0"><div><b>能做</b><span>${esc(bot.can)}</span></div><div><b>不做</b><span>${esc(bot.cant)}</span></div></div></div>
- ${cn?`<div class="cctx">${chip('關於：'+cn)}</div>`:''}
+ ${on.ctx?`<div class="cctx">${chip('子聊天｜'+(cn||ctxLabel(on.ctx)||'這一處'))}<small class="cscope">只有這一項的對話，總聊天也看得到</small></div>`:`<div class="cctx">${chip('總聊天｜所有專案')}<small class="cscope">各張卡、各處跟${bot.name}說的都在這</small></div>`}
  <div class="clog" id="clog" role="log" aria-live="polite" aria-label="和${bot.name}的對話" tabindex="0"></div>
  <div class="cq" id="cq"></div><p class="err" id="cErr" role="alert" hidden>▲ 還沒寫字。先寫一句再傳。</p>
  <div class="cin"><textarea id="cText" rows="1" aria-label="想跟${bot.name}說什麼" placeholder="${PH[b]}" enterkeyhint="send"></textarea><button class="btn pri" data-act="chatsend">傳給${bot.name}</button></div>
@@ -621,7 +621,7 @@ function msgHTML(m){const f=m.fresh?' new':'';m.fresh=0;
  if(m.wait)return `<div class="cm bot${f}"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${BOTS[m.b].name}處理中</div>`;
  if(m.k==='order')return `<div class="cm bot card${f}">${orderHTML(m.id)}</div>`;
  if(m.k==='din')return `<div class="cm bot card${f}">${dinHTML(m)}</div>`;
- return `<div class="cm ${m.w}${f}">${esc(m.t)}${m.w==='me'?'<small>已送出</small>':''}</div>`}
+ return `<div class="cm ${m.w}${f}">${m.from?`<span class="cmfrom">${esc(m.from)}</span>`:''}${esc(m.t)}${m.w==='me'?'<small>已送出</small>':''}</div>`}
 function logSync(){const on=S.chat,l=$('#clog');if(!on||!l)return;const a=CH[on.b],un=on.b==='peng'&&!S.bound;
  l.innerHTML=a.map(msgHTML).join('')+(un?`<div class="cm bot card"><b>還沒綁定朋朋</b><div class="btns">${B('綁定朋朋','bindok',null,'pri')}</div></div>`:'');
  $('#cq').innerHTML=quick(on).map(q=>`<button data-act="chatq" data-id="${esc(q)}">${esc(q)}</button>`).join('');l.scrollTop=l.scrollHeight}
@@ -1083,7 +1083,7 @@ dinHTML=function(m){const v=m.v;return `<b>定定的看法</b><dl class="kvs"><d
 chatShell=function(on){const b=on.b,bot=BOTS[b],cn=ctxName(on.ctx);
  return `<div class="cav" id="cAv">${bm(b,'idle')}</div>
  <header class="chd"><div class="cwho"><h2 id="cTitle">${bot.name}</h2></div><button class="btn ghost" data-act="chatclose" id="cClose" aria-label="關閉">✕</button></header>
- ${cn?`<div class="cctx">${chip('關於：'+cn)}</div>`:''}
+ ${on.ctx?`<div class="cctx">${chip('子聊天｜'+(cn||ctxLabel(on.ctx)||'這一處'))}<small class="cscope">只有這一項的對話，總聊天也看得到</small></div>`:`<div class="cctx">${chip('總聊天｜所有專案')}<small class="cscope">各張卡、各處跟${bot.name}說的都在這</small></div>`}
  <div class="clog" id="clog" role="log" aria-live="polite" aria-label="和${bot.name}的對話" tabindex="0"></div>
  <div class="cq" id="cq"></div><p class="err" id="cErr" role="alert" hidden>▲ 還沒寫字。</p>
  <div class="cin"><textarea id="cText" rows="1" aria-label="想跟${bot.name}說什麼" placeholder="${PH[b]||'說一句'}" enterkeyhint="send"></textarea><button class="btn pri" data-act="chatsend">傳送</button></div>`};
@@ -2061,7 +2061,7 @@ mzOut=function(){return `<section class="sec">${sh('','要出去的大筆')}<div
 
 /* ---------- 對話（v40，2026-11-22）：每隻都接上了。給大器的走櫃台；給其他隻的由 Mac 轉送程式 com.borry.current-bot-relay
    打到那隻的 webhook（集集經資料庫、塔塔直打、朋朋萌萌定定金金經霸霸），回覆用回覆票寫回 opp_msgs（bot 欄）。 ---------- */
-const NAMES={daqi:'大器',jiji:'集集',tata:'塔塔',peng:'朋朋',din:'定定',kim:'金金',mon:'萌萌',baba:'霸霸'};
+const NAMES={daqi:'大器',jiji:'集集',tata:'塔塔',peng:'朋朋',din:'定定',kim:'金金',mon:'萌萌',baba:'霸霸',jian:'逐流監工'};
 const ctxItem=ctx=>{const a=(ctx||'').split(':');return (a[0]==='proj'||a[0]==='opp')&&LV.items.some(c=>c.id===a[1])?a[1]:null};
 const HI=b=>b==='daqi'?'寫一句，或點下面的指令。只有大器本人回，回覆會出現在這裡。':`寫一句，${NAMES[b]||'它'}收到會回在這裡，通常幾分鐘。`;
 const SEENK='opp_bot_seen';let SEEN=null,CPOLL=0,CPT0=Date.now(),WAITB={};
@@ -2079,11 +2079,11 @@ async function pollInbox(){if(!LV.api||!LV.api.botInbox)return;let d;try{d=await
 function arrive2(b){headSync();document.querySelectorAll('.hav,#chead').forEach(e=>{const k=e.dataset.b||(e.dataset.id||'').split('|')[0];if(k!==b)return;hop(e);const f=FACES.get(e.querySelector('.bm'));if(f&&!RM)f.poke()})}
 // 等回覆的那隻，頭像改「思考中」
 function waitFaces(){document.querySelectorAll('.hav,#chead').forEach(e=>{const k=e.dataset.b||(e.dataset.id||'').split('|')[0],m=e.querySelector('.bm');if(!m||!k)return;const want=WAITB[k]?'thinking':'idle';if(m.dataset.m!==want&&(m.dataset.m==='idle'||m.dataset.m==='thinking')){m.dataset.m=want;faceSync()}})}
-async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id=ctxItem(on.ctx);
- try{const ms=await LV.api.msgs(id,b);if(!S.chat||S.chat.b!==b)return;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
+async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id=ctxItem(on.ctx),scope=chScope(on.ctx);
+ try{const ms=await LV.api.msgs(id,b,scope);if(!S.chat||S.chat.b!==b)return;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
   const last=ms[ms.length-1],waiting=b!=='daqi'&&last&&last.kind==='user';
   const pend=CH[b].filter(m=>m.local&&!(m.gray&&ms.some(x=>String(x.body||'').indexOf(m.t)>-1)));
-  CH[b]=ms.map(m=>{const g=m.kind==='user'?/^［前情｜([^］]*)］/.exec(String(m.body||'')):null;if(g)return{w:'bot',gray:1,t:g[1],b};return{w:m.kind==='user'?'me':'bot',t:m.kind==='user'?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b}}).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
+  CH[b]=ms.map(m=>{const g=m.kind==='user'?/^［前情｜([^］]*)］/.exec(String(m.body||'')):null;if(g)return{w:'bot',gray:1,t:g[1],b};const me=m.kind==='user'||m.kind==='run';return{w:me?'me':'bot',t:me?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b,from:scope==='all'?chFrom(m):''}}).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
   if(!ms.length&&!pend.length)CH[b]=[{w:'bot',t:HI(b),b}];
   const lb=ms.filter(m=>m.kind==='bot').pop();if(lb)seenMark(b,lb.id);
   if(fresh){logSync();if(had&&last&&last.kind!=='user'){mood(b,'speaking');hop($('#cAv'));setTimeout(()=>{if(S.chat&&S.chat.b===b)mood(b,'idle')},2200)}else mood(b,waiting?'thinking':'idle')}
@@ -2106,7 +2106,7 @@ function ctxTag(b,ctx){const a=(ctx||'').split(':'),k=a[0];let on='';
  return `［老大在逐流${room?'的'+room:''}${on?'，正在看'+on:''}］\n`}
 function sendTo(b,text,ctx){const a=(ctx||'').split(':'),id=ctxItem(ctx),d=a[0]==='dec'?DB.dec.find(x=>x.id===a[1]):null,body=d?`關於「${d.proj}：${d.q}」：${text}`:ctxTag(b,ctx)+text;
  const w={w:'bot',wait:1,local:1,b,fresh:1};CH[b]=CH[b].filter(m=>m.t!==HI(b)&&m.t!=='讀取中…');CH[b].push({w:'me',t:text,fresh:1,local:1},w);mood(b,'thinking');hop($('#cAv'));logSync();
- CPT0=Date.now();LV.api.say(id,body,b).then(()=>{CH[b]=CH[b].filter(m=>!m.local);if(b!=='daqi'){WAITB[b]=1;waitFaces()}setTimeout(loadMsgs,800)})
+ CPT0=Date.now();LV.api.say(id,body,b,id?null:(ctx||null)).then(()=>{CH[b]=CH[b].filter(m=>!m.local);if(b!=='daqi'){WAITB[b]=1;waitFaces()}setTimeout(loadMsgs,800)})
   .catch(e=>{const i=CH[b].indexOf(w);if(i>-1)CH[b].splice(i,1,{w:'bot',t:'沒送出：'+LERR(e)+'。這句還在上面，可以再傳一次。',b,fresh:1});CH[b].forEach(m=>{delete m.local});mood(b,'idle');logSync()})}
 say=function(b,text,ctx){
  if(b==='jiji'){const id=(ctx||'').split(':')[1];
@@ -2537,7 +2537,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v131');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v132');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3115,7 +3115,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  function bar(){let b=$('#mkBar');if(!MK.on){if(b)b.remove();document.documentElement.classList.remove('marking');return}
   if(!b){b=document.createElement('div');b.id='mkBar';b.className='mkbar';b.setAttribute('role','toolbar');b.setAttribute('aria-label','標記修改意見');document.body.appendChild(b)}
   document.documentElement.classList.add('marking');const n=MK.list.length;
-  b.innerHTML=`<span class="mkt"><b>編修模式</b>${n?`已記 ${n} 則，繼續點或送出`:'點要改的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
+  b.innerHTML=`<span class="mkt"><b>編修模式</b>${n?`已記 ${n} 則，繼續點或送出`:'點要改的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="jian" aria-label="跟逐流監工說">監工</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
  function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
   MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
   if(kind==='pick'){const p=MK.pick;x.setAttribute('aria-label','寫修改意見');
@@ -3130,8 +3130,8 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   const dark=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'';
   const body=`【面板修改意見】逐流 v${v}，${MK.list.length} 則（螢幕 ${innerWidth}×${innerHeight}${/dark/.test(dark)?'，深色':''}）\n`+MK.list.map((m,i)=>`${i+1}. ${m.note}\n   位置：${m.where||'（沒判斷出來）'}${m.txt?'；點的是「'+m.txt+'」':''}\n   元件：${m.code}`).join('\n');
   const bs=document.querySelectorAll('#mkBar [data-mk="send"],#mkBox [data-mk="send"]');bs.forEach(b=>{b.disabled=true;b.textContent='送出中…'});
-  try{if(!LV.api||!LV.api.say)throw new Error('還沒連上');await LV.api.say(null,body,'daqi');
-   const n=MK.list.length;MK.list=[];save();setOn(false);toast(`${n} 則意見送給大器了，改好會回在「跟大器說」`)}
+  try{if(!LV.api||!LV.api.say)throw new Error('還沒連上');await LV.api.say(null,body,'jian');   // 2026-11-25 v131 老大：「編修應該是直接與逐流監工對話，逐流的大器才是櫃檯」
+   const n=MK.list.length;MK.list=[];save();setOn(false);toast(`${n} 則意見送給逐流監工了，改好回在編修列的「監工」對話`)}
   catch(e){bs.forEach(b=>{b.disabled=false;b.textContent=b.closest('#mkBox')?'全部送出':'送出'});toast('沒送出：'+(typeof LERR==='function'?LERR(e):e.message)+'。清單還在，可以再按一次')}}
  const stop=e=>{e.preventDefault();e.stopPropagation();e.stopImmediatePropagation()};
  ['pointerdown','mousedown','touchstart'].forEach(ev=>window.addEventListener(ev,e=>{if(!MK.on||mine(e.target))return;if(ev!=='touchstart')e.preventDefault();e.stopPropagation()},{capture:true,passive:false}));
@@ -3139,6 +3139,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   if(!MK.on)return;const m=e.target.closest&&e.target.closest('[data-mk]');
   if(m){stop(e);if(m.disabled)return;const a=m.dataset.mk;
    if(a==='end'){setOn(false);if(MK.list.length)toast(`${MK.list.length} 則還沒送，下次按「編修」接著寫`)}
+   if(a==='jian'){setOn(false);openChat('jian','',null)}
    else if(a==='list'){clearSel();box('list')}
    else if(a==='cancel'){clearSel();box('')}
    else if(a==='del'){MK.list.splice(+m.dataset.i,1);save();bar();box(MK.list.length?'list':'')}
@@ -3680,7 +3681,8 @@ let PREFILL=0;
  const put=(n)=>{const t=$('#cText');if(t){t.value=String(text||'');t.focus();try{t.setSelectionRange(t.value.length,t.value.length)}catch(e){}t.dispatchEvent(new Event('input',{bubbles:true}))}else if(n<20)setTimeout(()=>put(n+1),80)};put(0)}}
 {const _o=openChat;openChat=function(b,ctx,el,auto){
  if(LV.api&&LV.api.msgs&&!LV.api.__ctxWrap){const m=LV.api.msgs.bind(LV.api);LV.api.__ctxWrap=1;
-  LV.api.msgs=async(id,bb)=>{const ms=await m(id,bb);const c=S.chat&&S.chat.ctx;if(id||!c)return ms;let nm='';try{nm=ctxName(c)}catch(e){}if(!nm)return ms;
+  LV.api.msgs=async(id,bb,sc)=>{if(sc)return m(id,bb,sc);const ms=await m(id,bb);   // v131：有 scope（總聊天／子聊天）就交給資料庫分，不再用名字猜
+  const c=S.chat&&S.chat.ctx;if(id||!c)return ms;let nm='';try{nm=ctxName(c)}catch(e){}if(!nm)return ms;
    const out=[];let keep=false;(ms||[]).forEach(x=>{if(x.kind==='user')keep=String(x.body||'').indexOf(nm)>-1;if(keep)out.push(x)});return out}}
  if(typeof auto==='function'){const a=auto;auto=function(){PREFILL=1;try{return a.apply(this,arguments)}finally{PREFILL=0}}}
  return _o.call(this,b,ctx,el,auto)}}
@@ -4646,7 +4648,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
   const free=i.free.map(f=>n===0?[Math.max(f[0],nh),f[1]]:f).filter(f=>f[1]-f[0]>=0.5);
   if(!free.length)return `<i class="fcap full">排滿</i>`;
   const big=free.slice().sort((x,y)=>(y[1]-y[0])-(x[1]-x[0]))[0];
-  return free.map(f=>{const h=f[1]-f[0],fit=need&&h>=need-1e-6;return `<i class="fcap${f===big?' big':''}${fit?' fit':''}">${fq(f[0])}～${fq(f[1])}<small>${hrs(h)} 小時</small></i>`}).join('')+(i.est>0?`<i class="fcest">已預留 ${hrs(i.est)} 小時</i>`:'')}
+  return free.map(f=>{const h=f[1]-f[0],fit=need&&h>=need-1e-6;return `<button type="button" class="fcap${f===big?' big':''}${fit?' fit':''}" data-act="capnew" data-id="${n}|${fq(f[0])}" aria-label="在 ${fq(f[0])}～${fq(f[1])} 排一件事">${fq(f[0])}～${fq(f[1])}<small>${hrs(h)} 小時</small><b class="fcplus" aria-hidden="true">＋</b></button>`}).join('')+(i.est>0?`<i class="fcest">已預留 ${hrs(i.est)} 小時</i>`:'')}
 // 2026-11-25 msg 836 老大：「怎麼辦？你現在改的這個版本很不好耶我希望可以回到原本那個 因為你現在這個真的沒有意義呀」→ 行事曆頁上方退回 v123 的時間條（立體樓不放回，老大 11/25 說柱狀圖不舒服）；v124 的 capsI 留著給首頁「今天」用
  function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})();
   const days=Array.from({length:14},(_,n)=>({n,x:dOf(n),i:dayInfo(all.filter(e=>e.d===n))}));
@@ -4674,12 +4676,26 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
     items.sort((x,y)=>x.k-y.k);
     rows+=`<div class="tlx">${alls.length?`<div class="rows">${alls.map(evRow).join('')}</div>`:''}${items.length?items.map(x=>x.h).join(''):`<p class="tlnone">這天沒有行程，也沒有空檔可算。</p>`}${i.free.length?'':`<p class="tlnone">9 點到 22 點沒有空檔。</p>`}</div>`}
    rows+='</div>'});
-  return `<section class="tl" aria-label="接下來兩週的時間">
+  return ringHTML(days,d0,now)+`<section class="tl" aria-label="接下來兩週的時間">
    <div class="tlhd">${tlEval(days,now)}<p class="tlsum"${S.tlneed?' hidden':''}>這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p>
    <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p>${nxt}</div>
    <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
    ${rows}<p class="cbhint">點一天看那天的行程和空檔時段</p></section>`}
  ACT.tlpick=id=>{const n=+id;S.calsel=S.calsel===n?null:n;render('keep')};
+ // 2026-11-25 v131 老大：「立體樓改視覺呈現 然後可以收合」→ 兩週負荷圈：一天一圈，圈越滿越忙（9～22 點），中間是還空幾小時；按「我要找 N 小時」時圈上打 ✓／✕。點一圈＝展開下面那天。收合記在這台裝置。
+ const RINGK='zl_ring';const ringShut=()=>{try{return localStorage.getItem(RINGK)==='1'}catch(e){return false}};
+ ACT.ringtog=()=>{try{localStorage.setItem(RINGK,ringShut()?'0':'1')}catch(e){}render('keep')};
+ ACT.ringpick=id=>{const n=+id;S.calsel=n;render('keep');setTimeout(()=>{const r=document.querySelector(`.tlrow[data-id="${n}"]`);if(r)r.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})},60)};
+ function ringHTML(days,d0,now){const shut=ringShut(),need=S.tlneed||0,R0=15,C=2*Math.PI*R0,SPAN=FW1-FW0;
+  const one=d=>{const fh=d.n===0?d0.freeNow:d.i.freeH,busy=Math.max(0,Math.min(1,(SPAN-fh)/SPAN)),fit=need?fitOf(d.i,need,d.n===0?now:0):null,
+    st=need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok'),lab=d.n===0?'今':WK[d.x.w],we=d.x.w===0||d.x.w===6;
+   return `<button class="rg${we?' we':''}${S.calsel===d.n?' on':''}" data-act="ringpick" data-id="${d.n}" data-st="${st}" aria-label="${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]} ${d.x.m}/${d.x.d}，${d.i.n?d.i.n+' 件，':''}還空 ${hrs(fh)} 小時${need?(fit?'，放得下 '+need+' 小時':'，放不下 '+need+' 小時'):''}">
+    <svg viewBox="0 0 40 40" aria-hidden="true"><circle class="rgb" cx="20" cy="20" r="${R0}"/><circle class="rgf" cx="20" cy="20" r="${R0}" stroke-dasharray="${(busy*C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 20 20)"/>
+    <text class="rgn" x="20" y="${need?22:23}">${need?(fit?'✓':'✕'):hrs(fh)}</text></svg><span class="rgw">${lab}</span><small class="rgd num">${d.x.d}</small></button>`};
+  const free7=days.slice(0,7).reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
+  return `<section class="ring${shut?' shut':''}" aria-label="兩週負荷">
+   <div class="rgh"><b>兩週負荷</b><small>${shut?`這 7 天還空 ${hrs(free7)} 小時`:(need?`✓ 放得下 ${need} 小時・✕ 放不下`:'圈越滿越忙・中間＝還空幾小時')}</small><button class="rgt" data-act="ringtog" aria-expanded="${!shut}" aria-label="${shut?'展開':'收合'}兩週負荷"></button></div>
+   ${shut?'':`<div class="rgg"><div class="rgr">${days.slice(0,7).map(one).join('')}</div><div class="rgr">${days.slice(7,14).map(one).join('')}</div></div>`}</section>`}
  const _cp2=calPage;calPage=function(){const h=_cp2();if(E())return h;const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f);
   // 換掉 v109 的 14 格忙閒格；篩選（全部／個人／公司）放到時間條上面，切了時間條跟著變
   let x=h.replace(/<section class="cbusy"[\s\S]*?<\/section>/,'');
@@ -4915,6 +4931,8 @@ calSheet=function(id){return calEditHTML(id)};
 calNew=function(){return calEditHTML('')};
 {const _s=ACT.sheet;ACT.sheet=function(id){if(id==='calnew'){if(!CE.pre){S.ceDate=null;S.ceStart=null}CE.pre=0}return _s.apply(this,arguments)}}
 ACT.cenew=n=>{S.ceDate=ymd(+n||0);CE.pre=1;ACT.sheet('calnew')};
+// 2026-11-25 逐流 msg 805、867 老大：「我想確認一下這些按鈕在這邊的作用是什麼？」→ 空檔膠囊點了＝在這段空檔排一件事（開新增卡，日期與開始時間帶好）
+ACT.capnew=v=>{const [n,t]=String(v).split('|');S.ceDate=ymd(+n||0);S.ceStart=t||null;CE.pre=1;ACT.sheet('calnew')};
 ACT.cerel=id=>{closeThen(()=>ACT.page('proj:'+id))};
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='ceA'){const t=$i('ceTm');if(t)t.hidden=e.target.checked}});
 function ceRead(){const v=i=>{const x=$i(i);return x?x.value:''},sc=document.querySelector('input[name="ceSc"]:checked');
@@ -5025,6 +5043,22 @@ ACT.cemvyes=()=>{const m=CE.move;if(!m)return;const e=calFind(m.id);CE.move=null
  if(calSend(plan.note,plan.view,plan.tide))toast(plan.msg)};
 }
 
+/* ---------- 2026-11-25 v131：總聊天／子聊天、逐流監工 ----------
+   老大原話：「編修應該是直接與逐流監工對話 ，逐流的大器才是櫃檯 一個是改面板架構設計 一個是負責內容的懂嗎」
+   「每隻機器人會有「總聊天」…跳出所有專案跟內容來與他對話」「如果我點擊某一張卡片或者是某一處，那他要有一個子聊天 這個子聊天只有我對那一項內容與他對話的內容」「可是總聊天 會看見子聊天」
+   做法：沒帶位置打開＝總聊天（opp_msg_thread scope all，每則標來自哪張卡）；從卡片或某一處打開＝子聊天（item:／ctx:）。編修清單送 jian（逐流監工），Mac relay 直送【監工】逐流視窗。
+   退回：還原這段與 loadMsgs、sendTo、msgHTML、chatShell、編修 send 的改動（git revert v131）。 */
+BOTS.jian={name:'逐流監工',mono:'監',zone:'面板本身',role:'面板長什麼樣、怎麼操作歸我；內容找大器。',cmds:['這頁我覺得不好用','這個按鈕在做什麼','幫我把這區改簡單'],can:'改面板的版面、按鈕、操作方式、新增頁面',cant:'不處理卡片內容與案子進度（那些找大器）'};
+ROLE.jian='改面板架構與設計・內容找大器';PH.jian='面板哪裡要改，跟我說';if(!CH.jian)CH.jian=[];
+function chScope(ctx){const id=ctxItem(ctx);return id?'item:'+id:ctx?'ctx:'+ctx:'all'}
+function ctxLabel(ctx){const a=(ctx||'').split(':'),k=a[0];try{const n=ctxName(ctx);if(n)return n;
+  if(k==='opp'){const o=(DB.opp||[]).find(x=>x.id===a[1]);if(o)return o.title}
+  if(k==='goal'||k==='gr'){const g=typeof gOf==='function'?gOf(a[1]):null;if(g)return '目標「'+g.name+'」'}
+  if(k==='goals')return '目標總覽';
+  if(k==='co'){const c=(DB.co||DB.company||[]).find?((DB.co||DB.company||[]).find(x=>x.id===a[1])):null;if(c)return c.title||c.name}
+  if(k==='cal')return '行事曆';
+ }catch(e){}return ''}
+function chFrom(m){if(m.itemTitle)return m.itemTitle;if(m.ctx)return ctxLabel(m.ctx)||'某一處';return ''}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v131');
+  const { mockAdapter } = await import('./mock.js?v132');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -151,11 +151,11 @@ const arr = v => Array.isArray(v) ? v.map(x => String(x)).filter(Boolean) : (typ
 const str = v => (v == null ? '' : String(v));
 const web = v => { v = str(v).trim(); return /^https?:\/\//i.test(v) ? v : ''; };   // 連結只收 http(s)，擋 javascript: 等
 
-const BOTS_OK = ['daqi', 'jiji', 'tata', 'peng', 'mon', 'din', 'kim', 'baba'];
+const BOTS_OK = ['daqi', 'jiji', 'tata', 'peng', 'mon', 'din', 'kim', 'baba', 'jian'];
 // v40：各 Bot 的回覆與還在等的話（opp_bot_inbox）
 export const normInbox = d => ({ replies: (d && Array.isArray(d.replies) ? d.replies : []).filter(r => BOTS_OK.includes(r.bot)).map(r => ({ id: +r.id || 0, bot: r.bot, item: r.item_id ? str(r.item_id) : null, body: str(r.body), at: ts(r.created_at) })),
   waiting: (d && Array.isArray(d.waiting) ? d.waiting : []).filter(w => BOTS_OK.includes(w.bot)).map(w => ({ id: +w.id || 0, bot: w.bot })) });
-export const normMsgs = d => (Array.isArray(d) ? d : []).map(m => ({ id: +m.id || 0, kind: ['user', 'daqi', 'system', 'run', 'bot'].includes(m.kind) ? m.kind : 'user', bot: BOTS_OK.includes(m.bot) ? m.bot : 'daqi', author: nick(str(m.author)), body: str(m.body), at: ts(m.created_at) })).filter(m => m.body && m.at);
+export const normMsgs = d => (Array.isArray(d) ? d : []).map(m => ({ id: +m.id || 0, kind: ['user', 'daqi', 'system', 'run', 'bot'].includes(m.kind) ? m.kind : 'user', bot: BOTS_OK.includes(m.bot) ? m.bot : 'daqi', author: nick(str(m.author)), body: str(m.body), at: ts(m.created_at), item: m.item_id || null, itemTitle: str(m.item_title), ctx: str(m.ctx) })).filter(m => m.body && m.at);
 export const normHistory = h => (Array.isArray(h) ? h : []).map(e => ({ at: ts(e && e.at), actor: nick(str(e && e.actor)), action: str(e && e.action) })).filter(e => e.at && e.action);
 // 掃描請求單：後端籃名 → 前端籃名
 const BACK_BASKET = { company: 'company', personal: 'personal', other: 'other', funding: 'fund', achievement: 'honor' };
@@ -302,8 +302,10 @@ function liveAdapter() {
       const d = await rpc(R.get, { p_id: id }); const r = Array.isArray(d) ? d[0] : d;
       return normHistory(r && r.history);
     },
-    async msgs(id, bot) { return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80, p_bot: bot || 'daqi' })); },
-    async say(id, body, bot) { const r = await rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); if (!bot || bot === 'daqi') wake(); else wake({ act: 'botsend' }); return r; }   // 2026-11-25 v125：送給別隻也叫 Mac relay 立刻跑一次
+    // 2026-11-25 v131 老大：「每隻機器人會有總聊天…點擊某一張卡片或者是某一處，那他要有一個子聊天…可是總聊天會看見子聊天」
+    // scope：all＝總聊天（含所有子聊天）｜item:<id>｜ctx:<哪一處>。沒帶 scope 照舊讀。
+    async msgs(id, bot, scope) { if (scope) return normMsgs(await rpc('opp_msg_thread', { p_bot: bot || 'daqi', p_scope: scope, p_limit: 120 })); return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80, p_bot: bot || 'daqi' })); },
+    async say(id, body, bot, ctx) { const r = ctx && !id ? await rpc('opp_msg_say', { p_item_id: null, p_body: body, p_bot: bot || 'daqi', p_ctx: ctx }) : await rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); if (!bot || bot === 'daqi' || bot === 'jian') wake(); else wake({ act: 'botsend' }); return r; }   // 2026-11-25 v125：送給別隻也叫 Mac relay 立刻跑一次
 ,
     async botInbox() { return normInbox(await rpc(R.botInbox, {})); },
     async hubToday() { return normHub(await rpc(R.hubToday, {})); },
