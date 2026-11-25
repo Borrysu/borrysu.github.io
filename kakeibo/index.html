@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.6', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.7', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4465,6 +4465,16 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
     var exp = Number(a.balance) + sum, d = Number(a.computed_balance) - exp;
     return { exp: exp, d: d, n: n };
   }
+
+  /* ---------- kk-v36.7 類型晶片（老大 11/25 意見 1113：需要標記支出或收入或轉帳，不然一時難以分明）----------
+     字＋符號＋顏色三重冗餘：支出「−」、收入「＋」綠、轉帳「⇄ A→B」、代收代付「↔ 代」。金額一律正數，方向只看 type；type 是塔塔判斷的，所以晶片只標示、不當定論。 */
+  var TY = { expense: ['支出', '−', 'exp'], income: ['收入', '＋', 'inc'], transfer: ['轉帳', '⇄', 'tr'], reimbursement: ['代', '↔', 're'] };
+  function amtTxt(type, amt) { var v = Math.abs(Math.round(Number(amt) || 0)); var s = 'NT$' + v.toLocaleString('en-US'); return type === 'income' ? '+' + s : type === 'expense' ? '−' + s : s; }
+  function typeChip(type, from, to) {
+    var t = TY[type] || TY.expense, tail = type === 'transfer' ? (from || to ? ' ' + esc(from || '?') + '→' + esc(to || '?') : '') : '';
+    var label = type === 'reimbursement' ? '代收代付' : t[0];
+    return '<span class="kkty kkty-' + t[2] + '" role="img" aria-label="' + label + (tail ? '，' + esc(from || '') + '到' + esc(to || '') : '') + '" title="' + label + '"><i aria-hidden="true">' + t[1] + '</i>' + t[0] + tail + '</span>';
+  }
   function items() {
     var o = C('o'); if (!o || C('per') !== 0) return [];
     NOSRC = 0; var D = done(), L = [], txs = C('txs') || [], cov = C('cov'), accts = o.accounts || [];
@@ -4472,14 +4482,14 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
     /* 0. v35.3 時按過「不對」、還在待確認的：問要不要作廢（不自動作廢） */
     var X = exLocal(); (C('pend') || []).forEach(function (p) {
       if (!X[p.id] || p.voided_at) return; var amt0 = Number(p.amount) || 0, sg = p.type === 'income' ? amt0 : -amt0;
-      L.push({ key: 'oldno:' + p.id, kind: 'oldno', rid: p.id, acct: p.account_name, title: '上次按過「不對」：' + (p.merchant || p.note || '一筆帳') + ' ' + fmt(sg) + '，要作廢嗎',
+      L.push({ key: 'oldno:' + p.id, kind: 'oldno', rid: p.id, acct: p.account_name, chip: typeChip(p.type, p.account_name, p.to_account_name), to: p.to_account_name, title: '上次按過「不對」：' + (p.merchant || p.note || '一筆帳') + ' ' + amtTxt(p.type, amt0) + '，要作廢嗎',
         detail: md(p.occurred_at) + (p.account_name ? '・' + p.account_name : '') + '。舊版只在手機上扣掉；現在要作廢才會從所有合計拿掉，作廢後可以復原。', src: '來源：交易 #' + p.id });
     });
     /* 1. 待確認交易 */
     (C('pend') || []).forEach(function (p) {
       var k = 'pend:' + p.id; if (D[k] || X[p.id] || blocked('transaction', p.id)) return;
       var amt = Number(p.amount) || 0, sign = p.type === 'income' ? amt : -amt;
-      L.push({ key: k, kind: 'pend', rid: p.id, acct: p.account_name, title: (p.merchant || p.note || '一筆帳') + ' ' + fmt(sign),
+      L.push({ key: k, kind: 'pend', rid: p.id, acct: p.account_name, chip: typeChip(p.type, p.account_name, p.to_account_name), to: p.to_account_name, title: (p.merchant || p.note || '一筆帳') + ' ' + amtTxt(p.type, amt),
         detail: md(p.occurred_at) + (p.account_name ? '・' + p.account_name : '') + (p.category ? '・分類 ' + p.category : '') + (p.guess_reason ? '。塔塔的理由：' + cut(p.guess_reason, 80) : ''),
         src: '來源：交易 #' + p.id + (p.evidence_type ? '（' + p.evidence_type + '）' : '') });
     });
@@ -4514,9 +4524,9 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
       var big = /(帳戶|金額|日期|店家|入帳|扣款|轉出|轉入)[^。；，]{0,12}(推定|推估|推測|判斷|估計|估算)|(推定|推估|推測|估計|估算)[^。；，]{0,4}(為|是)[^。；，]{0,12}(帳戶|帳號|中信|永豐|富邦|LINE|現金)|待[^。；，]{0,6}核實/.test(s + g);
       var ev = x.evidence_type || /通知|收據|明細|發票|網銀|Gmail|LINE 錢包|LINE錢包|繳費結果|轉帳結果|電子明細/.test(s + g);
       if (!big && ev && !CATX) { cats.push({ k: k, x: x, sign: sign }); return; }
-      L.push({ key: k, kind: 'tnote', rid: x.id, title: (x.merchant || '一筆帳') + ' ' + fmt(sign) + '，塔塔有推定，對嗎', detail: md(x.occurred_at) + (x.account_name ? '・' + x.account_name : '') + '。' + cut(g || s, 140), src: '來源：交易 #' + x.id, text: (x.merchant || '') + ' ' + fmt(sign) + '：' + (g || s) });
+      L.push({ key: k, kind: 'tnote', rid: x.id, chip: typeChip(x.type, x.account_name, x.to_account_name), to: x.to_account_name, title: (x.merchant || '一筆帳') + ' ' + amtTxt(x.type, amt) + '，塔塔有推定，對嗎', detail: md(x.occurred_at) + (x.account_name ? '・' + x.account_name : '') + '。' + cut(g || s, 140), src: '來源：交易 #' + x.id, text: (x.merchant || '') + ' ' + amtTxt(x.type, amt) + '：' + (g || s) });
     });
-    if (cats.length === 1) { var c1 = cats[0]; L.push({ key: c1.k, kind: 'tnote', rid: c1.x.id, title: (c1.x.merchant || '一筆帳') + ' ' + fmt(c1.sign) + '，分類是塔塔判斷的，對嗎', detail: md(c1.x.occurred_at) + '・分類 ' + (c1.x.category || '未分類'), src: '來源：交易 #' + c1.x.id, text: (c1.x.merchant || '') + ' 分類 ' + (c1.x.category || '') }); }
+    if (cats.length === 1) { var c1 = cats[0]; L.push({ key: c1.k, kind: 'tnote', rid: c1.x.id, chip: typeChip(c1.x.type, c1.x.account_name, c1.x.to_account_name), to: c1.x.to_account_name, title: (c1.x.merchant || '一筆帳') + ' ' + amtTxt(c1.x.type, Number(c1.x.amount) || 0) + '，分類是塔塔判斷的，對嗎', detail: md(c1.x.occurred_at) + '・分類 ' + (c1.x.category || '未分類'), src: '來源：交易 #' + c1.x.id, text: (c1.x.merchant || '') + ' 分類 ' + (c1.x.category || '') }); }
     else if (cats.length) L.push({ key: 'cats:' + h32(cats.map(function (c) { return c.k; }).join(',')), kind: 'cats', keys: cats.map(function (c) { return c.k; }), ids: cats.map(function (c) { return c.x.id; }),
       title: '塔塔替 ' + cats.length + ' 筆帳判斷了分類，都對嗎', detail: '金額都有通知、收據或網銀對過，只有分類是判斷的。' + cats.slice(0, 4).map(function (c) { return (c.x.merchant || '') + '（' + (c.x.category || '未分類') + '）'; }).join('、') + (cats.length > 4 ? ' 等' : ''),
       src: '來源：交易 #' + cats.slice(0, 6).map(function (c) { return c.x.id; }).join('、#') + (cats.length > 6 ? ' 等 ' + cats.length + ' 筆' : ''),
@@ -4533,7 +4543,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
     var b = BUSY[it.key];
     var ok = it.kind === 'diff' ? '要對帳' : it.kind === 'unb' ? '請塔塔補' : it.kind === 'cats' ? '都對' : it.kind === 'oldno' ? '作廢' : '對', no = it.kind === 'diff' ? '不用' : it.kind === 'unb' ? '不用補' : it.kind === 'oldno' ? '不用' : '不對', ed = it.kind === 'cats' ? '一筆一筆看' : '我自己改';
     var hit = FOCUS && (it.kind === 'pend' || it.kind === 'oldno') && (FOCUS === 'all' || FOCUS === 'acct:' + it.acct);
-    return '<div class="kkcf-i' + (hit ? ' hit' : '') + '" data-cfk="' + esc(it.key) + '"><div class="kkcf-t"><span>' + esc(it.title) + '</span>' + (/^(pend|oldno|tnote)$/.test(it.kind) ? '<button type="button" class="kkcf-go" data-cfa="detail">看詳情 ›</button>' : '') + '</div>' + (it.detail ? '<div class="kkcf-d">' + esc(it.detail) + '</div>' : '') + '<div class="kkcf-src">' + esc(it.src) + '</div>' +
+    return '<div class="kkcf-i' + (hit ? ' hit' : '') + '" data-cfk="' + esc(it.key) + '"><div class="kkcf-t"><span>' + (it.chip || '') + esc(it.title) + '</span>' + (/^(pend|oldno|tnote)$/.test(it.kind) ? '<button type="button" class="kkcf-go" data-cfa="detail">看詳情 ›</button>' : '') + '</div>' + (it.detail ? '<div class="kkcf-d">' + esc(it.detail) + '</div>' : '') + '<div class="kkcf-src">' + esc(it.src) + '</div>' +
       '<div class="kkcf-a"><button type="button" class="ok" data-cfa="ok"' + (b ? ' disabled' : '') + '>' + ok + '</button><button type="button" data-cfa="no"' + (b ? ' disabled' : '') + '>' + no + '</button><button type="button" data-cfa="edit"' + (b ? ' disabled' : '') + '>' + ed + '</button></div></div>';
   }
   function html(all) {
@@ -4551,7 +4561,9 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
   var DT = {}, DTSRC = { bank_import: '網銀明細', line_wallet: 'LINE 錢包通知', line_pay: 'LINE Pay 通知', line_bank: '銀行 LINE 通知', line_notice: 'LINE 通知' };
   (function () {
     var st = document.createElement('style'); st.id = 'kkdt-css';
-    st.textContent = '.kkcf-t{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}.kkcf-t>span{flex:1;min-width:0}.kkcf-go{flex:none;min-height:44px;min-width:44px;padding:0 8px;border:0;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:700;opacity:.75;cursor:pointer;white-space:nowrap}' +
+    st.textContent = '.kkty{display:inline-flex;align-items:center;gap:3px;margin:0 6px 0 0;padding:0 7px;min-height:20px;border-radius:999px;font-size:12px;font-weight:800;line-height:1.5;vertical-align:1px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;border:1.5px solid var(--muted,#666);color:var(--ink2,var(--ink,#333));background:var(--surface2,transparent)}.kkty i{font-style:normal;font-weight:900}' +
+      '.kkty-inc{color:var(--good,#1a7f4e);border-color:var(--good,#1a7f4e);background:transparent}.kkty-tr{background:transparent;color:var(--ink,#111)}.kkty-re{border-style:dashed;background:transparent;color:var(--muted,#666)}' +
+      '.kkcf-t{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}.kkcf-t>span{flex:1;min-width:0}.kkcf-go{flex:none;min-height:44px;min-width:44px;padding:0 8px;border:0;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:700;opacity:.75;cursor:pointer;white-space:nowrap}' +
       '.kkcf-i[data-cfk^="pend:"],.kkcf-i[data-cfk^="oldno:"],.kkcf-i[data-cfk^="tnote:"]{cursor:pointer}' +
       '.kkdt{position:fixed;inset:0;z-index:2147482500;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.45)}' +
       '.kkdt-p{width:100%;max-width:520px;max-height:88vh;overflow:auto;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 16px);border-radius:16px 16px 0 0;background:var(--x-surface-solid,var(--solid,var(--surface,#fff)));color:var(--ink,#1a1a1a);font:15px/1.5 system-ui,-apple-system,"PingFang TC",sans-serif;box-shadow:0 -10px 40px rgba(0,0,0,.3)}' +
@@ -4563,12 +4575,14 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
     (document.head || document.documentElement).appendChild(st);
   })();
   function dtSrc(c) { return DTSRC[c.source_kind] || (c.evidence_type ? c.evidence_type + '資料' : '通知'); }
-  function dtHuman(c) {
-    var amt = Number(c.amount) || 0, sg = c.type === 'income' ? amt : -amt, nm = c.merchant || '一筆帳';
-    return '塔塔在 ' + md(c.evidence_at || c.occurred_at) + ' 依「' + dtSrc(c) + '」記了一筆「' + nm + '」' + fmt(sg) + (c.account_name ? '，進「' + c.account_name + '」' : '') + (c.category ? '，分類猜「' + c.category + '」' : '') + '。' + (c.unbilled ? '這是信用卡未出帳的匯入，還沒進正式帳單。' : '');
+  function dtHuman(c, it) {
+    var amt = Number(c.amount) || 0, nm = c.merchant || '一筆帳', k = c.type === 'income' ? '收入' : c.type === 'transfer' ? '轉帳' : c.type === 'reimbursement' ? '代收代付' : '支出', a = c.account_name || '';
+    var acc = c.type === 'transfer' ? '，從「' + a + '」轉到「' + ((it && it.to) || '？') + '」' : c.type === 'income' ? (a ? '，進「' + a + '」' : '') : (a ? '，用「' + a + '」' : '');
+    return '塔塔在 ' + md(c.evidence_at || c.occurred_at) + ' 依「' + dtSrc(c) + '」記了一筆' + k + '「' + nm + '」' + amtTxt(c.type, amt) + acc + (c.category && c.type !== 'transfer' ? '，分類猜「' + c.category + '」' : '') + '。' + (c.unbilled ? '這是信用卡未出帳的匯入，還沒進正式帳單。' : '');
   }
   function dtWhy(c) {
     var w = [];
+    w.push('類型「' + ((TY[c.type] || TY.expense)[0] === '代' ? '代收代付' : (TY[c.type] || TY.expense)[0]) + '」是塔塔判斷的；不對請按「不對」或「我自己改」。' + (c.type === 'reimbursement' ? '代收代付不算收入也不算支出，資料裡沒有誰代墊誰，請你對一下。' : ''));
     if (c.guess_reason) w.push('塔塔的理由：' + cut(c.guess_reason, 200));
     if (c.unbilled) w.push('信用卡未出帳匯入：金額與日期以網銀為準，出帳後可能還會變。');
     if (c.category) w.push('分類「' + c.category + '」是塔塔猜的，不是你選的。');
@@ -4585,10 +4599,10 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
     if (err) return '<p class="kkdt-w">讀不到詳情：' + esc(err) + '。列表上的資訊和三顆鈕都沒受影響。</p>';
     if (!c) return '<p class="kkdt-w">讀取中…</p>';
     if (!c.found) return '<p class="kkdt-w">找不到這筆（可能已作廢）。重新整理看看。</p>';
-    h += '<p class="kkdt-lead">' + esc(dtHuman(c)) + '</p>';
+    h += '<p class="kkdt-lead">' + esc(dtHuman(c, it)) + '</p>';
     h += '<h4>為什麼要你確認</h4><ul>' + dtWhy(c).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
-    var amt = Number(c.amount) || 0, sg = c.type === 'income' ? amt : -amt;
-    h += '<h4>這筆資料</h4><dl><dt>日期</dt><dd>' + esc(md(c.occurred_at)) + '</dd><dt>店家</dt><dd>' + esc(c.merchant || '（沒寫）') + '</dd><dt>金額</dt><dd>' + esc(fmt(sg)) + '</dd><dt>帳戶</dt><dd>' + esc(c.account_name || '') + '</dd>' +
+    var amt = Number(c.amount) || 0;
+    h += '<h4>這筆資料</h4><dl><dt>類型</dt><dd>' + typeChip(c.type, c.account_name, it && it.to) + '</dd><dt>日期</dt><dd>' + esc(md(c.occurred_at)) + '</dd><dt>店家</dt><dd>' + esc(c.merchant || '（沒寫）') + '</dd><dt>金額</dt><dd>' + esc(amtTxt(c.type, amt)) + '</dd><dt>帳戶</dt><dd>' + esc(c.account_name || '') + '</dd>' +
       (c.payment_method ? '<dt>付款方式</dt><dd>' + esc(c.payment_method) + '</dd>' : '') + (c.category ? '<dt>分類</dt><dd>' + esc(c.category) + '</dd>' : '') +
       '<dt>塔塔怎麼知道</dt><dd>' + esc(dtSrc(c)) + (c.evidence_at ? '（' + esc(md(c.evidence_at)) + '）' : '') + '</dd>' + (c.edits_count ? '<dt>改過</dt><dd>' + c.edits_count + ' 次</dd>' : '') + '</dl>';
     if (c.note) h += '<h4>備註原文</h4><p class="kkdt-note">' + esc(c.note) + '</p>';
@@ -4604,7 +4618,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
   async function openDetail(it) {
     closeDetail(); var id = it.rid, ov = document.createElement('div');
     ov.className = 'kkdt'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', '這筆的詳情');
-    ov.innerHTML = '<div class="kkdt-p"><div class="kkdt-h"><b>' + esc(it.title) + '</b><button type="button" class="kkdt-x" data-dtx="1">關閉</button></div><div class="kkdt-c"></div></div>';
+    ov.innerHTML = '<div class="kkdt-p"><div class="kkdt-h"><b>' + (it.chip || '') + esc(it.title) + '</b><button type="button" class="kkdt-x" data-dtx="1">關閉</button></div><div class="kkdt-c"></div></div>';
     var cont = ov.querySelector('.kkdt-c'), draw = function (c, err) { cont.innerHTML = dtBody(it, c, err); };
     ov.addEventListener('click', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-dtx]'))) closeDetail(); });
     ov.addEventListener('touchend', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-dtx]'))) { e.preventDefault(); closeDetail(); } }, { passive: false });
