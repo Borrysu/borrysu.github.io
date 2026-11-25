@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v194');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v195');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5587,11 +5587,14 @@ function brandTap(){if(brandDraft()&&Date.now()-BRT>4000){BRT=Date.now();toast('
 // v194（msg 1178）：開著的舊畫面不會自己換新程式，舊版的「自動拆」會繼續拆。回到畫面時查一次有沒有新版，沒有在輸入、沒開抽屜或對話才自動換新；有輸入就先不動，只提示。
 {let VT=0;const run=()=>{try{const m=/app\.js\?v(\d+)/.exec((document.querySelector('script[src*="app.js?v"]')||{}).src||'');return m?+m[1]:0}catch(e){return 0}};
  const draft=()=>[...document.querySelectorAll('input[type=text],textarea')].some(e=>e.offsetParent!==null&&String(e.value||'').trim());
- const chk=async()=>{if(document.hidden||Date.now()-VT<60000)return;VT=Date.now();const me=run();if(!me)return;
+ const chk=async()=>{if(document.hidden||Date.now()-VT<30000)return;VT=Date.now();const me=run();if(!me)return;
   try{const t=await fetch('sw.js',{cache:'no-store'}).then(r=>r.text()),m=/opp-shell-v(\d+)/.exec(t);if(!m||+m[1]<=me)return;
-   if(draft()||S.sheet||S.chat||document.documentElement.classList.contains('marking')){if(!window.__newVerToast){window.__newVerToast=1;toast('有新版了，寫完或關掉視窗後重新整理就會換')}return}
+   if(draft()||S.sheet||S.chat||document.documentElement.classList.contains('marking')){mark(1);if(!window.__newVerToast){window.__newVerToast=1;toast('有新版了，寫完或關掉視窗後重新整理就會換')}return}
    location.reload()}catch(e){}};
- document.addEventListener('visibilitychange',chk);window.addEventListener('focus',chk);setTimeout(chk,3000)}
+ const br=document.querySelector('.brand');if(br&&!document.getElementById('ver')){const v=document.createElement('small');v.id='ver';v.textContent='v'+run();v.style.cssText='opacity:.55;font-size:11px';v.title='你現在跑的版本';br.appendChild(v)}
+ const mark=n=>{const v=document.getElementById('ver');if(v)v.textContent='v'+run()+(n?'（有新版）':'')};
+ const _chk=chk;
+ document.addEventListener('visibilitychange',chk);window.addEventListener('focus',chk);document.addEventListener('pointerdown',chk,{passive:true});setTimeout(chk,3000)}
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
