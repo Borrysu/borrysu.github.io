@@ -1688,3 +1688,12 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 /* 2026-11-25 按需載入：某區沒讀到時的小提示 */
 .zerr{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 10px;padding:6px 10px;border-radius:10px;background:rgba(243,239,224,.08);font-size:12px;color:var(--mut,#aaa)}
 .zerr .btn{min-height:32px;padding:0 12px}
+.tlseg[data-s="tide"]{background:#9a7cff}
+
+/* v122 首頁「今天」合成一塊 */
+.tday.v122 .tdbar{margin:4px 0 8px}
+.tday.v122 .tdd[data-s="co"]{--cc:#f2a93b}.tday.v122 .tdd[data-s="me"]{--cc:#5b8cff}.tday.v122 .tdd[data-s="tide"]{--cc:#9a7cff}
+.tday.v122 .tdi.tide b{color:var(--ink2);font-weight:600}
+.tday.v122 .tdmk{cursor:default}.tday.v122 .tdmk b{font-weight:600}.tday.v122 .tdmk[data-k="internal_due"] .tm,.tday.v122 .tdmk[data-k="internal_due"] b{color:var(--urg,#f87171)}
+.tday.v122 .tdnote{margin:6px 0 0;font-size:12px;color:var(--ink2)}
+.tday.v122 .tdtmr{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);font-size:13px;color:var(--ink2)}.tday.v122 .tdtmr b{color:var(--ink);margin-right:4px}

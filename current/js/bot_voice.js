@@ -1195,10 +1195,11 @@
     var Z = window.__zl; if (!Z || !Z.LV || !Z.LV.api || !Z.LV.api.tidePlan) return;
     if (busy || (cache && Date.now() - at < 600000)) return; busy = true;
     var now = new Date(), t0 = ymd(now), t1 = ymd(new Date(now.getTime() + 864e5));
-    Z.LV.api.tidePlan(t0, t1).then(function (d) { cache = Array.isArray(d) ? d : []; at = Date.now(); busy = false; draw(); }).catch(function () { cache = []; at = Date.now(); busy = false; draw(); });
+    Z.LV.api.tidePlan(t0, ymd(new Date(now.getTime() + 13 * 864e5))).then(function (d) { cache = Array.isArray(d) ? d : []; at = Date.now(); busy = false; window.__tideRows = cache; if (Z.reCal) Z.reCal(); draw(); }).catch(function () { cache = []; at = Date.now(); busy = false; draw(); });
   }
   function draw() {
     var Z = window.__zl, old = document.getElementById('tideBox'); if (old) old.parentNode.removeChild(old);
+    if (window.__tideInline) return;   // v122 起併進首頁「今天」那塊，這塊不再單獨畫
     if (!Z || !Z.S || (Z.S.tab && Z.S.tab !== 'today') || Z.S.page || !cache || !cache.length) return;
     var anchor = document.querySelector('#view [data-z="goal"]'); if (!anchor) return;
     var now = Date.now(), t0 = ymd(new Date()), groups = { };
@@ -1215,7 +1216,7 @@
       var nowH = (function () { var x = new Date(Date.now() + 8 * 3600e3); return x.getUTCHours() + x.getUTCMinutes() / 60; })();
       var pc = function (v) { return Math.max(0, Math.min(100, (v - 8) / 16 * 100)); };
       var free = i.free.map(function (f) { return n === 0 ? [Math.max(f[0], nowH), f[1]] : f; }).filter(function (f) { return f[1] - f[0] >= 0.5; });
-      var fh = free.reduce(function (t, f) { return t + f[1] - f[0]; }, 0), big = free.slice().sort(function (a, b) { return (b[1] - b[0]) - (a[1] - a[0]); })[0];
+      var fh = Math.max(0, free.reduce(function (t, f) { return t + f[1] - f[0]; }, 0) - (i.est || 0)), big = free.slice().sort(function (a, b) { return (b[1] - b[0]) - (a[1] - a[0]); })[0];
       var fmt = function (v) { var H = Math.floor(v), M = Math.round((v - H) * 60); return String(H).padStart(2, '0') + ':' + String(M).padStart(2, '0'); };
       var segs = i.segs.map(function (sg) { return '<i class="tdseg" data-s="' + sg.e.src + '" style="left:' + pc(sg.a) + '%;width:' + Math.max(1.5, pc(sg.b) - pc(sg.a)) + '%"></i>'; }).join('');
       var pins = rs.map(function (r) { var x = new Date(new Date(r.at).getTime() + 8 * 3600e3), v = x.getUTCHours() + x.getUTCMinutes() / 60; return '<i class="tdpin" data-k="' + esc(r.kind) + '" style="left:' + pc(v) + '%"></i>'; }).join('');
@@ -1235,10 +1236,12 @@
     '.tidebox li:first-child{border-top:0}.tidebox li b{min-width:44px}.tidebox li span{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}' +
     '.tidebox li[data-k="internal_due"] b{color:var(--urg,#f87171)}'+
     '.tdbar{display:flex;align-items:center;gap:8px;margin:2px 0 6px}.tdtrack{position:relative;flex:1;height:16px;border-radius:5px;background:rgba(127,127,127,.16);overflow:hidden}' +
-    '.tdseg{position:absolute;top:0;bottom:0;border-radius:3px;background:#5b8cff}.tdseg[data-s="co"]{background:#f2a93b}.tdpast{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(127,127,127,.28) 0 3px,transparent 3px 7px)}' +
+    '.tdseg{position:absolute;top:0;bottom:0;border-radius:3px;background:#5b8cff}.tdseg[data-s="co"]{background:#f2a93b}.tdseg[data-s="tide"]{background:#9a7cff}.tdpast{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(127,127,127,.28) 0 3px,transparent 3px 7px)}' +
     '.tdpin{position:absolute;top:2px;bottom:2px;width:3px;margin-left:-1px;border-radius:2px;background:var(--ink)}.tdpin[data-k="internal_due"]{background:#f0605a}' +
     '.tdfree{display:flex;flex-direction:column;align-items:flex-end;min-width:86px;font-size:12px;color:var(--ink2);line-height:1.2}.tdfree b{font-size:16px;color:var(--ink)}.tdfree.tight b{color:#f0605a}.tdfree small{font-size:11px}.tidebox .tdn{margin:8px 0 0;font-size:12px;color:var(--ink2)}';
   (document.head || document.documentElement).appendChild(st);
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () { if (document.getElementById('tideBox') || !document.querySelector('#view [data-z="goal"]')) { if (!document.querySelector('#view [data-z="goal"]')) return; if (document.getElementById('tideBox')) return; }
-    if (cache && Date.now() - at < 600000) draw(); else load(); }, 150); }).observe(document.documentElement, { childList: true, subtree: true });
+    if (cache && Date.now() - at < 600000) draw(); else load(); }, 150);
+    if (!cache && !busy) load();   /* 2026-11-25 行事曆頁也要張弛時段（算忙碌），不只首頁才讀 */
+  }).observe(document.documentElement, { childList: true, subtree: true });
 })();

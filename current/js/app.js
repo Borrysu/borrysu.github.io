@@ -2190,7 +2190,37 @@ function mapCal(e){const loc=e.start?new Date(e.start):null,day=loc?new Date(loc
  if(o.src==='co'){const m=raw.match(/^【([^】]+)】\s*(.*)$/);o.cs=m?m[1]:'好咖';o.n=(m?m[2]:raw).replace(/\s*@[^@]*$/,'').trim()||raw;o.why='標題有 @Borry'}
  else{const m=raw.match(/^([SEWCL])[.．]\s*(.*)$/);o.cat=m?m[1]:'?';o.n=m?m[2]:raw}
  return o}
-function applyCal(){CAL.length=0;if(LV.cal&&Array.isArray(LV.cal.items))LV.cal.items.map(mapCal).filter(Boolean).forEach(x=>CAL.push(x))}
+function applyCal(){CAL.length=0;if(LV.cal&&Array.isArray(LV.cal.items))LV.cal.items.map(mapCal).filter(Boolean).forEach(x=>CAL.push(x));calFix()}
+/* 2026-11-25 行事曆資料修正（老大：「面板行事曆有很多資料好像都很怪」「我覺得要把張弛排的算忙碌」）
+   ①多天的全天行程每天都顯示（原本只顯示第一天，或過了開始日就全擠在今天），名稱後加「（第 2／4 天）」；
+   ②公司行事曆與個人行事曆同一個時段、同一件事，只留公司那筆，標「個人行事曆也有」；
+   ③張弛排的開工時段（hub_tide_plan kind=start，有 est_hours）算成忙碌，顯示成「張弛排」；
+   退回：把 applyCal 最後的 calFix() 拿掉。 */
+const calKey=t=>String(t||'').replace(/^[A-Za-z]\.|^【[^】]*】|\s*[@＠].*$|[（(][^）)]*[）)]/g,'').replace(/[\s｜|,，、:：]/g,'').toLowerCase();
+function calFix(){if(!LV.cal||!Array.isArray(LV.cal.items))return;
+ const t0=new Date(Date.now()+8*3600e3);t0.setUTCHours(0,0,0,0);
+ // ①
+ LV.cal.items.forEach(raw=>{if(!raw.all_day||!raw.start_date||!raw.end_date)return;
+  const s0=Date.parse(raw.start_date+'T00:00:00Z'),e0=Date.parse(raw.end_date+'T00:00:00Z'),n=Math.round((e0-s0)/864e5);if(n<=1)return;
+  const base=CAL.find(e=>e.id===raw.id);if(!base)return;
+  for(let k=0;k<n;k++){const d=Math.round((s0+k*864e5-t0.getTime())/864e5);if(d<0||d>13)continue;
+   const tag=`（第 ${k+1}／${n} 天）`;
+   if(d===base.d&&!base.spanSet){base.n=base.n+tag;base.spanSet=1;continue}
+   CAL.push(Object.assign({},base,{id:base.id+'#'+d,d,n:String(base.n).replace(/（第 \d+／\d+ 天）$/,'')+tag,spanSet:1}))}
+  // 開始日在今天以前、被擠到今天的那筆，改成今天這一天的標記
+  const sd=Math.round((s0-t0.getTime())/864e5);if(sd<0&&!base.spanSet){const k=-sd;base.n=base.n+`（第 ${k+1}／${n} 天）`;base.spanSet=1}});
+ // ②
+ CAL.forEach(m=>{if(m.src!=='me'||m.all||!m.t||m.del)return;
+  const c=CAL.find(x=>x.src==='co'&&!x.all&&x.d===m.d&&x.t===m.t&&x.e===m.e&&!x.del);
+  if(c){m.del=1;m.dupOf=c.id;c.alsoMe=1}});
+ // ③
+ const tr=window.__tideRows||[];
+ tr.forEach(r=>{if(r.kind!=='start'||!r.at)return;const est=+((r.meta||{}).est_hours||0);if(!(est>0))return;
+  const x=new Date(Date.parse(r.at)+8*3600e3),d=Math.round((Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),x.getUTCDate())-t0.getTime())/864e5);if(d<0||d>13)return;
+  const hh=x.getUTCHours()+x.getUTCMinutes()/60,f=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
+  CAL.push({id:'tide:'+r.id,d,t:f(hh),e:f(Math.min(24,hh+est)),all:0,n:'張弛排：'+String(r.title||'').replace(/\s*@Borry/i,''),src:'tide',place:'',why:'張弛照交件倒推排的開工時段（不在 Google 行事曆上）',from:1,go:'',real:0})})}
+window.__zl=Object.assign(window.__zl||{},{reCal:()=>{applyCal();LV.sig='';paint()}});
+{const _cs=calSheet;calSheet=function(id){if(String(id).startsWith('tide:')){const e=calFind(id);if(!e)return shHead('這段不在了');return shHead(esc(e.n))+`<div class="meta" style="margin-top:8px"><span class="lbl">${dlw(e.d)}　${e.t}～${e.e}</span></div><p style="margin-top:8px">張弛照你的交件時間往回推，建議這段開工。它不在 Google 行事曆上，所以這裡不能改時間；要調整就跟大器說。</p>`}return _cs(id)}}
 function calAsk(text,ok){LV.api.say(null,'【行事曆】'+text+'（照 14 號行事曆準則建立或修改，做完回報；逐流面板只讀，同步後會出現在行程）','daqi').then(()=>toast(ok)).catch(e=>toast('沒送出：'+LERR(e)))}
 ACT.calmk=()=>{const t=$('#nlT'),txt=t?t.value.trim():'',f=readForm(),c=ctlOf();
  const title=f.title||txt;if(!title){const x=$('#cfErr');if(x)x.hidden=false;if(t)t.focus();return}
@@ -2502,7 +2532,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v121');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v122');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4587,8 +4617,11 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
   segs.sort((x,y)=>x.a-y.a);
   const mg=[];segs.forEach(s=>{const l=mg[mg.length-1];if(l&&s.a<=l[1])l[1]=Math.max(l[1],s.b);else mg.push([s.a,s.b])});
   const free=[];let c=FW0;mg.forEach(([a,b])=>{const A=Math.max(a,FW0),B=Math.min(b,FW1);if(B<=FW0||A>=FW1)return;if(A-c>=0.5)free.push([c,A]);c=Math.max(c,B)});if(FW1-c>=0.5)free.push([c,FW1]);
-  const busy=mg.reduce((t,[a,b])=>t+Math.max(0,Math.min(b,FW1)-Math.max(a,FW0)),0);
-  return {segs,alls,free,freeH:free.reduce((t,[a,b])=>t+b-a,0),busy,n:segs.length+alls.length}}
+  const busy0=mg.reduce((t,[a,b])=>t+Math.max(0,Math.min(b,FW1)-Math.max(a,FW0)),0);
+  // 2026-11-25 全天卻寫「每天約 N 小時」的，空檔扣 N 小時（張弛已在這天排同名時段就不重扣）
+  const est=alls.reduce((t,e)=>{const m=/每天約?\s*(\d+(?:\.\d+)?)\s*小時/.exec(e.n||'');if(!m)return t;const k=calKey(e.n);if(segs.some(x=>x.e.src==='tide'&&calKey(x.e.n)===k))return t;return t+(+m[1])},0);
+  const freeH0=free.reduce((t,[a,b])=>t+b-a,0);
+  return {segs,alls,free,freeH:Math.max(0,freeH0-est),est,busy:busy0+est,n:segs.length+alls.length}}
  const pct=h=>Math.max(0,Math.min(100,(h-TL0)/(TL1-TL0)*100));
  // v115 評估：老大選「要幾小時」，每天找最早一段連續放得下的空檔（今天只看現在以後）
  const fitOf=(i,need,from)=>{for(const [a,b] of i.free){const A=Math.max(a,from);if(b-A>=need-1e-6)return [A,A+need]}return null};
@@ -4612,7 +4645,7 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
  function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})();
   const days=Array.from({length:14},(_,n)=>({n,x:dOf(n),i:dayInfo(all.filter(e=>e.d===n))}));
   // 今天只算現在之後的空檔
-  const d0=days[0].i;d0.freeNow=d0.free.reduce((t,[a,b])=>t+Math.max(0,b-Math.max(a,now)),0);
+  const d0=days[0].i;d0.freeNow=Math.max(0,d0.free.reduce((t,[a,b])=>t+Math.max(0,b-Math.max(a,now)),0)-(d0.est||0));
   const wk=days.slice(0,7),freeWk=wk.reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
   const best=wk.slice(1).sort((p,q)=>q.i.freeH-p.i.freeH)[0];
   const full=wk.filter(d=>(d.n===0?d0.freeNow:d.i.freeH)<2).length;
@@ -4660,6 +4693,45 @@ function zbanner(keys){if(S.st==='loading'||S.st==='error')return '';const bad=k
 {const _p=pageHTML;pageHTML=function(){const h=_p.apply(this,arguments);return S.page==='cal'?zbanner(['cal'])+h:h}}
 ACT.zretry=()=>{const ks=zKeys().filter(k=>LZ.err[k]||zStale(k));toast('重新讀取中');loadZones(ks).then(()=>{LV.sig='';paint();if(zKeys().some(k=>LZ.err[k]))toast('還是沒讀到，等一下再試')})};
 window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
+/* ---------- v122（2026-11-25）：首頁「今天」合成一塊 ----------
+   老大：「今天的節奏跟今天的行事曆 我有點搞不懂為什麼要這樣設計」「還有 4 件 › 跟看全部的按鈕是一樣的，還有四件你應該把收合展開不是跳轉頁面」
+   「原本我們在裡面的行事曆那個 還有多少時間多少空檔 幾個小時那個我真的覺得還不錯 可能可以結合？」「我覺得要把張弛排的算忙碌」
+   做法：原本「今天行程」與「今天的節奏」合成一塊「今天」：一條時間條（行事曆＋張弛排的時段都算忙碌）、右邊空幾小時與最長空檔；
+   下面照時間排：行程、張弛排的開工時段、出門／上線、內部截止；先列 4 件，「還有 N 件」原地展開／收起；最底下一行灰字注意事項；再一行「明天」摘要。
+   也拿掉首頁每次重畫都叫行事曆同步（calKick），只有按 ↻ 才同步（資料庫降載）。退回：刪掉這一段（舊 todayStrip 與 bot_voice 的 #tideBox 會回來）。 */
+{const KIND={leave:'出門',internal_due:'內部截止',hard_stop:'收手'};
+ const tw=iso=>{const x=new Date(Date.parse(iso)+8*3600e3);return{h:x.getUTCHours()+x.getUTCMinutes()/60,d:Math.round((Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),x.getUTCDate())-(()=>{const t=new Date(Date.now()+8*3600e3);t.setUTCHours(0,0,0,0);return t.getTime()})())/864e5)}};
+ const f2=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
+ const pc=v=>Math.max(0,Math.min(100,(v-8)/16*100));
+ const nowH=()=>{const x=new Date(Date.now()+8*3600e3);return x.getUTCHours()+x.getUTCMinutes()/60};
+ function dayOf(n){const Z=window.__zl,its=calAll().filter(e=>e.d===n&&!e.cancel),i=Z&&Z.tlDay?Z.tlDay(its):null,nh=nowH();
+  const marks=(window.__tideRows||[]).filter(r=>r.kind!=='start'&&r.at&&tw(r.at).d===n).map(r=>({h:tw(r.at).h,r}));
+  let free=i?i.free.map(f=>n===0?[Math.max(f[0],nh),f[1]]:f).filter(f=>f[1]-f[0]>=0.5):[];
+  const fh=Math.max(0,free.reduce((t,f)=>t+f[1]-f[0],0)-((i&&i.est)||0)),big=free.slice().sort((a,b)=>(b[1]-b[0])-(a[1]-a[0]))[0];
+  const notes=[];(window.__tideRows||[]).forEach(r=>{if(!r.at||tw(r.at).d!==n)return;const m=r.meta||{};[m.note,m.warn].forEach(x=>{if(x&&notes.indexOf(x)<0)notes.push(x)})});
+  return {its,i,marks,fh,big,notes}}
+ function bar(n,D){const i=D.i;if(!i)return '';const nh=nowH();
+  const segs=i.segs.map(s=>`<i class="tdseg" data-s="${s.e.src}" style="left:${pc(s.a)}%;width:${Math.max(1.5,pc(s.b)-pc(s.a))}%"></i>`).join('');
+  const pins=D.marks.map(m=>`<i class="tdpin" data-k="${m.r.kind}" style="left:${pc(m.h)}%"></i>`).join('');
+  const past=n===0?`<i class="tdpast" style="width:${pc(nh)}%"></i>`:'';
+  return `<div class="tdbar"><span class="tdtrack" aria-hidden="true">${past}${segs}${pins}</span><span class="tdfree${D.fh<2?' tight':''}"><b class="num">${Math.round(D.fh*2)/2}</b> 小時空${D.big?`<small>最長 ${f2(D.big[0])}～${f2(D.big[1])}</small>`:''}</span></div>`}
+ function rows(D){const out=[];
+  D.its.filter(e=>e.all||!e.t).forEach(e=>out.push({k:-1,h:`<button class="tdi" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">全天</span><b>${e.cs?esc(e.cs)+'・':''}${esc(e.n)}</b><i class="tdd" data-s="${e.src}"></i></button>`}));
+  D.its.filter(e=>!(e.all||!e.t)).forEach(e=>{const m=/^(\d+):(\d+)/.exec(e.t);out.push({k:m?+m[1]+m[2]/60:0,h:`<button class="tdi${e.src==='tide'?' tide':''}" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${esc(e.t)}${e.e?'～'+esc(e.e):''}</span><b>${e.cs&&e.src!=='tide'?esc(e.cs)+'・':''}${esc(e.src==='tide'?String(e.n).replace(/^張弛排：/,''):e.n)}</b>${e.src==='tide'?'<small>張弛排的開工時段</small>':e.place?`<small>${esc(e.place)}</small>`:''}<i class="tdd" data-s="${e.src}"></i></button>`})});
+  D.marks.forEach(m=>{const r=m.r,k=r.kind==='leave'?(r.verb||'出門'):(KIND[r.kind]||r.kind);out.push({k:m.h-0.001,h:`<div class="tdi tdmk" data-k="${r.kind}"><span class="tm">${f2(m.h)}</span><b>${esc(k)}</b><small>${esc(String(r.title||'').replace(/\s*@Borry/i,''))}</small></div>`})});
+  return out.sort((a,b)=>a.k-b.k).map(x=>x.h)}
+ ACT.tdmore=()=>{S.tdOpen=!S.tdOpen;render('keep')};
+ todayStrip=function(){if(S.st==='loading'||S.st==='error')return '';
+  const D=dayOf(0),R=rows(D),ago=calAgo(),open=!!S.tdOpen,N=4;
+  const T=dayOf(1),tr=rows(T),tfirst=T.its.filter(e=>!(e.all||!e.t)).concat([]).sort((a,b)=>String(a.t).localeCompare(String(b.t)))[0];
+  let h=`<section class="sec tday v122"><div class="tdh"><h2>今天<small>${D.its.length+D.marks.length?(D.its.length+D.marks.length)+' 件':'沒有行程'}</small></h2><span class="tdh-r">${mb('＋ 新增','sheet','calnew')}${moreB('行事曆','page','cal')}</span></div>`;
+  h+=bar(0,D);
+  if(R.length){h+=`<div class="tdl">${(open?R:R.slice(0,N)).join('')}</div>`;if(R.length>N)h+=`<button class="tdm" data-act="tdmore" aria-expanded="${open}">${open?'收起':'還有 '+(R.length-N)+' 件'}</button>`}
+  if(D.notes.length)h+=`<p class="tdnote">${D.notes.map(esc).join('；')}</p>`;
+  h+=`<p class="tdtmr"><b>明天</b> 空 ${Math.round(T.fh*2)/2} 小時${T.big?`・最長 ${f2(T.big[0])}～${f2(T.big[1])}`:''}${tfirst?`・第一件 ${esc(tfirst.t)} ${esc(String(tfirst.n).replace(/^張弛排：/,''))}`:''}</p>`;
+  if(ago)h+=`<p class="tdu">行事曆 ${esc(ago)}更新${mb('↻','calnow','',' aria-label="現在更新"')}</p>`;
+  return h+'</section>'};
+ window.__tideInline=true;}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
