@@ -2228,6 +2228,13 @@ function calFix(){if(!LV.cal||!Array.isArray(LV.cal.items))return;
  CAL.forEach(m=>{if(m.src!=='me'||m.all||!m.t||m.del)return;
   const c=CAL.find(x=>x.src==='co'&&!x.all&&x.d===m.d&&x.t===m.t&&x.e===m.e&&!x.del);
   if(c){m.del=1;m.dupOf=c.id;c.alsoMe=1}});
+ // v169 逐流 msg 1020 老大：「這邊跟我個人的行事曆是重複的…兩邊如果東西是一樣的就要合併顯示一條啊」→ 全天的也合併：同一天、同案名、同階段（初稿／審稿／定稿／演練／導演版…）就只留公司那條
+ {const STG=['導演版','修定稿','定稿','初稿','審稿','演練','預告','交付','活動紀錄','上映'];
+  const keyOf=e=>{const raw=String((e.cs?'【'+e.cs+'】':'')+(e.n||'')).replace(/（第 \d+／\d+ 天）/g,'');const m=/【([^】]+)】/.exec(raw);let proj=m?m[1]:'';let rest=raw.replace(/【[^】]+】/g,' ').replace(/^\s*[A-Z]\.\s*/,'').replace(/@\S+/g,' ').replace(/（[^）]*）/g,' ').trim();
+   if(!proj){const t=rest.split(/\s+/)[0]||'';proj=t;rest=rest.slice(t.length)}const st=STG.filter(s=>rest.indexOf(s)>-1);return {proj:proj.replace(/\s/g,''),st}};
+  CAL.forEach(m=>{if(m.src!=='me'||!(m.all||!m.t)||m.del)return;const km=keyOf(m);if(km.proj.length<2||!km.st.length)return;
+   const c=CAL.find(x=>x.src==='co'&&(x.all||!x.t)&&x.d===m.d&&!x.del&&(()=>{const kc=keyOf(x);return kc.proj===km.proj&&kc.st.some(s=>km.st.includes(s)||km.st.some(t=>t.includes(s)||s.includes(t)))})());
+   if(c){m.del=1;m.dupOf=c.id;c.alsoMe=1}})}
  // ③
  const tr=window.__tideRows||[];
  tr.forEach(r=>{if(r.kind!=='start'||!r.at)return;const est=+((r.meta||{}).est_hours||0);if(!(est>0))return;
@@ -2552,7 +2559,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v168');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v169');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
