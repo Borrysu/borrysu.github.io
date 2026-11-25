@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v123';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v124';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -214,7 +214,9 @@ export function mockAdapter(modeStr) {
     { id: 'co:4', cal: 'co', title: '【示意短片】內審 @我', start: at(6, 15), end: at(6, 16), all_day: false, location: '公司會議室' },
     { id: 'me:6', cal: 'me', title: 'W.補助申請表', start: at(8, 14), end: at(8, 15), all_day: false, location: '' },
     { id: 'me:7', cal: 'me', title: 'L.運動', start: at(10, 7), end: at(10, 8), all_day: false, location: '' },
-    { id: 'me:8', cal: 'me', title: 'E.示意短片 Acopy', start: at(12, 9), end: at(12, 18), all_day: false, location: '家裡' }];
+    { id: 'me:8', cal: 'me', title: 'E.示意短片 Acopy', start: at(12, 9), end: at(12, 18), all_day: false, location: '家裡' },
+    { id: 'me:9', cal: 'me', title: 'E.某品牌形象短片 粗剪', start: null, end: null, all_day: true, start_date: iso(0), end_date: iso(1), location: '' },
+    { id: 'me:10', cal: 'me', title: 'S.示意拍攝週', start: null, end: null, all_day: true, start_date: iso(5), end_date: iso(9), location: '示意攝影棚' }];
   const mlife = [
     { id: 'l1', kind: 'wish', name: X || '乳清蛋白 2.2 kg', url: flags.has('xss') ? 'javascript:window.__xss=10' : 'https://example.com/whey', note: X || '巧克力口味', price: 1280, shop: '示意商城', status: 'active', created_at: new Date().toISOString() },
     { id: 'l2', kind: 'rout', name: X || '洗冷氣濾網', cycle_days: 30, last_date: iso(-41), status: 'active' },
@@ -317,6 +319,16 @@ export function mockAdapter(modeStr) {
     },
     async tideLog() { await wait(100); return (window.__mockTideLog || []).slice().reverse(); },
     async tideLogAdd(kind, patch) { await wait(150); const r = { id: 'tl' + Date.now(), kind, at: new Date().toISOString(), note: (patch && patch.note) || {}, source: '面板' }; (window.__mockTideLog = window.__mockTideLog || []).push(r); return { ok: true, id: r.id }; },
+    // 2026-11-25 v124：示範模式的行事曆寫回：1.2 秒後在 mcal 上做同樣的改動，並補一筆 cal_done（標題有「失敗測試」就補 cal_fail）
+    async calWrite(note) { await wait(120); const log = (window.__mockTideLog = window.__mockTideLog || []); log.push({ id: 'tl' + Date.now() + Math.random(), kind: 'note', at: new Date().toISOString(), note, source: '面板' });
+      setTimeout(() => { const steps = [note].concat(note.extra || []); let err = '';
+        if (/失敗測試/.test(note.title || '')) err = '行事曆沒回應（示範）'; else steps.forEach(s => { const id = String(s.event_id || '').replace(/#.*$/, ''), ex = mcal.find(x => x.id === id);
+          if (s.op === 'delete') { const k = mcal.findIndex(x => x.id === id); if (k >= 0) mcal.splice(k, 1); return; }
+          const body = {}; if (s.summary != null) body.title = s.summary; else if (s.op === 'create') body.title = s.title;
+          if (s.all_day) { body.all_day = true; body.start = null; body.end = null; body.start_date = s.date; body.end_date = s.end_date || new Date(Date.parse(s.date + 'T00:00:00Z') + 864e5).toISOString().slice(0, 10); }
+          else if (s.date && s.start) { body.all_day = false; body.start = s.date + 'T' + s.start + ':00+08:00'; body.end = s.date + 'T' + (s.end || s.start) + ':00+08:00'; body.start_date = null; body.end_date = null; }
+          if (s.op === 'create') mcal.push(Object.assign({ id: 'new' + Date.now() + Math.random(), cal: s.cal || note.cal || 'me', location: '' }, body)); else if (ex) Object.assign(ex, body); });
+        log.push({ id: 'tl' + Date.now() + Math.random(), kind: 'note', at: new Date().toISOString(), source: '大器', note: err ? { type: 'cal_fail', req_id: note.req_id, error: err } : { type: 'cal_done', req_id: note.req_id, event_id: 'x' } }); }, 1200); return { ok: true }; },
     async tidePlan() { await wait(150); const d = n => { const t = new Date(); t.setDate(t.getDate() + n); return t; }, at = (n, h, m) => { const t = d(n); t.setHours(h, m || 0, 0, 0); return t.toISOString(); };
       return [   // 示範用虛構節奏
         { kind: 'leave', verb: '出門', title: '與客戶討論分鏡', at: at(0, 9, 30) },

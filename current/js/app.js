@@ -2186,7 +2186,7 @@ CAT['?']=['沒分類','#8a8a8a'];
 function mapCal(e){const loc=e.start?new Date(e.start):null,day=loc?new Date(loc):e.start_date?new Date(e.start_date+'T00:00:00'):null;if(!day)return null;day.setHours(0,0,0,0);
  const t0=new Date();t0.setHours(0,0,0,0);let d=Math.round((day-t0)/864e5);if(d<0)d=0;
  const hm=x=>x?String(new Date(x).getHours()).padStart(2,'0')+':'+String(new Date(x).getMinutes()).padStart(2,'0'):'';
- const raw=String(e.title||''),o={id:e.id,d,t:e.all_day?'':hm(e.start),e:e.all_day?'':hm(e.end),all:e.all_day?1:0,place:e.location||'',src:e.cal==='co'?'co':'me',link:LWEB(e.link),real:1};
+ const raw=String(e.title||''),o={id:e.id,d,t:e.all_day?'':hm(e.start),e:e.all_day?'':hm(e.end),all:e.all_day?1:0,place:e.location||'',src:e.cal==='co'?'co':'me',link:LWEB(e.link),real:1,raw,rs:e.start_date||'',re:e.end_date||''};
  if(o.src==='co'){const m=raw.match(/^【([^】]+)】\s*(.*)$/);o.cs=m?m[1]:'好咖';o.n=(m?m[2]:raw).replace(/\s*@[^@]*$/,'').trim()||raw;o.why='標題有 @Borry'}
  else{const m=raw.match(/^([SEWCL])[.．]\s*(.*)$/);o.cat=m?m[1]:'?';o.n=m?m[2]:raw}
  return o}
@@ -2532,7 +2532,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v123');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v124');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4626,15 +4626,6 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
  // v115 評估：老大選「要幾小時」，每天找最早一段連續放得下的空檔（今天只看現在以後）
  const fitOf=(i,need,from)=>{for(const [a,b] of i.free){const A=Math.max(a,from);if(b-A>=need-1e-6)return [A,A+need]}return null};
  const NEEDS=[1,2,3,4,6];
- // 立體負荷：一天一棟樓，高度＝排了幾小時，顏色＝那天還空多少（評估時改成放得下／放不下）
- function towers(days,need,now){const W=18,D=10,GAP=25,BASE=118,MAXH=84,X0=8;let g='';
-  days.forEach((d,k)=>{const fh=d.n===0?d.i.freeNow:d.i.freeH,busy=Math.max(0,FW1-FW0-fh),h=Math.max(3,Math.round(busy/(FW1-FW0)*MAXH)),x=X0+k*GAP,y=BASE;
-   const fit=need?fitOf(d.i,need,d.n===0?now:0):null,st=need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok');
-   g+=`<g class="tw" data-st="${st}"><polygon class="twr" points="${x+W},${y} ${x+W+D},${y-D/2} ${x+W+D},${y-h-D/2} ${x+W},${y-h}"/><rect class="twf" x="${x}" y="${y-h}" width="${W}" height="${h}"/><polygon class="twt" points="${x},${y-h} ${x+D},${y-h-D/2} ${x+W+D},${y-h-D/2} ${x+W},${y-h}"/>`+
-    (need?`<text class="twm" x="${x+W/2+D/2}" y="${y-h-D/2-5}">${fit?'✓':'✕'}</text>`:'')+
-    `<text class="tww" x="${x+W/2}" y="${y+14}">${d.n===0?'今':WK[d.x.w]}</text><text class="twd" x="${x+W/2}" y="${y+26}">${d.x.d}</text></g>`});
-  const full=BASE-MAXH;
-  return `<svg class="twsvg" viewBox="0 0 ${X0+14*GAP+D+4} ${BASE+30}" role="img" aria-label="接下來 14 天每天排了多少，越高越滿"><line class="twcap" x1="0" y1="${full}" x2="${X0+14*GAP+D}" y2="${full}"/><text class="twcapt" x="0" y="${full-4}">排滿（9～22 點）</text>${g}</svg>`}
  function tlEval(days,now){const need=S.tlneed||0;
   const chips=`<div class="tlneed" role="group" aria-label="我要找多久的空檔"><span>我要找</span>${NEEDS.map(n=>`<button class="mb" data-act="tlneed" data-id="${n}" aria-pressed="${need===n}">${n} 小時</button>`).join('')}${need?`<button class="mb" data-act="tlneed" data-id="0">不評估</button>`:''}</div>`;
   if(!need)return chips;
@@ -4642,37 +4633,29 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
   const lab=d=>d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w];
   return chips+`<p class="tlverdict${ok.length?'':' bad'}">要連續 <b>${need}</b> 小時：這 7 天 <b>${ok.length}</b> 天可以${first?`，最快 <b>${lab(first.d)} ${fmt(first.f[0])}</b>`:'，兩週內都排不進'}${wk.length-ok.length?`；${wk.filter(x=>!x.f).map(x=>lab(x.d)).join('、')}不行`:''}。</p>`}
  ACT.tlneed=id=>{const n=+id;S.tlneed=n&&S.tlneed!==n?n:0;render('keep')};
- function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})();
+ // 2026-11-25 v124：空檔膠囊（取代柱狀圖與時間條）。每天一列，列出 9～22 點之間 30 分鐘以上的空檔；最長那段醒目；放得下「我要找 N 小時」的變綠框
+ function capsI(i,n,need){const nh=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})();
+  const fq=v=>{v=Math.round(v*4)/4;const H=Math.floor(v),M=Math.round((v-H)*60);return String(H).padStart(2,'0')+':'+String(M).padStart(2,'0')};
+  const free=i.free.map(f=>n===0?[Math.max(f[0],nh),f[1]]:f).filter(f=>f[1]-f[0]>=0.5);
+  if(!free.length)return `<i class="fcap full">排滿</i>`;
+  const big=free.slice().sort((x,y)=>(y[1]-y[0])-(x[1]-x[0]))[0];
+  return free.map(f=>{const h=f[1]-f[0],fit=need&&h>=need-1e-6;return `<i class="fcap${f===big?' big':''}${fit?' fit':''}">${fq(f[0])}～${fq(f[1])}<small>${hrs(h)} 小時</small></i>`}).join('')+(i.est>0?`<i class="fcest">已預留 ${hrs(i.est)} 小時</i>`:'')}
+ function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})(),need=S.tlneed||0;
   const days=Array.from({length:14},(_,n)=>({n,x:dOf(n),i:dayInfo(all.filter(e=>e.d===n))}));
-  // 今天只算現在之後的空檔
   const d0=days[0].i;d0.freeNow=Math.max(0,d0.free.reduce((t,[a,b])=>t+Math.max(0,b-Math.max(a,now)),0)-(d0.est||0));
   const wk=days.slice(0,7),freeWk=wk.reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
   const best=wk.slice(1).sort((p,q)=>q.i.freeH-p.i.freeH)[0];
   const full=wk.filter(d=>(d.n===0?d0.freeNow:d.i.freeH)<2).length;
-  let nx=null;for(const d of days){const c=d.i.segs.filter(s=>d.n>0||s.a>now).sort((p,q)=>p.a-q.a)[0];if(c){nx={d,s:c};break}}
-  const nxt=nx?(()=>{const mins=Math.round(((nx.d.n*24+nx.s.a)-now)*60),wait=mins<60?mins+' 分鐘後':mins<1440?Math.floor(mins/60)+' 小時'+(mins%60?(mins%60)+' 分':'')+'後':(nx.d.n===1?'明天':'週'+WK[nx.d.x.w]);
-   return `<p class="tlnext"><span>下一件</span><b>${esc(String(nx.s.e.n||''))}</b><small>${nx.d.n===0?'今天':nx.d.n===1?'明天':'週'+WK[nx.d.x.w]} ${fmt(nx.s.a)}・${wait}</small></p>`})():'';
-  const ruler=[8,12,16,20,24].map(h=>`<span style="left:${pct(h)}%">${h}</span>`).join('');
   let rows='';
-  days.forEach(d=>{const i=d.i,we=d.x.w===0||d.x.w===6,fh=d.n===0?d0.freeNow:i.freeH,tight=fh<2,open=sel===d.n;
-   const bars=i.segs.map(s=>{const w=Math.max(1.2,pct(s.b)-pct(s.a));return `<i class="tlseg" data-s="${s.e.src}" style="left:${pct(s.a)}%;width:${w}%">${w>=14?`<span>${esc(String(s.e.n||''))}</span>`:''}</i>`}).join('');
-   const now_=d.n===0&&now>=TL0&&now<=TL1?`<b class="tlnow" style="left:${pct(now)}%" aria-hidden="true"></b>`:'';
-   const past=d.n===0?`<i class="tlpast" style="width:${pct(Math.min(Math.max(now,TL0),TL1))}%"></i>`:'';
-   const lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`,need=S.tlneed||0,fit=need?fitOf(i,need,d.n===0?now:0):null;
-   const fitBox=fit?`<i class="tlfit" style="left:${pct(fit[0])}%;width:${pct(fit[1])-pct(fit[0])}%"></i>`:'';
-   const summ=i.n?`${i.n} 件・空 ${hrs(fh)} 小時`:`整天有空`;
-   rows+=`<div class="tlday${open?' open':''}${we?' we':''}"><button class="tlrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${summ}"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small></span><span class="tlbar${need?(fit?' fit':' nofit'):''}" aria-hidden="true">${past}${bars}${fitBox}${now_}${i.alls.length?`<em class="tlall">全天 ${i.alls.length}</em>`:''}</span>${need?`<span class="tlf tlv ${fit?'ok':'no'}"><b>${fit?'✓':'✕'}</b><small>${fit?fmt(fit[0])+' 起':'不夠'}</small></span>`:''}<span class="tlf${tight?' tight':fh>=6?' roomy':''}"${need?' hidden':''}><b class="num">${hrs(fh)}</b><small>小時空</small>${i.busy>0?`<small class="tlbz">排 ${hrs(i.busy)}</small>`:''}</span></button>`;
-   if(open){const ev=all.filter(e=>e.d===d.n),alls=ev.filter(e=>e.all||!e.t),timed=ev.filter(e=>!(e.all||!e.t));
-    const items=timed.map(e=>({k:hm(e.t)||0,h:`<div class="rows">${evRow(e)}</div>`}));
-    i.free.forEach(([a,b])=>{const A=d.n===0?Math.max(a,now):a;if(b-A<0.5)return;items.push({k:A-0.001,h:`<p class="tlgap"><span><b>空 ${hrs(b-A)} 小時</b>${fmt(A)}～${fmt(b)}</span></p>`})});
-    items.sort((x,y)=>x.k-y.k);
-    rows+=`<div class="tlx">${alls.length?`<div class="rows">${alls.map(evRow).join('')}</div>`:''}${items.length?items.map(x=>x.h).join(''):`<p class="tlnone">這天沒有行程，也沒有空檔可算。</p>`}${i.free.length?'':`<p class="tlnone">9 點到 22 點沒有空檔。</p>`}</div>`}
+  days.forEach(d=>{const i=d.i,we=d.x.w===0||d.x.w===6,open=sel===d.n,lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`;
+   rows+=`<div class="tlday fcd${open?' open':''}${we?' we':''}"><button class="tlrow fcrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${i.n} 件行程"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small><small class="fcn">${i.n?i.n+' 件':'沒排'}</small></span><span class="fcs">${capsI(i,d.n,need)}</span></button>`;
+   if(open){const ev=all.filter(e=>e.d===d.n).sort((p,q)=>(p.all||!p.t?-1:0)-(q.all||!q.t?-1:0)||String(p.t).localeCompare(String(q.t)));
+    rows+=`<div class="tlx">${ev.length?`<div class="rows">${ev.map(evRow).join('')}</div>`:`<p class="tlnone">這天沒有行程。</p>`}<div class="mrow">${mb('＋ 這天新增','cenew',String(d.n))}${mb('看這天時間軸','calday',String(d.n))}</div></div>`}
    rows+='</div>'});
-  return `<section class="tl" aria-label="接下來兩週的時間">
-   <div class="tlhd">${tlEval(days,now)}<p class="tlsum"${S.tlneed?' hidden':''}>這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p>
-   <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p>${towers(days,S.tlneed||0,now)}${nxt}</div>
-   <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
-   ${rows}<p class="cbhint">點一天看那天的行程和空檔時段</p></section>`}
+  return `<section class="tl fcpanel" aria-label="接下來兩週的空檔">
+   <div class="tlhd">${tlEval(days,now)}<p class="tlsum"${need?' hidden':''}>這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p></div>
+   ${rows}<p class="cbhint">點一天看那天的行程；點行程可以直接改</p></section>`}
+ ACT.calday=id=>{S.calv='day';S.cald=+id;render('keep')};
  ACT.tlpick=id=>{const n=+id;S.calsel=S.calsel===n?null:n;render('keep')};
  const _cp2=calPage;calPage=function(){const h=_cp2();if(E())return h;const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f);
   // 換掉 v109 的 14 格忙閒格；篩選（全部／個人／公司）放到時間條上面，切了時間條跟著變
@@ -4681,7 +4664,7 @@ window.__zl=Object.assign(window.__zl||{},{zhName,textSwap,srcSay});
   const i=x.indexOf('<div class="seg"');if(i<0)return x;
   if(seg2)x=x.replace(seg2[0],'');
   return x.slice(0,i)+(seg2?seg2[0]:'')+tlPanel(all)+x.slice(i)};
- window.__zl=Object.assign(window.__zl||{},{tlDay:dayInfo});}
+ window.__zl=Object.assign(window.__zl||{},{tlDay:dayInfo,caps:capsI});}
 /* ---------- 2026-11-25 按需載入：切房間時補讀、讀失敗的區顯示重試 ---------- */
 {const _r=render;render=function(){const r=_r.apply(this,arguments);try{roomWatch()}catch(e){}return r}}
 function roomWatch(){if(!LV.at||!LZ.seen||S.st==='loading')return;const k=zoneOf(S.tab)+(S.page==='cal'?':cal':'');if(k===LZ.seen)return;LZ.seen=k;
@@ -4710,14 +4693,11 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   const fh=Math.max(0,free.reduce((t,f)=>t+f[1]-f[0],0)-((i&&i.est)||0)),big=free.slice().sort((a,b)=>(b[1]-b[0])-(a[1]-a[0]))[0];
   const notes=[];(window.__tideRows||[]).forEach(r=>{if(!r.at||tw(r.at).d!==n)return;const m=r.meta||{};[m.note,m.warn].forEach(x=>{if(x&&notes.indexOf(x)<0)notes.push(x)})});
   return {its,i,marks,fh,big,notes}}
- function bar(n,D){const i=D.i;if(!i)return '';const nh=nowH();
-  const segs=i.segs.map(s=>`<i class="tdseg" data-s="${s.e.src}" style="left:${pc(s.a)}%;width:${Math.max(1.5,pc(s.b)-pc(s.a))}%"></i>`).join('');
-  const pins=D.marks.map(m=>`<i class="tdpin" data-k="${m.r.kind}" style="left:${pc(m.h)}%"></i>`).join('');
-  const past=n===0?`<i class="tdpast" style="width:${pc(nh)}%"></i>`:'';
-  return `<div class="tdbar"><span class="tdtrack" aria-hidden="true">${past}${segs}${pins}</span><span class="tdfree${D.fh<2?' tight':''}"><b class="num">${Math.round(D.fh*2)/2}</b> 小時空${D.big?`<small>最長 ${f2(D.big[0])}～${f2(D.big[1])}</small>`:''}</span></div>`}
+ function bar(n,D){const i=D.i;if(!i)return '';const Z=window.__zl;   // 2026-11-25 v124：橫條換成空檔膠囊
+  return `<div class="fc fc1"><span class="fcs">${Z.caps(i,n,0)}</span></div>`}
  function rows(D){const out=[];
-  D.its.filter(e=>e.all||!e.t).forEach(e=>out.push({k:-1,h:`<button class="tdi" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">全天</span><b>${e.cs?esc(e.cs)+'・':''}${esc(e.n)}</b><i class="tdd" data-s="${e.src}"></i></button>`}));
-  D.its.filter(e=>!(e.all||!e.t)).forEach(e=>{const m=/^(\d+):(\d+)/.exec(e.t);out.push({k:m?+m[1]+m[2]/60:0,h:`<button class="tdi${e.src==='tide'?' tide':''}" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${esc(e.t)}${e.e?'～'+esc(e.e):''}</span><b>${e.cs&&e.src!=='tide'?esc(e.cs)+'・':''}${esc(e.src==='tide'?String(e.n).replace(/^張弛排：/,''):e.n)}</b>${e.src==='tide'?'<small>張弛排的開工時段</small>':e.place?`<small>${esc(e.place)}</small>`:''}<i class="tdd" data-s="${e.src}"></i></button>`})});
+  
+  D.its.filter(e=>!(e.all||!e.t)).forEach(e=>{const m=/^(\d+):(\d+)/.exec(e.t);out.push({k:m?+m[1]+m[2]/60:0,h:`<button class="tdi${e.src==='tide'?' tide':''}" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${esc(e.t)}${e.e?'～'+esc(e.e):''}</span><b>${e.cs&&e.src!=='tide'?esc(e.cs)+'・':''}${esc(e.src==='tide'?String(e.n).replace(/^張弛排：/,''):e.n)}</b>${e.pend?evState(e):e.src==='tide'?'<small>張弛排的開工時段</small>':e.place?`<small>${esc(e.place)}</small>`:''}<i class="tdd" data-s="${e.src}"></i></button>`})});
   D.marks.forEach(m=>{const r=m.r,k=r.kind==='leave'?(r.verb||'出門'):(KIND[r.kind]||r.kind);out.push({k:m.h-0.001,h:`<div class="tdi tdmk" data-k="${r.kind}"><span class="tm">${f2(m.h)}</span><b>${esc(k)}</b><small>${esc(String(r.title||'').replace(/\s*@Borry/i,''))}</small></div>`})});
   return out.sort((a,b)=>a.k-b.k).map(x=>x.h)}
  ACT.tdmore=()=>{S.tdOpen=!S.tdOpen;render('keep')};
@@ -4726,6 +4706,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   const T=dayOf(1),tr=rows(T),tfirst=T.its.filter(e=>!(e.all||!e.t)).concat([]).sort((a,b)=>String(a.t).localeCompare(String(b.t)))[0];
   let h=`<section class="sec tday v122"><div class="tdh"><h2>今天<small>${D.its.length+D.marks.length?(D.its.length+D.marks.length)+' 件':'沒有行程'}</small></h2><span class="tdh-r">${mb('＋ 新增','sheet','calnew')}${moreB('行事曆','page','cal')}</span></div>`;
   h+=bar(0,D);
+  const AL=D.its.filter(e=>e.all||!e.t);if(AL.length)h+=`<p class="tdall"><span>全天</span>${AL.map(e=>`<button class="tdal" data-act="sheet" data-id="cal:${esc(e.id)}">${e.cs?esc(e.cs)+'・':''}${esc(e.n)}</button>`).join('')}</p>`;
   if(R.length){h+=`<div class="tdl">${(open?R:R.slice(0,N)).join('')}</div>`;if(R.length>N)h+=`<button class="tdm" data-act="tdmore" aria-expanded="${open}">${open?'收起':'還有 '+(R.length-N)+' 件'}</button>`}
   if(D.notes.length)h+=`<p class="tdnote">${D.notes.map(esc).join('；')}</p>`;
   h+=`<p class="tdtmr"><b>明天</b> 空 ${Math.round(T.fh*2)/2} 小時${T.big?`・最長 ${f2(T.big[0])}～${f2(T.big[1])}`:''}${tfirst?`・第一件 ${esc(tfirst.t)} ${esc(String(tfirst.n).replace(/^張弛排：/,''))}`:''}</p>`;
@@ -4748,7 +4729,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const stOf=(ref,day)=>{const l=(TL||[]).filter(x=>x.note&&x.note.ref===ref&&x.note.day===day&&x.note.type!=='want');return l.length&&l[0].note.type!=='undo'?l[0]:null};   // 新的在前；最新一筆是復原就沒狀態
  const dayN=()=>S.ckDay!=null?S.ckDay:(new Date(Date.now()+8*3600e3).getUTCHours()>=18?1:0);
  function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
-  const cal=calAll().filter(e=>e.d===n&&!e.cancel&&e.src!=='tide');
+  const cal=calAll().filter(e=>e.d===n&&!e.cancel&&e.src!=='tide'&&!(e.all||!e.t));
   const sug=(window.__tideRows||[]).filter(r=>r.at&&tw2(r.at).day===day&&r.kind==='start');
   const info=(window.__tideRows||[]).filter(r=>r.at&&tw2(r.at).day===day&&r.kind!=='start');
   const wants=(TL||[]).filter(x=>x.note&&x.note.type==='want'&&x.note.day===day);
@@ -4766,11 +4747,11 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   return h+'</section>'}
  ACT.ckday=id=>{S.ckDay=+id;render('keep')};
  ACT.ckset=async v=>{const [t,ref,kind]=v.split('|'),n=dayN(),day=ymdT(n);let time=null;
-  if(t==='retime'){try{time=prompt('改到幾點？（例：15:30）','')}catch(e){}if(!time)return;time=String(time).trim()}
+  if(t==='retime'){ACT.sheet('cal:'+(ref.indexOf('cal:')===0?ref.slice(4):ref));return}
   if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再按');return}
   const note={type:t,ref,kind,day};if(time)note.time=time;
   (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
-  try{await LV.api.tideLogAdd('note',{ref,source:'面板',note});toast(t==='confirm'?'確認了，這天照這樣做':t==='skip'?'記下了，這件今天不做':'記下了，改到 '+time);tlLoad(true)}
+  try{await LV.api.tideLogAdd('note',{ref,source:'面板',note});if(t==='confirm'&&ref.indexOf('tide:')===0&&window.__zl.ceTideConfirm)window.__zl.ceTideConfirm(ref);toast(t==='confirm'?'確認了，這天照這樣做':t==='skip'?'記下了，這件今天不做':'記下了，改到 '+time);tlLoad(true)}
   catch(e){TL.shift();LV.sig='';paint();toast('沒存上：'+LERR(e))}};
  ACT.ckundo=async ref=>{const n=dayN(),day=ymdT(n);if(!LV.api||!LV.api.tideLogAdd)return;
   (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note:{type:'undo',ref,day},at:new Date().toISOString()});
@@ -4783,6 +4764,215 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   try{await LV.api.tideLogAdd('note',{source:'面板',note});toast('記下了，張弛下次排的時候會放進建議');tlLoad(true)}catch(e){toast('沒存上：'+LERR(e))}};
  WRITE.push('ckset','ckundo','ckwant');
  {const _t=todayStrip;todayStrip=function(){const h=_t();return h?h+tideCheck():h}}}
+/* ---------- v124（2026-11-25）：行事曆直覺操作＋寫回 Google 行事曆（趁手 handy） ----------
+   老大原話：「操作要直覺 我點按下去可以對應過去卡片什麼的？或者是按住移動可以托拉換時間段？然後新增編輯可以在面板上操作 直接替換更新到我行事曆上？
+   點下去也可以直接改內容標題？然後也有一個按鍵是交代該內容怎麼處理ai就去跑？」「寫回google 行事曆的部分應該是說 不是添加，而是如果有對應事件 該事件就會被移動或更動」
+   任務句：老大在手機上看到一件行程，5 秒內改標題或時間、對到卡片、交給 AI，或把它拖到別的時段；改完就是 Google 行事曆上那一筆被改。
+   做法：①點行程＝同一張編輯卡（標題、日期、時間、相關卡片、交代 AI、刪除）；張弛排的時段也是同一張。②日檢視是直式時間軸，長按行程 0.4 秒後上下拖，放開跳確認列。
+   ③新增＝同一張空白卡。④所有寫入走 hub_tide_log 的 note（type=cal_write，帶 req_id），Mac 的 write.mjs 用 event_id 更新原本那一筆；畫面先樂觀更新並標「同步中…」，
+   讀到 cal_done 才拿掉標記，cal_fail 標「沒寫進行事曆・重試」。⑤多天全天事件只改一天時，確認列寫明「原本縮短、另建這天」。
+   退回：刪掉這一段，並把 calSheet、calNew 的覆寫拿掉（舊的彈出卡與新增表單會回來）。 */
+{
+const TZ8=8*3600e3;
+const ymd=n=>new Date(Date.now()+TZ8+n*864e5).toISOString().slice(0,10);
+const addD=(d,n)=>new Date(Date.parse(d+'T00:00:00Z')+n*864e5).toISOString().slice(0,10);
+const diffD=(a,b)=>Math.round((Date.parse(b+'T00:00:00Z')-Date.parse(a+'T00:00:00Z'))/864e5);
+const nOfD=d=>diffD(ymd(0),d);
+const hmN=s=>{const m=/^(\d{1,2}):(\d{2})/.exec(s||'');return m?+m[1]+m[2]/60:null};
+const fT=v=>{v=Math.round(v*4)/4;const H=Math.floor(v),M=Math.round((v-H)*60);return String(H).padStart(2,'0')+':'+String(M).padStart(2,'0')};
+const baseId=id=>String(id||'').replace(/#.*$/,'').replace(/^(me|co):/,'');   // 逐流的 id 是「me:」「co:」加 Google 事件 id，寫回時只要後面那段
+const rid=()=>'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const stripTag=n=>String(n||'').replace(/（第 \d+／\d+ 天）$/,'').replace(/^張弛排：/,'');
+const mdT=d=>{const a=d.split('-');return (+a[1])+'/'+(+a[2])};
+const nowH=()=>{const x=new Date(Date.now()+TZ8);return x.getUTCHours()+x.getUTCMinutes()/60};
+const addH=(t,h)=>{const v=Math.min(24,(hmN(t)||0)+h);return v>=24?'23:45':fT(v)};
+const $i=id=>document.getElementById(id);
+const PEND={};   // req_id → {note, view, st:'run'|'done'|'fail', at, doneAt, err}
+const CE={};     // 編輯卡、拖曳的暫存
+let TDONE={};try{TDONE=JSON.parse(localStorage.getItem('zl_tide_done')||'{}')}catch(e){}
+const tdSave=()=>{try{localStorage.setItem('zl_tide_done',JSON.stringify(TDONE))}catch(e){}};
+
+/* ---- 樂觀更新的遮罩：每次 applyCal 之後套上去 ---- */
+{const _a=applyCal;applyCal=function(){_a.apply(this,arguments);overlay()}}
+function overlay(){
+ CAL.forEach(x=>{if(x.src==='tide'&&TDONE[x.id]&&Date.now()-TDONE[x.id]<36*3600e3)x.del=1});
+ Object.keys(PEND).forEach(k=>{const p=PEND[k],v=p.view;if(!v)return;const mark=p.st==='fail'?'fail':'sync';
+  if(v.kind==='new'){CAL.push({id:'pend:'+k,d:v.d,t:v.t,e:v.e,all:v.all?1:0,n:v.n,src:v.src,place:'',cat:v.src==='me'?'?':'',pend:k,st:mark,real:0})}
+  else if(v.kind==='del'){const x=CAL.find(c=>c.id===v.tile);if(x){x.del=1}}
+  else{const x=CAL.find(c=>c.id===v.tile);if(x){Object.assign(x,{n:v.n!=null?v.n:x.n,d:v.d,t:v.t,e:v.e,all:v.all?1:0,pend:k,st:mark})}}})}
+{const _es=evState;evState=function(e){if(e.pend&&PEND[e.pend]){const p=PEND[e.pend];
+  return p.st==='fail'?`<span class="est bad">▲ 沒寫進行事曆${p.err?'（'+esc(p.err)+'）':''}・點開重試</span>`:'<span class="est"><span class="spin" aria-hidden="true"></span>同步中…</span>'}
+  return _es(e)}}
+ACT.calretry=k=>{const p=PEND[k];if(!p)return;const n=Object.assign({},p.note,{req_id:rid()});delete PEND[k];calSend(n,p.view,p.tide)};
+ACT.calgiveup=k=>{delete PEND[k];applyCal();render('keep');toast('放棄了，行事曆維持原本的')};
+WRITE.push('cesave','cedel','ceyes','cemvyes','calretry','ceai');
+
+let pollT=0;
+function pollPend(){clearTimeout(pollT);const ks=Object.keys(PEND);if(!ks.length||!LV.api||!LV.api.tideLog)return;
+ LV.api.tideLog(new Date(Date.now()-3*3600e3).toISOString(),'note').then(rows=>{rows=Array.isArray(rows)?rows:[];let ch=0;
+  ks.forEach(k=>{const p=PEND[k];if(!p||p.st!=='run')return;const r=rows.find(x=>x.note&&x.note.req_id===k&&(x.note.type==='cal_done'||x.note.type==='cal_fail'));
+   if(r){if(r.note.type==='cal_fail'){p.st='fail';p.err=String(r.note.error||'').slice(0,60)}else{p.st='done';p.doneAt=Date.parse(r.at)||Date.now()}ch=1}
+   else if(Date.now()-p.at>180000){p.st='fail';p.err='3 分鐘沒回應，Mac 可能關機了';ch=1}});
+  if(ks.some(k=>PEND[k]&&PEND[k].st==='done')){   // 寫進 Google 了：等逐流讀到比較新的同步才拿掉「同步中」遮罩
+   return LV.api.cal(14).then(d=>{LV.cal=d;const t=Math.max(0,...Object.values(d.synced||{}).map(x=>Date.parse(x)||0));
+    ks.forEach(k=>{const p=PEND[k];if(p&&p.st==='done'&&(t>p.doneAt||Date.now()-p.doneAt>150000))delete PEND[k]});applyCal();render('keep')})}
+  if(ch){applyCal();render('keep')}}).catch(()=>{}).then(()=>{if(Object.keys(PEND).some(k=>PEND[k].st==='run'||PEND[k].st==='done'))pollT=setTimeout(pollPend,4000)})}
+function calSend(note,view,tide){
+ if(!LV.api||!LV.api.calWrite){toast('離線中，連上再改');return false}
+ PEND[note.req_id]={note,view,st:'run',at:Date.now(),tide};if(tide){TDONE[tide]=Date.now();tdSave()}
+ applyCal();render('keep');
+ LV.api.calWrite(note).then(()=>{pollT=setTimeout(pollPend,2500);try{calKick(true)}catch(e){}}).catch(e=>{const p=PEND[note.req_id];if(p){p.st='fail';p.err=LERR(e)}applyCal();render('keep')});
+ return true}
+
+/* ---- 對到哪張卡、對到哪一筆行事曆 ---- */
+function ceRelated(e){if(!e)return null;const keys=[e.cs,stripTag(e.n)].filter(Boolean).map(x=>calKey(x)).filter(x=>x.length>=2);
+ const pool=[].concat(DB.proj||[],DB.todo||[]);
+ for(const k of keys){const c=pool.find(p=>[calKey(p.title),calKey(p.short)].some(x=>x&&x.length>=2&&(x.includes(k)||k.includes(x))));if(c)return c}
+ return null}
+function tideMatch(e){const k=calKey(stripTag(e.n));if(k.length<2)return null;
+ const ok=x=>x.src!=='tide'&&!x.cancel&&x.real&&!x.pend&&x.d===e.d&&(()=>{const kk=calKey(stripTag(x.n));return kk.length>=2&&(kk===k||kk.includes(k)||k.includes(kk))})();
+ const all=calAll();return all.find(x=>ok(x)&&x.src==='me')||all.find(x=>ok(x))||null}
+function rawOf(t,title){if(t.src==='co'){const suf=(String(t.raw||'').match(/\s*@[^@]*$/)||['  @Borry'])[0];return `【${t.cs||'好咖'}】${title}${suf}`}
+ return t.cat&&t.cat!=='?'?`${t.cat}.${title}`:title}
+
+/* ---- 編輯卡（新增與修改同一張） ---- */
+function calEditHTML(id){
+ const e=id?calFind(id):null;
+ if(id&&!e)return shHead('這筆行程不在了')+'<p style="margin-top:8px">可能已經取消、改到 14 天以外，或剛被改掉。</p>';
+ if(e&&e.pend&&PEND[e.pend]){const p=PEND[e.pend];return shHead(esc(stripTag(e.n)))+`<div class="ce"><p style="margin-top:8px">${p.st==='fail'?`▲ 這次改動沒寫進 Google 行事曆${p.err?'（'+esc(p.err)+'）':''}。`:'這次改動正在同步到 Google 行事曆，寫進去之後才能再改。'}</p>${p.st==='fail'?`<div class="btns">${B('重試寫入','calretry',e.pend,'pri wide')}${B('放棄這次改動','calgiveup',e.pend,'wide')}</div>`:''}</div>`}
+ const isNew=!e,isTide=!!e&&e.src==='tide',m=isTide?tideMatch(e):null,tgt=isTide?m:e;
+ const pre=S.cePre&&S.cePre.id===id?S.cePre:null;
+ const d0=isNew?(S.ceDate||ymd(0)):ymd(e.d),all=isNew?false:!!(e.all||!e.t);
+ const s0=pre?pre.start:isNew?(S.ceStart||fT(Math.min(21,Math.max(9,Math.ceil(nowH()+0.25)))) ):(e.t||'09:00'),e0=pre?pre.end:isNew?addH(s0,1):(e.e||addH(s0,1));
+ const title=isNew?'':stripTag(e.n),rel=isNew?null:ceRelated(e);
+ const multi=!!(tgt&&tgt.all&&tgt.rs&&tgt.re&&diffD(tgt.rs,tgt.re)>1);
+ let h=shHead(isNew?'新增行程':'這筆行程')+`<div class="ce" data-id="${esc(id||'')}">`;
+ if(!isNew)h+=`<div class="meta" style="margin-top:6px">${srcTag(e)}${e.pend?evState(e):''}</div>`;
+ if(isTide)h+=`<p class="cehint">張弛照交件往回推排的開工時段。${m?`存好會把行事曆上的「${esc(stripTag(m.n))}」${m.all?'從全天改成這個時段':'改到這個時間'}，不會另外新增。`:'行事曆上沒有對應的事，存好會新增一筆。'}</p>`;
+ h+=`<label class="f">標題<input id="ceT" type="text" value="${esc(title)}" placeholder="例：品牌短片交片給客戶" autocomplete="off"></label>
+ <div class="cerow"><label class="f">日期<input id="ceD" type="date" value="${d0}"></label><label class="cek"><input id="ceA" type="checkbox"${all?' checked':''}> 全天</label></div>
+ <div class="cerow" id="ceTm"${all?' hidden':''}><label class="f">開始<input id="ceS" type="time" step="900" value="${esc(s0)}"></label><label class="f">結束<input id="ceE" type="time" step="900" value="${esc(e0)}"></label></div>`;
+ if(isNew)h+=`<label class="f">放在<select id="ceC"><option value="me">個人行事曆</option><option value="co">公司行事曆</option></select></label>`;
+ if(multi)h+=`<fieldset class="cescope"><legend>這件是 ${mdT(tgt.rs)}～${mdT(addD(tgt.re,-1))} 的多天全天事件</legend><label><input type="radio" name="ceSc" value="day" checked> 只改這天（原本的縮短，另建這天）</label><label><input type="radio" name="ceSc" value="all"> 整段都改（只能改標題）</label></fieldset>`;
+ if(rel)h+=`<button class="ce-rel" data-act="cerel" data-id="${esc(rel.id)}"><small>相關卡片</small><b>${esc(rel.short||rel.title)}</b><span aria-hidden="true">›</span></button>`;
+ h+=`<div id="ceErr" class="ceerr" role="alert" hidden></div><div id="ceConf" class="ceconf" hidden></div>
+ <div class="btns">${B('存好','cesave',id||'','pri wide')}${B('交代 AI','ceai',id||'','wide')}</div>`;
+ if(!isNew&&!isTide)h+=`<p class="cedelw"><button class="cedel" data-act="cedel" data-id="${esc(id)}">刪掉這筆</button></p>`;
+ return h+`</div>`}
+calSheet=function(id){return calEditHTML(id)};
+calNew=function(){return calEditHTML('')};
+{const _s=ACT.sheet;ACT.sheet=function(id){if(id==='calnew'){if(!CE.pre){S.ceDate=null;S.ceStart=null}CE.pre=0}return _s.apply(this,arguments)}}
+ACT.cenew=n=>{S.ceDate=ymd(+n||0);CE.pre=1;ACT.sheet('calnew')};
+ACT.cerel=id=>{closeThen(()=>ACT.page('proj:'+id))};
+document.addEventListener('change',e=>{if(e.target&&e.target.id==='ceA'){const t=$i('ceTm');if(t)t.hidden=e.target.checked}});
+function ceRead(){const v=i=>{const x=$i(i);return x?x.value:''},sc=document.querySelector('input[name="ceSc"]:checked');
+ return {title:v('ceT').trim(),date:v('ceD'),all:!!($i('ceA')&&$i('ceA').checked),start:v('ceS'),end:v('ceE'),cal:v('ceC')||'me',scope:sc?sc.value:'day'}}
+function ceMsg(t){const x=$i('ceErr');if(x){x.textContent='▲ '+t;x.hidden=false}else toast(t)}
+function ceCheck(F){if(!F.title)return '標題還沒寫';if(!/^\d{4}-\d{2}-\d{2}$/.test(F.date))return '日期還沒選';if(F.date<ymd(0))return '這個日期已經過了';
+ if(!F.all){if(!F.start||!F.end)return '開始和結束時間都要填';if(F.end<=F.start)return '結束要比開始晚'}return ''}
+
+/* 算出這次要送什麼：回 {note, view, lines, confirm, msg, tide} 或 null（沒有改動） */
+function cePlan(id,F){
+ const e=id?calFind(id):null,isNew=!e,isTide=!!e&&e.src==='tide',req=rid(),mk=o=>Object.assign({type:'cal_write',req_id:req},o);
+ let tgt=e;if(isTide)tgt=tideMatch(e);
+ if(isNew||(isTide&&!tgt)){   // 新增（空白卡，或張弛建議在行事曆上找不到對應的事）
+  const cal=isNew?F.cal:'me',note=mk({op:'create',cal,title:F.title,summary:F.title,date:F.date,start:F.all?'':F.start,end:F.all?'':F.end,all_day:F.all});if(F.all)note.end_date=addD(F.date,1);
+  return {note,view:{kind:'new',d:nOfD(F.date),t:F.all?'':F.start,e:F.all?'':F.end,all:F.all,n:F.title,src:cal},msg:isNew?'新增好了，同步到行事曆中':'行事曆上沒有對應的事，新增了一筆，同步中',tide:isTide?id:null}}
+ const cal=tgt.src==='co'?'co':'me',evId=baseId(tgt.id),name0=stripTag(tgt.n),ref0=isTide?stripTag(e.n):name0;
+ const titleChanged=F.title!==ref0,summary=titleChanged?rawOf(tgt,F.title):null;
+ const orig={all:!!(tgt.all||!tgt.t),t:tgt.t,e:tgt.e},timeChanged=F.all!==orig.all||F.date!==ymd(tgt.d)||(!F.all&&(F.start!==orig.t||F.end!==orig.e));
+ if(!titleChanged&&!timeChanged)return null;
+ const multi=!!(tgt.all&&tgt.rs&&tgt.re&&diffD(tgt.rs,tgt.re)>1),view={kind:'edit',tile:tgt.id,n:titleChanged?F.title:null,d:nOfD(F.date),t:F.all?'':F.start,e:F.all?'':F.end,all:F.all};
+ if(multi&&F.scope==='all'){if(!titleChanged)return null;
+  return {note:mk({op:'update',cal,event_id:evId,tile:tgt.id,title:F.title,summary}),view:{kind:'edit',tile:tgt.id,n:F.title,d:tgt.d,t:'',e:'',all:true},msg:'整段的標題改了，同步中',tide:isTide?id:null}}
+ if(multi){return splitPlan({tgt,F,cal,evId,name0,summary,mk,view,tide:isTide?id:null,del:false})}
+ const note=mk({op:'update',cal,event_id:evId,tile:tgt.id,title:F.title});if(summary)note.summary=summary;
+ if(timeChanged){note.date=F.date;note.all_day=F.all;if(F.all)note.end_date=addD(F.date,1);else{note.start=F.start;note.end=F.end}}
+ return {note,view,msg:'改好了，行事曆上那一筆同步中',tide:isTide?id:null}}
+/* 多天全天事件只動其中一天：原本的縮短（或往後縮），另建這一天（和後面剩下的天） */
+function splitPlan(o){const {tgt,F,cal,evId,name0,mk}=o,rs=tgt.rs,re=tgt.re,td=ymd(tgt.d),lines=[],extra=[];
+ const note=mk({op:'update',cal,event_id:evId,tile:tgt.id,title:name0,all_day:true});
+ if(td===rs){note.date=addD(td,1);note.end_date=re;lines.push(`原本的「${name0}」改成 ${mdT(addD(td,1))}～${mdT(addD(re,-1))}`)}
+ else{note.date=rs;note.end_date=td;lines.push(`原本的「${name0}」縮短成 ${mdT(rs)}～${mdT(addD(td,-1))}`);
+  if(addD(td,1)<re){extra.push({op:'create',cal,summary:tgt.raw||name0,title:name0,date:addD(td,1),end_date:re,all_day:true});lines.push(`後面 ${mdT(addD(td,1))}～${mdT(addD(re,-1))} 另建一筆全天`)}}
+ if(!o.del){const sum=o.summary||tgt.raw||name0,ex={op:'create',cal,summary:sum,title:F.title,date:F.date,all_day:F.all};if(F.all)ex.end_date=addD(F.date,1);else{ex.start=F.start;ex.end=F.end}
+  extra.push(ex);lines.push(`另建 ${mdT(F.date)} ${F.all?'全天':F.start+'～'+F.end} 的「${F.title}」`)}
+ if(extra.length)note.extra=extra;
+ return {note,view:o.del?{kind:'del',tile:tgt.id}:o.view,lines,confirm:true,msg:o.del?'刪掉這一天了，同步中':'拆開改好了，同步中',tide:o.tide}}
+function ceGo(plan){if(!plan)return;S.cePre=null;if(calSend(plan.note,plan.view,plan.tide))closeThen(()=>toast(plan.msg||'改好了，同步中'))}
+function ceConfirm(plan,okLabel,danger){CE.plan=plan;const x=$i('ceConf');if(!x)return ceGo(plan);
+ x.innerHTML=`<b>會這樣做：</b><ol>${plan.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ol><div class="btns">${B(okLabel||'照這樣改','ceyes','',danger?'wide danger':'pri wide')}${B('先不要','ceno','','wide')}</div>`;x.hidden=false;x.scrollIntoView&&x.scrollIntoView({block:'nearest'})}
+ACT.ceyes=()=>{const p=CE.plan;CE.plan=null;ceGo(p)};
+ACT.ceno=()=>{CE.plan=null;const x=$i('ceConf');if(x)x.hidden=true};
+ACT.cesave=id=>{const F=ceRead(),err=ceCheck(F);if(err){ceMsg(err);return}
+ const plan=cePlan(id,F);if(!plan){ceMsg('沒有改動');return}
+ if(plan.confirm){ceConfirm(plan);return}ceGo(plan)};
+/* 刪除：一定要確認一次（刪掉就回不來） */
+ACT.cedel=id=>{const e=calFind(id);if(!e)return;const F=ceRead(),cal=e.src==='co'?'co':'me',evId=baseId(e.id),name0=stripTag(e.n),req=rid();
+ const multi=!!(e.all&&e.rs&&e.re&&diffD(e.rs,e.re)>1);let plan;
+ if(multi&&F.scope!=='all')plan=splitPlan({tgt:e,F,cal,evId,name0,summary:null,mk:o=>Object.assign({type:'cal_write',req_id:req},o),view:null,tide:null,del:true});
+ else{plan={note:{type:'cal_write',req_id:req,op:'delete',cal,event_id:evId,tile:e.id,title:name0},view:{kind:'del',tile:e.id},lines:[`從${cal==='co'?'公司':'個人'}行事曆刪掉「${name0}」${multi?'（整段）':''}`],confirm:true,msg:'刪掉了，同步中'}}
+ ceConfirm(plan,'刪掉',true)};
+/* 張弛清單按「確認」：直接改行事曆上對應的那一筆（找不到才新增）；對到多天全天事件就開卡讓老大選只改這天或整段 */
+window.__zl=Object.assign(window.__zl||{},{ceTideConfirm:ref=>{const e=calFind(ref);if(!e)return;const m=tideMatch(e);
+ if(m&&m.all&&m.rs&&m.re&&diffD(m.rs,m.re)>1){ACT.sheet('cal:'+ref);return}
+ const plan=cePlan(ref,{title:stripTag(e.n),date:ymd(e.d),all:false,start:e.t,end:e.e,cal:'me',scope:'day'});if(plan)ceGo(plan)}});
+
+/* ---- 交代 AI：先開對話、輸入框空著，老大講完按「就這樣交給大器」才送 ---- */
+ACT.ceai=id=>{const F=ceRead(),e=id?calFind(id):null,rel=ceRelated(e)||null,ask=window.__zlAsk;
+ if(!ask){toast('這裡還不能叫 AI，等一下再試');return}
+ const when=F.all?'全天':F.start+'～'+F.end,eid=e&&e.real&&e.src!=='tide'?baseId(e.id):'';
+ const txt=`【行事曆行程】「${F.title||'（還沒取名）'}」${F.date} ${when}${eid?'，行事曆編號 '+eid:''}${rel?'，相關卡片：'+(rel.short||rel.title)+'（編號 '+rel.id+'）':''}。`;
+ closeThen(()=>ask({id:rel?rel.id:'cal',who:'大器',label:'就這樣交給大器',go:async said=>{await LV.api.say(rel?rel.id:null,txt+(said?'\n老大交代：'+said:'\n（老大沒多交代，請先看這筆行程需要準備什麼）'),'daqi');toast('交給大器了，做完會回報')}}))};
+
+/* ---- 日檢視：直式時間軸，長按 0.4 秒後上下拖，放開跳確認列 ---- */
+const H0=8,H1=24,PH=44;
+function dayTl(n,all){const its=all.filter(e=>e.d===n&&!e.cancel),alls=its.filter(e=>e.all||!e.t),tm=its.filter(e=>!(e.all||!e.t));
+ const ev=tm.map(e=>{const a=hmN(e.t);let b=hmN(e.e);if(b==null||b<=a)b=a+1;return {e,a,b}}).sort((x,y)=>x.a-y.a||x.b-y.b),out=[];let cl=[],cEnd=-1;
+ const flush=()=>{const nc=cl.reduce((m,x)=>Math.max(m,x.c+1),1);cl.forEach(x=>{x.nc=nc;out.push(x)});cl=[];cEnd=-1};
+ ev.forEach(x=>{if(cl.length&&x.a>=cEnd)flush();const used=cl.filter(y=>y.b>x.a);let c=0;while(used.some(y=>y.c===c))c++;x.c=c;cl.push(x);cEnd=Math.max(cEnd,x.b)});flush();
+ const grid=[];for(let h=H0;h<=H1;h++)grid.push(`<i class="dth" style="top:${(h-H0)*PH}px"><span>${String(h%24).padStart(2,'0')}:00</span></i>`);
+ const nowL=n===0&&nowH()>=H0&&nowH()<=H1?`<b class="dtnow" style="top:${(nowH()-H0)*PH}px" aria-hidden="true"></b>`:'';
+ const blocks=out.map(x=>{const e=x.e,top=(Math.max(H0,x.a)-H0)*PH,hh=Math.max(24,(Math.min(H1,x.b)-Math.max(H0,x.a))*PH-2);
+  return `<button class="dtb" data-act="sheet" data-id="cal:${esc(e.id)}" data-s="${e.src}" data-a="${x.a}" data-b="${x.b}" style="top:${top}px;height:${hh}px;left:calc(${x.c/x.nc*100}% + 2px);width:calc(${100/x.nc}% - 4px)"><b>${e.cs&&e.src!=='tide'?esc(e.cs)+'・':''}${esc(e.src==='tide'?stripTag(e.n):e.n)}</b><small>${esc(e.t)}～${esc(e.e||'')}${e.src==='tide'?'・張弛排':''}</small>${e.pend?evState(e):''}</button>`}).join('');
+ return `<div class="dtall${alls.length?'':' none'}">${alls.length?`<span>全天</span>${alls.map(e=>`<button class="tdal" data-act="sheet" data-id="cal:${esc(e.id)}">${e.cs?esc(e.cs)+'・':''}${esc(e.n)}</button>`).join('')}`:''}</div>
+ <div class="dtconf" id="dtConf" hidden></div>
+ <div class="dtl" id="dtl" data-day="${n}" style="height:${(H1-H0)*PH}px">${grid.join('')}${nowL}${blocks}</div>
+ <p class="cbhint">${tm.length?'長按行程 0.4 秒再上下拖，就能換時段；也可以點一下直接改時間':'這天沒有排時段的行程'}</p>`}
+{const _cp=calPage;calPage=function(){const h=_cp();if((S.calv||'week')!=='day'||E())return h;
+  const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f),n=Math.max(0,Math.min(13,S.cald||0));
+  const a=h.indexOf('<div class="cdnav">'),b=h.indexOf('<p class="note"');if(a<0||b<0)return h;
+  const nav=h.slice(a,h.indexOf('</div>',a)+6),Z=window.__zl,info=Z.tlDay(all.filter(e=>e.d===n&&!e.cancel));
+  let x=h.slice(0,a).replace(/<section class="tl fcpanel"[\s\S]*?<\/section>/,'')+nav+`<div class="fc fc1"><span class="fcs">${Z.caps(info,n,S.tlneed||0)}</span><span class="fcn">${mb('＋ 新增','cenew',String(n))}</span></div>`+dayTl(n,all)+h.slice(b);
+  return x}}
+/* 拖曳（pointer events；長按成立前移動超過 8px＝使用者在捲動，取消長按） */
+{let st=null,tm=0;
+ document.addEventListener('pointerdown',ev=>{const b=ev.target.closest&&ev.target.closest('.dtb');if(!b||ev.button>0||b.dataset.s==='co'&&0)return;
+  st={b,x:ev.clientX,y:ev.clientY,id:b.dataset.id.slice(4),a:+b.dataset.a,e:+b.dataset.b,live:0,pid:ev.pointerId};clearTimeout(tm);
+  tm=setTimeout(()=>{if(!st)return;st.live=1;CE.hold=1;b.classList.add('drag');try{b.setPointerCapture(st.pid)}catch(e){}try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}},400)},true);
+ document.addEventListener('pointermove',ev=>{if(!st)return;
+  if(!st.live){if(Math.hypot(ev.clientX-st.x,ev.clientY-st.y)>8){clearTimeout(tm);st=null}return}
+  ev.preventDefault();const dur=st.e-st.a,a=Math.min(H1-dur,Math.max(H0,st.a+Math.round((ev.clientY-st.y)/PH*4)/4));st.na=a;
+  st.b.style.top=(a-H0)*PH+'px';const s=st.b.querySelector('small');if(s)s.textContent=fT(a)+'～'+fT(a+dur)},true);
+ document.addEventListener('touchmove',ev=>{if(st&&st.live)ev.preventDefault()},{passive:false});
+ const end=()=>{clearTimeout(tm);if(!st)return;const s=st;st=null;if(!s.live)return;CE.hold=0;CE.justDragged=Date.now();s.b.classList.remove('drag');
+  const a=s.na!=null?s.na:s.a;if(Math.abs(a-s.a)<0.01){if(CE.dirty){CE.dirty=0;render('keep')}return}
+  CE.move={id:s.id,a,b:a+(s.e-s.a),oa:s.a,ob:s.e};moveUI()};
+ document.addEventListener('pointerup',end,true);document.addEventListener('pointercancel',end,true);
+ document.addEventListener('click',ev=>{if(CE.justDragged&&Date.now()-CE.justDragged<500&&ev.target.closest&&ev.target.closest('.dtb')){ev.stopPropagation();ev.preventDefault()}},true);
+ document.addEventListener('contextmenu',ev=>{if(ev.target.closest&&ev.target.closest('.dtb'))ev.preventDefault()});}
+{const _r=render;render=function(d){if(CE.hold){CE.dirty=1;return}const r=_r.apply(this,arguments);if(CE.move)moveUI();return r}}
+function moveUI(){const m=CE.move;if(!m)return;const b=document.querySelector(`.dtb[data-id="cal:${CSS.escape(m.id)}"]`),x=$i('dtConf');if(!x)return;
+ if(b){b.style.top=(m.a-H0)*PH+'px';const s=b.querySelector('small');if(s)s.textContent=fT(m.a)+'～'+fT(m.b);b.classList.add('moved')}
+ x.innerHTML=`<span>改到 <b>${fT(m.a)}～${fT(m.b)}</b>？</span><span class="btns">${B('確定','cemvyes','','pri sm')}${B('取消','cemvno','','sm')}</span>`;x.hidden=false}
+ACT.cemvno=()=>{CE.move=null;applyCal();render('keep')};
+ACT.cemvyes=()=>{const m=CE.move;if(!m)return;const e=calFind(m.id);CE.move=null;if(!e){render('keep');return}
+ const F={title:stripTag(e.n),date:ymd(e.d),all:false,start:fT(m.a),end:fT(m.b),cal:'me',scope:'day'},plan=cePlan(m.id,F);
+ if(!plan){render('keep');return}
+ if(plan.confirm){S.cePre={id:m.id,start:F.start,end:F.end};ACT.sheet('cal:'+m.id);return}
+ if(calSend(plan.note,plan.view,plan.tide))toast(plan.msg)};
+}
+
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

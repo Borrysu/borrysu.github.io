@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v123');
+  const { mockAdapter } = await import('./mock.js?v124');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -296,6 +296,7 @@ function liveAdapter() {
     async aiQuota() { return rpc('hub_ai_quota_list', {}); },
     async tideLog(since, kind) { return rpc('hub_tide_log_list', { p_since: since, p_kind: kind || null }); },   // 2026-11-25 每天確認：讀今天的確認與想排
     async tideLogAdd(kind, patch) { return rpc('hub_tide_log_add', { p_kind: kind, p_patch: patch }, 0, W); },
+    async calWrite(note) { const r = await rpc('hub_tide_log_add', { p_kind: 'note', p_patch: { source: '面板', note } }, 0, W); wake({ act: 'calwrite' }); return r; },   // 2026-11-25 v124：面板改行事曆，寫 cal_write 再叫 Mac 的 write.mjs 寫進 Google
     async tidePlan(from, to) { return rpc('hub_tide_plan_list', { p_from: from, p_to: to }); },   // 2026-11-25 張弛：今天的節奏（只讀）   // 2026-11-25 msg 709：各 AI 帳號額度（Mac 每 30 分鐘、有變才推）
     async history(id) {   // 卡片動作紀錄：誰、什麼時候、做了什麼（opp_get 的 history）
       const d = await rpc(R.get, { p_id: id }); const r = Array.isArray(d) ? d[0] : d;
