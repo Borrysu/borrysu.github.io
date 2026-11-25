@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v166');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v167');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5302,6 +5302,9 @@ new MutationObserver(()=>{if(CTO&&!CTO.dismiss&&!document.getElementById('cTo'))
 document.addEventListener('click',e=>{const z=e.target.closest&&e.target.closest('.zcolb');if(!z)return;setTimeout(()=>{const sec=z.closest('section,[data-zcol]');if(sec)sec.style.minHeight='';const v=document.getElementById('view');if(v)v.style.minHeight='';const pg=document.getElementById('page');if(pg&&pg.firstElementChild)pg.firstElementChild.style.minHeight=''},0)},true);
 // v162 msg 1001 老大：「我在這一頁點選一些按鈕，整個畫面會有點亂跳動」→ 程式自動把游標放進輸入框時，框已經在畫面裡就不要捲動（瀏覽器預設會把它捲到中間）
 {const F=HTMLElement.prototype.focus;HTMLElement.prototype.focus=function(o){try{if(!o||o.preventScroll===undefined){const r=this.getBoundingClientRect();if(r.top>=60&&r.bottom<=innerHeight-60)return F.call(this,Object.assign({},o||{},{preventScroll:true}))}}catch(e){}return F.apply(this,arguments)}}
+/* v167 逐流 msg 1015 老大：「幫我去掉張弛安排的 他的邏輯，現在還不符合我 Mac本身的那些什麼程式排程也都先幫我取消，我們再另外處理」
+   → 張弛暫停：面板不顯示張弛排的開工時段、休息段、出門／內部截止提醒、別漏了裡的張弛建議與節奏上的張弛時間（Mac 上 tide-plan、tide-guard 兩支排程也已停用）。恢復：把這行改成 false。 */
+window.__TIDE_OFF=true;window.__tideRows=[];
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

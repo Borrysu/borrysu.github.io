@@ -1297,9 +1297,10 @@
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function load() {
     var Z = window.__zl; if (!Z || !Z.LV || !Z.LV.api || !Z.LV.api.tidePlan) return;
+    if (window.__TIDE_OFF) { window.__tideRows = []; return; }   // v167 張弛暫停：不讀
     if (busy || (cache && Date.now() - at < 600000)) return; busy = true;
     var now = new Date(), t0 = ymd(now), t1 = ymd(new Date(now.getTime() + 864e5));
-    Z.LV.api.tidePlan(t0, ymd(new Date(now.getTime() + 13 * 864e5))).then(function (d) { cache = Array.isArray(d) ? d : []; at = Date.now(); busy = false; window.__tideRows = cache; if (Z.reCal) Z.reCal(); draw(); }).catch(function () { cache = []; at = Date.now(); busy = false; draw(); });
+    Z.LV.api.tidePlan(t0, ymd(new Date(now.getTime() + 13 * 864e5))).then(function (d) { cache = Array.isArray(d) ? d : []; at = Date.now(); busy = false; window.__tideRows = window.__TIDE_OFF ? [] : cache; if (Z.reCal) Z.reCal(); draw(); }).catch(function () { cache = []; at = Date.now(); busy = false; draw(); });
   }
   function draw() {
     var Z = window.__zl, old = document.getElementById('tideBox'); if (old) old.parentNode.removeChild(old);
