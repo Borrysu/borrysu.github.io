@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v225');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v226');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3676,7 +3676,7 @@ ACT.bidsteps=async id=>{const it=todoOf(id),c=it&&it.raw;if(!c||!LV.api||!LV.api
 const stepRelTag=(pid,i,rid)=>{const c=ckCards().find(q=>q.id===rid);const nm=c?(c.shortTitle||c.title):'（找不到這張卡）',st=c&&CK_ST[c.status];return `<button type="button" class="pstrl" data-act="pstrelmenu" data-id="${esc(pid)}|${i}" aria-label="關聯：${esc(nm)}，點開可看卡、換別張或取消">→ ${esc(clip(nm,16))}${st?'（'+st+'）':''}</button>`};
 // v204（msg 1378）：步驟做完的結果回填在這一步的卡上（result 摘要、result_link 成果位置、result_at、result_by）。執行端呼叫 opp_step_result 寫回。
 const stepResultBox=s=>{const when=s.result_at?(()=>{const d=new Date(s.result_at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)})():'',lk=String(s.result_link||''),lkH=/^https?:\/\//.test(lk)?`<a class="btn sm" href="${esc(lk)}" target="_blank" rel="noopener noreferrer">打開成果 ↗</a>`:'';   // v222：本機路徑老大手機打不開，不顯示；只顯示打得開的網址
- return `<div class="pstres" data-s="${esc(s.status)}"><b>${s.status==='blocked'?'卡住：':s.status==='done'?'結果：':'回報：'}</b>${esc(typeof cleanTxt==='function'?cleanTxt(s.result):s.result)}${lkH?`<div class="pstresl">${lkH}</div>`:''}<small>${esc([s.result_by,when].filter(Boolean).join('・'))}</small></div>`};
+ return `<div class="pstres" data-s="${esc(s.status)}"><b>${s.status==='blocked'?'卡住：':s.status==='done'?'結果：':'回報：'}</b>${esc((typeof cleanTxt==='function'?cleanTxt(s.result):s.result).replace(/〔[^〕]*〕/g,'').trim())}${lkH?`<div class="pstresl">${lkH}</div>`:''}<small>${esc([s.result_by,when].filter(Boolean).join('・'))}</small></div>`};
 const STL={done:'做完',current:'正在做',pending:'還沒',skipped:'略過',blocked:'卡住'};
 {const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw||!p.raw.id)return h;
  const st=p.raw.progressSteps||[];
@@ -5885,7 +5885,9 @@ document.addEventListener('change',e=>{const t=e.target;if(t&&t.classList&&t.cla
    點進去就是那張卡那一步（已展開），看過記在這台裝置。 */
 function rvSeen(){try{return JSON.parse(localStorage.getItem('zl_rv')||'{}')}catch(e){return {}}}
 function rvMark(k){try{const o=rvSeen();o[k]=Date.now();const ks=Object.keys(o);if(ks.length>300)ks.sort((a,b)=>o[a]-o[b]).slice(0,ks.length-300).forEach(x=>delete o[x]);localStorage.setItem('zl_rv',JSON.stringify(o))}catch(e){}}
-function rvItems(){const seen=rvSeen(),lim=Date.now()-7*864e5,out=[];(LV.items||[]).forEach(c=>{if(!c||['closed','dropped','expired'].indexOf(c.status)>-1)return;(c.progressSteps||[]).forEach((st,i)=>{if(!st||!st.result_at||/^(Borry|老大)$/.test(String(st.result_by||'')))return;const t=Date.parse(st.result_at);if(!t||t<lim)return;const k=c.id+'|'+st.name+'|'+st.result_at;if(seen[k])return;out.push({k,id:c.id,i,t,card:c.shortTitle||c.title,step:st.name,res:st.result||st.note||'',by:st.result_by||'大器',st:st.status})})});return out.sort((a,b)=>b.t-a.t)}
+function rvItems(){const seen=rvSeen(),lim=Date.now()-7*864e5,out=[];(LV.items||[]).forEach(c=>{if(!c||['closed','dropped','expired'].indexOf(c.status)>-1)return;(c.progressSteps||[]).forEach((st,i)=>{if(!st||!st.result_at||/^(Borry|老大)$/.test(String(st.result_by||'')))return;const t=Date.parse(st.result_at);if(!t||t<lim)return;const k=c.id+'|'+st.name+'|'+st.result_at;if(seen[k])return;out.push({k,id:c.id,i,t,card:c.shortTitle||c.title,step:st.name,res:String(st.result||st.note||'').replace(/〔[^〕]*〕/g,'').trim()||'做完了',by:st.result_by||'大器',st:st.status})})});
+ // v226（msg 1570）：同一張卡的排在一起、照步驟順序；卡跟卡之間，最近有新結果的在前
+ const last={};out.forEach(x=>{last[x.id]=Math.max(last[x.id]||0,x.t)});return out.sort((a,b)=>a.id===b.id?a.i-b.i:(last[b.id]-last[a.id])||String(a.id).localeCompare(String(b.id)))}
 function rvHTML(){if(S.tab!=='today'||E())return '';const L=rvItems();if(!L.length)return '';
  const tm=t=>new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(t));
  return `<section class="sec rvsec" aria-label="新進度，等你檢閱"><h2 class="sh"><span class="rvdot" aria-hidden="true"></span>新進度・等你檢閱 <small>${L.length}</small></h2><div class="rows">`
@@ -5893,7 +5895,7 @@ function rvHTML(){if(S.tab!=='today'||E())return '';const L=rvItems();if(!L.leng
   +`</div>${L.length>5?`<p class="note">還有 ${L.length-5} 則，看完上面的會出現。</p>`:''}<div class="btns" style="margin-top:6px"><button type="button" class="btn ghost" data-act="rvall">全部標成已看</button></div></section>`}
 ACT.rvopen=k=>{const [id,name]=k.split('|'),c=(LV.items||[]).find(x=>x.id===id);rvMark(k);if(!c){render('keep');return}
  const i=(c.progressSteps||[]).findIndex(s=>s&&s.name===name);if(i>-1)S.open['pst:'+id+':'+i]=1;
- if(DB.proj.some(p=>p.id===id))ACT.page('proj:'+id);else{toast('這張卡不在案子清單裡，標成已看了');render('keep')}};
+ if(DB.proj.some(p=>p.id===id)){ACT.page('proj:'+id);if(i>-1){let n=0;const go=()=>{const li=document.querySelector(`#page .pstr[data-i="${i}"]`);if(li){li.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'});li.classList.add('flashpick');setTimeout(()=>li.classList.remove('flashpick'),1800)}else if(n++<10)setTimeout(go,120)};setTimeout(go,250)}}else{toast('這張卡不在案子清單裡，標成已看了');render('keep')}};   // v226（msg 1570）：跳到那一步並標亮
 ACT.rvall=()=>{rvItems().forEach(x=>rvMark(x.k));render('keep');toast('都標成已看了')};
 {const _t=todayStrip;todayStrip=function(){const h=_t();return h?rvHTML()+h:h}}
 
