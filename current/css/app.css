@@ -1784,3 +1784,9 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .tlneed{display:flex;flex-wrap:nowrap;align-items:center;gap:4px;overflow:hidden}.tlneed>span{font-size:12px;white-space:nowrap;flex:none}.tlneed .mb{min-height:34px;padding:0 7px;font-size:12px;white-space:nowrap;flex:0 1 auto;min-width:0}.tlneed .tlx0{padding:0 9px}
 .tl .tlwk{display:flex;align-items:center;gap:4px;margin:8px 0 4px}.tl .tlwk button{border:0;border-radius:8px;background:transparent;color:var(--ink2);font:inherit;font-size:13px;font-weight:600;padding:6px 10px;min-height:36px}.tl .tlwk button[aria-selected="true"]{background:rgba(127,127,127,.16);color:var(--ink)}.tl .tlwk small{margin-left:auto;font-size:11px;color:var(--ink2)}
 .pres{margin:10px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:14px}.pres .h4{margin:0 0 6px}.pdraft{margin:0 0 8px;padding:10px 12px;border-left:3px solid #a37aff;border-radius:8px;background:rgba(127,127,127,.08)}.pdraft p{margin:0 0 6px;font-size:14px;line-height:1.55;white-space:pre-wrap}.pask{margin:4px 0 0;font-size:14px}.pask b{margin-right:8px;color:#f2a93b}
+/* v135 msg 891 老大：「你頭像 逐流icon 做一個小臉動畫吧」：暫用版，皮皮正式設計交件後換掉。待機輕輕晃、思考中呼吸、說話時跳一下 */
+@keyframes bmiSway{0%,100%{transform:rotate(0)}50%{transform:rotate(-4deg)}}
+@keyframes bmiThink{0%,100%{transform:scale(1);filter:brightness(1)}50%{transform:scale(.92);filter:brightness(1.15)}}
+@keyframes bmiTalk{0%,100%{transform:translateY(0)}30%{transform:translateY(-3px)}60%{transform:translateY(1px)}}
+.bm.bmicon{animation:bmiSway 5s ease-in-out infinite}.bm.bmicon[data-m="thinking"]{animation:bmiThink 1.4s ease-in-out infinite}.bm.bmicon[data-m="speaking"]{animation:bmiTalk .5s ease-in-out 3}
+@media (prefers-reduced-motion:reduce){.bm.bmicon{animation:none!important}}
