@@ -1912,8 +1912,14 @@ function paint(dir){applyData();const s=sigOf();if(!dir&&s===LV.sig&&!LV.dirty)r
 document.addEventListener('focusout',()=>{if(LV.dirty)setTimeout(()=>{if(LV.dirty)paint()},50)});
 function snapSave(){try{localStorage.setItem(LV.A.CONFIG.SNAPSHOT_KEY+':'+LV.A.keyTag(),JSON.stringify({at:LV.at,items:LV.items,hub:LV.hub}))}catch(e){}}
 function snapLoad(){try{const s=JSON.parse(localStorage.getItem(LV.A.CONFIG.SNAPSHOT_KEY+':'+LV.A.keyTag())||'null');if(!s||!Array.isArray(s.items))return false;LV.items=s.items;LV.hub=s.hub;LV.at=s.at;return true}catch(e){return false}}
-function schedule(){clearTimeout(LPOLL);if(LV.net==='auth')return;LPOLL=setTimeout(async()=>{if(!document.hidden){await loadAll();if(S.chat)loadMsgs();pollInbox()}schedule()},S.scan?LV.A.CONFIG.FAST_POLL_MS:LV.A.CONFIG.POLL_MS)}
-const reload=()=>loadAll().then(()=>{if(S.chat)loadMsgs();pollInbox()});
+// 2026-11-25 v133 老大：「只有我在使用逐流的時候有更動會即時讀寫 平時我沒開 可以設置一個背景讀寫間隔（要有意義）然後只要我點開 畫面一定是最新資料 然後如果我忘記關 就會有一個適合的固定間隔來更新 看怎麼判斷我正在使用 或我只是沒關」
+// 判斷：畫面在前景、3 分鐘內有點、滑、打字＝正在用；畫面開著但 3 分鐘沒動＝忘了關；切到背景或關掉＝沒開。
+// 正在用：資料一變（即時推播）就讀，另每 5 分鐘補讀一次。忘了關：推播只記「有新的」不讀，每 30 分鐘讀一次，一碰畫面馬上補讀。沒開：不讀；打開那一刻一定先讀最新。
+const LIVE={act:Date.now(),stale:0,at:0,deb:0,IDLE:180000,ON:300000,OFF:1800000};
+const using=()=>!document.hidden&&Date.now()-LIVE.act<LIVE.IDLE;
+function schedule(){clearTimeout(LPOLL);if(LV.net==='auth')return;if(!LIVE.at)LIVE.at=Date.now();const iv=()=>S.scan&&using()?LV.A.CONFIG.FAST_POLL_MS:using()?LIVE.ON:LIVE.OFF;
+ LPOLL=setTimeout(async()=>{if(!document.hidden&&Date.now()-LIVE.at>=iv()-1000){await reload()}schedule()},iv())}
+const reload=()=>{LIVE.at=Date.now();LIVE.stale=0;return loadAll().then(()=>{if(S.chat)loadMsgs();pollInbox()})};
 
 /* 金鑰提示列：沒金鑰（示範）或金鑰失效時才出現，放在離線條的位置 */
 function keybar(){const o=$('#offline');if(!o)return;
@@ -2537,13 +2543,14 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v132');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v133');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
  await loadAll(true);schedule();
- if(LV.api.subscribe)LV.api.subscribe(()=>reload(),()=>{});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden&&LV.net!=='auth'&&Date.now()-(LV.visAt||0)>120000){LV.visAt=Date.now();reload()}});   // 2026-11-24 DB 降載：切回面板最多 2 分鐘重讀一次
+ if(LV.api.subscribe)LV.api.subscribe(()=>{if(!using()){LIVE.stale=1;return}clearTimeout(LIVE.deb);LIVE.deb=setTimeout(reload,1500)},()=>{});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&LV.net!=='auth'){LIVE.act=Date.now();if(LIVE.stale||Date.now()-LIVE.at>10000)reload();schedule()}});   // v133：打開就讀最新（取代 11-24 的最多 2 分鐘一次）
+ ['pointerdown','keydown','wheel','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{const was=using();LIVE.act=Date.now();if(!was&&LV.net!=='auth'&&LV.at&&(LIVE.stale||Date.now()-LIVE.at>60000)){reload();schedule()}},{passive:true,capture:true}));
  addEventListener('online',()=>reload());addEventListener('offline',()=>{if(LV.at){LV.net='offline';S.st='offline';paint()}});
 }catch(e){LV.net='error';LV.err=LERR(e);S.st='error';render()}})();
 // 機會卡（老大 2026-11-22：「應該要有完整標題 以及他是幹嘛的還有他可以拿多少錢」「記得有暫存扭跟深入了解的鈕 還有個不要的鈕吧？」）

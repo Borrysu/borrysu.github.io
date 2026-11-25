@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v132');
+  const { mockAdapter } = await import('./mock.js?v133');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -328,7 +328,7 @@ function liveAdapter() {
     async payAuthorize(o) { return rpc(R.payAuthorize, { p_src_kind: o.kind, p_src_id: o.id == null ? null : String(o.id), p_src_title: o.title || null, p_amount: o.amount == null ? null : +o.amount, p_amount_text: o.amountText, p_payee: o.payee, p_assignee: o.by || null, p_link: o.link || null }, 0, W); },
     async payCancel(id) { return rpc(R.payCancel, { p_id: +id }, 0, W); },
     async payList() { const d = await rpc(R.payList, { p_limit: 80 }, 0, W); return Array.isArray(d) ? d : []; },
-    async calRefresh() { return rpc(R.calRefresh, {}, 0, W); },
+    async calRefresh() { const r = await rpc(R.calRefresh, {}, 0, W); wake({ act: 'botsend' }); return r; },   // v133：叫 Mac 立刻跑一輪（relay 背景間隔放慢後靠這個即時）
     // v60：公司卡（肉咖從皮條客同步過來，只有老大讀得到）與派工（肉咖或大器，各記一筆 hub_jobs）
     async company() { return rpc(R.company, {}, 0, W); },
     async coTaskOpp(oppId, title, assignee, body) { return rpc('hub_company_task_add_opp', { p_opp_id: oppId, p_title: title, p_assignee: assignee, p_body: body }, 0, W); },   // v100 原生公司案子同步到皮條客（遷移 20261124_公司原生卡）
