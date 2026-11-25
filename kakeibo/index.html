@@ -3806,7 +3806,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.10', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.11', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4592,7 +4592,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
       '.kkdt-x{min-height:44px;min-width:44px;border-radius:12px;border:1.5px solid var(--line,#bbb);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}' +
       '.kkdt-lead{margin:0 0 10px;font-size:15px}.kkdt h4{margin:12px 0 4px;font-size:13px;color:var(--muted,#666)}.kkdt ul{margin:0;padding-left:18px}.kkdt li{margin:2px 0}' +
       '.kkdt dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:14px}.kkdt dt{color:var(--muted,#666)}.kkdt dd{margin:0;word-break:break-word}' +
-      '.kkdt-note{white-space:pre-wrap;word-break:break-word;font-size:14px;margin:0}.kkdt-ask{display:block;width:100%;min-height:44px;margin-top:12px;border-radius:12px;border:1.5px dashed var(--line,#bbb);background:transparent;color:inherit;font:inherit;font-weight:700;opacity:.6}.kkdt-w{color:var(--muted,#666);margin:6px 0}';
+      '.kkdt-note{white-space:pre-wrap;word-break:break-word;font-size:14px;margin:0}.kkdt-askgo{border-style:solid;opacity:1;cursor:pointer}.kkdt-ask{display:block;width:100%;min-height:44px;margin-top:12px;border-radius:12px;border:1.5px dashed var(--line,#bbb);background:transparent;color:inherit;font:inherit;font-weight:700;opacity:.6}.kkdt-w{color:var(--muted,#666);margin:6px 0}';
     (document.head || document.documentElement).appendChild(st);
   })();
   function dtSrc(c) { return DTSRC[c.source_kind] || (c.evidence_type ? c.evidence_type + '資料' : '通知'); }
@@ -4631,8 +4631,41 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
     if ((c.same_amount || []).length) h += '<p class="kkdt-w">前後 3 天同金額：</p><ul>' + c.same_amount.map(function (s) { return '<li>' + esc(md(s.occurred_at) + '・' + (s.merchant || '') + (s.account_name ? '・' + s.account_name : '') + '（#' + s.id + '）') + '</li>'; }).join('') + '</ul>';
     else h += '<p class="kkdt-w">前後 3 天沒有同金額的帳，不像重複。</p>';
     if ((c.same_merchant || []).length) h += '<p class="kkdt-w">同店家最近幾筆：</p><ul>' + c.same_merchant.map(function (s) { return '<li>' + esc(md(s.occurred_at) + '・' + fmt(s.amount) + '・' + (s.category || '') + (s.same_category === false ? '（分類跟這筆不同）' : '')) + '</li>'; }).join('') + '</ul>';
-    h += '<button type="button" class="kkdt-ask" disabled>請塔塔查（還沒開）</button>';
+    h += done()['ask:' + it.rid] ? '<button type="button" class="kkdt-ask" disabled>已請塔塔查（等回覆）</button>' : '<button type="button" class="kkdt-ask kkdt-askgo" data-dtask="1">請塔塔查這筆</button>';
     return h;
+  }
+  /* ---------- kk-v36.11 請塔塔查（老大 11/25 意見 2 第 2 步）----------
+     只動前端：走既有 kk-refresh 的 message，text 固定開頭「[面板請塔塔查]」，context 只放白名單欄位（type/id/label/date/amount/merchant/category/account/tx_type）。
+     送出後記在這支手機 kk_cf_done 的 ask:id，鈕變「已請塔塔查」；這筆仍留在確認清單，查完還是要老大按對或不對。塔塔只查不改帳。 */
+  function askText(it, c) {
+    var amt = Number(c.amount) || 0, mark = c.type === 'income' ? '收入' : c.type === 'transfer' ? '轉帳' : '支出';
+    var s = '[面板請塔塔查] 交易 #' + it.rid + '「' + cut(c.merchant || '（沒寫店家）', 30) + '」' + mark + ' ' + amtTxt(c.type, amt) + '，' + md(c.occurred_at) + (c.account_name ? ' ' + c.account_name : '') + '。';
+    var hint = [];
+    if (c.same_amount_count > 0) hint.push('前後 3 天同金額另有 ' + c.same_amount_count + ' 筆' + ((c.same_amount || []).filter(function (x) { return x && x.id; }).slice(0, 3).map(function (x) { return '#' + x.id; }).join('、') ? '（' + (c.same_amount || []).filter(function (x) { return x && x.id; }).slice(0, 3).map(function (x) { return '#' + x.id; }).join('、') + '）' : ''));
+    if (c.evidence_type === '其他' && /^line/.test(c.source_kind || '')) hint.push('來源只有 LINE 通知');
+    if (c.unbilled) hint.push('信用卡未出帳');
+    if (c.category) hint.push('分類「' + c.category + '」是猜的');
+    if (c.guess_reason) hint.push('你當時的理由：' + cut(c.guess_reason, 80));
+    if (hint.length) s += hint.join('；') + '。';
+    s += '請調明細或收據交叉比對，告訴我金額、日期、帳戶、分類哪裡要改；不用直接改帳，改之前先問我。';
+    return s.length > 500 ? s.slice(0, 499) + '…' : s;
+  }
+  async function askTata(it, c, btn) {
+    if (!c || !c.found || done()['ask:' + it.rid]) return;
+    var text = askText(it, c);
+    if (!window.confirm('要請塔塔查這筆嗎？會傳給塔塔：\n\n' + text)) return;
+    if (btn) { btn.disabled = true; btn.textContent = '送出中…'; }
+    try {
+      var body = { action: 'message', text: text, client_id: uuid(), context: { type: 'transaction', id: it.rid, label: '請塔塔查', date: String(c.occurred_at || '').slice(0, 30), amount: Number(c.amount) || 0, merchant: cut(c.merchant || '', 60), category: cut(c.category || '', 30), account: cut(c.account_name || '', 40), tx_type: String(c.type || '').slice(0, 12) } };
+      try { if (localStorage.getItem('kk_testmsg') === '1') body.test = true; } catch (e) {}
+      var j = await post('/functions/v1/kk-refresh', body, { 'Content-Type': 'application/json', 'x-kk-key': C('key') });
+      if (j && !j.ok && j.reason !== 'duplicate') throw new Error(j.reason || '塔塔沒接到');
+      mark('ask:' + it.rid, 'tata'); say('已請塔塔查，回覆會出現在回報串');
+      if (btn) { btn.textContent = '已請塔塔查（等回覆）'; btn.classList.remove('kkdt-askgo'); }
+    } catch (e) {
+      say('沒送出：' + (e.message || e) + '。可以再按一次');
+      if (btn) { btn.disabled = false; btn.textContent = '請塔塔查這筆'; }
+    }
   }
   function closeDetail() { var o = document.querySelector('.kkdt'); if (o) o.remove(); document.removeEventListener('keydown', dtKey, true); }
   function dtKey(e) { if (e.key === 'Escape') closeDetail(); }
@@ -4641,7 +4674,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--surfac
     ov.className = 'kkdt'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', '這筆的詳情');
     ov.innerHTML = '<div class="kkdt-p"><div class="kkdt-h"><b>' + (it.chip || '') + esc(it.title) + '</b><button type="button" class="kkdt-x" data-dtx="1">關閉</button></div><div class="kkdt-c"></div></div>';
     var cont = ov.querySelector('.kkdt-c'), draw = function (c, err) { cont.innerHTML = dtBody(it, c, err); };
-    ov.addEventListener('click', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-dtx]'))) closeDetail(); });
+    ov.addEventListener('click', function (e) { var ab = e.target.closest && e.target.closest('[data-dtask]'); if (ab) { askTata(it, DT[id], ab); return; } if (e.target === ov || (e.target.closest && e.target.closest('[data-dtx]'))) closeDetail(); });
     ov.addEventListener('touchend', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-dtx]'))) { e.preventDefault(); closeDetail(); } }, { passive: false });
     document.addEventListener('keydown', dtKey, true); document.body.appendChild(ov);
     if (DT[id]) { draw(DT[id]); return; }
