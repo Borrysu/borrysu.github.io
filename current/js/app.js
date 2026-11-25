@@ -1908,7 +1908,7 @@ function mapSub(s){return {id:s.id,name:s.name,amt:s.amount,mo:s.monthly,cyc:s.c
 function applyData(){const it=LV.items;applyExtra();
  DB.opp=it.filter(c=>BK[c.basket]&&(c.status==='new'||c.status==='snoozed')).map(mapOpp);
  DB.deleted=it.filter(c=>BK[c.basket]&&(c.status==='dropped'||c.status==='expired')).map(c=>({id:c.id,title:c.title,amt:c.amountDisplay||c.amountLabel||''}));
- DB.proj=it.filter(c=>['doing','delivered','paid'].includes(c.status)).map(mapProj).sort((a,b)=>(a.urg?0:1)-(b.urg?0:1));
+ DB.proj=it.filter(c=>['doing','delivered','paid'].includes(c.status)).map(mapProj).sort(projOrder);   // v213 msg 1261、1427：案子清單依時間流程排序（逾期最前、期限由近到遠、沒日期放後面）
  DB.todo=it.filter(c=>c.basket==='todo'&&c.status==='new').map(mapTodo);
  DB.arch=LV.arch.map(mapArch);
  const h=LV.hub||{open:[],jobs:[],events:[],beats:[]};
@@ -2616,7 +2616,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v212');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v213');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5792,6 +5792,22 @@ function pmHTML(id){pmLoad(id);const d=LV.pm[id];if(!d)return `<section class="s
   +`<div class="btns" style="margin-top:6px">${B('打開完整對話','talk',id,'ghost')}</div></section>`}
 {const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj'||!x[1]||!DB.proj.find(q=>q.id===x[1]))return h;
  const sec=pmHTML(x[1]),i=h.indexOf('<section class="sec pstep">');return i>-1?h.slice(0,i)+sec+h.slice(i):h+sec}}
+
+/* ---------- v213（2026-11-26，msg 1261、1427）：案子清單依時間流程排序，列右側顯示日期 ----------
+   依據：交件日（delivery_date）→ 公告截止（deadline）→ 尾款期限／預計付款日；沒有就用名稱開頭的 MMDD（如 1130_台江評選簡報，已過 200 天以上算明年）。
+   逾期（早於今天）排最前、紅色，越久越前；之後期限由近到遠；同一天「總表」排在各張前；沒日期的放最後，再依最近有動。 */
+function projMeta(p){if(p.__m)return p;p.__m=1;const raw=p.raw||{},T=new Date(Date.now()+8*3600e3),today=Date.UTC(T.getUTCFullYear(),T.getUTCMonth(),T.getUTCDate()),DAY=864e5;
+ const ymd=v=>{if(!v)return null;const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(v));if(m)return Date.UTC(+m[1],+m[2]-1,+m[3]);return null};
+ const fromTs=v=>{if(!v)return null;const t=typeof v==='number'?v:Date.parse(v);if(!t||isNaN(t))return null;const x=new Date(t+8*3600e3);return Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),x.getUTCDate())};
+ let dt=p.g==='delivered'||p.g==='paid'?(ymd(raw.expectedPayDate)||ymd(raw.finalDue)||ymd(raw.deliveryDate)):(ymd(raw.deliveryDate)||fromTs(raw.deadline)||ymd(raw.finalDue)||ymd(raw.expectedPayDate)),src=dt?'欄位':'';
+ if(!dt){const m=/^(\d{2})(\d{2})(?:[_\-\s]|$)/.exec(String(p.title||p.short||''));if(m&&+m[1]>=1&&+m[1]<=12&&+m[2]>=1&&+m[2]<=31){let y=T.getUTCFullYear(),d0=Date.UTC(y,+m[1]-1,+m[2]);if(d0<today-200*DAY)d0=Date.UTC(y+1,+m[1]-1,+m[2]);dt=d0;src='名稱'}}
+ p.dts=dt;p.dsrc=src;p.dtotal=/總表/.test(String(p.title||''));
+ if(dt!=null){const n=Math.round((dt-today)/DAY),x=new Date(dt);p.dlate=n<0;p.dlab=`${x.getUTCMonth()+1}/${x.getUTCDate()}・${n<0?'逾期 '+(-n)+' 天':n===0?'今天':n===1?'明天':'還有 '+n+' 天'}`;p.dn=n}
+ return p}
+function projOrder(a,b){projMeta(a);projMeta(b);const g=x=>x.dts==null?2:x.dlate?0:1,ga=g(a),gb=g(b);if(ga!==gb)return ga-gb;
+ if(ga<2&&a.dts!==b.dts)return a.dts-b.dts;if(a.dtotal!==b.dtotal)return a.dtotal?-1:1;
+ return (+((b.raw||{}).progressUpdatedAt)||0)-(+((a.raw||{}).progressUpdatedAt)||0)}
+{const _pc=projCard;projCard=function(p){let h=_pc(p);projMeta(p);if(!p.dlab)return h;return h.replace(/(<div class="meta">)([\s\S]*?)(<\/div>)/,(m,a,b,c)=>a+b+`<span class="pdl${p.dlate?' late':''}">${esc(p.dlab)}</span>`+c)}}
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
