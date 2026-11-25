@@ -1868,3 +1868,11 @@ button[data-act="sheet"][data-id="beats"].wide{white-space:nowrap;overflow:hidde
 .ckbox .ck.want:not(.done){cursor:pointer}.ckbox .ck.want .ckm{flex:1;min-width:0}
 /* v148 msg 932：刪除＝透明底 X */
 .ckbox .ck.want .cklp .ckdel.ckx{background:transparent!important;color:var(--ink2,#aaa);box-shadow:none!important;border:1.5px solid rgba(127,127,127,.45)}
+/* v149 msg 931：逐流監工的傳送鈕看得到 */
+[data-b="jian"] .btn.pri,#chat[data-b="jian"] .btn.pri,.cin .btn.pri[data-act="chatsend"]{background:var(--pri,#f3efe0)}
+[data-b="jian"]{--pri:#f3efe0}[data-b="jian"] .btn.pri{background:#f3efe0!important;color:#111!important}
+/* v149 msg 937 */
+.tlnext{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;width:100%;text-align:left;border:0;font:inherit;color:inherit;cursor:pointer}.tlnext em{margin-left:auto;font-style:normal;font-size:12px;color:var(--ink2)}
+@keyframes cfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}.cfade{animation:cfade .22s ease-out}
+.cm .cmgo{border:0;background:transparent;color:#a37aff;padding:0;font:inherit;font-size:11px;font-weight:600;text-align:left;cursor:pointer}
+.cmlink{display:inline;border:0;padding:0 2px;background:rgba(163,122,255,.16);color:#c3a6ff;font:inherit;border-radius:4px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}

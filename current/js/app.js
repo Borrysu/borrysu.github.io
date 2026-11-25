@@ -622,7 +622,11 @@ function msgHTML(m){const f=m.fresh?' new':'';m.fresh=0;
  if(m.k==='order')return `<div class="cm bot card${f}">${orderHTML(m.id)}</div>`;
  if(m.k==='din')return `<div class="cm bot card${f}">${dinHTML(m)}</div>`;
  const rq=/^［回覆：「([^」]*)」］\n?/.exec(String(m.t||'')),body=rq?String(m.t).slice(rq[0].length):m.t;
- return `<div class="cm ${m.w}${f}">${m.from?`<span class="cmfrom">${esc(m.from)}</span>`:''}${rq?`<span class="cmq">${esc(rq[1])}</span>`:''}${esc(body)}${m.w==='me'?'<small>已送出</small>':''}</div>`}
+ return `<div class="cm ${m.w}${f}">${m.from?(m.go?`<button class="cmfrom cmgo" data-act="chgo" data-id="${esc(m.go)}">${esc(m.from)} ›</button>`:`<span class="cmfrom">${esc(m.from)}</span>`):''}${rq?`<span class="cmq">${esc(rq[1])}</span>`:''}${esc(body)}${m.w==='me'?'<small>已送出</small>':''}</div>`}
+// 對話裡提到的案子名稱變成可點的連結（排版後在文字節點上找，最多 4 個，名稱兩個字以上）
+window.__zlLink=el=>{try{if(!el||el.dataset.lk)return;el.dataset.lk='1';const ps=(DB.proj||[]).map(p=>({id:p.id,n:String(p.short||'').trim()||String(p.title||'').trim()})).filter(p=>p.n.length>=2).sort((a,b)=>b.n.length-a.n.length);let n=0;
+  const walk=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:t=>t.parentNode.closest('button,.cmq,small')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});const nodes=[];while(walk.nextNode())nodes.push(walk.currentNode);
+  for(const p of ps){if(n>=4)break;for(const t of nodes){const i=t.nodeValue.indexOf(p.n);if(i<0)continue;const r=t.splitText(i);r.splitText(p.n.length);const b=document.createElement('button');b.className='cmlink';b.dataset.act='chgo';b.dataset.id='page|proj:'+p.id;b.textContent=p.n;r.replaceWith(b);n++;nodes.splice(nodes.indexOf(t),1);break}}}catch(e){}};
 function logSync(){const on=S.chat,l=$('#clog');if(!on||!l)return;const a=CH[on.b],un=on.b==='peng'&&!S.bound;
  l.innerHTML=a.map(msgHTML).join('')+(un?`<div class="cm bot card"><b>還沒綁定朋朋</b><div class="btns">${B('綁定朋朋','bindok',null,'pri')}</div></div>`:'');
  $('#cq').innerHTML=quick(on).map(q=>`<button data-act="chatq" data-id="${esc(q)}">${esc(q)}</button>`).join('');l.scrollTop=l.scrollHeight}
@@ -2090,7 +2094,7 @@ async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id
  try{const ms=await LV.api.msgs(id,b,scope);if(!S.chat||S.chat.b!==b)return;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
   const last=ms[ms.length-1],waiting=b!=='daqi'&&last&&last.kind==='user';
   const pend=CH[b].filter(m=>m.local&&!(m.gray&&ms.some(x=>String(x.body||'').indexOf(m.t)>-1)));
-  CH[b]=ms.map(m=>{const g=m.kind==='user'?/^［前情｜([^］]*)］/.exec(String(m.body||'')):null;if(g)return{w:'bot',gray:1,t:g[1],b};const me=m.kind==='user'||m.kind==='run';return{w:me?'me':'bot',t:me?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b,from:scope==='all'?chFrom(m):''}}).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
+  CH[b]=ms.map(m=>{const g=m.kind==='user'?/^［前情｜([^］]*)］/.exec(String(m.body||'')):null;if(g)return{w:'bot',gray:1,t:g[1],b};const me=m.kind==='user'||m.kind==='run';return{w:me?'me':'bot',t:me?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b,from:scope==='all'?chFrom(m):'',go:scope==='all'?chGo(m):''}}).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
   if(!ms.length&&!pend.length)CH[b]=[{w:'bot',t:HI(b),b}];
   const lb=ms.filter(m=>m.kind==='bot').pop();if(lb)seenMark(b,lb.id);
   if(fresh){logSync();if(had&&last&&last.kind!=='user'){mood(b,'speaking');hop($('#cAv'));setTimeout(()=>{if(S.chat&&S.chat.b===b)mood(b,'idle')},2200)}else mood(b,waiting?'thinking':'idle')}
@@ -2544,7 +2548,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v148');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v149');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4667,7 +4671,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
   const full=wk.filter(d=>(d.n===0?d0.freeNow:d.i.freeH)<2).length;
   let nx=null;for(const d of days){const c=d.i.segs.filter(s=>d.n>0||s.a>now).sort((p,q)=>p.a-q.a)[0];if(c){nx={d,s:c};break}}
   const nxt=nx?(()=>{const mins=Math.round(((nx.d.n*24+nx.s.a)-now)*60),wait=mins<60?mins+' 分鐘後':mins<1440?Math.floor(mins/60)+' 小時'+(mins%60?(mins%60)+' 分':'')+'後':(nx.d.n===1?'明天':'週'+WK[nx.d.x.w]);
-   return `<p class="tlnext"><span>下一件</span><b>${esc(String(nx.s.e.n||''))}</b><small>${nx.d.n===0?'今天':nx.d.n===1?'明天':'週'+WK[nx.d.x.w]} ${fmt(nx.s.a)}・${wait}</small></p>`})():'';
+   return `<button class="tlnext" data-act="sheet" data-id="cal:${esc(String(nx.s.e.id||''))}"><span>下一件</span><b>${esc(String(nx.s.e.n||'').replace(/^張弛排：/,''))}</b><small>${nx.d.n===0?'今天':nx.d.n===1?'明天':'週'+WK[nx.d.x.w]} ${fmt(nx.s.a)}・${wait}</small><em>點開看 ›</em></button>`})():'';
   const ruler=[8,12,16,20,24].map(h=>`<span style="left:${pct(h)}%">${h}</span>`).join('');
   let rows='';
   const WKP=S.tlwk?1:0;   // v134 msg 854 老大：「這邊只要顯示未來七天就好 左右滑動再顯示下一個七天」
@@ -5183,9 +5187,14 @@ function ctxLabel(ctx){const a=(ctx||'').split(':'),k=a[0];try{const n=ctxName(c
   if(k==='goal'||k==='gr'){const g=typeof gOf==='function'?gOf(a[1]):null;if(g)return '目標「'+g.name+'」'}
   if(k==='goals')return '目標總覽';
   if(k==='co'){const c=(DB.co||DB.company||[]).find?((DB.co||DB.company||[]).find(x=>x.id===a[1])):null;if(c)return c.title||c.name}
-  if(k==='cal')return '行事曆';
+  if(k==='cal'){const e=calAll().find(x=>String(x.id)===a.slice(1).join(':'));return e?'行程：'+String(e.n||''):'行事曆'}
+  if(k==='want'){const w=null;return '今日節奏'}if(k==='tide')return '張弛排的時段';if(k==='beats')return '燈號';if(k==='dec'){const d=(DB.dec||[]).find(x=>x.id===a[1]);if(d)return '拍板：'+(d.proj||d.q||'')}
  }catch(e){}return ''}
-function chFrom(m){if(m.itemTitle)return m.itemTitle;if(m.ctx)return ctxLabel(m.ctx)||'某一處';return ''}
+function chFrom(m){if(m.itemTitle)return m.itemTitle;if(m.ctx)return ctxLabel(m.ctx)||'';return ''}
+// v149 msg 934 老大：「大器得聊天室…名字怎麼會顯示某一處？如果我們提到某個專案…可以附上一個小按鈕 或者文字變色讓我直接跳轉過去那邊嗎？」
+function chGo(m){if(m.item){const isP=(DB.proj||[]).some(p=>p.id===m.item);return isP?'page|proj:'+m.item:'sheet|cview:todo:'+m.item}const a=String(m.ctx||'').split(':'),k=a[0];
+ if(k==='goal'||k==='gr')return 'page|goals';if(k==='goals')return 'page|goals';if(k==='dec')return 'jump|secDec';if(k==='cal')return 'sheet|'+m.ctx;if(k==='co')return 'sheet|co:'+a[1];if(k==='want'||k==='tide')return 'tab|today';if(k==='opp')return 'sheet|opp:'+a[1];return ''}
+ACT.chgo=v=>{const i=v.indexOf('|'),act=v.slice(0,i),id=v.slice(i+1);if(!act||!ACT[act])return;if(S.chat)ACT.chatclose();setTimeout(()=>ACT[act](id),260)};
 /* v134 逐流 msg 870 老大：「如果擬好 這邊的描述應該要改，而且可以讓我看到你們之類的成果，然後內容還有我要幹嘛」
    → 案子詳情的「下一步」下面多一塊：擬好的成果（下一步或進度裡「」括起來的稿子，可一鍵複製）＋要你做（等你…那句）。沒有就不出現。 */
 {const _pp=projPage;projPage=function(id){const h=_pp(id);try{const p=DB.proj.find(x=>x.id===id),c=(LV.items||[]).find(q=>q.id===id);
@@ -5229,6 +5238,18 @@ function rqBar(){const cin=document.querySelector('#chat .cin');if(!cin)return;l
   if(t&&t.inPage&&pg&&pg.firstElementChild&&ph)pg.firstElementChild.style.minHeight=ph+'px';
   if(t){const root=t.inPage?pg:document,el=root&&root.querySelector(sel(t));if(el){const dy=el.getBoundingClientRect().top-t.top;if(Math.abs(dy)>1){if(t.inPage&&pg)pg.scrollTop+=dy;else window.scrollBy(0,dy)}t.top=el.getBoundingClientRect().top}}
   return out}}
+/* v149 逐流 msg 935 老大：「現在整個介面我左右滑動的時候怎麼沒有直接切換房間？」→ 房間頁空白處左右滑＝換到左右兩邊的房間（節奏、時間條、可左右捲的列、可滑刪的列、輸入框不算） */
+{let X0=0,Y0=0,T0=0,ok=0;const NO='input,textarea,select,.ckbox,section.tl,section.ring,[data-sw],.mzv,.gtrack,.cvtrack,#chat,#sheet,#page,.dtl,.dtall,.cdnav';
+ const hscroll=el=>{for(let e=el;e&&e!==document.body;e=e.parentElement){const c=getComputedStyle(e);if((c.overflowX==='auto'||c.overflowX==='scroll')&&e.scrollWidth>e.clientWidth+4)return true}return false};
+ document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];ok=0;if(!t||e.touches.length>1||S.page||S.sheet||S.chat||document.documentElement.classList.contains('marking'))return;const tg=e.target;if(!(tg.closest&&tg.closest('#view'))||tg.closest(NO)||hscroll(tg))return;X0=t.clientX;Y0=t.clientY;T0=Date.now();ok=1},{passive:true});
+ document.addEventListener('touchend',e=>{if(!ok)return;ok=0;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-X0,dy=t.clientY-Y0;if(Date.now()-T0>650||Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*0.5)return;
+  const ts=tabsOf(),i=ts.indexOf(S.tab),n=dx<0?i+1:i-1;if(n<0||n>=ts.length)return;ACT.tab(ts[n])},{passive:true});}
+/* v149 msg 937 老大：「點選日跟十四天頁面會跳動我不喜歡」→ 切日／週時下面內容淡入，按鈕本身不動（位置固定靠 v148 的全面板規則） */
+{const _cv=ACT.calv;ACT.calv=function(id){const r=_cv.apply(this,arguments);if(!RM){const seg=document.querySelector('#page [data-act="calv"]');const row=seg&&seg.parentElement;let n=row&&row.nextElementSibling,k=0;while(n&&k<6){n.classList.remove('cfade');void n.offsetWidth;n.classList.add('cfade');n=n.nextElementSibling;k++}}return r}}
+/* v149 msg 938 老大：「一樣我這邊左右滑動的時候會跳動我不喜歡」→ 時間條換週：拖的時候跟著手指走，放開才換 */
+{let X0=0,Y0=0,on=0,H=null;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];on=t&&e.target.closest&&e.target.closest('section.tl .tlpg')?1:0;if(on){X0=t.clientX;Y0=t.clientY;H=null}},{passive:true});
+ document.addEventListener('touchmove',e=>{if(!on)return;const t=e.touches[0],dx=t.clientX-X0,dy=t.clientY-Y0;if(H===null&&Math.hypot(dx,dy)>8)H=Math.abs(dx)>Math.abs(dy)*1.2;if(!H)return;const pg=document.querySelector('section.tl .tlpg');if(!pg)return;const ok=(dx<0&&!S.tlwk)||(dx>0&&S.tlwk);pg.style.transition='none';pg.style.transform=`translateX(${ok?dx*0.6:dx*0.15}px)`;pg.style.opacity=ok?String(Math.max(.35,1-Math.abs(dx)/400)):'1'},{passive:true});
+ document.addEventListener('touchend',e=>{if(!on)return;on=0;const t=e.changedTouches&&e.changedTouches[0],dx=t?t.clientX-X0:0,pg=document.querySelector('section.tl .tlpg');if(!pg)return;const go=H&&Math.abs(dx)>=60&&((dx<0&&!S.tlwk)||(dx>0&&S.tlwk));if(!go){pg.style.transition='transform .18s ease-out,opacity .18s';pg.style.transform='';pg.style.opacity=''}},{passive:true});}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

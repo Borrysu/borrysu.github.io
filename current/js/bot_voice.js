@@ -676,7 +676,7 @@
       if (last < p.length) parent.appendChild(document.createTextNode(p.slice(last)));
     });
   }
-  function fmtBubble(el) { var _r = fmtBubble0(el), f = el.__from; if (f) { el.insertBefore(f, el.firstChild); el.__from = null; } return _r; }
+  function fmtBubble(el) { var _r = fmtBubble0(el), f = el.__from; if (f) { el.insertBefore(f, el.firstChild); el.__from = null; } if (window.__zlLink) window.__zlLink(el); return _r; }
   function fmtBubble0(el) {
     if (el.dataset.fmt || el.classList.contains('card') || el.querySelector('.dots')) return;
     var fromEl = el.querySelector('.cmfrom'); if (fromEl) { fromEl.remove(); el.__from = fromEl; }   // v131：總聊天每則上方的「來自哪張卡」，排版時先拿出來再放回最上面
@@ -821,6 +821,7 @@
   (document.head || document.documentElement).appendChild(st);
   document.addEventListener('click', function (e) {
     if (document.documentElement.classList.contains('marking')) return;
+    return;   // v149 逐流 msg 936 老大：「我點選的沒有反應，然後點這一張項目也都沒有反應」→ 不再攔：點一列＝打開那件的卡片；「看朋朋回什麼」＝開朋朋這件的子聊天（只有這件的對話）
     var b = e.target && e.target.closest && e.target.closest('[data-act="sheet"][data-id^="ltodo:"],[data-act="ltchat"]');
     if (!b) return;
     var row = b.closest('.rowi'); if (!row) return;
