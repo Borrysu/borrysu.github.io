@@ -2618,7 +2618,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v217');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v218');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3013,7 +3013,7 @@ function coSection(){const d=coData();
  if(LV.coNo==='nofn')return coEmpty('資料庫還沒更新','公司卡要等這次的資料庫更新套上才會出現。');
  if(LV.coNo==='forbidden')return coEmpty('這把金鑰看不到公司卡','只有老大本人（專屬網址或登入）看得到。');
  if(LV.coErr&&!d)return coEmpty('公司卡沒讀到',esc(LV.coErr));
- const m=d&&d.meta,cs=d&&Array.isArray(d.cards)?d.cards:[];
+ const m=d&&d.meta,cs=coVisible(d&&Array.isArray(d.cards)?d.cards:[]);
  if(!m&&!cs.length)return `<section class="sec">${sh('','公司')}<div class="card empty"><div class="big">肉咖還沒寫</div><p class="note">公司電腦的肉咖同步過來後，要你決定的事、你負責的案子會出現在這裡。</p><div class="btns">${aifs([aiF('rouka','co:')])}</div></div></section>`;
  const ago=m&&m.written_at?LHM(new Date(m.written_at).getTime()):'',need=cs.filter(c=>c.need_you),rest=cs.filter(c=>!c.need_you);
  let h=`<section class="sec">${sh('','公司重點',ago?`肉咖 ${esc(ago)} 寫的`:'')}<div class="card">${m&&Array.isArray(m.lines)&&m.lines.length?`<ul class="colines">${m.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:'<p class="note">肉咖還沒寫重點。</p>'}<p class="note">要你決定 <b class="num">${m&&m.decide_n!=null?+m.decide_n:need.length}</b> 件・公司案子 <b class="num">${m&&m.case_n!=null?+m.case_n:cs.length}</b> 件</p></div></section>`;
@@ -5845,6 +5845,14 @@ ACT.rvopen=k=>{const [id,name]=k.split('|'),c=(LV.items||[]).find(x=>x.id===id);
  if(DB.proj.some(p=>p.id===id))ACT.page('proj:'+id);else{toast('這張卡不在案子清單裡，標成已看了');render('keep')}};
 ACT.rvall=()=>{rvItems().forEach(x=>rvMark(x.k));render('keep');toast('都標成已看了')};
 {const _t=todayStrip;todayStrip=function(){const h=_t();return h?rvHTML()+h:h}}
+
+window.__zl=Object.assign(window.__zl||{},{coVisible:(c)=>coVisible(c)});
+/* ---------- v218（2026-11-26，msg 1473）：皮條客匯入的卡，老大已刪／合併／封存的案子不再長回來 ----------
+   公司房間的匯入卡來自肉咖同步（hub_company_cards，用皮條客 source_id）。只要逐流已有同一張的案子（皮條客 id 對得上，或同名公司案）而且已結案／放棄／過期（＝你刪、併、封存過），
+   匯入卡就不顯示。只改顯示，資料庫的匯入列沒動，要看回來把那張案子從封存放回進行中即可。 */
+function coDismissedSet(){const ids=new Set(),tt=new Set();ckCards().forEach(c=>{if(['closed','dropped','expired'].indexOf(c.status)<0)return;const sid=coSrcOf(c);if(sid)ids.add(sid);if(c.basket==='company'&&c.title)tt.add(String(c.title).trim())});return {ids,tt}}
+function coVisible(cards){try{const D=coDismissedSet(),open=new Set();ckCards().forEach(c=>{if(['closed','dropped','expired'].indexOf(c.status)<0){const sid=coSrcOf(c);if(sid)open.add(sid)}});
+ return cards.filter(c=>!(c&&((D.ids.has(c.source_id)&&!open.has(c.source_id))||(D.tt.has(String(c.title||'').trim())&&!open.has(c.source_id)&&(c.status==='已結案'||!c.status)))))}catch(e){return cards}}
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
