@@ -832,7 +832,7 @@ function calAll(){if(E())return[];const a=CAL.filter(e=>!e.del).map(e=>Object.as
  DB.orders.forEach(o=>{if(o.st>=2)return;const s=sy('ord:'+o.id);if(!s.on)return;a.push({id:'ord:'+o.id,d:etaN(o),all:1,n:'到貨：'+o.name.replace(/（示意）/,''),src:'me',cat:'L',from:'生活',go:'tab:life',st:s.st==='run'?'run':''})});
  return a.filter(e=>e.d>=0&&e.d<=13).sort((x,y)=>x.d-y.d||((x.all?'':x.t)<(y.all?'':y.t)?-1:1))}
 const calFind=id=>calAll().find(e=>e.id===id);
-function srcTag(e){return e.src==='co'?`<span class="src" data-s="co"><i aria-hidden="true"></i>公司</span>`:`<span class="src" style="--cc:${e.cat&&CAT[e.cat]?CAT[e.cat][1]:'var(--ink2)'}"><i aria-hidden="true"></i>個人${e.cat?' '+e.cat:''}</span>`}
+function srcTag(e){if(e.src==='rest')return `<span class="src" data-s="rest" style="--cc:#40c4aa"><i aria-hidden="true"></i>休息</span>`;return e.src==='co'?`<span class="src" data-s="co"><i aria-hidden="true"></i>公司</span>`:`<span class="src" style="--cc:${e.cat&&CAT[e.cat]?CAT[e.cat][1]:'var(--ink2)'}"><i aria-hidden="true"></i>個人${e.cat?' '+e.cat:''}</span>`}
 function evState(e){return e.st==='run'?'<span class="est"><span class="spin" aria-hidden="true"></span>大器同步中</span>':e.mk==='run'?'<span class="est"><span class="spin" aria-hidden="true"></span>大器建立中</span>':e.mk==='ok'?`<span class="est ok">✓ 已加到 ${esc(e.mkTo)}</span>`:e.cancel?'<span class="est">已取消，行事曆上那筆拿掉了</span>':''}
 function evRow(e){return `<div class="rowi${e.cancel?' gone':''}" data-card="${esc(e.id)}"><button class="rowb evr" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${e.all?'全天':e.t}</span><span class="tx"><b>${esc(e.n)}</b><small>${[e.place,e.from?'來自'+e.from:''].filter(Boolean).map(esc).join('・')||'沒寫地點'}</small>${evState(e)}</span><span class="rt">${srcTag(e)}</span></button></div>`}
 function todayStrip(){if(S.st==='loading'||S.st==='error')return '';const a=calAll().filter(e=>e.d===0&&!e.cancel);
@@ -2238,7 +2238,7 @@ function calFix(){if(!LV.cal||!Array.isArray(LV.cal.items))return;
  // v153 逐流 msg 939 老大：「希望我休息時間可以變成主動的安排，而不是被動的等到事情做完才排」→ 張弛排的休息段（kind=rest）畫成獨立一類：算已排、不算工作時數；不推播、不寫行事曆、不用確認
  tr.forEach(r=>{if(r.kind!=='rest'||!r.at)return;const m=r.meta||{};const a=new Date(Date.parse(r.at)+8*3600e3),d=Math.round((Date.UTC(a.getUTCFullYear(),a.getUTCMonth(),a.getUTCDate())-t0.getTime())/864e5);if(d<0||d>13)return;
   const h0=a.getUTCHours()+a.getUTCMinutes()/60,b=m.end?new Date(Date.parse(m.end)+8*3600e3):null,h1=b?b.getUTCHours()+b.getUTCMinutes()/60+(b.getUTCDate()!==a.getUTCDate()?24:0):h0+((+m.minutes||15)/60),f=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
-  CAL.push({id:'rest:'+r.id,d,t:f(h0),e:f(Math.min(24,h1)),all:0,n:String(r.title||'留白'),src:'rest',restT:m.rest_type||'',place:'',why:'張弛主動排的休息（不在 Google 行事曆上，不用確認）',from:1,go:'',real:0})})}
+  CAL.push({id:'rest:'+r.id,d,t:f(h0),e:f(Math.min(24,h1)),all:0,n:String(r.title||'留白'),src:'rest',restT:m.rest_type||'',place:'張弛排的休息',why:'張弛主動排的休息（不在 Google 行事曆上，不用確認）',from:'',go:'',real:0})})}
 window.__zl=Object.assign(window.__zl||{},{reCal:()=>{applyCal();LV.sig='';paint()}});
 {const _cs=calSheet;calSheet=function(id){if(String(id).startsWith('tide:')){const e=calFind(id);if(!e)return shHead('這段不在了');return shHead(esc(e.n))+`<div class="meta" style="margin-top:8px"><span class="lbl">${dlw(e.d)}　${e.t}～${e.e}</span></div><p style="margin-top:8px">張弛照你的交件時間往回推，建議這段開工。它不在 Google 行事曆上，所以這裡不能改時間；要調整就跟大器說。</p>`}return _cs(id)}}
 function calAsk(text,ok){LV.api.say(null,'【行事曆】'+text+'（照 14 號行事曆準則建立或修改，做完回報；逐流面板只讀，同步後會出現在行程）','daqi').then(()=>toast(ok)).catch(e=>toast('沒送出：'+LERR(e)))}
@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v165');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v166');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
