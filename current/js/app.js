@@ -2543,7 +2543,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v140');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v141');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4671,7 +4671,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
   let rows='';
   const WKP=S.tlwk?1:0;   // v134 msg 854 老大：「這邊只要顯示未來七天就好 左右滑動再顯示下一個七天」
   days.filter(d=>Math.floor(d.n/7)===WKP).forEach(d=>{const i=d.i,we=d.x.w===0||d.x.w===6,fh=d.n===0?d0.freeNow:i.freeH,tight=fh<2,open=sel===d.n;
-   const bars=i.segs.map(s=>{const w=Math.max(1.2,pct(s.b)-pct(s.a));return `<i class="tlseg" data-s="${s.e.src}" style="left:${pct(s.a)}%;width:${w}%">${w>=14?`<span>${esc(String(s.e.n||''))}</span>`:''}</i>`}).join('');
+   const bars=i.segs.map(s=>{const w=Math.max(1.2,pct(s.b)-pct(s.a));return `<i class="tlseg" data-s="${s.e.src}" data-eid="${esc(String(s.e.id||''))}" data-a="${s.a}" data-b="${s.b}" style="left:${pct(s.a)}%;width:${w}%">${w>=14?`<span>${esc(String(s.e.n||''))}</span>`:''}</i>`}).join('');
    const now_=d.n===0&&now>=TL0&&now<=TL1?`<b class="tlnow" style="left:${pct(now)}%" aria-hidden="true"></b>`:'';
    const past=d.n===0?`<i class="tlpast" style="width:${pct(Math.min(Math.max(now,TL0),TL1))}%"></i>`:'';
    const lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`,need=S.tlneed||0,fit=need?fitOf(i,need,d.n===0?now:0):null;
@@ -4689,7 +4689,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
    <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p>${nxt}</div>
    <div class="tlwk" role="tablist" aria-label="哪一週"><button role="tab" data-act="tlwk" data-id="0" aria-selected="${!WKP}">這 7 天</button><button role="tab" data-act="tlwk" data-id="1" aria-selected="${!!WKP}">下 7 天</button><small>左右滑也可以換</small></div>
    <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
-   <div class="tlpg">${rows}</div><p class="cbhint">點一天，下面切到那天的時間軸</p></section>`}
+   <div class="tlpg">${rows}</div><p class="cbhint">點色塊改那件、點空白新增；點日期，下面切到那天時間軸</p></section>`}
  ACT.tlwk=id=>{S.tlwk=+id;S.calsel=null;render('keep')};
  {let X0=0,Y0=0,on=0;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];on=t&&e.target.closest&&e.target.closest('section.tl .tlpg')?1:0;if(on){X0=t.clientX;Y0=t.clientY}},{passive:true});
   document.addEventListener('touchend',e=>{if(!on)return;on=0;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-X0,dy=t.clientY-Y0;if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6)return;if(dx<0&&!S.tlwk)ACT.tlwk('1');else if(dx>0&&S.tlwk)ACT.tlwk('0')},{passive:true});}
@@ -4697,6 +4697,18 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
  // → 上面時間條＝兩週一眼看忙閒；點一天＝下面行事曆直接切到那天的逐時時間軸（可拖曳改時段），不再在上面展開一份重複清單。
  const calGo=n=>{S.calsel=null;S.calv='day';S.cald=n;S.tlwk=n>=7?1:0;render('keep');setTimeout(()=>{const t=document.querySelector('.cdnav')||document.querySelector('.dtl');if(t)t.scrollIntoView({block:'start',behavior:RM?'auto':'smooth'})},60)};
  ACT.tlpick=id=>calGo(+id);
+ // v141 msg 905 老大：「這區左右滑可以換天？」→ 下面日檢視（全天列、時間軸、日期列）左右滑＝前一天／後一天；長按拖曳行程照舊（拖曳中不換天）
+ {let X0=0,Y0=0,on=0,t0=0;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];on=t&&(S.calv==='day')&&e.target.closest&&e.target.closest('.dt,.dtall,.cdnav,.dtl')&&!e.target.closest('.dti')?1:0;if(on){X0=t.clientX;Y0=t.clientY;t0=Date.now()}},{passive:true});
+  document.addEventListener('touchend',e=>{if(!on)return;on=0;const t=e.changedTouches&&e.changedTouches[0];if(!t||Date.now()-t0>700)return;const dx=t.clientX-X0,dy=t.clientY-Y0;if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6)return;
+   const n=Math.max(0,Math.min(13,(S.cald||0)+(dx<0?1:-1)));if(n!==(S.cald||0)){S.cald=n;S.tlwk=n>=7?1:0;render('keep')}},{passive:true});}
+ // v141 msg 904 老大：「這邊點開能不能直覺一點直接顯示我按到的位置是什麼事件 然後可編輯？空白區空檔區能增加事件？」
+ // → 點時間條本身：點到哪件就開那件的編輯卡；點空白處就開新增，時間帶到點的那半小時。點日期或右邊數字＝下面切到那天時間軸（照 v139）。
+ document.addEventListener('click',e=>{const bar=e.target.closest&&e.target.closest('section.tl .tlrow .tlbar');if(!bar)return;const row=bar.closest('.tlrow');if(!row)return;
+  e.preventDefault();e.stopPropagation();const n=+row.dataset.id,r=bar.getBoundingClientRect(),h=TL0+Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(TL1-TL0);
+  const segs=[...bar.querySelectorAll('.tlseg[data-eid]')].map(x=>({id:x.dataset.eid,a:+x.dataset.a,b:+x.dataset.b})).filter(x=>x.id);
+  const hit=segs.find(x=>h>=x.a&&h<=x.b)||segs.filter(x=>Math.min(Math.abs(h-x.a),Math.abs(h-x.b))<=0.35).sort((p,q)=>Math.min(Math.abs(h-p.a),Math.abs(h-p.b))-Math.min(Math.abs(h-q.a),Math.abs(h-q.b)))[0];
+  if(hit){ACT.sheet('cal:'+hit.id);return}
+  const hh=Math.max(TL0,Math.min(23.5,Math.floor(h*2)/2)),t=String(Math.floor(hh)).padStart(2,'0')+':'+(hh%1?'30':'00');ACT.capnew(n+'|'+t)},true);
  // 2026-11-25 v131 老大：「立體樓改視覺呈現 然後可以收合」→ 兩週負荷圈：一天一圈，圈越滿越忙（9～22 點），中間是還空幾小時；按「我要找 N 小時」時圈上打 ✓／✕。點一圈＝展開下面那天。收合記在這台裝置。
  const RINGK='zl_ring';const ringShut=()=>{try{return localStorage.getItem(RINGK)==='1'}catch(e){return false}};
  ACT.ringtog=()=>{try{localStorage.setItem(RINGK,ringShut()?'0':'1')}catch(e){}render('keep')};
