@@ -2615,7 +2615,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v204');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v206');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4197,7 +4197,7 @@ ACT.ydmore=id=>{YDM[id]=!YDM[id];document.querySelectorAll('.pc-mo').forEach(el=
  <div class="jalt"><span class="jalt-h">或改成</span>${alt.join('')}</div><p class="note">原任務會收掉，72 小時內可救回。</p></section>`;
  return h.replace(/<section class="sec jnext">[\s\S]*?<\/section>/,sec)}}
 // 5 肉咖：會動的桃紅臉
-BFP.rouka='rouka';BFC.rouka='#FF4F9A';
+BFP.rouka='roukaB';BFC.rouka='#FFC738';
 {const _c=coSection;coSection=function(){return _c().replace(/<div class="sh">(<h2>公司(?:重點)?)/,`<div class="sh">${aiF('rouka','co:')}$1`)}}
 {const _cs=coSheet;coSheet=function(id){return _cs(id).replace(/class="btn pri" data-act="coRouka"/,'class="btn rk" data-act="coRouka"').replace(/>派肉咖做</,'>'+bm('rouka','','sm')+'派肉咖做<')}}
 {const _cr=coRoukaSheet;coRoukaSheet=function(id){return _cr(id).replace(/class="btn pri wide" data-act="cosend"/,'class="btn rk wide" data-act="cosend"')}}
@@ -4615,7 +4615,8 @@ const coSrcOf=c=>{const m=CO_MKR.exec(String((c&&c.why)||'').replace(EDM,''));re
 const coRowOf=c=>{const sid=coSrcOf(c),d=coData();return sid&&d&&Array.isArray(d.cards)?d.cards.find(x=>String(x.source_id)===sid)||null:null};
 function isCoStd(id){id=String(id);if(id.indexOf('co:')===0)return true;const p=DB.proj.find(q=>q.id===id);return isCoCase(p)}
 const coCaseTasks=c=>{const d=coData(),r=coRowOf(c);return d&&Array.isArray(d.tasks)?d.tasks.filter(t=>(r&&t.card_id===r.id)||t.card_id===c.id||(!t.card_id&&t.card_title===c.title)):[]};
-const coAdoptedIds=()=>{const s=new Set();DB.proj.filter(isCoCase).forEach(p=>{const k=coSrcOf(p.raw);if(k)s.add(k)});return s};
+const coAdoptedIds=()=>{const s=new Set();DB.proj.filter(isCoCase).forEach(p=>{const c=p.raw,k=coSrcOf(c);if(k)s.add(k);const why=String(c.why||'');for(const m of why.matchAll(/【合併來源：[^】]*皮條客\s+([^】\s；]+)/g))s.add(m[1])});return s};
+const coMergedSourceIds=()=>{const s=new Set();DB.proj.filter(isCoCase).forEach(p=>{const why=String(p.raw.why||'');for(const m of why.matchAll(/【合併來源：[^】]*皮條客\s+([^】\s；]+)/g))s.add(m[1])});return s};
 async function coPush(c,text){
  if(LV.mode!=='live'){const d=coData();d.tasks.unshift({id:Date.now()+Math.random(),card_id:c.id,card_title:c.title,assignee:'rouka',body:text,status:'queued',created_at:new Date().toISOString()});return true}
  try{const r=coRowOf(c);if(r)await LV.api.coTask(r.id,'rouka',text);else await LV.api.coTaskOpp(c.id,c.title,'rouka',text);return true}
@@ -4633,7 +4634,7 @@ const coCaseLink=c=>coRowOf(c)?`皮條客 id ${coSrcOf(c)}`:'皮條客上還沒�
  try{_v(id)}finally{stepNote=_n2}
  if(c&&live.length)setTimeout(()=>coPush(c,`【改步驟】老大在逐流改了公司案子「${c.title}」的步驟（${coCaseLink(c)}），共 ${live.length} 步。請在皮條客對應欄目照這份更新進度與步數，做完回報一句。\n${sum}`.slice(0,2000)),300)}}
 // 3 公司分頁＝原生公司案子
-{const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,nat=all.filter(p=>isCoCase(p)&&!scriptOnly(p)),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?d.cards.filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
+{const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,merged=coMergedSourceIds(),nat=all.filter(p=>isCoCase(p)&&!scriptOnly(p)&&!(merged.has(coSrcOf(p.raw))&&!String(p.raw.why||'').includes('【合併來源：'))),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?d.cards.filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
   btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:co">公司 ${n}</button>`,segRe=/(<div class="seg" role="group" aria-label="案子分類">)([\s\S]*?)(<\/div>)/,fix=h=>h.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,'');
   if(s!=='co'){window.__allProj=all;if(s!=='script')DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all;window.__allProj=null}   // v168 msg 1017：劇本分頁跨個人與公司，公司的劇本案（例：直男行不行）也列
    return /data-id="proj:co"/.test(h)?h.replace(/(data-id="proj:co">)公司 \d+/,`$1公司 ${n}`):h.replace(segRe,(x,a,b,c)=>a+b+btn(false)+c)}

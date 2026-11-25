@@ -1,5 +1,5 @@
 /*!
- * bot_face.js  Grok Bot 隊的會動頭像（逐流版 1122-F（萌萌雲朵、定定六角、金金六角星；1122-E 反黑、大器紫黑），從 tata_face.js 1122-A2 擴出）
+ * bot_face.js（unified 1125：皮皮統一規格，見 team-faces/unified/SPEC.md）  Grok Bot 隊的會動頭像（逐流版 1122-F（萌萌雲朵、定定六角、金金六角星；1122-E 反黑、大器紫黑），從 tata_face.js 1122-A2 擴出）
  * 單檔、零依賴。照 Grok Bot App 內建頭像系統：依 shape 畫身體、兩隻挖空直立膠囊眼、
  * 沒有嘴、沒有腮紅、沒有配件。表情全靠眼形與身體動作。
  *
@@ -60,34 +60,41 @@
 
   // 預設三隻（設定值來自 ~/grokbot-memory-export/_profiles/*/profile.json）
   var PRESETS = {
-    tata:   { shape: 'sphere', color: '#FF6700', label: '塔塔',
+    tata:   { norm: [0.9516, 0.0044, 0.0354], shape: 'sphere', color: '#FF6700', label: '塔塔',
       names: { logged: '記帳成功', over: '超支', alert: '帳單將到期' } },
     // 集集、朋朋 2026-11-22 05:11 老大在 Grok Bot 改過（sand-client-persistence：集集 square／blue、朋朋 tablet／green）
-    gig:    { shape: 'square', color: '#1084FE', label: '集集',
+    gig:    { norm: [0.9941, 0.0006, 0.0397], shape: 'square', color: '#1084FE', label: '集集',
       names: { logged: '新機會進來', over: '案子卡住', thinking: '評估中', alert: '截止快到' } },
-    pompom: { shape: 'tablet', color: '#00C972', label: '朋朋',
+    pompom: { norm: [1.0971, 0.0000, 0.0381], shape: 'tablet', color: '#00C972', label: '朋朋',
       names: { logged: '辦好一件', over: '卡住了', alert: '要你確認' } },
     // 1122-F 三隻（Grok Bot 本機資料唯讀查到：萌萌 cloud／yellow、定定 hex、金金 star／orange）
     // 定定本機讀到 black，老大 2026-11-22 說「定定是白色的！」，以老大為準：白身體、深色眼睛、淡描邊
-    monmon:  { shape: 'cloud', color: '#FF9800', label: '萌萌',
+    monmon:  { norm: [1.0971, 0.0027, 0.0154], shape: 'cloud', color: '#FF9800', label: '萌萌',
       names: { thinking: '比價中', logged: '比好了', alert: '價格變了' } },
-    dinding: { shape: 'hex', color: '#FFFFFF', eye: '#17151E', outline: true, label: '定定',
+    dinding: { norm: [1.0372, 0.0029, 0.0430], shape: 'hex', color: '#FFFFFF', eye: '#17151E', outline: true, label: '定定',
       names: { thinking: '想一下', logged: '有看法了', alert: '有風險' } },
     // 肉咖：公司 Mac 的 AI（好咖）。老大 2026-11-23 定 F2：桃紅底、黑剪影、黃色只放在眼睛（README 1123_PixPix_肉咖臉）；
     // 老大：「肉咖的臉請幫我也設計一個會動的。」「紫色應該是大器，桃紅色粉紅色才是肉咖」。會動版：桃紅身體、黃眼、黑描邊，黃只在眼睛
     // 2026-11-24 老大：「你看皮皮給的肉咖大頭照改啦」（msg 624）→ 照皮條客上的肉咖大頭照（公司 Mac haoka-pimp/site/icons/rouka.jpg，豹紋守宮）：金黃身體、深色眼睛
     rouka:   { shape: 'gecko', color: '#FFB22E', eye: '#2A1608', outline: true, label: '肉咖',   // 老大 2026-11-23：「你應該要用皮皮傳過來的頭像去設計一個這種泡泡質感的動圖」→ 照 F2：黑頭、黃眼、頭頂兩眼鼓起；桃紅留給按鈕與描邊
       names: { thinking: '在做', logged: '做好了', alert: '要你看' } },
-    baba:    { shape: 'shield', color: '#FFFFFF', eye: '#17151E', outline: true, label: '霸霸',   // 老大 2026-11-23：「霸霸是白色的」（Grok Bot 本機資料是 black，以老大為準）
+    // 1125 皮皮 黃臉粉耳機三方向（老大 2026-11-25：「肉咖是日宴豹紋守宮 耳機是粉紅色 所以臉應該是黃色？耳機是粉色？」）
+    roukaA:  { shape: 'gecko2', color: '#FFC23D', eye: '#2A1608', outline: true, label: '肉咖', gk: { acc: '#FF4F9A', inkEye: '#FFC23D', tongue: '#FF6FA8', side: '#C24A0A' },
+      names: { thinking: '在做', logged: '做好了', alert: '要你看' } },
+    roukaB:  { norm: [1.1084, 0.0132, -0.0083], eyeK: 1.25, shape: 'gecko2', color: '#FFC738', eye: '#2A1608', outline: true, label: '肉咖', gk: { acc: '#FF4F9A', inkEye: '#FFC738', tongue: '#FF6FA8', side: '#B8400A', grad: '#FF8A1F', spots: '#E07A1C', tv: 'a', inkMode: 'flat tint' },
+      names: { thinking: '在做', logged: '做好了', alert: '要你看' } },
+    roukaC:  { shape: 'gecko2', color: '#FFCB45', eye: '#2A1608', outline: true, label: '肉咖', gk: { acc: '#FF4F9A', inkEye: '#FFCB45', tongue: '#FF6FA8', side: '#C24A0A', cheeks: '#FF7DB4', crown: '#FF4F9A' },
+      names: { thinking: '在做', logged: '做好了', alert: '要你看' } },
+    baba:    { norm: [0.9677, -0.0068, 0.0586], shape: 'shield', color: '#FFFFFF', eye: '#17151E', outline: true, label: '霸霸',   // 老大 2026-11-23：「霸霸是白色的」（Grok Bot 本機資料是 black，以老大為準）
       names: { thinking: '設置中', logged: '設好了', alert: '要你點頭' } },
-    kimkim:  { shape: 'star6', color: '#FF6700', label: '金金',
+    kimkim:  { norm: [1.0273, 0.0009, 0.0330], shape: 'star6', color: '#FF6700', label: '金金',
       names: { thinking: '看值不值', logged: '看完了', alert: '先別買' } },
     // 大器：不是 Grok Bot，是照同一套畫法自己設計的。1122-E：紫色球身（App 色票 violet）、黑眼、黑耳內、兩隻黑豹耳
     // 逐流監工（2026-11-25 老大：逐流監工就是大器，管面板，所以加逐流四色光環；挑「一、光環」，要流動絲滑）
-    jian:   { shape: 'sphere', color: '#9159FE', eye: '#0E0C16', earIn: '#0E0C16',
+    jian:   { norm: [1.3059, 0.0029, -0.0176], shape: 'sphere', color: '#9159FE', eye: '#0E0C16', earIn: '#0E0C16',
       ears: 'panther', fit: 0.86, ring: 'zhuliu', label: '逐流監工',
       names: { idle: '待命', speaking: '說話中', thinking: '思考中', logged: '改好了', over: '不妙', alert: '要你看', sleepy: '想睡' } },
-    daqi:   { shape: 'sphere', color: '#9159FE', eye: '#0E0C16', earIn: '#0E0C16',
+    daqi:   { norm: [1.0785, 0.0010, -0.0107], shape: 'sphere', color: '#9159FE', eye: '#0E0C16', earIn: '#0E0C16',
       ears: 'panther', fit: 0.86, label: '大器',
       names: { idle: '待命', speaking: '說話中', thinking: '思考中', logged: '完成', over: '不妙', alert: '提醒你', sleepy: '想睡' } }
   };
@@ -96,22 +103,24 @@
   /* ---------- 形狀登錄 ---------- */
   // kind 'sphere'：球面貼眼（原 tata_face 的做法）
   // kind 'slab'：平面輪廓擠出成厚板，眼睛貼在正面（App 的 extrusion，seat 'front'）
+  // unified：四個厚板共用的基準姿勢（SPEC 5）
+  var SLAB_U = { yaw: -12, pitch: 10, roll: -10, k: 0.55 };
   var SHAPES = {
     sphere: { kind: 'sphere' },
     // hex：App 2D 輪廓 ms(114,6,20,π/6)＝外接圓半徑 114、6 邊、圓角 20、從 30 度起算（尖角朝上下）；
     // 3D 是 extrusion（_l：halfDepth .36、bevel .22），size 1.2519；眼睛 jo.hex＝預設值（.26／.57／.64／.12）
     hex: {
-      kind: 'slab', half: 0.92, corner: 20 / 114, depth: 0.36,
+      kind: 'slab', half: 0.92, corner: 20 / 114, depth: 0.34,
       eye: { w: 1, h: 1, gap: 1, shiftY: 0.12 },
-      pose: { yaw: -12, pitch: 10, roll: -12, k: 0.55 },
+      pose: SLAB_U,
       path: function (S, c) { return roundPoly(6, S, S * c, PI / 6); }
     },
     // star6：App 2D 輪廓是常數 Os（一段 SVG 路徑，六個圓角尖），這裡照原路徑以中心為原點、半高 1 正規化；
     // 3D 是 extrusion halfDepth .30、bevel .18，size 1.4976；眼睛 jo.star6＝寬 .184782、高 .44966、間距 .419133
     star6: {
-      kind: 'slab', half: 0.98, corner: 0, depth: 0.30,
+      kind: 'slab', half: 0.98, corner: 0, depth: 0.34,
       eye: { w: 0.184782 / 0.26, h: 0.44966 / 0.57, gap: 0.419133 / 0.64, shiftY: 0.12 },
-      pose: { yaw: -10, pitch: 10, roll: -10, k: 0.55 },
+      pose: SLAB_U,
       path: function (S) { return scalePath(STAR_D, S); }
     },
     // cloud：App 2D 輪廓 hs([[L-62,L+26,56],[L+62,L+26,54],[L,L+34,62],[L-24,L-30,62],[L+38,L-26,54]])＝五個圓的聯集；
@@ -126,7 +135,7 @@
     // square：App 用 Ts(107,28)＝四角在畫布中心 ±107、圓角 28 的圓角正方（畫布半寬 L=114.2705）；
     // 3D 是 extrusion halfDepth .36、bevel .22；眼睛 jo.square＝寬 .2553、高 .5598、間距 .5294、shiftY .12
     square: {
-      kind: 'slab', half: 0.80, corner: 28 / 107, depth: 0.36,
+      kind: 'slab', half: 0.80, corner: 28 / 107, depth: 0.34, pose: SLAB_U,
       eye: { w: 0.2553 / 0.26, h: 0.5598 / 0.57, gap: 0.5294 / 0.64, shiftY: 0.12 },
       path: function (S, c) { return roundRect(S, S, S * c); }
     },
@@ -137,15 +146,28 @@
     shield: {
       kind: 'slab', half: 0.95, corner: 0, depth: 0.34,
       eye: { w: 1, h: 0.92, gap: 1, shiftY: 0.02 },
-      pose: { yaw: -12, pitch: 10, roll: -8, k: 0.55 },
+      pose: SLAB_U,
       path: function (S) { return scalePath('M-0.86 -0.72Q-0.86 -0.92 -0.66 -0.92H0.66Q0.86 -0.92 0.86 -0.72V0.06C0.86 0.52 0.46 0.82 0 1C-0.46 0.82 -0.86 0.52 -0.86 0.06Z', S); }
     },
     // gecko：肉咖（老大 2026-11-23：「肉咖要像是一隻守宮」）。守宮頭：寬扁、兩眼在頭頂兩側鼓起、吻端圓，3D 照 extrusion
     gecko: {
-      kind: 'slab', half: 0.96, corner: 0, depth: 0.32,
+      kind: 'slab', half: 0.96, corner: 0, depth: 0.34,
       eye: { w: 2.1, h: 0.62, gap: 2.45, shiftY: -0.50 }, eyeY: -0.50,
       pose: { yaw: -8, pitch: 12, roll: -5, k: 0.55 },
       path: function (S) { return scalePath('M-1 0.10C-1 0.52 -0.58 0.70 0 0.70C0.58 0.70 1 0.52 1 0.10C1 -0.10 0.97 -0.26 0.92 -0.40C0.92 -0.70 0.76 -0.92 0.56 -0.92C0.38 -0.92 0.24 -0.76 0.22 -0.52C0.12 -0.48 -0.12 -0.48 -0.22 -0.52C-0.24 -0.76 -0.38 -0.92 -0.56 -0.92C-0.76 -0.92 -0.92 -0.70 -0.92 -0.40C-0.97 -0.26 -1 -0.10 -1 0.10Z', S); }
+    },
+    // gecko2（1125 皮皮：黃臉粉耳機三方向）：現行 gecko 頭型原樣（同一條輪廓，只縮放 0.838 讓出耳機位置），
+    // 外加耳機帶＋兩個耳罩（acc，自己的顏色 --bf-x），可選小皇冠、腮紅、豹紋點；吐舌沿用 1123 F2。
+    gecko2: {
+      kind: 'slab', half: 0.99, corner: 0, depth: 0.34, accKx: 0.92,
+      eye: { w: 1.761, h: 0.62, gap: 2.054, shiftY: -0.242 }, eyeY: -0.242,
+      pose: { yaw: -8, pitch: 12, roll: -5, k: 0.55 },
+      tongue: { v: { a: { y: 0.52, mw: 0.16, mc: 0.05, w: 0.072, h: 0.29, rot: 0 }, b: { y: 0.61, mw: 0.10, mc: 0.03, w: 0.066, h: 0.19, rot: 0 } } },
+      acc: 'M0.433 -0.652L0.374 -0.677L0.314 -0.699L0.191 -0.730L0.096 -0.743L-0.032 -0.747L-0.159 -0.736L-0.222 -0.724L-0.284 -0.708L-0.345 -0.688L-0.404 -0.665L-0.507 -0.613L-0.453 -0.618L-0.393 -0.611L-0.349 -0.597L-0.303 -0.574L-0.222 -0.598L-0.140 -0.615L-0.028 -0.626L0.056 -0.624L0.112 -0.619L0.195 -0.605L0.303 -0.574L0.349 -0.597L0.393 -0.611L0.453 -0.618L0.507 -0.613ZM0.935 -0.043L0.939 -0.057L0.921 -0.116L0.899 -0.173L0.860 -0.255L0.828 -0.308L0.793 -0.359L0.727 -0.438L0.754 -0.381L0.779 -0.302L0.791 -0.240L0.797 -0.155L0.818 -0.086L0.835 -0.016L0.927 -0.038ZM-0.775 -0.383L-0.811 -0.334L-0.844 -0.282L-0.887 -0.201L-0.921 -0.116L-0.939 -0.058L-0.938 -0.047L-0.930 -0.039L-0.835 -0.016L-0.818 -0.086L-0.797 -0.155L-0.791 -0.240L-0.779 -0.302L-0.754 -0.381L-0.727 -0.438ZM-0.844 0.026L-0.858 0.003L-0.874 -0.011L-0.898 -0.022L-0.924 -0.024L-0.950 -0.018L-0.972 -0.004L-0.989 0.016L-0.997 0.036L-1.000 0.057L-0.999 0.344L-0.992 0.369L-0.980 0.387L-0.959 0.404L-0.940 0.412L-0.913 0.414L-0.888 0.408L-0.865 0.394L-0.849 0.374L-0.860 0.308L-0.862 0.239L-0.857 0.140ZM0.997 0.036L0.989 0.016L0.972 -0.004L0.950 -0.018L0.924 -0.024L0.898 -0.022L0.874 -0.011L0.854 0.007L0.843 0.027L0.856 0.122L0.862 0.239L0.860 0.308L0.849 0.374L0.869 0.398L0.898 0.412L0.929 0.414L0.959 0.404L0.983 0.383L0.997 0.354L1.000 0.333L1.000 0.057Z',
+      crown: 'M-0.246 -0.753L-0.281 -0.912L-0.288 -0.917L-0.298 -0.918L-0.306 -0.914L-0.364 -0.821L-0.451 -0.918L-0.459 -0.922L-0.467 -0.921L-0.475 -0.917L-0.480 -0.908L-0.494 -0.779L-0.592 -0.820L-0.602 -0.820L-0.609 -0.815L-0.613 -0.808L-0.613 -0.797L-0.537 -0.629L-0.527 -0.641L-0.506 -0.653L-0.417 -0.696L-0.325 -0.731Z',
+      cheeks: [[-0.504, 0.423, 0.138, 0.081], [0.504, 0.423, 0.138, 0.081]],
+      spots: [[-0.244, 0.033, 0.037], [0.293, -0.0, 0.031], [-0.472, 0.244, 0.028], [0.569, 0.228, 0.033], [0.065, -0.065, 0.024], [-0.330, 0.400, 0.024]],
+      path: function (S) { return scalePath('M-0.813 0.260L-0.806 0.341L-0.786 0.415L-0.752 0.480L-0.707 0.538L-0.650 0.589L-0.583 0.632L-0.506 0.668L-0.420 0.697L-0.326 0.720L-0.224 0.736L-0.115 0.745L0.058 0.747L0.224 0.736L0.326 0.720L0.420 0.697L0.506 0.668L0.583 0.632L0.618 0.611L0.680 0.565L0.707 0.538L0.752 0.480L0.770 0.449L0.797 0.379L0.806 0.341L0.811 0.302L0.813 0.220L0.809 0.144L0.801 0.073L0.779 -0.042L0.748 -0.146L0.745 -0.206L0.732 -0.289L0.708 -0.364L0.687 -0.409L0.663 -0.449L0.619 -0.500L0.587 -0.526L0.552 -0.547L0.515 -0.561L0.475 -0.568L0.419 -0.566L0.385 -0.559L0.337 -0.538L0.294 -0.506L0.256 -0.465L0.225 -0.415L0.201 -0.357L0.185 -0.291L0.179 -0.244L0.130 -0.230L0.051 -0.221L-0.034 -0.220L-0.115 -0.228L-0.179 -0.244L-0.189 -0.314L-0.201 -0.357L-0.216 -0.396L-0.235 -0.433L-0.256 -0.465L-0.281 -0.493L-0.308 -0.518L-0.337 -0.538L-0.369 -0.553L-0.419 -0.566L-0.475 -0.568L-0.533 -0.555L-0.587 -0.526L-0.619 -0.500L-0.649 -0.467L-0.687 -0.409L-0.717 -0.340L-0.732 -0.289L-0.742 -0.235L-0.748 -0.146L-0.775 -0.058L-0.796 0.039L-0.809 0.144Z', S); }
     },
     tablet: {
       kind: 'pill', half: 0.98, radius: 74 / 114,
@@ -153,6 +175,12 @@
     }
   };
   var STAR_D = 'M-0.1551 -0.8531C-0.1039 -1.0000 0.1039 -1.0000 0.1551 -0.8531L0.2356 -0.6226C0.2624 -0.5457 0.3414 -0.5001 0.4214 -0.5153L0.6613 -0.5609C0.8141 -0.5899 0.9180 -0.4101 0.8164 -0.2922L0.6569 -0.1073C0.6038 -0.0456 0.6038 0.0456 0.6569 0.1073L0.8164 0.2922C0.9180 0.4101 0.8141 0.5900 0.6613 0.5609L0.4214 0.5153C0.3414 0.5001 0.2624 0.5457 0.2356 0.6226L0.1551 0.8531C0.1039 1.0000 -0.1039 1.0000 -0.1551 0.8531L-0.2356 0.6226C-0.2624 0.5457 -0.3414 0.5001 -0.4214 0.5153L-0.6613 0.5609C-0.8141 0.5900 -0.9180 0.4101 -0.8164 0.2922L-0.6569 0.1073C-0.6038 0.0456 -0.6038 -0.0456 -0.6569 -0.1073L-0.8164 -0.2922C-0.9180 -0.4101 -0.8141 -0.5899 -0.6613 -0.5609L-0.4214 -0.5153C-0.3414 -0.5001 -0.2624 -0.5457 -0.2356 -0.6226L-0.1551 -0.8531Z';
+  function f2n(v) { return (+v).toFixed(2); }
+  // unified：x、y 分開縮放（只給全是 M／L 座標對的路徑用，例如肉咖耳機）
+  function scalePathXY(d, kx, ky) {
+    var i = 0;
+    return d.replace(/-?\d+(\.\d+)?/g, function (n) { return (+n * (i++ % 2 ? ky : kx)).toFixed(3); });
+  }
   function scalePath(d, k) {
     return d.replace(/-?\d+(\.\d+)?/g, function (n) { return (+n * k).toFixed(3); });
   }
@@ -262,11 +290,11 @@
   var BASE = { yaw: 22, pitch: 21, roll: 24 };
   function pose(o) {
     var p = { yaw: BASE.yaw, pitch: BASE.pitch, roll: BASE.roll, gx: 0, gy: 0, sq: 1, ty: 0, sc: 1,
-      lid: 0, glow: 0, tok: 0, lab: 0, eL: 0, eR: 0, spk: 0, spt: 0, L: EYE.neutral, R: EYE.neutral };
+      lid: 0, glow: 0, tok: 0, lab: 0, eL: 0, eR: 0, spk: 0, spt: 0, tg: 0, L: EYE.neutral, R: EYE.neutral };
     for (var k in o) p[k] = o[k];
     return p;
   }
-  var NUM = ['yaw', 'pitch', 'roll', 'gx', 'gy', 'sq', 'ty', 'sc', 'lid', 'glow', 'eL', 'eR', 'spk'];
+  var NUM = ['yaw', 'pitch', 'roll', 'gx', 'gy', 'sq', 'ty', 'sc', 'lid', 'glow', 'eL', 'eR', 'spk', 'tg'];
   function lerpPose(a, b, k) {
     var p = { tok: b.tok, lab: b.lab, spt: b.spt };
     for (var i = 0; i < NUM.length; i++) {
@@ -300,7 +328,9 @@
           lid: blinks(t, [1.16, 4.0, 8.2, 10.59, 12.07, 12.37, 14.25]),
           // 耳朵：第 6 秒左耳連抖兩下，第 13 秒右耳抖一下
           eL: 0.55 * bump(6.30, 6.36, 6.40, 6.52, t) + 0.45 * bump(6.62, 6.68, 6.72, 6.84, t),
-          eR: 0.5 * bump(13.2, 13.26, 13.3, 13.42, t)
+          eR: 0.5 * bump(13.2, 13.26, 13.3, 13.42, t),
+          // 吐舌（只有形狀有 tongue 的才畫，只有肉咖）：第 7.2 秒偷吐一下，0.6 秒，16 秒一次（沿用 1123 F2）
+          tg: bump(7.2, 7.3, 7.6, 7.8, t)
         });
       }
     },
@@ -482,6 +512,14 @@
       '.bot-face>svg{display:block;width:100%;height:100%;overflow:visible;stroke:none}' +
       '.bot-face>svg *{transition:fill .28s ease,stroke .28s ease,stop-color .28s ease}' +
       '.bot-face .bf-hl{opacity:var(--bf-hl);transition:opacity .28s ease}' +
+      '.bot-face{--bf-x:var(--bot-acc,#FF4F9A);--bf-tg:var(--bot-tongue,#FF6FA8)}' +
+      '.bot-face{--bf-sh:var(--bot-side,#000)}.bot-face[data-tone=ink]{--bf-x:var(--bf-b);--bf-sh:#000}' +
+      '.bot-face[data-shape=gecko2][data-tone=ink]{--bf-e:var(--bot-ink-eye,#FFC23D)}' +
+      '.bot-face .bf-ko{display:none}.bot-face[data-tone=ink] .bf-tgx{display:none}' +
+      '.bot-face[data-tone=ink][data-inkm~=ko] .bf-ko,.bot-face[data-tone=ink][data-inkm~=koall] .bf-ko{display:inline}' +
+      '.bot-face[data-inkm~=ko] .bf-kox{display:none}' +
+      '.bot-face[data-tone=ink][data-inkm~=flat] .bf-sd{display:none}' +
+      '.bot-face[data-tone=ink][data-inkm~=tint]{--bf-x:color-mix(in srgb,var(--bot-room,var(--bot-ink-in,#FF4F9A)) 42%,#000)}' +
       '.bot-face[data-outline][data-tone=color]>svg{filter:drop-shadow(0 0 .45px var(--bot-line,rgba(20,17,30,.7))) drop-shadow(0 0 .45px var(--bot-line,rgba(20,17,30,.45)))}' +
       '@media (prefers-reduced-motion:reduce){.bot-face>svg *,.bot-face .bf-hl{transition:none}}' +
       '.bot-face text{font:700 11px/1 var(--font-num,ui-rounded,system-ui,sans-serif);' +
@@ -505,7 +543,7 @@
   var EARIN = 'var(--bf-ei)';   // 耳內色：沒設就等於點綴色
   var NSIDE = 8;              // 厚板側面用幾層疊出來
   // 黑豹耳：位置（頭上的經緯度）、半寬、高、根部埋進球裡的比例。單位是球半徑。
-  var EAR = { lon: 41, lat: 49, w: 0.33, h: 0.58, root: 0.84, lean: 52, minW: 0.62 };
+  var EAR = { lon: 44, lat: 40, w: 0.33, h: 0.46, root: 0.84, lean: 52, minW: 0.62 };   // unified：原 lon 41、lat 49、h 0.58
   // 鏡片：半寬、半高、圓角（貼在眼睛所在的切面上）
   var LENS = { hw: 0.262, hh: 0.31, r: 0.15, by: -0.1 };
   var NBAR = 4, BAR_N = [9, 13, 7, 11], BAR_P = [0.3, 1.9, 4.1, 2.7];   // 聲波條：每輪跳幾下、起始相位
@@ -625,15 +663,66 @@
         u.setAttribute('href', href);
         return u;
       };
-      var sideG = el(doc, 'g', {}, solid); sideG.setAttribute('style', 'fill:' + body);
-      var shadeG = el(doc, 'g', { opacity: 0.34, fill: '#000' }, solid);
+      var sideG = el(doc, 'g', { 'class': 'bf-sd' }, solid); sideG.setAttribute('style', 'fill:' + body);
+      var shadeG = el(doc, 'g', { 'class': 'bf-sd', opacity: inst.gk && inst.gk.side ? 0.5 : 0.34 }, solid); shadeG.setAttribute('style', 'fill:var(--bf-sh,#000)');
       inst.sides = [];
       for (var i = 0; i < NSIDE; i++) inst.sides.push([mk(sideG), mk(shadeG)]);
+      var gk = inst.gk || {}, xparts = [];
+      if (shp.acc) xparts.push([shp.acc, 'var(--bf-x)']);
+      if (shp.crown && gk.crown) xparts.push([shp.crown, 'var(--bf-x)']);
+      inst.xsides = []; inst.xfront = [];
+      xparts.forEach(function (xp, xi) {
+        el(doc, 'path', { id: id + 'x' + xi, d: xi === 0 && shp.accKx ? scalePathXY(xp[0], S * shp.accKx, S) : scalePath(xp[0], S) }, defs);
+        var xs = el(doc, 'g', { 'class': 'bf-sd' }, solid); xs.setAttribute('style', 'fill:' + xp[1]);
+        var xsh = el(doc, 'g', { 'class': 'bf-sd', opacity: 0.30, fill: '#000' }, solid);
+        for (var q = 0; q < 24; q++) {
+          var u1 = el(doc, 'use', {}, xs); u1.setAttribute('href', '#' + id + 'x' + xi);
+          var u2 = el(doc, 'use', {}, xsh); u2.setAttribute('href', '#' + id + 'x' + xi);
+          inst.xsides.push([q, u1, u2]);
+        }
+      });
       var frontG = el(doc, 'g', {}, solid);
       var f0 = mk(frontG); f0.setAttribute('style', 'fill:' + body);
+      var fx = [];
+      if (gk.grad) {
+        var gg2 = el(doc, 'linearGradient', { id: id + 'o', x1: '0', y1: '0.15', x2: '0', y2: '1' }, defs);
+        stop(doc, gg2, '0', gk.grad, 0); stop(doc, gg2, '0.55', gk.grad, 0.35); stop(doc, gg2, '1', gk.grad, 0.85);
+        fx.push(mk(frontG, { fill: 'url(#' + id + 'o)', 'class': 'bf-hl' }));
+      }
+      var deco = el(doc, 'g', { 'class': 'bf-hl' }, frontG);
+      if (gk.spots && shp.spots) shp.spots.forEach(function (s) { el(doc, 'ellipse', { cx: f2n(s[0] * S), cy: f2n(s[1] * S), rx: f2n(s[2] * S * 1.15), ry: f2n(s[2] * S * 0.9), fill: gk.spots, opacity: 0.7 }, deco); });
+      if (gk.cheeks && shp.cheeks) shp.cheeks.forEach(function (c) { el(doc, 'ellipse', { cx: f2n(c[0] * S), cy: f2n(c[1] * S), rx: f2n(c[2] * S), ry: f2n(c[3] * S), fill: gk.cheeks, opacity: 0.85 }, deco); });
       var f1 = mk(frontG, { fill: 'url(#' + id + 'g)', 'class': 'bf-hl' });
       var f2 = mk(frontG, { fill: 'none', stroke: '#fff', 'stroke-opacity': 0.28, 'stroke-width': 1.4, 'class': 'bf-hl' });
-      inst.front = [f0, f1, f2];
+      inst.front = [f0, f1, f2].concat(fx).concat([deco]);
+      xparts.forEach(function (xp, xi) {
+        var xf = el(doc, 'g', {}, solid);
+        var a0 = el(doc, 'use', {}, xf); a0.setAttribute('href', '#' + id + 'x' + xi); a0.setAttribute('style', 'fill:' + xp[1]);
+        var a1 = el(doc, 'use', { fill: 'url(#' + id + 'g)', 'class': 'bf-hl' }, xf); a1.setAttribute('href', '#' + id + 'x' + xi);
+        inst.xfront.push(a0, a1);
+      });
+      if (shp.tongue) {
+        var tq = shp.tongue, tv = (inst.opts.tv || (gk.tv) || 'a');
+        var TV = tq.v[tv] || tq.v.a;
+        inst.tgv = TV;
+        var tgG = inst.tgG = el(doc, 'g', { 'class': 'bf-tgx', opacity: 0 }, solid);
+        // 嘴：吐舌時才淡入的一條小弧線
+        var mw = TV.mw * S;
+        inst.mouth = el(doc, 'path', { d: 'M' + f2n(-mw) + ' 0Q0 ' + f2n(TV.mc * S) + ' ' + f2n(mw) + ' 0', fill: 'none', 'stroke-linecap': 'round', 'stroke-width': f2n(0.035 * S) }, tgG);
+        inst.mouth.setAttribute('style', 'stroke:var(--bf-mo,#8A3A0C)');
+        var tw = TV.w * S, tl = TV.h * S;
+        // 舌頭：根部在嘴裡，往下伸，圓頭；中線深一階
+        inst.tg = el(doc, 'g', {}, tgG);
+        var tp = el(doc, 'path', { d: 'M' + f2n(-tw) + ' 0L' + f2n(-tw) + ' ' + f2n(tl - tw) + 'A' + f2n(tw) + ' ' + f2n(tw) + ' 0 0 0 ' + f2n(tw) + ' ' + f2n(tl - tw) + 'L' + f2n(tw) + ' 0Z' }, inst.tg);
+        tp.setAttribute('style', 'fill:var(--bf-tg)');
+        el(doc, 'path', { d: 'M0 ' + f2n(tw * 0.3) + 'L0 ' + f2n(tl - tw * 1.1), fill: 'none', stroke: '#D63C78', 'stroke-width': f2n(0.018 * S), 'stroke-linecap': 'round', opacity: 0.7 }, inst.tg);
+      }
+      // 反黑的房間色縫（knockout）：沿頭（ko）或頭＋耳機（koall）描一圈房間色，像素寬不跟著縮放
+      inst.ko = [];
+      var koG = el(doc, 'g', { 'class': 'bf-ko', fill: 'none', 'stroke-linejoin': 'round' }, solid);
+      koG.setAttribute('style', 'stroke:var(--bot-room,var(--bot-ink-in,#FF4F9A));stroke-width:var(--bf-kow,1.6px)');
+      var k0 = el(doc, 'use', { 'vector-effect': 'non-scaling-stroke' }, koG); k0.setAttribute('href', '#' + id + 'f'); inst.ko.push([k0, 0]);
+      xparts.forEach(function (xp, xi) { var kx = el(doc, 'use', { 'vector-effect': 'non-scaling-stroke', 'class': 'bf-kox' }, koG); kx.setAttribute('href', '#' + id + 'x' + xi); inst.ko.push([kx, 1]); });
       inst.S = S; inst.D = shp.depth * S / 0.94;
     }
 
@@ -672,8 +761,10 @@
      臉縮成 0.74 倍，外面一圈斜躺的橢圓環，四色各一段順著環流動。
      流動＝CSS stroke-dashoffset 關鍵影格：offset(t) = -P·(t/6.0 + 0.45/2π·sin(2πt/6.0))，速度有快慢但不停不倒退，6.0 秒首尾完全接上。
      後半圈畫在臉後面，前半圈畫在臉前面；前半圈壓一道深紫邊，只裁在臉的圓裡，透明底上不會有淡色邊。 */
-  var RING = { fit: 0.74, rx: 46, ry: 12.5, cy: 9, tilt: -12, P: 199.188, T: 6.0,
+  var RING = { fit: 0.74, rx: 34, ry: 9.8, cy: 9, tilt: -12, P: 0, T: 6.0,
     colors: ['#a37aff', '#4d86ff', '#ff6700', '#00b351'] };
+  // unified：周長由 rx、ry 算（Ramanujan），舊值 46／12.5 時＝199.188
+  RING.P = PI * (3 * (RING.rx + RING.ry) - Math.sqrt((3 * RING.rx + RING.ry) * (RING.rx + 3 * RING.ry)));
   var ringStyled = false;
   function ringStyle(doc) {
     if (ringStyled) return; ringStyled = true;
@@ -695,6 +786,11 @@
       '.bf-ring-s .bf-rb .bf-rg{stroke-width:8;stroke-dasharray:' + arr(8, 7.5) + '}' +
       '.bf-ring-s .bf-rf .bf-rg{stroke-width:9;stroke-dasharray:' + arr(9, 6.5) + '}' +
       '.bf-ring-s .bf-re{stroke-width:11.5;stroke-dasharray:' + arr(11.5, 4) + '}' +
+      // unified：34px 以下環擺正（抵掉 -12 度斜躺）、線加粗、縫收窄，28px 才讀得出一圈四色
+      '.bf-ring-xs .bf-rw{transform:rotate(12deg) scale(.93)}' +
+      '.bf-ring-xs .bf-rb .bf-rg{stroke-width:10;stroke-dasharray:' + arr(10, 4) + '}' +
+      '.bf-ring-xs .bf-rf .bf-rg{stroke-width:11.5;stroke-dasharray:' + arr(11.5, 3) + '}' +
+      '.bf-ring-xs .bf-re{stroke-width:14;stroke-dasharray:' + arr(14, 0.5) + '}' +
       '.bot-face[data-ring-still] .bf-rg{animation-play-state:paused}' +
       '.bot-face[data-tone=ink] .bf-rg{stroke:var(--bf-b)}.bot-face[data-tone=ink] .bf-re{display:none}';
     var s = doc.createElement('style'); s.setAttribute('data-bot-face-ring', ''); s.textContent = css;
@@ -730,6 +826,19 @@
     return { back: back, front: front };
   }
 
+  /* ---------- unified 正規化框（SPEC 1～3）----------
+     norm:[s, dx, dy]：整張圖以格子中心放大 s 倍，再平移 dx、dy（整格＝1，往右、往下為正）。
+     數值由 team-faces/unified/_src/meas.py 量頭部像素面積與重心後算出：頭部等面積直徑 0.72 格、頭部重心落在 (0.5, 0.53)。 */
+  function applyNorm(inst) {
+    var n = inst.norm; if (!n) return;
+    var v = inst.svg.getAttribute('viewBox').split(/\s+/).map(Number);
+    var w = v[2] / n[0], h = v[3] / n[0];
+    var x = v[0] + v[2] / 2 - w / 2 - n[1] * w, y = v[1] + v[3] / 2 - h / 2 - n[2] * h;
+    inst.svg.setAttribute('viewBox', x.toFixed(3) + ' ' + y.toFixed(3) + ' ' + w.toFixed(3) + ' ' + h.toFixed(3));
+    // 正面亮邊是 viewBox 單位，縮放後補回同樣的視覺粗細
+    if (inst.front && inst.front[2]) inst.front[2].setAttribute('stroke-width', (1.4 / n[0]).toFixed(3));
+  }
+
   /* ---------- 實例 ---------- */
   function Face(host, opts) {
     var doc = host.ownerDocument;
@@ -743,6 +852,7 @@
     this.label = opts.label || pre.label || 'Bot';
     var pick = function (k, d) { return opts[k] !== undefined ? opts[k] : (pre[k] !== undefined ? pre[k] : d); };
     this.ears = pick('ears', ''); this.glasses = !!pick('glasses', false);
+    this.norm = pick('norm', null); this.eyeK = +pick('eyeK', 1) || 1;
     this.fit = +pick('fit', 1) || 1; this.eyeTilt = +pick('eyeTilt', 0) || 0; this.sep = +pick('sep', SEP) || SEP;
     // colorTarget 'accent'：本體色固定，setColor 換的是點綴色
     this.accentMode = pick('colorTarget', 'body') === 'accent';
@@ -764,6 +874,14 @@
     this.wrap.setAttribute('data-shape', this.shape);
     if (this.eyeColor) this.wrap.style.setProperty('--bot-eye', this.eyeColor);
     if (this.earIn) this.wrap.style.setProperty('--bot-ear', this.earIn);
+    this.gk = pick('gk', null);
+    var inkm = pick('inkMode', this.gk && this.gk.inkMode || ''); if (inkm) this.wrap.setAttribute('data-inkm', inkm);
+    if (this.gk) {
+      if (this.gk.acc) this.wrap.style.setProperty('--bot-acc', this.gk.acc);
+      if (this.gk.inkEye) this.wrap.style.setProperty('--bot-ink-eye', this.gk.inkEye);
+      if (this.gk.tongue) this.wrap.style.setProperty('--bot-tongue', this.gk.tongue);
+      if (this.gk.side) this.wrap.style.setProperty('--bot-side', this.gk.side);
+    }
     if (pick('outline', false)) this.wrap.setAttribute('data-outline', '');
     this.setTone(opts.tone || (opts.invert ? 'ink' : 'color'));
     if (this.accentMode) {
@@ -775,6 +893,7 @@
     }
     this.svg = build(this, doc);
     this.ring = pick('ring', '') ? addRing(this, doc) : null;
+    applyNorm(this);
     this.wrap.appendChild(this.svg);
     host.appendChild(this.wrap);
     this.setSize(this.opts.size);
@@ -831,9 +950,9 @@
     else { this.wrap.style.width = '100%'; this.wrap.style.height = '100%'; }
     // 小尺寸把眼睛放大一點，32px 也看得清楚
     var px = this.size || this.wrap.getBoundingClientRect().width || 64;
-    var eff = px * this.fit * (this.ring ? RING.fit : 1);   // 有耳朵、有光環的身體比較小，眼睛照實際大小補
-    if (this.ring) this.svg.setAttribute('class', px <= 48 ? 'bf-ring-s' : '');
-    this.eyeScale = eff < 40 ? 1.3 : eff < 56 ? 1.15 : 1;
+    var eff = px * this.fit * (this.ring ? RING.fit : 1) * (this.norm ? this.norm[0] : 1);   // 有耳朵、有光環、正規化縮放後的實際身體大小
+    if (this.ring) this.svg.setAttribute('class', px <= 34 ? 'bf-ring-s bf-ring-xs' : px <= 48 ? 'bf-ring-s' : '');
+    this.eyeScale = (eff < 40 ? 1.3 : eff < 56 ? 1.15 : 1) * this.eyeK;
     this.small = px < 64;
     // 眼鏡與耳朵的線：固定螢幕粗細（不跟著投影變形）
     var lw = clamp(px * 0.0125, 0.8, 1.8).toFixed(2);
@@ -1063,7 +1182,18 @@
       this.sides[i][0].setAttribute('transform', tf); this.sides[i][1].setAttribute('transform', tf);
     }
     var cap = at(sgn * Dz);
-    for (var j = 0; j < 3; j++) this.front[j].setAttribute('transform', cap);
+    for (var j = 0; j < this.front.length; j++) this.front[j].setAttribute('transform', cap);
+    if (this.xsides) {
+      for (var xi = 0; xi < this.xsides.length; xi++) { var xq = this.xsides[xi], xt = at(0.6 * (-sgn * Dz + sgn * 2 * Dz * xq[0] / 24)); xq[1].setAttribute('transform', xt); xq[2].setAttribute('transform', xt); }
+      var xcap = at(0.6 * sgn * Dz); for (var xj = 0; xj < this.xfront.length; xj++) this.xfront[xj].setAttribute('transform', xcap);
+    }
+    if (this.tgG) {
+      var tgk = clamp(p.tg || 0, 0, 1) * (this.reduced ? 0 : 1), TV = this.tgv;
+      this.tgG.setAttribute('opacity', f(ss(0, 0.25, tgk)));
+      this.tgG.setAttribute('transform', cap + ' translate(0 ' + f(TV.y * S) + ')');
+      this.tg.setAttribute('transform', 'rotate(' + TV.rot + ') scale(1 ' + f(Math.max(tgk, 0.01)) + ')');
+    }
+    if (this.ko) for (var ki = 0; ki < this.ko.length; ki++) this.ko[ki][0].setAttribute('transform', this.ko[ki][1] ? at(0.6 * sgn * Dz) : cap);
 
     // 眼睛貼在正面（z = +D）；正面轉到背後就看不到
     var vis = ss(0.05, 0.3, Z[2]);
@@ -1227,7 +1357,7 @@
     };
   }
   var BotFace = {
-    version: '1122-F',
+    version: '1122-F+rouka-B2+unified-1125v2',
     MOODS: MOOD_LIST.slice(),
     COLORS: COLORS,
     PRESETS: PRESETS,
