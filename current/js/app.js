@@ -2615,7 +2615,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v199');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v200');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5032,6 +5032,20 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  ACT.ckcancel=()=>{S.ckEdit='';ckSwap()};
  // v154 msg 961 老大：「我點選的時候畫面會跳動，我覺得不應該跳動，而是他直接會變成編修狀態」→ 只換節奏這一塊
  function ckSwap(){const box=document.querySelector('.ckbox');if(!box){render('keep');return}const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;if(!nb){render('keep');return}keepCol(box,nb,'.ckh');box.replaceWith(nb);try{faceSync()}catch(_){}}
+ // v200（msg 1213）：編修存好改成「先新增新的、再收掉舊的」，每一步最多試 3 次。以前是先撤舊的再新增，中間只要有一步失敗，舊的已經被收掉、新的沒寫進去，那條就憑空不見（或看起來沒反應）。
+ const tideW=async(patch)=>{let er;for(let i=0;i<3;i++){try{return await LV.api.tideLogAdd('note',patch)}catch(e){er=e;await new Promise(r=>setTimeout(r,500*(i+1)))}}throw er};
+ async function replaceWant(oldId,newNote){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再改，這條沒動');return false}
+  const w=(TL||[]).find(x=>String(x.id)===String(oldId)&&x.note&&x.note.type==='want');if(!w)return false;const day=w.note.day,wasDone=doneOf(String(oldId));
+  const tmpN={id:'tmp'+Date.now(),kind:'note',note:newNote,at:new Date().toISOString()},tmpD={id:'tmpd'+Date.now(),kind:'note',note:{type:'drop',ref:'want:'+oldId,day},at:new Date().toISOString()};
+  (TL=TL||[]).unshift(tmpD,tmpN);ckRefresh();
+  let stage='新增';
+  try{await tideW({ref:newNote.src||undefined,source:'面板',note:newNote});stage='收掉舊的';
+   if(wasDone)await tideW({ref:'want:'+oldId,source:'面板',note:{type:'undo',ref:'want:'+oldId,day}});
+   await tideW({ref:'want:'+oldId,source:'面板',note:{type:'drop',ref:'want:'+oldId,day}});return true}
+  catch(e){TL=(TL||[]).filter(x=>x!==tmpD&&x!==tmpN);
+   if(stage==='新增'){toast('沒存上：'+LERR(e)+'。這條沒動，可以再按一次存好')}
+   else{toast('新的已經存好，但舊的沒收掉：'+LERR(e)+'。畫面上會有兩條，把舊的刪掉就好');tlLoad(true)}
+   ckRefresh();return false}}
  async function undoWant(wid){const day=ymdT(dayN()),note={type:'drop',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
   try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note:{type:'undo',ref:'want:'+wid,day}});await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}   // v151：先寫 undo（張弛舊規則）再寫 drop（新規則，曾打勾的也確實撤掉）
  ACT.ckdrop=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');S.ckEdit='';if(!w)return;
@@ -5054,7 +5068,7 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
  else if(val==='auto'){delete n2.card;delete n2.cardBy;const m=autoMatch({note:n2});if(m)n2.card=m.id;msg=m?'重新自動分析：關聯到「'+clip(m.short||m.title,12)+'」':'重新自動分析：沒有把握，不關聯'}
  else{const c=cardOf(val);if(!c)return;n2.card=val;n2.cardBy='user';msg='關聯改成「'+clip(c.short||c.title,12)+'」（你指定）'}
  CKSAVING[wid]=1;setTimeout(()=>{delete CKSAVING[wid]},4000);S.ckEdit='';try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur()}catch(e){}   // 焦點還在輸入框時節奏區不會重畫，先放開
- if(await undoWant(wid)&&await wantAdd(n2)){tlLoad(true);ckSwap();toast(msg)}};
+ if(await replaceWant(wid,n2)){tlLoad(true);ckSwap();toast(msg)}};
 
  const CKSAVING={};
  // v197 msg 1203：點相關標籤先彈小選單（看這張卡／換成別張／移除關聯），不直接跳走
@@ -5072,7 +5086,9 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
  ACT.cksplit=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w||wstOf(String(wid))==='drop'||CKSAVING[wid])return;
   const t=(($('#ckEt')||{}).value||w.note.text||'').trim(),tm=parseTm(($('#ckEtm')||{}).value).t,sp=splitTm(t),parts=splitWants(sp.text||t);if(parts.length<2){toast('這條拆不開，它就是一件');return}
   CKSAVING[wid]=1;setTimeout(()=>{delete CKSAVING[wid]},4000);S.ckEdit='';
-  if(await undoWant(wid)){for(let i=0;i<parts.length;i++){const q=splitTm(parts[i]),nt={type:'want',text:q.text||parts[i],day:w.note.day};const tm2=i===0?(tm||sp.tm||q.tm):q.tm;if(tm2)nt.time=tm2;await wantAdd(nt)}tlLoad(true);toast(`拆成 ${parts.length} 件了（可按復原）`,async()=>{for(const x of (TL||[]).filter(y=>y.note&&y.note.type==='want'&&String(y.at||'')>String(w.at||'')&&parts.some(pp=>(splitTm(pp).text||pp)===y.note.text)&&wstOf(String(y.id))!=='drop').slice(0,parts.length))await undoWant(String(x.id));await wantAdd(Object.assign({},w.note));tlLoad(true)})}};
+  {let allOk=true;for(let i=0;i<parts.length;i++){const q=splitTm(parts[i]),nt={type:'want',text:q.text||parts[i],day:w.note.day};const tm2=i===0?(tm||sp.tm||q.tm):q.tm;if(tm2)nt.time=tm2;if(!await wantAdd(nt,{force:1}))allOk=false}   // v200：先把新的都寫好，再收掉舊的
+   if(!allOk){toast('有幾件沒存上，原本那條我沒動');tlLoad(true);return}
+   try{if(doneOf(String(wid)))await tideW({ref:'want:'+wid,source:'面板',note:{type:'undo',ref:'want:'+wid,day:w.note.day}});await tideW({ref:'want:'+wid,source:'面板',note:{type:'drop',ref:'want:'+wid,day:w.note.day}})}catch(e){toast('新的已存好，但舊的沒收掉：'+LERR(e))}tlLoad(true);toast(`拆成 ${parts.length} 件了（可按復原）`,async()=>{for(const x of (TL||[]).filter(y=>y.note&&y.note.type==='want'&&String(y.at||'')>String(w.at||'')&&parts.some(pp=>(splitTm(pp).text||pp)===y.note.text)&&wstOf(String(y.id))!=='drop').slice(0,parts.length))await undoWant(String(x.id));await wantAdd(Object.assign({},w.note));tlLoad(true)})}};
  ACT.cksave=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w){toast('找不到這條，畫面可能不是最新的，已重新讀取');S.ckEdit='';tlLoad(true);ckSwap();return}   // v197 msg 1201：每一條提早結束的路都要說原因，不能靜默
   if(wstOf(String(wid))==='drop'||CKSAVING[wid]){toast(CKSAVING[wid]?'正在存，請稍等一下':'這條已經改過或刪掉了，已重新整理');S.ckEdit='';ckSwap();return}
   {const ti=$('#ckEtm');if(ti){const pt=parseTm(ti.value);if(!pt.ok){toast('時間寫不懂，請寫成 22:30 這樣（24 小時制），或清空');ti.focus();return}if(pt.t!==ti.value.trim()&&pt.t)ti.value=pt.t}}
@@ -5082,7 +5098,7 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   S.ckEdit='';try{document.activeElement&&document.activeElement.blur&&document.activeElement.blur()}catch(e){}   // 焦點還在輸入框時節奏區不會重畫
   const note=Object.assign({},w.note,{text,day:w.note.day});if(time)note.time=time;else delete note.time;delete note.end;
   const chg=[];if(text!==(old.text||w.note.text))chg.push('文字');if(time!==(w.note.time||old.tm||''))chg.push(time?'時間改成 '+time:'時間清掉');
-  if(await undoWant(wid)&&await wantAdd(note)){tlLoad(true);ckSwap();toast('改好了（'+chg.join('、')+'）'+(hitOf(dayN(),time)?'，那時段有別的事，你決定':''))}};
+  if(await replaceWant(wid,note)){tlLoad(true);ckSwap();toast('改好了（'+chg.join('、')+'）'+(hitOf(dayN(),time)?'，那時段有別的事，你決定':''))}};
  // 空白列：點進去跳出「別漏了」選單；打字就取代灰字建議；直接按＋而沒打字＝加灰字那件
  document.addEventListener('focusin',e=>{if(e.target&&e.target.id==='ckIn'){const d=$('#ckDD');if(d)d.hidden=false}});
  document.addEventListener('focusout',e=>{if(e.target&&e.target.id==='ckIn')setTimeout(()=>{const a=document.activeElement,d=$('#ckDD');if(d&&!(a&&a.closest&&a.closest('#ckDD')))d.hidden=true},250)});
@@ -5103,8 +5119,8 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
    if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7)return;if(tg.closest('input,textarea'))return;shutAll();const n=dayN();if(dx<0&&n===0)ACT.ckday('1');else if(dx>0&&n===1)ACT.ckday('0')},{passive:true});
   document.addEventListener('click',e=>{if(!(e.target.closest&&e.target.closest('.ck.want.swl')))shutAll()},true);}
  const wkey=n=>[n&&n.day,String(n&&n.text||'').replace(/\s+/g,'').toLowerCase(),n&&n.time||''].join('|');   // v191 msg 1169：同一天、同字、同時間算同一件
- async function wantAdd(note){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再加');return false}
-  if(note&&note.type==='want'&&(TL||[]).some(x=>x.note&&x.note.type==='want'&&wstOf(String(x.id))!=='drop'&&wkey(x.note)===wkey(note))){toast('這件已經有了，沒重複加');return true}
+ async function wantAdd(note,opt){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再加');return false}
+  if(!(opt&&opt.force)&&note&&note.type==='want'&&(TL||[]).some(x=>x.note&&x.note.type==='want'&&wstOf(String(x.id))!=='drop'&&wkey(x.note)===wkey(note))){toast('這件已經有了，沒重複加');return true}
   (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
   try{await LV.api.tideLogAdd('note',{ref:note.src||undefined,source:'面板',note});tlLoad(true);return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){const sg=el&&el.dataset.sug;if(sg&&MISS[sg]){ACT.ckadd(sg);return}if(el)el.focus();return}
