@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v181');
+  const { mockAdapter } = await import('./mock.js?v182');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -368,6 +368,10 @@ function liveAdapter() {
       }
       throw new AdapterError('server', '未知動作');
     },
+    // v182：案子分筆收款（hub_proj_payments，只經函式存取）
+    async payLines(id) { const d = await rpc('hub_pline_list', { p_item_id: id }); return Array.isArray(d) ? d : []; },
+    async payLineSave(id, l) { const d = await rpc('hub_pline_save', { p_item_id: id, p_id: l.id || null, p_label: l.label || '', p_amount: l.amount == null ? 0 : l.amount, p_date: l.date || null, p_received: !!l.received, p_received_date: l.rdate || null }, 0, W); return { lines: Array.isArray(d && d.lines) ? d.lines : [], card: d && d.card && d.card.id ? normalize(d.card) : null }; },
+    async payLineDel(id, lid) { const d = await rpc('hub_pline_del', { p_item_id: id, p_id: lid }, 0, W); return { lines: Array.isArray(d && d.lines) ? d.lines : [], card: d && d.card && d.card.id ? normalize(d.card) : null }; },
     subscribe(onPing, onState) {
       let stopFn = () => {}, dead = false;
       rpc(R.topic, {}).then(t => { if (!dead && typeof t === 'string' && t) stopFn = realtime(base, t, onPing, onState); else onState(false); }).catch(() => onState(false));

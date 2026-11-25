@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v181');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v182');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5423,8 +5423,8 @@ WRITE.push('sendok','sendedit');
    老大原話：「這邊要可以讓我填啊」。欄位資料庫早就有（opp_items 的金額與日期欄，經 opp_work_update），沒改結構。
    填完離開欄位就自動存，離線時擋住並提示，存好有提示條可復原。 */
 const PMF=[['quote_amount','報價','quoteAmount','n'],['deposit_amount','訂金','depositAmount','n'],['deposit_date','訂金收款日','depositDate','d'],['final_amount','尾款','finalAmount','n'],['final_due','尾款期限','finalDue','d'],['received_amount','已收款','receivedAmount','n'],['expected_pay_date','預計付款日','expectedPayDate','d'],['payment_terms','備註（付款條件）','paymentTerms','t']];
-function moneyBody(p,id,summary){const c=p&&p.raw;if(!c||!c.id)return summary;
- return summary+`<p class="h4" style="margin-top:14px">直接填</p>`+PMF.map(([f,lab,k,t])=>{const v=c[k]==null?'':String(c[k]).slice(0,t==='d'?10:200);
+function moneyBody(p,id,summary,only){const c=p&&p.raw;if(!c||!c.id)return summary;
+ return summary+`<p class="h4" style="margin-top:14px">直接填</p>`+PMF.filter(r=>!only||only.indexOf(r[0])>-1).map(([f,lab,k,t])=>{const v=c[k]==null?'':String(c[k]).slice(0,t==='d'?10:200);
   const inp=t==='d'?`<input type="date" class="pmi" id="pm_${f}" data-pid="${esc(id)}" data-f="${f}" data-t="d" value="${esc(v)}" style="flex:0 0 auto;width:158px;max-width:48%">`
    :t==='n'?`<input type="text" inputmode="decimal" class="pmi" id="pm_${f}" data-pid="${esc(id)}" data-f="${f}" data-t="n" value="${esc(v)}" placeholder="NT$ 金額" autocomplete="off" style="flex:0 0 auto;width:158px;max-width:48%;text-align:right">`
    :`<input type="text" class="pmi" id="pm_${f}" data-pid="${esc(id)}" data-f="${f}" data-t="t" value="${esc(v)}" placeholder="寫備註" maxlength="200" autocomplete="off" style="flex:1 1 55%;min-width:0">`;
@@ -5443,6 +5443,59 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.classList||!t.clas
  LV.api.act(id,'work',{patch:{[f]:pv}}).then(c=>{t.disabled=false;apply(c);const shown=pv==null?'清掉了':ty==='n'?nt(pv):ty==='d'?pv.slice(5).replace('-','/'):'已寫';
   toast(`${lab}${pv==null?'清掉了':'：'+shown}`,()=>LV.api.act(id,'work',{patch:{[f]:oldRaw==null?null:(ty==='d'?String(oldRaw).slice(0,10):oldRaw)}}).then(c2=>{apply(c2);const el=document.getElementById('pm_'+f);if(el)el.value=oldRaw==null?'':String(oldRaw).slice(0,ty==='d'?10:200);toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))})
   .catch(er=>{t.disabled=false;back();toast('沒存上：'+LERR(er))})});
+
+/* ---------- v182（2026-11-25，意見 1140）：金額性質（實拿不扣稅）＋一案分多筆收款 ----------
+   老大原話：「這邊是實拿 稅不算 一支一萬 兩隻 而且可能分開給 發片了的可能會先拿到 應該都是五號或十號處理給我」
+   實拿＝career.tax_withheld=false（資料庫早有，預設 true 照舊扣）；分筆＝新表 hub_proj_payments（函式 hub_pline_*），
+   存完資料庫把合計同步回報價、已收、預計付款日，舊的訂金／尾款欄位保留。 */
+LV.pl=LV.pl||{};LV.plb=LV.plb||{};
+const plDay=d=>{const n=new Date();let m=n.getMonth();if(n.getDate()>=d)m++;const t=new Date(n.getFullYear(),m,d);return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')};
+const plNum=v=>{v=String(v||'').replace(/NT\$|[,，\s]/gi,'');if(v==='')return 0;return /^\d+(\.\d{1,2})?$/.test(v)?Number(v):NaN};
+function plApply(id,card,lines){if(lines)LV.pl[id]=lines;if(card){const i=LV.items.findIndex(x=>x.id===id);if(i>-1)LV.items[i]=card;const p=DB.proj.find(x=>x.id===id);if(p)p.raw=card}LV.sig=''}
+function plRepaint(){setTimeout(()=>{const a=document.activeElement;if(a&&a.closest&&a.closest('.plr,.pmi,.pmt'))return;try{paint('keep')}catch(e){}},450)}
+function plLoad(id){if(!LV.api||!LV.api.payLines||LV.plb[id]||LV.pl[id]!==undefined)return;LV.plb[id]=1;
+ LV.api.payLines(id).then(a=>{LV.pl[id]=a}).catch(()=>{LV.pl[id]=null}).then(()=>{LV.plb[id]=0;if(S.page==='proj:'+id){try{paint('keep')}catch(e){}}})}
+function plRow(l,id){const q=(f,h)=>`data-pid="${esc(id)}" data-lid="${l.id}" data-f="${f}" ${h||''}`;
+ return `<div class="plr dt" data-pid="${esc(id)}" data-lid="${l.id}"><div class="li" style="flex-wrap:wrap;gap:8px;align-items:center">
+  <input type="text" class="plf" ${q('label')} value="${esc(l.label||'')}" placeholder="說明（哪一支）" maxlength="80" autocomplete="off" aria-label="這筆的說明" style="flex:1 1 100%;min-width:0">
+  <input type="text" inputmode="decimal" class="plf" ${q('amount')} value="${l.amount?esc(String(l.amount)):''}" placeholder="NT$ 金額" autocomplete="off" aria-label="這筆金額" style="flex:1 1 40%;min-width:0;text-align:right">
+  <input type="date" class="plf" ${q('date')} value="${esc(String(l.expected_date||'').slice(0,10))}" aria-label="預計付款日" style="flex:1 1 45%;min-width:0">
+  <button type="button" class="btn ghost plq" data-pq="d5" data-pid="${esc(id)}" data-lid="${l.id}">下個 5 號</button><button type="button" class="btn ghost plq" data-pq="d10" data-pid="${esc(id)}" data-lid="${l.id}">下個 10 號</button>
+  <label style="display:inline-flex;gap:6px;align-items:center;margin-left:auto"><input type="checkbox" class="plf" ${q('received')} ${l.received?'checked':''}> 已收${l.received&&l.received_date?'（'+esc(String(l.received_date).slice(5,10).replace('-','/'))+'）':''}</label>
+  <button type="button" class="btn ghost plq" data-pq="del" data-pid="${esc(id)}" data-lid="${l.id}" aria-label="刪掉這筆">刪掉</button></div></div>`}
+{const _mb=moneyBody;moneyBody=function(p,id,summary){const c=p&&p.raw;if(!c||!c.id)return summary;
+ const nt0=c.career&&c.career.tax_withheld===false;
+ let h=summary+`<p class="h4" style="margin-top:14px">金額性質</p><div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>這筆錢怎麼算</b><small>${nt0?'報價就是實拿，不扣稅':'報價要扣勞務 10% 與健保 2.11%'}</small></div><select class="pmt" data-pid="${esc(id)}" aria-label="金額性質" style="flex:0 0 auto;max-width:52%"><option value="net"${nt0?' selected':''}>實拿（不扣稅）</option><option value="tax"${nt0?'':' selected'}>要扣稅</option></select></div></div>`;
+ plLoad(id);const L=LV.pl[id];
+ if(Array.isArray(L)){const tot=L.reduce((a,x)=>a+Number(x.amount||0),0),got=L.filter(x=>x.received).reduce((a,x)=>a+Number(x.amount||0),0);
+  h+=`<p class="h4" style="margin-top:14px">分筆收款</p>`+(L.length?L.map(l=>plRow(l,id)).join(''):'<p class="note">還沒分筆。一案分幾支、先後收款，就在這裡一筆一筆加。</p>')
+   +`<div class="btns" style="margin-top:8px"><button type="button" class="btn pri plq" data-pq="add" data-pid="${esc(id)}">＋ 加一筆</button></div>`
+   +(L.length?`<p class="note">共 ${nt(tot)}，已收 ${nt(got)}，還沒收 ${nt(tot-got)}。合計會自動寫回報價與已收。</p>`:'');
+  const keep=['payment_terms'].concat(PMF.filter(r=>['deposit_amount','deposit_date','final_amount','final_due'].indexOf(r[0])>-1&&c[r[2]]!=null&&c[r[2]]!=='').map(r=>r[0]));
+  return h+(L.length?_mb(p,id,'',keep):_mb(p,id,''))}
+ if(L===null)h+='<p class="note">讀不到分筆收款，先用下面單筆填。</p>';
+ return h+_mb(p,id,'')}}
+document.addEventListener('change',e=>{const t=e.target;if(!t.classList)return;
+ if(t.classList.contains('pmt')){const id=t.dataset.pid,p=DB.proj.find(x=>x.id===id);if(!p||!p.raw)return;
+  if(S.st==='offline'||navigator.onLine===false){t.value=p.raw.career&&p.raw.career.tax_withheld===false?'net':'tax';toast('離線中，連上再改，這項沒存');return}
+  const was=!(p.raw.career&&p.raw.career.tax_withheld===false),to=t.value==='tax';if(was===to)return;
+  LV.api.act(id,'work',{patch:{career:{tax_withheld:to}}}).then(c=>{plApply(id,c);paint('keep');toast(to?'改成要扣稅':'改成實拿，不扣稅',()=>LV.api.act(id,'work',{patch:{career:{tax_withheld:was}}}).then(c2=>{plApply(id,c2);paint('keep');toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))}).catch(er=>{t.value=was?'tax':'net';toast('沒存上：'+LERR(er))});return}
+ if(!t.classList.contains('plf'))return;plSave(t.closest('.plr'),t)});
+function plLine(row){const g=f=>row.querySelector(`[data-f="${f}"]`);return {id:+row.dataset.lid,label:g('label').value.trim(),amount:plNum(g('amount').value),date:g('date').value||null,received:g('received').checked}}
+function plSave(row,el,undoTo){if(!row)return;const id=row.dataset.pid,l=plLine(row),old=(LV.pl[id]||[]).find(x=>x.id===l.id)||{};
+ if(S.st==='offline'||navigator.onLine===false){plRevert(row,old);toast('離線中，連上再填，這筆沒存');return}
+ if(Number.isNaN(l.amount)){plRevert(row,old);toast('金額要填數字，例如 10000');return}
+ const rd=l.received&&!old.received?null:(l.received?old.received_date:null);
+ LV.api.payLineSave(id,Object.assign({},l,{rdate:rd})).then(d=>{plApply(id,d.card,d.lines);plRepaint();
+  toast(`存好了：${l.label||'這筆'} ${nt(l.amount)}${l.received?'，已收':''}`,()=>LV.api.payLineSave(id,{id:l.id,label:old.label||'',amount:Number(old.amount||0),date:old.expected_date||null,received:!!old.received,rdate:old.received_date||null}).then(d2=>{plApply(id,d2.card,d2.lines);paint('keep');toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))})
+  .catch(er=>{plRevert(row,old);toast('沒存上：'+LERR(er))})}
+function plRevert(row,old){const g=f=>row.querySelector(`[data-f="${f}"]`);g('label').value=old.label||'';g('amount').value=old.amount?String(old.amount):'';g('date').value=String(old.expected_date||'').slice(0,10);g('received').checked=!!old.received}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.plq');if(!b)return;const id=b.dataset.pid,k=b.dataset.pq,row=b.closest('.plr');
+ if(S.st==='offline'||navigator.onLine===false){toast('離線中，連上再做');return}
+ if(k==='d5'||k==='d10'){const dt=row.querySelector('[data-f="date"]');dt.value=plDay(k==='d5'?5:10);plSave(row,dt);return}
+ if(k==='add'){const n=(LV.pl[id]||[]).length+1;b.disabled=true;LV.api.payLineSave(id,{label:'第 '+n+' 支',amount:0}).then(d=>{plApply(id,d.card,d.lines);paint('keep')}).catch(er=>{b.disabled=false;toast('沒加上：'+LERR(er))});return}
+ if(k==='del'){const l=(LV.pl[id]||[]).find(x=>x.id===+b.dataset.lid)||{};b.disabled=true;
+  LV.api.payLineDel(id,+b.dataset.lid).then(d=>{plApply(id,d.card,d.lines);paint('keep');toast('刪掉了：'+(l.label||'這筆'),()=>LV.api.payLineSave(id,{label:l.label||'',amount:Number(l.amount||0),date:l.expected_date||null,received:!!l.received,rdate:l.received_date||null}).then(d2=>{plApply(id,d2.card,d2.lines);paint('keep');toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))}).catch(er=>{b.disabled=false;toast('沒刪掉：'+LERR(er))})}});
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
