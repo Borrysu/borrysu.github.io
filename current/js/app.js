@@ -343,7 +343,7 @@ function render(dir){const R=document.documentElement;fixTop();
  if(S.sheet){const sp=S.sheet.split(':');sh.dataset.b=sp[0]==='bot'?sp[1]:({opp:'jiji',sub:'tata',rout:'peng',bind:'peng',proj:'daqi',talk:'daqi'}[sp[0]]||'');sh.innerHTML=sheetHTML();sh.hidden=false;sc.hidden=false;if(shownSheet!==S.sheet){if(!shownSheet)requestAnimationFrame(()=>{sh.classList.add('in');sc.classList.add('in')});sh.scrollTop=0;const c=$('#sClose');if(c)c.focus({preventScroll:true})}}
  else if(shownSheet){sh.classList.remove('in');sc.classList.remove('in');setTimeout(()=>{if(!S.sheet){sh.hidden=true;sc.hidden=true;sh.innerHTML=''}},RM?0:210)}
  shownSheet=S.sheet;
- bgs.forEach(e=>{if(e)e.inert=!!(S.page||S.sheet)});pg.inert=!!S.sheet;
+ {const wide=matchMedia('(min-width:1000px)').matches,tb=document.querySelector('.tabs');bgs.forEach(e=>{if(e)e.inert=!!(S.sheet||(S.page&&!(wide&&e===tb)))})}pg.inert=!!S.sheet;   /* v179：寬螢幕開著任務頁時，左邊房間導覽（.tabs）沒被頁面蓋住，不能設成 inert，不然整排點不動（老大 msg 1099） */
  $('#app').classList.toggle('over',!!(S.sheet||S.page));
  try{localStorage.setItem('zl3',JSON.stringify({layout:S.layout,skin:S.skin}))}catch(e){}}
 
@@ -1904,7 +1904,7 @@ function loadZones(keys){keys=[...new Set(keys)];return LZ.q=LZ.q.catch(()=>{}).
 async function loadMoney(){const api=LV.api;
  if(ZN('money')&&api.moneySubs&&!LV.moneyNo){try{LV.money=await api.moneySubs();LV.moneyErr=''}catch(e){LV.money=null;LV.moneyNo=!!(e&&e.kind==='forbidden');LV.moneyErr=LV.moneyNo?'這把金鑰不能看錢的資料，只有老大本人的網址能看':LERR(e);if(e&&e.kind==='auth')throw e;if(!LV.moneyNo)ZE('money')}}
  if(ZN('scan')&&api.scanStatus)LV.scan=await api.scanStatus().catch(e=>{ZE('scan');return LV.scan||{}})}
-async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
+async function loadAll(first){if(LBUSY){LV.again=1;return}LBUSY=true;const api=LV.api;
  try{
   const [l,h]=await Promise.all([api.list(),api.hubToday?api.hubToday():null]);
   LV.items=l.items;LV.hub=h;LV.at=Date.now();LV.net='ok';LV.nfail=0;LV.sfail=0;
@@ -1919,10 +1919,10 @@ async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
   else if(first&&!LV.retried){LV.retried=1;LBUSY=false;setTimeout(()=>loadAll(true),1500);return}
   else if(LV.at&&e&&(e.kind==='server'||e.kind==='rate'||e.kind==='state')){LV.net='stale';LV.sfail=(LV.sfail||0)+1;setTimeout(()=>{if(!LBUSY)loadAll()},LV.sfail<3?4000:30000)}   // v178：伺服器回錯（5xx、429）不是離線，不擋寫入，稍後自動再讀
   else if(LV.at&&navigator.onLine!==false&&(LV.nfail||0)<2){LV.nfail=(LV.nfail||0)+1;LV.net='stale';setTimeout(()=>{if(!LBUSY)loadAll()},3000)}   // v178：瀏覽器說有網路，連線失敗先靜靜重試兩次，還是不行才標離線
-  else if(LV.at){LV.net='offline';S.st='offline';paint()}
+  else if(LV.at){LV.net='offline';S.st='offline';paint();setTimeout(()=>{if(S.st==='offline'&&!LBUSY)loadAll()},10000)}   // v179：離線旗標每 10 秒自己再試，不等 30 分鐘輪詢
   else if(snapLoad()){LV.net='offline';S.st='offline';paint(first?'stgroot':'')}
   else{LV.net='error';S.st='error';LV.err=LERR(e);paint()}
- }finally{LBUSY=false}}
+ }finally{LBUSY=false;if(LV.again){LV.again=0;setTimeout(()=>{if(!LBUSY)loadAll()},300)}}}   // v179：讀取進行中又被叫讀，排隊補讀，不丟掉
 function sigOf(){return JSON.stringify([LV.items.map(c=>[c.id,c.title,c.shortTitle,c.why,c.ask,c.status,c.progressNote,c.progressSteps,c.runStatus,c.folderStatus]),LV.hub,LV.money,LV.scan,LV.arch.length,S.st,LV.goals,LV.cal,LV.life,LV.mo])}
 function paint(dir){applyData();const s=sigOf();if(!dir&&s===LV.sig&&!LV.dirty)return;
  const a=document.activeElement;if(!dir&&a&&/^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName)&&(a.closest('#view')||a.closest('#sheet')||a.closest('#page'))){LV.dirty=true;return}
@@ -2583,7 +2583,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v178');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v179');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2591,7 +2591,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
  if(LV.api.subscribe)LV.api.subscribe(()=>{if(!using()){LIVE.stale=1;return}clearTimeout(LIVE.deb);LIVE.deb=setTimeout(reload,1500)},()=>{});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&LV.net!=='auth'){LIVE.act=Date.now();if(LIVE.stale||Date.now()-LIVE.at>10000)reload();schedule()}});   // v133：打開就讀最新（取代 11-24 的最多 2 分鐘一次）
  ['pointerdown','keydown','wheel','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{const was=using();LIVE.act=Date.now();if(!was&&LV.net!=='auth'&&LV.at&&(LIVE.stale||Date.now()-LIVE.at>60000)){reload();schedule()}},{passive:true,capture:true}));
- addEventListener('online',()=>reload());addEventListener('offline',()=>{if(LV.at){LV.net='offline';S.st='offline';paint()}});
+ addEventListener('online',()=>reload());addEventListener('offline',()=>{setTimeout(()=>{if(navigator.onLine===false&&LV.at){LV.net='offline';S.st='offline';paint()}},2500)});   // v179：瀏覽器的 offline 事件常是網路切換瞬間，等 2.5 秒仍沒網路才標離線
 }catch(e){LV.net='error';LV.err=LERR(e);S.st='error';render()}})();
 // 機會卡（老大 2026-11-22：「應該要有完整標題 以及他是幹嘛的還有他可以拿多少錢」「記得有暫存扭跟深入了解的鈕 還有個不要的鈕吧？」）
 // 卡面＝完整標題、一句在做什麼、能拿多少，下面三顆正式按鈕：深入了解、暫存到明天、不要了
