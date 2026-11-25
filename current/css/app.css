@@ -1887,3 +1887,7 @@ button[data-act="sheet"][data-id="beats"].wide{white-space:nowrap;overflow:hidde
 .ce .cek{flex:none;min-height:44px;height:44px;padding:0 14px;border:1px solid var(--line2,#444);border-radius:12px;gap:8px;font-size:14px;cursor:pointer}
 .ce .cek input{width:18px;height:18px;margin:0;accent-color:#a37aff}
 .ce .cek:has(input:checked){border-color:#a37aff;background:rgba(163,122,255,.12)}
+/* v152 msg 958 老大：「我不要有框 我要一個紅色的 跟小臉質感畫風一樣的叉」 */
+.ckbox .ck.want .cklp .ckdel.ckx{background:transparent!important;border:0!important;box-shadow:none!important;color:inherit}
+.ckbox .ck.want .cklp .ckdel.ckx svg{width:34px;height:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.ckbox .ck.want .cklp .ckdel.ckx:active svg{transform:scale(.9)}
