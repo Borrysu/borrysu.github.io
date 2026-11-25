@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v186');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v187');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4810,14 +4810,14 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
  ACT.ringpick=id=>{calGo(+id);return;const n=+id;S.calsel=n;S.tlwk=n>=7?1:0;render('keep');setTimeout(()=>{const r=document.querySelector(`.tlrow[data-id="${n}"]`);if(r)r.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})},60)};
  function ringHTML(days,d0,now){const shut=ringShut(),need=S.tlneed||0,R0=15,C=2*Math.PI*R0,SPAN=FW1-FW0;
   const one=d=>{const fh=d.n===0?d0.freeNow:d.i.freeH,busy=Math.max(0,Math.min(1,(SPAN-fh)/SPAN)),fit=need?fitOf(d.i,need,d.n===0?now:0):null,
-    st=need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok'),lab=d.n===0?'今':WK[d.x.w],we=d.x.w===0||d.x.w===6;
+    over=d.n===0&&now>=FW1,st=over?'past':need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok'),lab=d.n===0?'今':WK[d.x.w],we=d.x.w===0||d.x.w===6;
    const rw=calAll().some(x=>x.d===d.n&&x.src==='rest'&&x.restT==='week');
-   return `<button class="rg${we?' we':''}${rw?' rw':''}${S.calsel===d.n?' on':''}" data-act="ringpick" data-id="${d.n}" data-st="${st}" aria-label="${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]} ${d.x.m}/${d.x.d}，${d.i.n?d.i.n+' 件，':''}還空 ${hrs(fh)} 小時${need?(fit?'，放得下 '+need+' 小時':'，放不下 '+need+' 小時'):''}">
+   return `<button class="rg${we?' we':''}${rw?' rw':''}${S.calsel===d.n?' on':''}" data-act="ringpick" data-id="${d.n}" data-st="${st}" aria-label="${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]} ${d.x.m}/${d.x.d}，${d.i.n?d.i.n+' 件，':''}${over?'今天已過 22 點':'還空 '+hrs(fh)+' 小時'}${need?(fit?'，放得下 '+need+' 小時':'，放不下 '+need+' 小時'):''}">
     <svg viewBox="0 0 40 40" aria-hidden="true"><circle class="rgb" cx="20" cy="20" r="${R0}"/><circle class="rgf" cx="20" cy="20" r="${R0}" stroke-dasharray="${(busy*C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 20 20)"/>
-    <text class="rgn" x="20" y="${need?22:23}">${need?(fit?'✓':'✕'):hrs(fh)}</text></svg><span class="rgw">${lab}</span><small class="rgd num">${d.x.d}</small>${rw?'<em class="rgrw">留白</em>':''}</button>`};
+    <text class="rgn" x="20" y="${need?22:23}">${over?'過':need?(fit?'✓':'✕'):hrs(fh)}</text></svg><span class="rgw">${lab}</span><small class="rgd num">${d.x.d}</small>${rw?'<em class="rgrw">留白</em>':''}</button>`};
   const free7=days.slice(0,7).reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
   return `<section class="ring${shut?' shut':''}" aria-label="兩週負荷">
-   <div class="rgh"><b>兩週負荷</b><small>${shut?`這 7 天還空 ${hrs(free7)} 小時`:(need?`✓ 放得下 ${need} 小時・✕ 放不下`:'圈越滿越忙・中間＝還空幾小時')}</small><button class="rgt" data-act="ringtog" aria-expanded="${!shut}" aria-label="${shut?'展開':'收合'}兩週負荷"></button></div>
+   <div class="rgh"><b>兩週負荷</b><small>${shut?`這 7 天還空 ${hrs(free7)} 小時`:(need?`✓ 放得下 ${need} 小時・✕ 放不下`:'圈越滿越忙，中間＝還空幾小時。紅＝空不到 2 小時，黃＝2～5，綠＝5 以上，灰＝已過')}</small><button class="rgt" data-act="ringtog" aria-expanded="${!shut}" aria-label="${shut?'展開':'收合'}兩週負荷"></button></div>
    ${shut?'':`<div class="rgg"><div class="rgr">${days.slice(0,7).map(one).join('')}</div><div class="rgr">${days.slice(7,14).map(one).join('')}</div></div>`}</section>`}
  const _cp2=calPage;calPage=function(){const h=_cp2();if(E())return h;const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f);
   // 換掉 v109 的 14 格忙閒格；篩選（全部／個人／公司）放到時間條上面，切了時間條跟著變
