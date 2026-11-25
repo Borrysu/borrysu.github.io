@@ -2543,7 +2543,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v138');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v139');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4677,7 +4677,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
    const lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`,need=S.tlneed||0,fit=need?fitOf(i,need,d.n===0?now:0):null;
    const fitBox=fit?`<i class="tlfit" style="left:${pct(fit[0])}%;width:${pct(fit[1])-pct(fit[0])}%"></i>`:'';
    const summ=i.n?`${i.n} 件・空 ${hrs(fh)} 小時`:`整天有空`;
-   rows+=`<div class="tlday${open?' open':''}${we?' we':''}"><button class="tlrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${summ}"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small></span><span class="tlbar${need?(fit?' fit':' nofit'):''}" aria-hidden="true">${past}${bars}${fitBox}${now_}${i.alls.length?`<em class="tlall">全天 ${i.alls.length}</em>`:''}</span>${need?`<span class="tlf tlv ${fit?'ok':'no'}"><b>${fit?'✓':'✕'}</b><small>${fit?fmt(fit[0])+' 起':'不夠'}</small></span>`:''}<span class="tlf${tight?' tight':fh>=6?' roomy':''}"${need?' hidden':''}><b class="num">${hrs(fh)}</b><small>小時空</small>${i.busy>0?`<small class="tlbz">排 ${hrs(i.busy)}</small>`:''}</span></button>`;
+   rows+=`<div class="tlday${open?' open':''}${we?' we':''}${(S.calv==='day'&&(S.cald||0)===d.n)?' cur':''}"><button class="tlrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${summ}"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small></span><span class="tlbar${need?(fit?' fit':' nofit'):''}" aria-hidden="true">${past}${bars}${fitBox}${now_}${i.alls.length?`<em class="tlall">全天 ${i.alls.length}</em>`:''}</span>${need?`<span class="tlf tlv ${fit?'ok':'no'}"><b>${fit?'✓':'✕'}</b><small>${fit?fmt(fit[0])+' 起':'不夠'}</small></span>`:''}<span class="tlf${tight?' tight':fh>=6?' roomy':''}"${need?' hidden':''}><b class="num">${hrs(fh)}</b><small>小時空</small>${i.busy>0?`<small class="tlbz">排 ${hrs(i.busy)}</small>`:''}</span></button>`;
    if(open){const ev=all.filter(e=>e.d===d.n),alls=ev.filter(e=>e.all||!e.t),timed=ev.filter(e=>!(e.all||!e.t));
     const items=timed.map(e=>({k:hm(e.t)||0,h:`<div class="rows">${evRow(e)}</div>`}));
     i.free.forEach(([a,b])=>{const A=d.n===0?Math.max(a,now):a;if(b-A<0.5)return;items.push({k:A-0.001,h:`<p class="tlgap"><span><b>空 ${hrs(b-A)} 小時</b>${fmt(A)}～${fmt(b)}</span></p>`})});
@@ -4689,15 +4689,18 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
    <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p>${nxt}</div>
    <div class="tlwk" role="tablist" aria-label="哪一週"><button role="tab" data-act="tlwk" data-id="0" aria-selected="${!WKP}">這 7 天</button><button role="tab" data-act="tlwk" data-id="1" aria-selected="${!!WKP}">下 7 天</button><small>左右滑也可以換</small></div>
    <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
-   <div class="tlpg">${rows}</div><p class="cbhint">點一天看那天的行程和空檔時段</p></section>`}
+   <div class="tlpg">${rows}</div><p class="cbhint">點一天，下面切到那天的時間軸</p></section>`}
  ACT.tlwk=id=>{S.tlwk=+id;S.calsel=null;render('keep')};
  {let X0=0,Y0=0,on=0;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];on=t&&e.target.closest&&e.target.closest('section.tl .tlpg')?1:0;if(on){X0=t.clientX;Y0=t.clientY}},{passive:true});
   document.addEventListener('touchend',e=>{if(!on)return;on=0;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-X0,dy=t.clientY-Y0;if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6)return;if(dx<0&&!S.tlwk)ACT.tlwk('1');else if(dx>0&&S.tlwk)ACT.tlwk('0')},{passive:true});}
- ACT.tlpick=id=>{const n=+id;S.calsel=S.calsel===n?null:n;render('keep')};
+ // v139 msg 899 老大：「點開顯示的內容跟下面的行事曆差異不大 這樣好像意義不大 再想想這頁怎麼做比較好？」
+ // → 上面時間條＝兩週一眼看忙閒；點一天＝下面行事曆直接切到那天的逐時時間軸（可拖曳改時段），不再在上面展開一份重複清單。
+ const calGo=n=>{S.calsel=null;S.calv='day';S.cald=n;S.tlwk=n>=7?1:0;render('keep');setTimeout(()=>{const t=document.querySelector('.cdnav')||document.querySelector('.dtl');if(t)t.scrollIntoView({block:'start',behavior:RM?'auto':'smooth'})},60)};
+ ACT.tlpick=id=>calGo(+id);
  // 2026-11-25 v131 老大：「立體樓改視覺呈現 然後可以收合」→ 兩週負荷圈：一天一圈，圈越滿越忙（9～22 點），中間是還空幾小時；按「我要找 N 小時」時圈上打 ✓／✕。點一圈＝展開下面那天。收合記在這台裝置。
  const RINGK='zl_ring';const ringShut=()=>{try{return localStorage.getItem(RINGK)==='1'}catch(e){return false}};
  ACT.ringtog=()=>{try{localStorage.setItem(RINGK,ringShut()?'0':'1')}catch(e){}render('keep')};
- ACT.ringpick=id=>{const n=+id;S.calsel=n;S.tlwk=n>=7?1:0;render('keep');setTimeout(()=>{const r=document.querySelector(`.tlrow[data-id="${n}"]`);if(r)r.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})},60)};
+ ACT.ringpick=id=>{calGo(+id);return;const n=+id;S.calsel=n;S.tlwk=n>=7?1:0;render('keep');setTimeout(()=>{const r=document.querySelector(`.tlrow[data-id="${n}"]`);if(r)r.scrollIntoView({block:'center',behavior:RM?'auto':'smooth'})},60)};
  function ringHTML(days,d0,now){const shut=ringShut(),need=S.tlneed||0,R0=15,C=2*Math.PI*R0,SPAN=FW1-FW0;
   const one=d=>{const fh=d.n===0?d0.freeNow:d.i.freeH,busy=Math.max(0,Math.min(1,(SPAN-fh)/SPAN)),fit=need?fitOf(d.i,need,d.n===0?now:0):null,
     st=need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok'),lab=d.n===0?'今':WK[d.x.w],we=d.x.w===0||d.x.w===6;
@@ -5070,7 +5073,7 @@ function dayTl(n,all){const its=all.filter(e=>e.d===n&&!e.cancel),alls=its.filte
   const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f),n=Math.max(0,Math.min(13,S.cald||0));
   const a=h.indexOf('<div class="cdnav">'),b=h.indexOf('<p class="note"');if(a<0||b<0)return h;
   const nav=h.slice(a,h.indexOf('</div>',a)+6),Z=window.__zl,info=Z.tlDay(all.filter(e=>e.d===n&&!e.cancel));
-  let x=h.slice(0,a).replace(/<section class="tl fcpanel"[\s\S]*?<\/section>/,'')+nav+`<div class="fc fc1"><span class="fcs">${Z.caps(info,n,S.tlneed||0)}</span><span class="fcn">${mb('＋ 新增','cenew',String(n))}</span></div>`+dayTl(n,all)+h.slice(b);
+  let x=h.slice(0,a).replace(/<section class="tl fcpanel"[\s\S]*?<\/section>/,'')+nav+`<div class="fc fc1"><span class="fcs dsum">空 ${Math.round((info.freeH||0)*2)/2} 小時</span><span class="fcn">${mb('＋ 新增','cenew',String(n))}</span></div>`+dayTl(n,all)+h.slice(b);
   return x}}
 /* 拖曳（pointer events；長按成立前移動超過 8px＝使用者在捲動，取消長按） */
 {let st=null,tm=0;

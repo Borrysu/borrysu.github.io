@@ -1807,3 +1807,4 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .cke .ckerow .btn:not(.pri){background:transparent!important;border:0!important;padding:0 6px!important;color:var(--ink2)!important}
 .cke .ckerow .btn.warn{color:#f0605a!important;margin-left:auto}
 .cke .cketm input{min-height:32px;height:32px;font-size:13px;padding:0 6px}
+.tl .tlday.cur .tlrow{background:rgba(163,122,255,.14);border-radius:10px}.fc .dsum{font-size:13px;color:var(--ink2)}
