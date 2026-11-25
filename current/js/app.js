@@ -2616,7 +2616,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v211');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v212');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5778,6 +5778,20 @@ window.__stepsKeep=(id,steps)=>{try{const c=ckCards().find(x=>x.id===id),prev=(c
    else if(k==='none')setRel(id,+i,'','取消了這一步的關聯');return}
   const om=$('#pstRm');if(om&&!t.closest('.pstrl'))om.remove();
   const op=$('#pstRp');if(op&&!t.closest('#pstRp')&&!t.closest('[data-act="pst"]'))op.remove()})}
+
+/* ---------- v212（2026-11-26，逐流 msg 1384）：案子詳情置頂「最新回報」 ----------
+   老大看不到規劃視窗、監工留在這張卡對話裡的結果（資料都在，只是對話要開聊天才看得到）。詳情頁直接列這張卡最近 3 則大器／監工／機器人的回報，點開看全文。 */
+LV.pm=LV.pm||{};LV.pmb=LV.pmb||{};
+function pmLoad(id){if(!LV.api||!LV.api.msgs)return;const t=LV.pm[id]&&LV.pm[id].at;if(LV.pmb[id]||(t&&Date.now()-t<60000))return;LV.pmb[id]=1;
+ LV.api.msgs(id,'daqi').then(ms=>{LV.pm[id]={ms,at:Date.now()}}).catch(()=>{LV.pm[id]={ms:LV.pm[id]&&LV.pm[id].ms||[],at:Date.now()}}).then(()=>{LV.pmb[id]=0;if(S.page==='proj:'+id){try{render('keep')}catch(e){}}})}
+function pmHTML(id){pmLoad(id);const d=LV.pm[id];if(!d)return `<section class="sec pmsec"><h3>最新回報</h3><p class="note">讀取中…</p></section>`;
+ const L=(d.ms||[]).filter(m=>m.kind!=='user'&&m.kind!=='run'&&m.kind!=='system'&&!/^收到，正在看。?$/.test(String(m.body||'').trim())).slice(-6).reverse();
+ const tm=at=>{const x=new Date(at);return isNaN(x)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(x)};
+ return `<section class="sec pmsec"><h3>最新回報</h3>`+(L.length?L.map(m=>{const k='pm:'+id+':'+m.id,o=!!S.open[k],b=String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,'');
+  return `<div class="pmi"><button type="button" class="pmh" data-act="open" data-id="${esc(k)}" aria-expanded="${o}"><b>${esc(m.author||'大器')}</b><small>${esc(tm(m.at))}</small><span class="chev" aria-hidden="true">${o?'⌃':'⌄'}</span></button><p class="pmb${o?' on':''}">${esc(o?b:clip(b.replace(/\s+/g,' '),110))}</p></div>`}).join(''):'<p class="note">這張卡還沒有大器、監工或機器人的回報。</p>')
+  +`<div class="btns" style="margin-top:6px">${B('打開完整對話','talk',id,'ghost')}</div></section>`}
+{const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj'||!x[1]||!DB.proj.find(q=>q.id===x[1]))return h;
+ const sec=pmHTML(x[1]),i=h.indexOf('<section class="sec pstep">');return i>-1?h.slice(0,i)+sec+h.slice(i):h+sec}}
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
