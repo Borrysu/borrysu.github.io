@@ -1219,16 +1219,28 @@
     document.querySelectorAll('[data-aq]').forEach(function (x) { x.classList.toggle('on', x.dataset.aq === window.__aqPick); });
   }, true);
   // 頂端時間旁的小點：綠＝本體還夠、黃＝過 60%、紅＝過 85%；點了用提示列出各帳號
+  // v134 逐流 msg 796、865 老大：「額度這樣顯示排版不好看，然後點開之後跳出來的情況也不好看」「我覺得額度是不是可能可以在這邊顯示？」（點的是「程式報到」那顆）
+  // → 頂端小點拿掉；額度放進首頁「程式報到」那顆鈕右邊一小段（Claude 個人 幾 %），點進燈號頁最下面列各帳號長條。
   function dot() {
-    var st0 = document.getElementById('stamp'); if (!st0 || document.getElementById('aqDot')) return;
-    get().then(function (rows) { if (!rows || !rows.length || document.getElementById('aqDot')) return;
-      var m = rows.filter(function (r) { return r.account === MAIN; })[0], p = m ? pctOf(m) : 0;
-      var d = document.createElement('button'); d.type = 'button'; d.id = 'aqDot'; d.className = 'aqdot' + (p >= 85 ? ' hot' : p >= 60 ? ' mid' : '');
-      d.setAttribute('aria-label', 'AI 額度（點一下看各帳號）'); d.title = 'AI 額度';
-      d.onclick = function (ev) { ev.stopPropagation(); var tt = document.getElementById('toastMsg'), tb = document.getElementById('toast'); if (!tt || !tb) return;
-        tt.textContent = rows.filter(function (r) { return SHORT[r.account] && r.wk_pct != null; }).map(function (r) { return SHORT[r.account] + ' ' + Math.round(pctOf(r)) + '%'; }).join('・') + '（本週已用）';
-        var u = document.getElementById('toastUndo'); if (u) u.hidden = true; tb.classList.add('in'); clearTimeout(dot.t); dot.t = setTimeout(function () { tb.classList.remove('in'); }, 5000); };
-      st0.parentNode.insertBefore(d, st0.nextSibling); });
+    var old = document.getElementById('aqDot'); if (old) old.remove();
+    var bs = document.querySelectorAll('button[data-act="sheet"][data-id="beats"].wide');
+    var sh = document.querySelector('#sheet'), Z = window.__zl, inBeats = sh && Z && Z.S && Z.S.sheet === 'beats';
+    if (!bs.length && !inBeats) return;
+    get().then(function (rows) { if (!rows || !rows.length) return;
+      var m = rows.filter(function (r) { return r.account === MAIN; })[0], p = m ? Math.round(pctOf(m)) : null, lv = p == null ? '' : p >= 85 ? 'hot' : p >= 60 ? 'mid' : 'ok';
+      document.querySelectorAll('button[data-act="sheet"][data-id="beats"].wide').forEach(function (b) {
+        if (b.querySelector('.aqin') || p == null) return;
+        var x = document.createElement('small'); x.className = 'aqin'; x.dataset.lv = lv; x.textContent = 'Claude 個人額度 ' + p + '%';
+        var last = b.lastElementChild; b.insertBefore(x, last);
+      });
+      var sh2 = document.querySelector('#sheet'); if (!(sh2 && Z.S.sheet === 'beats') || sh2.querySelector('.aqsheet')) return;
+      var host = sh2.querySelector('.shb') || sh2.querySelector('[class*="body"]') || sh2.lastElementChild || sh2;
+      var sec = document.createElement('section'); sec.className = 'aqsheet'; sec.setAttribute('aria-label', 'AI 額度');
+      var list = rows.filter(function (r) { return SHORT[r.account] && r.wk_pct != null; }).sort(function (a, b) { return (a.account === MAIN ? -1 : 0) - (b.account === MAIN ? -1 : 0); });
+      sec.innerHTML = '<h3>AI 額度<small>本週已用，每 30 分鐘更新</small></h3>' + list.map(function (r) { var q = Math.round(pctOf(r)), l = q >= 85 ? 'hot' : q >= 60 ? 'mid' : 'ok';
+        return '<div class="aqr" data-lv="' + l + '"><span>' + SHORT[r.account] + (r.account === MAIN ? '<em>主帳號</em>' : '') + '</span><i><b style="width:' + Math.min(100, q) + '%"></b></i><span class="num">' + q + '%</span></div>'; }).join('');
+      host.appendChild(sec);
+    });
   }
   var st = document.createElement('style');
   st.textContent = '.brand{white-space:nowrap;display:flex;align-items:center;gap:6px;min-width:0}.brand small{white-space:nowrap}.aqdot{margin-left:2px;padding:0;width:24px;min-width:24px;justify-content:center;min-height:24px;border:0;border-radius:999px;font-size:11px;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;gap:4px}.aqdot::before{content:"";width:7px;height:7px;border-radius:50%;background:#34c27a}.aqdot.mid::before{background:#f2a93b}.aqdot.hot::before{background:#f0605a}' +
