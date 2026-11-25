@@ -592,7 +592,7 @@ function projPage(id){const p=DB.proj.find(x=>x.id===id),x=pxOf(p),dq=decs().fil
  <section class="sec">${sh('','詳情')}<div class="rows">
  ${row('step','階段',`${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步：${esc(p.steps[Math.min(p.cur,p.steps.length-1)])}`,`<ol class="stp" style="margin-top:0">${p.steps.map((s,i)=>`<li data-s="${i<p.cur?'d':i===p.cur?'c':''}"><span class="mk" aria-hidden="true">${i<p.cur?'✓':i===p.cur?'▸':'○'}</span><span>${esc(s)}<span class="vh">${i<p.cur?'（做完）':i===p.cur?'（現在）':'（還沒）'}</span></span></li>`).join('')}</ol>`)}
  ${row('date','截止與交件日',esc(x.dates[0][0]+'：'+x.dates[0][1])+(Object.keys(DT).some(k=>DT[k].p===id)?'・同步到行事曆':''),dtBody(id)||kv(x.dates))}
- ${row('money','報價與收款',esc(p.money),moneyBody(p,id,kv(x.money)))}
+ ${row('money','報價與收款',esc(p.money)+taxTag(p),moneyBody(p,id,kv(x.money)))}
  ${row('team','誰在做',esc(x.team.map(t=>t[0]).join('、')),kv(x.team))}
  ${row('file','檔案位置',`${x.files.length} 個位置，本機路徑可以複製`,x.files.map((f,i)=>`<div class="fl"><div><b>${esc(f[0])}</b><small>${esc(f[1])}</small></div>${mb('複製路徑','copypath',id+':'+i)}</div>`).join(''))}
  ${row('hist','最近紀錄與時間軸',esc(p.hist[0]),`<ul class="tl">${p.hist.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`)}
@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v182');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v183');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5449,6 +5449,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.classList||!t.clas
    實拿＝career.tax_withheld=false（資料庫早有，預設 true 照舊扣）；分筆＝新表 hub_proj_payments（函式 hub_pline_*），
    存完資料庫把合計同步回報價、已收、預計付款日，舊的訂金／尾款欄位保留。 */
 LV.pl=LV.pl||{};LV.plb=LV.plb||{};
+function taxTag(p){const c=p&&p.raw;if(!c||!c.id)return '';return c.career&&c.career.tax_withheld===false?'・不扣勞報':'・扣勞報'}
 const plDay=d=>{const n=new Date();let m=n.getMonth();if(n.getDate()>=d)m++;const t=new Date(n.getFullYear(),m,d);return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(d).padStart(2,'0')};
 const plNum=v=>{v=String(v||'').replace(/NT\$|[,，\s]/gi,'');if(v==='')return 0;return /^\d+(\.\d{1,2})?$/.test(v)?Number(v):NaN};
 function plApply(id,card,lines){if(lines)LV.pl[id]=lines;if(card){const i=LV.items.findIndex(x=>x.id===id);if(i>-1)LV.items[i]=card;const p=DB.proj.find(x=>x.id===id);if(p)p.raw=card}LV.sig=''}
@@ -5465,7 +5466,7 @@ function plRow(l,id){const q=(f,h)=>`data-pid="${esc(id)}" data-lid="${l.id}" da
   <button type="button" class="btn ghost plq" data-pq="del" data-pid="${esc(id)}" data-lid="${l.id}" aria-label="刪掉這筆">刪掉</button></div></div>`}
 {const _mb=moneyBody;moneyBody=function(p,id,summary){const c=p&&p.raw;if(!c||!c.id)return summary;
  const nt0=c.career&&c.career.tax_withheld===false;
- let h=summary+`<p class="h4" style="margin-top:14px">金額性質</p><div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>這筆錢怎麼算</b><small>${nt0?'報價就是實拿，不扣稅':'報價要扣勞務 10% 與健保 2.11%'}</small></div><select class="pmt" data-pid="${esc(id)}" aria-label="金額性質" style="flex:0 0 auto;max-width:52%"><option value="net"${nt0?' selected':''}>實拿（不扣稅）</option><option value="tax"${nt0?'':' selected'}>要扣稅</option></select></div></div>`;
+ let h=summary+`<p class="h4" style="margin-top:14px">勞報扣繳</p><div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>勞報扣繳</b><small>${nt0?'現在：不扣，報價就是實拿':'現在：要扣勞務 10% 與健保 2.11%'}</small></div><select class="pmt" data-pid="${esc(id)}" aria-label="金額性質" style="flex:0 0 auto;max-width:52%"><option value="net"${nt0?' selected':''}>不扣勞報（實拿）</option><option value="tax"${nt0?'':' selected'}>扣勞報</option></select></div></div>`;
  plLoad(id);const L=LV.pl[id];
  if(Array.isArray(L)){const tot=L.reduce((a,x)=>a+Number(x.amount||0),0),got=L.filter(x=>x.received).reduce((a,x)=>a+Number(x.amount||0),0);
   h+=`<p class="h4" style="margin-top:14px">分筆收款</p>`+(L.length?L.map(l=>plRow(l,id)).join(''):'<p class="note">還沒分筆。一案分幾支、先後收款，就在這裡一筆一筆加。</p>')
@@ -5479,7 +5480,7 @@ document.addEventListener('change',e=>{const t=e.target;if(!t.classList)return;
  if(t.classList.contains('pmt')){const id=t.dataset.pid,p=DB.proj.find(x=>x.id===id);if(!p||!p.raw)return;
   if(S.st==='offline'||navigator.onLine===false){t.value=p.raw.career&&p.raw.career.tax_withheld===false?'net':'tax';toast('離線中，連上再改，這項沒存');return}
   const was=!(p.raw.career&&p.raw.career.tax_withheld===false),to=t.value==='tax';if(was===to)return;
-  LV.api.act(id,'work',{patch:{career:{tax_withheld:to}}}).then(c=>{plApply(id,c);paint('keep');toast(to?'改成要扣稅':'改成實拿，不扣稅',()=>LV.api.act(id,'work',{patch:{career:{tax_withheld:was}}}).then(c2=>{plApply(id,c2);paint('keep');toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))}).catch(er=>{t.value=was?'tax':'net';toast('沒存上：'+LERR(er))});return}
+  LV.api.act(id,'work',{patch:{career:{tax_withheld:to}}}).then(c=>{plApply(id,c);paint('keep');toast(to?'改成扣勞報':'改成不扣勞報，報價就是實拿',()=>LV.api.act(id,'work',{patch:{career:{tax_withheld:was}}}).then(c2=>{plApply(id,c2);paint('keep');toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))}).catch(er=>{t.value=was?'tax':'net';toast('沒存上：'+LERR(er))});return}
  if(!t.classList.contains('plf'))return;plSave(t.closest('.plr'),t)});
 function plLine(row){const g=f=>row.querySelector(`[data-f="${f}"]`);return {id:+row.dataset.lid,label:g('label').value.trim(),amount:plNum(g('amount').value),date:g('date').value||null,received:g('received').checked}}
 function plSave(row,el,undoTo){if(!row)return;const id=row.dataset.pid,l=plLine(row),old=(LV.pl[id]||[]).find(x=>x.id===l.id)||{};
