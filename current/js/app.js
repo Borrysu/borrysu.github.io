@@ -2618,7 +2618,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v215');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v216');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5821,6 +5821,23 @@ function projOrder(a,b){projMeta(a);projMeta(b);const g=x=>x.dts==null?2:x.dlate
    全部畫面同一格式「12/5（五）」：只看日期（台北日期，不帶時間），沒分筆的卡仍用單欄。 */
 function fmtMD(v){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(v||''));if(!m)return String(v||'');const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));return `${+m[2]}/${+m[3]}（${'日一二三四五六'[d.getUTCDay()]}）`}
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('plf')&&t.dataset.f==='date'){const l=t.parentElement&&t.parentElement.querySelector('.pldf');if(l)l.textContent=t.value?'預計付款：'+fmtMD(t.value):'還沒填預計付款日'}});
+
+/* ---------- v216（2026-11-26，逐流 msg 1480）：首頁「新進度・待檢閱」 ----------
+   執行端（非老大本人）把某步改成做完／卡住，資料庫會自動蓋 result_at／result_by（opp_progress_set 已接）；這裡把最近 7 天還沒看過的列在首頁，
+   點進去就是那張卡那一步（已展開），看過記在這台裝置。 */
+function rvSeen(){try{return JSON.parse(localStorage.getItem('zl_rv')||'{}')}catch(e){return {}}}
+function rvMark(k){try{const o=rvSeen();o[k]=Date.now();const ks=Object.keys(o);if(ks.length>300)ks.sort((a,b)=>o[a]-o[b]).slice(0,ks.length-300).forEach(x=>delete o[x]);localStorage.setItem('zl_rv',JSON.stringify(o))}catch(e){}}
+function rvItems(){const seen=rvSeen(),lim=Date.now()-7*864e5,out=[];(LV.items||[]).forEach(c=>{if(!c||['closed','dropped','expired'].indexOf(c.status)>-1)return;(c.progressSteps||[]).forEach((st,i)=>{if(!st||!st.result_at||/^(Borry|老大)$/.test(String(st.result_by||'')))return;const t=Date.parse(st.result_at);if(!t||t<lim)return;const k=c.id+'|'+st.name+'|'+st.result_at;if(seen[k])return;out.push({k,id:c.id,i,t,card:c.shortTitle||c.title,step:st.name,res:st.result||st.note||'',by:st.result_by||'大器',st:st.status})})});return out.sort((a,b)=>b.t-a.t)}
+function rvHTML(){if(S.tab!=='today'||E())return '';const L=rvItems();if(!L.length)return '';
+ const tm=t=>new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(new Date(t));
+ return `<section class="sec rvsec" aria-label="新進度，等你檢閱"><h2 class="sh"><span class="rvdot" aria-hidden="true"></span>新進度・等你檢閱 <small>${L.length}</small></h2><div class="rows">`
+  +L.slice(0,5).map(x=>`<div class="rowi"><button type="button" class="rowb" data-act="rvopen" data-id="${esc(x.k)}"><span class="tx"><b>${esc(clip(x.card,16))}：${esc(clip(x.step.replace(/^[\s·]+/,''),22))}</b><small>${esc(x.st==='blocked'?'卡住：':'做完：')}${esc(clip(String(x.res).replace(/\s+/g,' '),70))}・${esc(x.by)} ${esc(tm(x.t))}</small></span><span class="rt"><span class="chev" aria-hidden="true">›</span></span></button></div>`).join('')
+  +`</div>${L.length>5?`<p class="note">還有 ${L.length-5} 則，看完上面的會出現。</p>`:''}<div class="btns" style="margin-top:6px"><button type="button" class="btn ghost" data-act="rvall">全部標成已看</button></div></section>`}
+ACT.rvopen=k=>{const [id,name]=k.split('|'),c=(LV.items||[]).find(x=>x.id===id);rvMark(k);if(!c){render('keep');return}
+ const i=(c.progressSteps||[]).findIndex(s=>s&&s.name===name);if(i>-1)S.open['pst:'+id+':'+i]=1;
+ if(DB.proj.some(p=>p.id===id))ACT.page('proj:'+id);else{toast('這張卡不在案子清單裡，標成已看了');render('keep')}};
+ACT.rvall=()=>{rvItems().forEach(x=>rvMark(x.k));render('keep');toast('都標成已看了')};
+{const _t=todayStrip;todayStrip=function(){const h=_t();return h?rvHTML()+h:h}}
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
