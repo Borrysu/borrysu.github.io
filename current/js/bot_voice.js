@@ -978,6 +978,14 @@
       var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true'); b.appendChild(f);
       d.after(b);
     });
+    // v163 逐流 msg 1004 老大：「如果很確定是公司的案子…要多一個肉咖小臉 派肉咖做」→ 公司案子在霸霸臉旁再放肉咖臉，點了＝派肉咖做（公司電腦）
+    var p = (Z.DB.proj || []).find(function (q) { return q.id === id; });
+    if (p && p.raw && p.raw.basket === 'company') document.querySelectorAll('#page .babacf[data-act="babaask"]').forEach(function (bb) {
+      if (bb.nextElementSibling && bb.nextElementSibling.classList.contains('roukacf')) return;
+      var r = document.createElement('button'); r.type = 'button'; r.className = 'aif roukacf'; r.dataset.act = 'cocase'; r.dataset.id = id; r.setAttribute('aria-label', '派肉咖做（公司電腦）');
+      var f2 = document.createElement('span'); f2.className = 'bm bf'; f2.dataset.b = 'rouka'; f2.setAttribute('aria-hidden', 'true'); r.appendChild(f2);
+      bb.after(r);
+    });
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(add, 90); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
