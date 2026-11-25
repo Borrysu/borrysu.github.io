@@ -4320,7 +4320,7 @@ function kkExDecorate() {
   document.querySelectorAll('.cardrow.acr[data-aid]').forEach(function (b) { var a = acctId(b.dataset.aid), box = b.querySelector('div[style*="flex:1"]'); if (a && box) kkExSet(box, KKCF.pdHtml('acct', a.name)); });
   var top = DET[DET.length - 1], ds = document.querySelector('#det .dsum'); if (top && top.t === 'acct' && ds) { var a2 = acctId(top.arg && top.arg.id != null ? top.arg.id : top.arg); if (a2) kkExSet(ds, KKCF.pdHtml('acct', a2.name)); }
 }
-var KK_VER = 'kk-v36.7', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v36.8', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4887,6 +4887,30 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)
 .dl.na36{color:var(--muted);background:var(--solid2);font-size:13px;font-weight:700;white-space:normal;line-height:1.35;text-align:center;max-width:9em}
 .co36{font-size:12px;font-weight:600;color:var(--muted);margin-right:6px}
 </style>
+<script id="kkbm-js">
+/* kk-v36.8（原版進化）傳帳單訊息到 LINE（老大 11/25 意見 1115）：範本存資料庫 kk_prefs 的 bill_msg:帳單名，前端程式碼不寫任何收件人或群組名。
+   先複製再試著開 LINE 分享畫面；不自動發、不經喉舌。主畫面 App 會不會跳進 LINE 還沒實測，所以複製永遠先做。 */
+(function () {
+  'use strict';
+  function msgOf(name) { var v = PREFS && PREFS['bill_msg:' + name]; return v && typeof v === 'object' && typeof v.text === 'string' && v.text.trim() ? v : null; }
+  function copy(t) { try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(t).catch(function () {}); return true; } } catch (e) {} return false; }
+  var _bm = billModel;
+  billModel = function (name) {
+    var r = _bm(name), m = r && r.html ? msgOf(name) : null; if (!m) return r;
+    r.html += '<div class="gh"><span><b>傳訊息</b></span></div><button type="button" class="dbtn" data-x="bmline" data-ref="' + esc(name) + '">傳到 LINE' + (m.group ? '（' + esc(m.group) + '）' : '') + '</button>' +
+      '<button type="button" class="dbtn n" data-x="bmcopy" data-ref="' + esc(name) + '">只複製訊息</button>' +
+      '<div class="ahint">會先複製訊息，再試著開 LINE 的分享畫面，由你自己選聊天室、按送出，不會自動發。' + (m.to ? '到輸入框最前面打 @ 選「' + esc(m.to) + '」。' : '') + '沒跳出 LINE 的話，自己開 LINE 貼上就好。</div>';
+    return r;
+  };
+  document.addEventListener('click', function (ev) {
+    var x = ev.target.closest('[data-x="bmline"],[data-x="bmcopy"]'); if (!x || x.disabled) return;
+    var m = msgOf(x.dataset.ref); if (!m) return; var ok = copy(m.text);
+    if (x.dataset.x === 'bmcopy') { showMsg(ok ? '已複製訊息' : '沒複製到，長按訊息自己複製'); return; }
+    try { window.open('https://line.me/R/share?text=' + encodeURIComponent(m.text), '_blank', 'noopener'); } catch (e) {}
+    showMsg((ok ? '已複製訊息。' : '沒複製到。') + 'LINE 沒跳出來的話，自己開 LINE 貼上');
+  });
+})();
+</script>
 <script id="kkcf-js">
 /* kk-v35.1 塔塔有 N 件要你確認（2026-11-23；v35.2 加：先查已確認事實、沒來源不列、我確認過的事入口；v35.3 加：含待確認小字；v35.4 改：待確認交易按不對＝資料庫作廢，可復原，合計都照資料庫）
    監工：「面板主畫面不再顯示任何 AI 推估的數字、差額或推定備註」「AI 的推估一律收進一個地方：記帳本頂部「塔塔有 N 件要你確認」，點進去一件一件給老大按「對／不對／我自己改」，按對才變成正式數字」

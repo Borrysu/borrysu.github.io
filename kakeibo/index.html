@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.7', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.8', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -4269,6 +4269,18 @@ PAGES.fixed.B=fixedB;
    .replace('已請塔塔提醒你付','已送給塔塔繳');if(r.t)r.t=r.t.replace('已請塔塔提醒：','已請塔塔繳：');
   if(S.pay&&S.pay.ask&&S.pay.cf){const m=r.h.match(/<div class="cfm" id="payCfm"[\s\S]*?<\/div><\/div>/);const k=r.h.indexOf('</p></div>');if(m&&k>0){r.h=r.h.replace(m[0],'');r.h=r.h.slice(0,k+10)+m[0]+r.h.slice(k+10)}r.t='請塔塔繳：'+x.name}
   return r}}
+/* kk-v36.8 傳帳單訊息到 LINE（老大 11/25 意見 1115）：範本存資料庫 kk_prefs 的 bill_msg:帳單名，前端程式碼不寫任何收件人或群組名。
+   按下去先複製訊息，再嘗試開 LINE 的分享畫面（https://line.me/R/share）；不自動發、不經喉舌。iPhone 主畫面 App 會不會跳進 LINE 還沒實測，所以複製永遠先做。 */
+function bmMsg(x){const v=KD.prefs&&x&&KD.prefs['bill_msg:'+x.name];return v&&typeof v==='object'&&typeof v.text==='string'&&v.text.trim()?v:null}
+function bmHtml(x){const m=x&&x.type==='bill'?bmMsg(x):null;if(!m)return'';
+  return'<div class="bm36"><div class="acts">'+B('billMsgLine','傳到 LINE'+(m.group?'（'+esc(m.group)+'）':''),{id:x.id,cls:'pri wide'})+B('billMsgCopy','只複製訊息',{id:x.id})+'</div>'
+   +'<p class="gray-line">會先複製訊息，再試著開 LINE 的分享畫面，由你自己選聊天室、按送出，不會自動發。'+(m.to?'到輸入框最前面打 @ 選「'+esc(m.to)+'」。':'')+'沒跳出 LINE 的話，自己開 LINE 貼上就好。</p></div>'}
+function bmCopy(t){try{if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).catch(()=>{});return true}}catch(e){}return false}
+{const f=SH.fx;SH.fx=function(d,id){const r=f(d,id),x=d.bills.concat(d.subs).find(y=>y.id===id);if(!x||!r||!r.h)return r;r.h+=bmHtml(x);return r}}
+{const p=SH.pay;SH.pay=function(d,id){const r=p(d,id),x=d.bills.concat(d.subs).find(y=>y.id===id);if(!x||!r||!r.h)return r;r.h+=bmHtml(x);return r}}
+Object.assign(ACT,{
+ billMsgCopy(el){const x=fxFind(el.dataset.id),m=bmMsg(x);if(!m)return;toast(bmCopy(m.text)?'已複製訊息':'沒複製到，長按訊息自己複製')},
+ billMsgLine(el){const x=fxFind(el.dataset.id),m=bmMsg(x);if(!m)return;const ok=bmCopy(m.text);try{window.open('https://line.me/R/share?text='+encodeURIComponent(m.text),'_blank','noopener')}catch(e){}toast((ok?'已複製訊息。':'沒複製到。')+'LINE 沒跳出來的話，自己開 LINE 貼上')}});
 const ACT_payCf35=ACT.payCf;
 Object.assign(ACT,{
  sc36Hint(){LS.set('kk_subcat36_hint','1');if(sheet.classList.contains('on'))renderSheetBody();render()},
