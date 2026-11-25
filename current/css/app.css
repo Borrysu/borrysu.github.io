@@ -2086,3 +2086,8 @@ button.pask .chev{margin-left:auto;color:var(--ink2)}
 .ckbox .ck.want.anc .cksg{font-weight:800;color:var(--ink)}
 @media (hover:none),(pointer:coarse){.ckbox .ck.want .cklp{width:auto!important;transform:translateX(calc(100% + var(--sx,0px)))!important}}
 .cksg.arr{color:var(--ink2);font-style:italic}
+.dsl{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.dsl .pc-b{min-height:40px}
+/* v229（msg 1582）：錨定鈕不要圓底，只有錨本身；錨定時金黃、沒錨定時灰 */
+.ckbox .ck.want .cklp .ckdel.ckanc,.ckbox .ck.want .cklp .ckdel.ckanc.on{background:none!important;box-shadow:none!important;border-radius:0}
+.ckbox .ck.want .cklp .ckdel.ckanc svg{width:30px;height:30px}
+.ckanc .ag{stroke:url(#ancOff)}.ckanc.on .ag{stroke:url(#ancOn)}
