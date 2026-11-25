@@ -592,7 +592,7 @@ function projPage(id){const p=DB.proj.find(x=>x.id===id),x=pxOf(p),dq=decs().fil
  <section class="sec">${sh('','詳情')}<div class="rows">
  ${row('step','階段',`${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步：${esc(p.steps[Math.min(p.cur,p.steps.length-1)])}`,`<ol class="stp" style="margin-top:0">${p.steps.map((s,i)=>`<li data-s="${i<p.cur?'d':i===p.cur?'c':''}"><span class="mk" aria-hidden="true">${i<p.cur?'✓':i===p.cur?'▸':'○'}</span><span>${esc(s)}<span class="vh">${i<p.cur?'（做完）':i===p.cur?'（現在）':'（還沒）'}</span></span></li>`).join('')}</ol>`)}
  ${row('date','截止與交件日',esc(x.dates[0][0]+'：'+x.dates[0][1])+(Object.keys(DT).some(k=>DT[k].p===id)?'・同步到行事曆':''),dtBody(id)||kv(x.dates))}
- ${row('money','報價與收款',esc(p.money),kv(x.money))}
+ ${row('money','報價與收款',esc(p.money),moneyBody(p,id,kv(x.money)))}
  ${row('team','誰在做',esc(x.team.map(t=>t[0]).join('、')),kv(x.team))}
  ${row('file','檔案位置',`${x.files.length} 個位置，本機路徑可以複製`,x.files.map((f,i)=>`<div class="fl"><div><b>${esc(f[0])}</b><small>${esc(f[1])}</small></div>${mb('複製路徑','copypath',id+':'+i)}</div>`).join(''))}
  ${row('hist','最近紀錄與時間軸',esc(p.hist[0]),`<ul class="tl">${p.hist.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`)}
@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v180');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v181');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5418,6 +5418,31 @@ ACT.sendok=async v=>{const [id,si]=v.split('|'),i=+si,k=id+'|'+i,d=SENDD[id];if(
  SENDT[k]=Date.now();render('keep');
  try{await LV.api.say(id,body,'daqi');LV.sig='';paint('keep');toast(`已同意，送給櫃檯：發給 ${d.to}`)}catch(e){delete SENDT[k];render('keep');toast('沒送出：'+LERR(e))}};
 WRITE.push('sendok','sendedit');
+
+/* ---------- v181（2026-11-25，意見 1135）：案子詳情「報價與收款」可以自己填 ----------
+   老大原話：「這邊要可以讓我填啊」。欄位資料庫早就有（opp_items 的金額與日期欄，經 opp_work_update），沒改結構。
+   填完離開欄位就自動存，離線時擋住並提示，存好有提示條可復原。 */
+const PMF=[['quote_amount','報價','quoteAmount','n'],['deposit_amount','訂金','depositAmount','n'],['deposit_date','訂金收款日','depositDate','d'],['final_amount','尾款','finalAmount','n'],['final_due','尾款期限','finalDue','d'],['received_amount','已收款','receivedAmount','n'],['expected_pay_date','預計付款日','expectedPayDate','d'],['payment_terms','備註（付款條件）','paymentTerms','t']];
+function moneyBody(p,id,summary){const c=p&&p.raw;if(!c||!c.id)return summary;
+ return summary+`<p class="h4" style="margin-top:14px">直接填</p>`+PMF.map(([f,lab,k,t])=>{const v=c[k]==null?'':String(c[k]).slice(0,t==='d'?10:200);
+  const inp=t==='d'?`<input type="date" class="pmi" id="pm_${f}" data-pid="${esc(id)}" data-f="${f}" data-t="d" value="${esc(v)}" style="flex:0 0 auto;width:158px;max-width:48%">`
+   :t==='n'?`<input type="text" inputmode="decimal" class="pmi" id="pm_${f}" data-pid="${esc(id)}" data-f="${f}" data-t="n" value="${esc(v)}" placeholder="NT$ 金額" autocomplete="off" style="flex:0 0 auto;width:158px;max-width:48%;text-align:right">`
+   :`<input type="text" class="pmi" id="pm_${f}" data-pid="${esc(id)}" data-f="${f}" data-t="t" value="${esc(v)}" placeholder="寫備註" maxlength="200" autocomplete="off" style="flex:1 1 55%;min-width:0">`;
+  return `<div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>${lab}</b></div><label class="vh" for="pm_${f}">填${lab}</label>${inp}</div></div>`}).join('')+`<p class="note">填完點旁邊或換下一格就自動存，存好可以按「還原」。</p>`}
+document.addEventListener('change',e=>{const t=e.target;if(!t.classList||!t.classList.contains('pmi'))return;
+ const id=t.dataset.pid,f=t.dataset.f,ty=t.dataset.t,p=DB.proj.find(x=>x.id===id),def=PMF.find(x=>x[0]===f);if(!p||!p.raw||!def)return;
+ const key=def[2],lab=def[1],oldRaw=p.raw[key],back=()=>{t.value=oldRaw==null?'':String(oldRaw).slice(0,ty==='d'?10:200)};
+ if(S.st==='offline'||navigator.onLine===false){back();toast('離線中，連上再填，這格沒存');return}
+ let v=String(t.value||'').trim(),pv;
+ if(ty==='n'){v=v.replace(/NT\$|[,，\s]/gi,'');if(v===''){pv=null}else if(!/^\d+(\.\d{1,2})?$/.test(v)){back();toast(lab+'要填數字，例如 120000');return}else pv=Number(v)}
+ else if(ty==='d'){pv=v||null}else pv=v||null;
+ if((pv==null&&oldRaw==null)||(pv!=null&&oldRaw!=null&&String(pv)===String(oldRaw).slice(0,ty==='d'?10:200)))return;
+ const apply=c=>{if(!c)return;const i=LV.items.findIndex(x=>x.id===id);if(i>-1)LV.items[i]=c;p.raw=c;LV.sig='';
+  const sm=document.querySelector(`[data-id="pd:${id}:money"] small`);if(sm){const mv=c.receivedAmount!=null&&p.g==='paid'?'實收 '+nt(c.receivedAmount):c.quoteAmount!=null?'報價 '+nt(c.quoteAmount):(p.money||'');sm.textContent=mv}};
+ t.disabled=true;
+ LV.api.act(id,'work',{patch:{[f]:pv}}).then(c=>{t.disabled=false;apply(c);const shown=pv==null?'清掉了':ty==='n'?nt(pv):ty==='d'?pv.slice(5).replace('-','/'):'已寫';
+  toast(`${lab}${pv==null?'清掉了':'：'+shown}`,()=>LV.api.act(id,'work',{patch:{[f]:oldRaw==null?null:(ty==='d'?String(oldRaw).slice(0,10):oldRaw)}}).then(c2=>{apply(c2);const el=document.getElementById('pm_'+f);if(el)el.value=oldRaw==null?'':String(oldRaw).slice(0,ty==='d'?10:200);toast('還原了')}).catch(er=>toast('沒還原：'+LERR(er))))})
+  .catch(er=>{t.disabled=false;back();toast('沒存上：'+LERR(er))})});
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
