@@ -3806,7 +3806,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.11', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.12', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
