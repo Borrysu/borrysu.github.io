@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v230');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v231');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3234,8 +3234,12 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
    if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk,rep:0};byT[tk]=e;out.push(e);if(vv&&!/請求/.test(body.slice(0,60))){e.st='done';e.ver='v'+vv[1]}return}
     if(vv){e.st='done';e.ver='v'+vv[1]}else if(e.st==='recv')e.st='work';return}
    if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'');if(!PR.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:'',rep:0,handled:!!m.handledAt})}
-   else if(m.kind==='bot'||m.kind==='daqi'){const open=out.filter(x=>!x.tk&&!x.ver);const mine=out.filter(x=>!x.tk&&!x.rep);mine.forEach(x=>{x.rep=1});if(vv&&open.length){open[0].ver='v'+vv[1]}}});
-  out.forEach(x=>{if(!x.tk)x.st=x.handled?(x.rep?(x.ver?'done':'replied'):'recv'):(x.rep?'work':'recv')});
+   // v231（msg 1598）：自動回的「這件我接到了」「收到，正在看」「收到。我讓…去做」只算處理中，不算已回覆；要有結果（已上線、改好、修好、做完、原因…）才算處理完。不再用「已標處理」當完成。
+   else if(m.kind==='bot'||m.kind==='daqi'){const OUT=/(已上線|上線了|改好|修好|做完|處理完|已還原|還原了|已改|找到了|原因[：:是]|查到|回答你|結論|建成|建好|補好|補上|放進|上傳好|已經處理)/.test(body)&&!/^(老大，這件我接到了|收到，正在看)/.test(body),ACKB=!OUT;
+    const ids=(body.match(/(?:msg\s*)?\b(1\d{3,4})\b/g)||[]).map(x=>+x.replace(/\D/g,'')),cand=out.filter(x=>!x.tk),hit=ids.length?cand.filter(x=>ids.includes(+x.id)):[];
+    const tgt=hit.length?hit:(()=>{const r=cand.filter(x=>OUT?!x.out:!x.ack&&!x.out);return r.length?[r[r.length-1]]:[]})();   // 回覆有寫 msg 編號就對那幾則；沒寫就對最近一則還沒回的
+    tgt.forEach(x=>{if(OUT)x.out=1;else x.ack=1});if(vv){const open=out.filter(x=>!x.tk&&!x.ver);if(open.length)open[0].ver='v'+vv[1]}}});
+  out.forEach(x=>{if(!x.tk)x.st=x.ver?'done':x.out?'replied':x.ack?'work':'recv'});
   return out.reverse()}
  function progLoad(){if(PG.busy&&Date.now()-PG.busy<12000)return;PG.busy=Date.now();PG.err='';
   if(MK.box==='prog')box('prog');
@@ -3247,14 +3251,14 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   const all=progState(PG.ms),lab={recv:'已收',work:'處理中',replied:'已回覆',done:'已處理'},week=Date.now()-7*864e5;
   const pend=x=>x.st==='recv'||x.st==='work'||(x.tk&&x.st!=='done');
   const TS=v=>typeof v==='number'?v:Date.parse(v);const open=all.filter(x=>pend(x)||TS(x.at)>=week&&!x.old),fold=all.filter(x=>!pend(x)&&TS(x.at)<week);
-  const np=all.filter(pend).length,L=PG.all?all:all.filter(x=>pend(x)||TS(x.at)>=week).slice(0,15),hid=all.length-L.length;
+  const np=all.filter(pend).length,L=PG.all?all:all.filter(pend).concat(all.filter(x=>!pend(x)&&TS(x.at)>=week).slice(0,15)).sort((a,b)=>TS(b.at)-TS(a.at))   /* v231：沒處理的一定全列，不被前 15 則切掉 */,hid=all.length-L.length;
   const first=b=>{const t=String(b).replace(/^【面板修改意見】[^\n]*\n/,'');const m=/^\s*\d+\.\s*(.+)/m.exec(t);return cut((m?m[1]:t).replace(/\s+/g,' ').trim(),46)},cnt=b=>{const n=(String(b).match(/^\s*\d+\. /gm)||[]).length;return n>1?`（共 ${n} 則）`:''};
   const tm=at=>{if(!at)return '';const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)};
   const tt=PG.at?new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(PG.at)):'';
   const chip=x=>x.st==='done'?'已上線'+(x.ver?' '+x.ver:''):(x.st==='replied'&&x.ver?'已上線 '+x.ver:lab[x.st]);
   return `<p class="mkw">編修進度・未處理 ${np}${busy?'（更新中…）':''}</p>`+(PG.err?`<p class="mkp">更新失敗：${esc(PG.err)}，下面是上次讀到的</p>`:'')+(L.length?`<ul class="mkpg">${L.map(x=>`<li class="pg-${x.st}"><div class="pgh"><b>${x.tk?esc(x.tk):'#'+esc(String(x.id))}</b>${x.tk?'<span class="pgai">AI 轉單</span>':''}<span class="pgs">${esc(chip(x))}</span><small>${esc(tm(x.at))}</small></div><p>${esc(first(x.body))}${cnt(x.body)}</p></li>`).join('')}</ul>`:'<p class="mkp">沒有未處理的。</p>')
    +(hid>0&&!PG.all?`<div class="btns"><button class="btn ghost" data-mk="progall">已處理 ${hid} 則 ›</button></div>`:PG.all&&all.length>15?`<div class="btns"><button class="btn ghost" data-mk="progall">收起已處理</button></div>`:'')
-   +`<p class="mkp">更新 ${esc(tt||'—')}。以資料庫的「已處理」記號為準；只算【面板修改意見】和 AI 轉單，一般聊天不算。</p><div class="btns"><button class="btn ghost" data-mk="prog"${busy?' disabled':''}>${busy?'更新中…':'重新整理'}</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
+   +`<p class="mkp">更新 ${esc(tt||'—')}。有寫出結果的回覆才算處理完；自動回的「收到、接到了」只算處理中。只算【面板修改意見】和 AI 轉單，一般聊天不算。</p><div class="btns"><button class="btn ghost" data-mk="prog"${busy?' disabled':''}>${busy?'更新中…':'重新整理'}</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
  function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
   MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
   if(kind==='prog'){x.setAttribute('aria-label','編修進度');x.innerHTML=progHTML();return}
@@ -5041,7 +5045,8 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    wants.slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))).forEach(w=>{const wid=String(w.id),dn=doneOf(wid);const t=String(w.note.text||'');   // 照寫下的先後排
     if(w.note.time){const ao=typeof ancOf==='function'?ancOf(wid):null;SG[wid]={t:w.note.time+(w.note.end?'～'+w.note.end:''),own:!w.note.arr,arr:!!w.note.arr,anc:ao!=null?ao:(w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false))};return}
     const sp=splitTm(t);if(sp.tm){SG[wid]={t:sp.tm+(sp.te?'～'+sp.te:''),own:1};return}
-    const tm=/(?:(上午|下午|晚上|早上|中午)\s*)?(\d{1,2})(?:[:：](\d{2})|點(半)?)/.exec(t);if(tm){let h=+tm[2];if(/下午|晚上/.test(tm[1]||'')&&h<12)h+=12;SG[wid]={t:f2(h+(tm[3]?+tm[3]/60:tm[4]?0.5:0)),own:1};return}
+    const tm=/(?:(上午|下午|晚上|早上|中午)\s*)?(?<!\d)(\d{1,2})(?:[:：](\d{2})|點(半)?)(?!\s*(?:以|之)?(?:前|後))/.exec(t);if(tm){   // v231（msg 1591）：「10:00前」「8點後」是時段條件，不是這件事的時間
+   let h=+tm[2];if(/下午|晚上/.test(tm[1]||'')&&h<12)h+=12;SG[wid]={t:f2(h+(tm[3]?+tm[3]/60:tm[4]?0.5:0)),own:1};return}
     const tr=(window.__tideRows||[]).find(r=>r.ref==='want:'+wid&&r.at);if(tr){const x=new Date(Date.parse(tr.at)+8*3600e3),h=x.getUTCHours()+x.getUTCMinutes()/60,e=+((tr.meta||{}).est_hours||0);SG[wid]={t:f2(h)+(e?'～'+f2(Math.min(24,h+e)):''),tide:1};return}
     if(dn){const kp=(LV.sgKeep||{})[wid];if(kp)SG[wid]=kp;return}   // v222（msg 1144）：打勾後保留原本建議的時間
     /* v227（msg 1574）：沒寫時間就不顯示時間；按「安排」才依行事曆空檔排（見 ACT.ckarrange） */});}
@@ -5050,7 +5055,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   // 「如果有一個時間的位置了，那標題裡面就可以不用再寫時間」「不要漏了的部分…再列表空白列裡面我點了進去之後再顯示給我看」
   // 做法：一列＝打勾｜時間｜標題｜小臉。點標題就地編修（標題、時間、刪除）；列往左滑露出「刪除」；標題列左右滑切今日／明日；最下面一格空白列，灰字是第一個建議，點進去跳出「別漏了」選單。
   const ed=S.ckEdit||'';
-  const wrow=w=>{const wid=String(w.id),d=doneOf(wid),r=relOf(w),tmp=wid.indexOf('tmp')===0,sg=SG[wid],da=d?doneAtOf(wid):'',sp=splitTm(w.note.text);let title=sp.text||String(w.note.text||'');if(sg&&(sg.own||sg.arr)&&!sp.tm)title=title.replace(/(?:(上午|下午|晚上|早上|中午)\s*)?(\d{1,2})(?:[:：](\d{2})|點(半)?)/,'').replace(/^[\s，、]+/,'').trim()||title;   // v227（msg 1574）：時間已經在左邊，標題不再重複
+  const wrow=w=>{const wid=String(w.id),d=doneOf(wid),r=relOf(w),tmp=wid.indexOf('tmp')===0,sg=SG[wid],da=d?doneAtOf(wid):'',sp=splitTm(w.note.text);let title=sp.text||String(w.note.text||'');if(sg&&(sg.own||sg.arr)&&!sp.tm)title=title.replace(/(?:(上午|下午|晚上|早上|中午)\s*)?(?<!\d)(\d{1,2})(?:[:：](\d{2})|點(半)?)(?!\s*(?:以|之)?(?:前|後))/,'').replace(/^[\s，、]+/,'').trim()||title;   // v227（msg 1574）：時間已經在左邊，標題不再重複
    const relTx=r?`${r.by==='user'?'你指定':'自動'}：${esc(clip(r.short||r.title,14))}${r.st?'（'+r.st+'）':''}`:'',rel=r?(tmp?`<span class="ckrel">${relTx}</span>`:`<button class="ckrel${r.by==='user'?' me':''}" data-act="ckrelmenu" data-id="${esc(wid)}" aria-label="關聯：${relTx.replace(/<[^>]*>/g,'')}，點開可更換或取消">${relTx} ›</button>`):'';
    if(ed===wid&&!d){const t0=w.note.time||sp.tm||'';
     return `<li class="ck want edit" data-ref="want:${esc(wid)}"><div class="cke"><input id="ckEt" type="text" value="${esc(title)}" aria-label="要做的事"><div class="ckerow"><label class="cketm">時間<input id="ckEtm" type="text" inputmode="numeric" placeholder="例 22:30" value="${esc(t0)}" data-day="${n}" autocomplete="off" aria-label="時間，24 小時制，例如 22:30" style="width:7em"></label>${B('存好','cksave',wid,'pri sm')}${B('安排這件','ckarrange1',wid,'sm')}${splitWants(title).length>1?B('拆開','cksplit',wid,'sm'):''}${B('取消','ckcancel','','sm')}${B('刪除','ckdrop',wid,'sm warn')}</div><p class="ckhit" id="ckHit" aria-live="polite">${esc(hitOf(n,t0))}</p></div><div class="ckrr" data-wid="${esc(wid)}"><p class="ckrl">關聯：${r?relTx:'沒有'}</p><input id="ckRelQ" type="text" placeholder="換成別張：打案名" autocomplete="off" aria-label="換成別張專案卡"><div id="ckRelS" class="ckrc"></div><div class="ckrb"><button type="button" class="btn sm" data-rs="none" data-wid="${esc(wid)}">不關聯</button><button type="button" class="btn sm" data-rs="auto" data-wid="${esc(wid)}">重新自動分析</button>${r&&(DB.proj||[]).some(q=>q.id===r.id)?`<button type="button" class="btn sm" data-rs="view" data-wid="${esc(wid)}" data-cid="${esc(r.id)}">看這張卡 ›</button>`:''}</div></div></li>`}
@@ -5159,24 +5164,31 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
    try{if(doneOf(String(wid)))await tideW({ref:'want:'+wid,source:'面板',note:{type:'undo',ref:'want:'+wid,day:w.note.day}});await tideW({ref:'want:'+wid,source:'面板',note:{type:'drop',ref:'want:'+wid,day:w.note.day}})}catch(e){toast('新的已存好，但舊的沒收掉：'+LERR(e))}tlLoad(true);toast(`拆成 ${parts.length} 件了（可按復原）`,async()=>{for(const x of (TL||[]).filter(y=>y.note&&y.note.type==='want'&&String(y.at||'')>String(w.at||'')&&parts.some(pp=>(splitTm(pp).text||pp)===y.note.text)&&wstOf(String(y.id))!=='drop').slice(0,parts.length))await undoWant(String(x.id));await wantAdd(Object.assign({},w.note));tlLoad(true)})}};
 
  /* v227（msg 1574）：「安排」＝依行事曆空檔替沒錨定、沒做完的事排時間；寫了多久（2 小時、半小時、30 分鐘）照那個長度，寫了時段（上午、下午、晚上、5 點前、8 點後）就排在那段；錨定（⚓）的不動。可整天一起排，也能單條排。 */
- const durOf=t=>{t=String(t||'');let m=/(\d+(?:\.\d+)?)\s*(?:小時|個小時|h|hr)/i.exec(t);if(m)return Math.min(8,+m[1]);if(/半小時|半個小時/.test(t))return .5;m=/(\d+)\s*分(?:鐘)?/.exec(t);if(m)return Math.max(.25,+m[1]/60);return 1};
- const winOf=t=>{t=String(t||'');let m=/(\d{1,2})\s*點(?:以|之)?前/.exec(t);if(m)return [0,+m[1]+(+m[1]<8?12:0)];m=/(\d{1,2})\s*點(?:以|之)?後/.exec(t);if(m)return [+m[1]+(+m[1]<8?12:0),24];if(/早上|上午/.test(t))return [8,12];if(/中午/.test(t))return [11.5,14];if(/下午/.test(t))return [13,18];if(/晚上|今晚|夜/.test(t))return [18,23];return null};
+ const durOf=t=>{t=String(t||'').replace(/\d{1,4}(?:[:：]\d{2})?\s*點?\s*(?:以|之)?(?:後|前)/g,' ');let sum=0,hit=0;   // v231（msg 1591）：一條裡寫了好幾件各自多久（15min、10 分鐘、1 小時），加總；沒寫多久的每件先抓 10 分鐘
+  t.replace(/(\d+(?:\.\d+)?)\s*(?:小時|個小時|hrs?|h)(?![a-z])/gi,(m,a)=>{sum+=+a;hit++;return m}).replace(/(\d+)\s*(?:分鐘|分|mins?)(?![a-z])/gi,(m,a)=>{sum+=(+a)/60;hit++;return m});if(/半小時|半個小時/.test(t)){sum+=.5;hit++}
+  if(!hit)return .5;const toks=t.split(/[\s，,、；;]+/).filter(x=>x&&/[\u3400-\u9fff]/.test(x)),bare=toks.filter(x=>!/\d+\s*(?:分鐘|分|mins?|小時|hrs?|h)/i.test(x)&&!/半小時/.test(x)).length;return Math.min(8,Math.max(.25,sum+bare/6))};
+ const winOf=t=>{t=String(t||'');const hh=x=>{x=x.replace(/[：]/,':');let h,m=0;if(/:/.test(x)){[h,m]=x.split(':').map(Number)}else if(x.length>=3){h=+x.slice(0,-2);m=+x.slice(-2)}else h=+x;return h+(m||0)/60};
+  let a=null,b=null;t.replace(/(\d{1,4}(?:[:：]\d{2})?)\s*點?\s*(?:以|之)?(後|前)/g,(m,x,k)=>{const v=hh(x);if(k==='後')a=v;else b=v;return m});   // v231（msg 1591）：0800後、10:00前、8 點後、5 點前，可以兩個一起寫
+  if(a!=null||b!=null)return [a!=null?a:0,b!=null?b:24];if(/早上|上午/.test(t))return [8,12];if(/中午/.test(t))return [11.5,14];if(/下午/.test(t))return [13,18];if(/晚上|今晚|夜/.test(t))return [18,23];return null};
  const hm=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
  const tH=s=>{const m=/^(\d{1,2}):(\d{2})/.exec(s||'');return m?+m[1]+(+m[2])/60:null};
  async function ckArrange(n,only){const day=ymdT(n),Zq=window.__zl,info=Zq&&Zq.tlDay?Zq.tlDay(calAll().filter(e=>e.d===n&&!e.cancel)):null;if(!info){toast('行事曆還沒讀到，等一下再按');return}
   const nh=(()=>{const x=new Date(Date.now()+8*3600e3);return x.getUTCHours()+x.getUTCMinutes()/60})();
-  let free=info.free.map(f=>n===0?[Math.max(f[0],Math.ceil(nh*2)/2),f[1]]:[f[0],f[1]]).filter(f=>f[1]-f[0]>=.25);
+  // v231（msg 1591）：空檔從 6 點算到 24 點（原本只看 9～22 點，你寫 8 點後就排不進去）；沒寫時段的才限 9～22 點
+  let free=[];{let c=6;(info.segs||[]).slice().sort((x,y)=>x.a-y.a).forEach(sg=>{if(sg.a>c)free.push([c,Math.min(sg.a,24)]);c=Math.max(c,sg.b)});if(c<24)free.push([c,24])}
+  free=free.map(f=>n===0?[Math.max(f[0],Math.ceil(nh*4)/4),f[1]]:[f[0],f[1]]).filter(f=>f[1]-f[0]>=.25);
   const ws=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop'&&!doneOf(String(w.id)));
   const fixed=ws.filter(w=>{if(!w.note.time)return false;const ao=ancOf(String(w.id));return ao!=null?ao:(w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false))});
   fixed.forEach(w=>{const a=tH(w.note.time),b=tH(w.note.end)||(a!=null?a+durOf(w.note.text):null);if(a==null)return;const nf=[];free.forEach(f=>{if(b<=f[0]||a>=f[1])nf.push(f);else{if(a>f[0])nf.push([f[0],a]);if(b<f[1])nf.push([b,f[1]])}});free=nf.filter(f=>f[1]-f[0]>=.25)});
   let todo=ws.filter(w=>!fixed.includes(w));if(only)todo=todo.filter(w=>String(w.id)===String(only));if(!todo.length){toast(only?'這件已錨定，先解除錨定再安排':'沒有要安排的：都做完了或都錨定了');return}
   todo.sort((x,y)=>(winOf(y.note.text)?1:0)-(winOf(x.note.text)?1:0)||String(x.at||'').localeCompare(String(y.at||'')));
   const plan=[],miss=[];todo.forEach(w=>{const d=+w.note.hours||durOf(w.note.text),win=winOf(w.note.text);let got=null;
-   for(const f of free){const a=Math.max(f[0],win?win[0]:0),b=Math.min(f[1],win?win[1]:24);if(b-a>=d-1e-6){got=[a,a+d];break}}
+   for(const f of free){const a=Math.max(f[0],win?win[0]:9),b=Math.min(f[1],win?win[1]:22);if(b-a>=d-1e-6){got=[a,a+d];break}}
    if(!got){miss.push(splitTm(w.note.text).text||w.note.text);return}
    const nf=[];free.forEach(f=>{if(got[1]<=f[0]||got[0]>=f[1])nf.push(f);else{if(got[0]>f[0])nf.push([f[0],got[0]]);if(got[1]<f[1])nf.push([got[1],f[1]])}});free=nf;plan.push({w,a:got[0],b:got[1]})});
   if(!plan.length){toast('排不下：'+clip(miss.join('、'),40)+'（行事曆在那段沒有夠長的空檔）');return}
   let ok=0;for(const x of plan){const nn=Object.assign({},x.w.note,{time:hm(x.a),end:hm(x.b),arr:1});delete nn.anchor;if(await replaceWant(String(x.w.id),nn))ok++}
+  try{tlLoad(true)}catch(e){}   // v231：排完重新讀一次，暫存列換成正式列，才能再點、再改
   toast(`排好 ${ok} 件，依你的行事曆空檔；錨定的沒動${miss.length?'；排不下：'+clip(miss.join('、'),30):''}`)}
  ACT.ckarrange=v=>ckArrange(+v||0);
  ACT.ckarrange1=wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid));if(!w)return;const n=w.note.day===ymdT(1)?1:0;S.ckEdit='';ckArrange(n,wid)};
@@ -5226,11 +5238,13 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   {const rc=$('#ckRc');if(rc)rc.remove();S.ckRel=''}
   if(ok)toast(parts.length>1?`拆成 ${parts.length} 件記下了`:'記下了，要排時間按「安排」')};
  function splitWants(txt){const CJK=/[\u3400-\u9fff]/,out=[];
+  // v231（msg 1591）：「0800後 10:00前」這種時段是整段共用的條件，不拆成獨立一件；拆出來的每一件都帶著這個時段
+  const WT=/\d{1,4}(?:[:：]\d{2})?\s*點?\s*(?:以|之)?(?:後|前)/g,wins=(String(txt||'').match(WT)||[]).map(x=>x.replace(/\s+/g,'')),pre=wins.length?wins.join(' ')+' ':'';txt=String(txt||'').replace(WT,' ');
   String(txt||'').split(/[，,、；;／/\n]+|\s{2,}/).forEach(seg=>{const toks=seg.trim().split(/\s+/).filter(Boolean);if(!toks.length)return;let cur=toks[0];
    for(let i=1;i<toks.length;i++){const nx=toks[i],last=cur.slice(-1),run=(cur.match(/[\u3400-\u9fff]+$/)||[''])[0].length;
-    const mod=/^(\d|上午|下午|晚上|早上|中午|傍晚|約|大概|小時|分鐘|點)/.test(nx),cut=!mod&&CJK.test(last)&&(CJK.test(nx[0])||run>=3);if(cut){out.push(cur);cur=nx}else cur+=' '+nx}
+    const mod=/^(\d|上午|下午|晚上|早上|中午|傍晚|約|大概|小時|分鐘|點|min)/i.test(nx),durEnd=/\d+\s*(?:min|mins|分鐘|分|小時|h|hr)$/i.test(cur),cut=!mod&&((CJK.test(last)&&(CJK.test(nx[0])||run>=3))||(durEnd&&CJK.test(nx[0])));if(cut){out.push(cur);cur=nx}else cur+=' '+nx}
    out.push(cur)});
-  return out.map(x=>x.replace(/^(分成|還有|然後|以及|跟|和)/,'').trim()).filter(x=>x.length>=1)}
+  return out.map(x=>x.replace(/^(分成|還有|然後|以及|跟|和)/,'').trim()).filter(x=>x.length>=1&&!/^(前|後|以前|以後|之前|之後)$/.test(x)).map(x=>pre+x)}
  ACT.ckadd=async ref=>{const m=MISS[ref];if(!m)return;const n=dayN(),q=splitTm(m.text),note={type:'want',text:q.text||m.text,day:ymdT(n),src:ref};if(m.tm||q.tm)note.time=(m.tm||q.tm);if(m.card)note.card=m.card;const d=$('#ckDD');if(d)d.hidden=true;
   if(await wantAdd(note))toast('加進今天要做了')};
  async function doneSet(wid,type){if(!LV.api||!LV.api.tideLogAdd)return;const day=ymdT(dayN()),note={type,ref:'want:'+wid,day};
