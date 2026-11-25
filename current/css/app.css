@@ -1827,3 +1827,20 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .ckbox .ck.want.lp{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 22px rgba(0,0,0,.35);background:var(--sf,#1c1c22);border-radius:12px;z-index:2;overflow:visible;border-top-color:transparent}
 .ckbox .ckblank::after{content:"長按一件會浮起來：交給大器、霸霸或刪除・左右滑換今天明天"}
 @media (prefers-reduced-motion:reduce){.ckbox .ck.want{transition:none}.ckbox .ck.want.lp{transform:none}}
+#clog .cm{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}#clog .cm.rqhit{outline:2px solid #a37aff;outline-offset:2px}
+.cm .cmq{display:block;margin:0 0 4px;padding:4px 8px;border-left:3px solid #a37aff;border-radius:6px;background:rgba(127,127,127,.12);font-size:12px;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.creply{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:6px 10px;border-left:3px solid #a37aff;border-radius:8px;background:rgba(127,127,127,.12);font-size:13px}.creply span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.creply button{width:32px;height:32px;border:0;background:transparent;color:var(--ink2);font-size:16px}
+/* v143 msg 908：往左滑露出小臉＋刪除，整列跟著手指；電腦 hover 直接出現（取代 v140 長按） */
+.ckbox .ck.want{transform:none!important;box-shadow:none!important;position:relative;overflow:hidden}
+.ckbox .ck.want>*:not(.cklp){transform:translateX(var(--sx,0px))!important;transition:transform .22s ease}
+.ckbox .ck.want .cklp{display:flex!important;position:absolute!important;top:0;bottom:0;right:0;width:168px!important;align-items:center;justify-content:flex-end;gap:4px;padding-right:2px;background:var(--sf,#1c1c22);transform:translateX(calc(168px + var(--sx,0px)))!important;transition:transform .22s ease}
+.ckbox .ck.want.drag>*,.ckbox .ck.want.drag .cklp{transition:none!important}
+.ckbox .ck.want .cklp .aif{width:44px;height:44px;flex:none}
+.ckbox .ck.want .cklp .ckdel{height:40px;width:64px;padding:0;border-radius:10px;flex:none}
+@media (hover:hover) and (pointer:fine){.ckbox .ck.want:hover{--sx:-168px}}
+.ckbox .ckblank::after{content:"一件往左滑：交給大器、霸霸或刪除・標題列左右滑換今天明天"}
+@media (prefers-reduced-motion:reduce){.ckbox .ck.want>*,.ckbox .ck.want .cklp{transition:none!important}}
+/* v143 msg 909：換天滑入 */
+@keyframes ckInL{from{transform:translateX(28px);opacity:.2}to{transform:none;opacity:1}}@keyframes ckInR{from{transform:translateX(-28px);opacity:.2}to{transform:none;opacity:1}}
+.ckbox .cklist.ckin-l{animation:ckInL .2s ease-out}.ckbox .cklist.ckin-r{animation:ckInR .2s ease-out}
+.ckbox{transition:min-height .3s ease}

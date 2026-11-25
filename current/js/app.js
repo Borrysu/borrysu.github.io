@@ -621,7 +621,8 @@ function msgHTML(m){const f=m.fresh?' new':'';m.fresh=0;
  if(m.wait)return `<div class="cm bot${f}"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${BOTS[m.b].name}處理中</div>`;
  if(m.k==='order')return `<div class="cm bot card${f}">${orderHTML(m.id)}</div>`;
  if(m.k==='din')return `<div class="cm bot card${f}">${dinHTML(m)}</div>`;
- return `<div class="cm ${m.w}${f}">${m.from?`<span class="cmfrom">${esc(m.from)}</span>`:''}${esc(m.t)}${m.w==='me'?'<small>已送出</small>':''}</div>`}
+ const rq=/^［回覆：「([^」]*)」］\n?/.exec(String(m.t||'')),body=rq?String(m.t).slice(rq[0].length):m.t;
+ return `<div class="cm ${m.w}${f}">${m.from?`<span class="cmfrom">${esc(m.from)}</span>`:''}${rq?`<span class="cmq">${esc(rq[1])}</span>`:''}${esc(body)}${m.w==='me'?'<small>已送出</small>':''}</div>`}
 function logSync(){const on=S.chat,l=$('#clog');if(!on||!l)return;const a=CH[on.b],un=on.b==='peng'&&!S.bound;
  l.innerHTML=a.map(msgHTML).join('')+(un?`<div class="cm bot card"><b>還沒綁定朋朋</b><div class="btns">${B('綁定朋朋','bindok',null,'pri')}</div></div>`:'');
  $('#cq').innerHTML=quick(on).map(q=>`<button data-act="chatq" data-id="${esc(q)}">${esc(q)}</button>`).join('');l.scrollTop=l.scrollHeight}
@@ -2543,7 +2544,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v141');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v142');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4834,13 +4835,17 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    const rel=r?`<button class="ckrel" data-act="${(DB.proj||[]).some(p=>p.id===r.id)?'cerel':'sheet'}" data-id="${(DB.proj||[]).some(p=>p.id===r.id)?esc(r.id):'cview:todo:'+esc(r.id)}">相關：${esc(clip(r.short||r.title,14))} ›</button>`:'';
    if(ed===wid&&!d){const t0=w.note.time||sp.tm||'';
     return `<li class="ck want edit" data-ref="want:${esc(wid)}"><div class="cke"><input id="ckEt" type="text" value="${esc(title)}" aria-label="要做的事"><div class="ckerow"><label class="cketm">時間<input id="ckEtm" type="time" value="${esc(t0)}" data-day="${n}"></label>${B('存好','cksave',wid,'pri sm')}${B('取消','ckcancel','','sm')}${B('刪除','ckdrop',wid,'sm warn')}</div><p class="ckhit" id="ckHit" aria-live="polite">${esc(hitOf(n,t0))}</p></div></li>`}
-   return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${rel}</div>${d?'':`<div class="ckb">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}</div>`}<span class="cklp"><button class="ckdel" data-act="ckdrop" data-id="${esc(wid)}" tabindex="-1">刪除</button></span></li>`};
+   return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}<button class="ckdel" data-act="ckdrop" data-id="${esc(wid)}">刪除</button></span>`}</li>`};
   const sug=miss[0];
   let h=`<section class="sec ckbox" aria-label="${n?'明日':'今日'}節奏" data-day="${n}"><div class="ckh"><h2><span class="ckseg" role="tablist" aria-label="今日或明日"><button role="tab" data-act="ckday" data-id="0" aria-selected="${!n}">今日節奏</button><button role="tab" data-act="ckday" data-id="1" aria-selected="${!!n}">明日節奏</button></span><small>${wants.length?`做完 ${done}／${wants.length}`:''}</small></h2></div>`;
   h+=`<ul class="cklist">${wants.map(wrow).join('')}<li class="ck ckblank"><div class="ckadd"><input id="ckIn" type="text" placeholder="${esc(sug?'建議：'+splitTm(sug.text).text:(n?'明天':'今天')+'要做什麼？寫一件')}" aria-label="加一件要做的事"${sug?` data-sug="${esc(sug.ref)}"`:''} autocomplete="off">${B('＋','ckwant',String(n),'pri sm')}</div>${miss.length?`<div class="ckdd" id="ckDD" hidden><p>別漏了・點一下加進來</p>${miss.map(m=>{const q=splitTm(m.text);return `<button class="ckddi" data-act="ckadd" data-id="${esc(m.ref)}"><span class="num">${esc(m.tm||q.tm||'')}</span><b>${esc(q.text)}</b><small>${esc(m.k)}</small></button>`}).join('')}</div>`:''}</li></ul>`;
   if(!wants.length)h+=`<p class="cknone">寫下來就是確認你吸收了，張弛會幫你排時段，大家也會知道。</p>`;
   return h+'</section>'}
- ACT.ckday=id=>{S.ckDay=+id;S.ckEdit='';render('keep')};
+ // v143 msg 909 老大：「現在左右滑動換天版面會跳動⋯」→ 換天時節奏框在畫面上的位置固定不動，高度變化往下長；內容從滑的方向滑進來
+ ACT.ckday=id=>{const n=+id,old=dayN(),el=document.querySelector('.ckbox'),top=el?el.getBoundingClientRect().top:null,h0=el?el.offsetHeight:0;S.ckDay=n;S.ckEdit='';render('keep');
+  const e2=document.querySelector('.ckbox');if(!e2||top==null)return;const dy=e2.getBoundingClientRect().top-top;if(Math.abs(dy)>1)window.scrollBy(0,dy);
+  if(n!==old&&!RM){const ul=e2.querySelector('.cklist');if(ul){ul.classList.remove('ckin-l','ckin-r');void ul.offsetWidth;ul.classList.add(n>old?'ckin-l':'ckin-r')}}
+  e2.style.minHeight=Math.min(h0,e2.offsetHeight+120)+'px';setTimeout(()=>{const e3=document.querySelector('.ckbox');if(e3)e3.style.minHeight=''},350)};
  // msg 800：「如果我選的時間或者是寫的時間當天有其他安排 那在我當下的時候就會有一個提示說那個時間已經有別的事情了 我能決定」
  function hitOf(n,t){const m=/^(\d{1,2}):(\d{2})/.exec(t||'');if(!m)return '';const h=+m[1]+m[2]/60;
   const ev=calAll().filter(e=>e.d===n&&!e.cancel&&!(e.all||!e.t)).filter(e=>{const a=/^(\d+):(\d+)/.exec(e.t),b=/^(\d+):(\d+)/.exec(e.e||'');if(!a)return false;const A=+a[1]+a[2]/60,B=b?+b[1]+b[2]/60:A+1;return h>=A-0.25&&h<B});
@@ -4862,17 +4867,20 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  document.addEventListener('focusout',e=>{if(e.target&&e.target.id==='ckIn')setTimeout(()=>{const a=document.activeElement,d=$('#ckDD');if(d&&!(a&&a.closest&&a.closest('#ckDD')))d.hidden=true},250)});
  document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&(e.target.id==='ckIn'||e.target.id==='ckEt')&&!e.isComposing){e.preventDefault();const s2=e.target.id==='ckIn'?'[data-act="ckwant"]':'#ckEt~.ckerow [data-act="cksave"],.cke [data-act="cksave"]';const b=document.querySelector(s2);if(b)b.click()}});
  // 左右滑：列往左滑露出刪除；標題那排或空白處左右滑切今日／明日
- // v140 msg 901、902 老大：「我長按他會選到字又顯示按鈕」「還是節奏長按震動 它浮起來才出現大器霸霸小臉與刪除？」
- // → 平常一列只有打勾、時間、標題；長按 0.45 秒那件浮起來，才出現大器、霸霸小臉和刪除（iPhone 網頁不能震動，用浮起來當回饋；Android 會輕震）。整區左右滑＝換今天／明天。不會選到字。
- {let X0=0,Y0=0,T0=null,LT=0,ate=0;const close=()=>document.querySelectorAll('.ck.want.lp').forEach(x=>x.classList.remove('lp'));
-  const lift=li=>{close();li.classList.add('lp');ate=Date.now();try{navigator.vibrate&&navigator.vibrate(12)}catch(_){}};
-  document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];if(!t)return;const box=e.target.closest&&e.target.closest('.ckbox');if(!box)return;X0=t.clientX;Y0=t.clientY;T0=e.target;clearTimeout(LT);
-   const li=e.target.closest('.ck.want:not(.edit):not(.done)');if(li&&!e.target.closest('.ckbx,.aif,.ckrel,.ckdel,input'))LT=setTimeout(()=>lift(li),450)},{passive:true});
-  document.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&Math.hypot(t.clientX-X0,t.clientY-Y0)>10)clearTimeout(LT)},{passive:true});
-  document.addEventListener('touchend',e=>{clearTimeout(LT);if(!T0)return;const t=e.changedTouches&&e.changedTouches[0],tg=T0;T0=null;if(!t)return;const dx=t.clientX-X0,dy=t.clientY-Y0;
-   if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7)return;if(tg.closest('input,textarea'))return;close();const n=dayN();if(dx<0&&n===0)ACT.ckday('1');else if(dx>0&&n===1)ACT.ckday('0')},{passive:true});
-  document.addEventListener('contextmenu',e=>{const li=e.target.closest&&e.target.closest('.ckbox .ck.want:not(.edit):not(.done)');if(!li)return;e.preventDefault();lift(li)});
-  document.addEventListener('click',e=>{const inLp=e.target.closest&&e.target.closest('.ck.want.lp');if(inLp&&Date.now()-ate<700&&!e.target.closest('.ckdel,.aif')){e.preventDefault();e.stopPropagation();return}if(!inLp)close()},true);}
+ // v143 msg 908 老大：「這邊長按手感很差 左右滑動出現刪除跟小臉呢？網頁版呢？」（推翻 v140 長按）
+ // → 一件往左滑：整列跟著手指移，右邊露出大器、霸霸小臉和刪除；往右滑收回。換天：標題列或空白處左右滑、或點今日／明日。電腦：滑鼠移到那件上就出現（CSS hover）。
+ {let X0=0,Y0=0,T0=null,LI=null,H=null;const W=168,shut=x=>{x.classList.remove('swl','drag');x.style.removeProperty('--sx')},shutAll=ex=>document.querySelectorAll('.ck.want.swl').forEach(x=>{if(x!==ex)shut(x)});
+  document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];if(!t)return;if(!(e.target.closest&&e.target.closest('.ckbox')))return;X0=t.clientX;Y0=t.clientY;T0=e.target;H=null;
+   LI=e.target.closest('.ck.want:not(.edit):not(.done)');if(e.target.closest('input,textarea,.cklp'))LI=null},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!T0||!LI)return;const t=e.touches[0],dx=t.clientX-X0,dy=t.clientY-Y0;if(H===null&&Math.hypot(dx,dy)>8)H=Math.abs(dx)>Math.abs(dy)*1.2;if(!H)return;
+   const base=LI.classList.contains('swl')?-W:0;const sx=Math.max(-W-24,Math.min(0,base+dx));LI.classList.add('drag');LI.style.setProperty('--sx',sx+'px')},{passive:true});
+  document.addEventListener('touchend',e=>{if(!T0)return;const t=e.changedTouches&&e.changedTouches[0],tg=T0,li=LI;T0=null;LI=null;if(!t)return;const dx=t.clientX-X0,dy=t.clientY-Y0;
+   if(li){li.classList.remove('drag');const was=li.classList.contains('swl');
+    if(H&&!was&&dx<-40){shutAll(li);li.classList.add('swl');li.style.setProperty('--sx',-W+'px');try{navigator.vibrate&&navigator.vibrate(8)}catch(_){}return}
+    if(H&&was&&dx>30){shut(li);return}
+    li.style.setProperty('--sx',(was?-W:0)+'px');if(!was)li.style.removeProperty('--sx');return}
+   if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7)return;if(tg.closest('input,textarea'))return;shutAll();const n=dayN();if(dx<0&&n===0)ACT.ckday('1');else if(dx>0&&n===1)ACT.ckday('0')},{passive:true});
+  document.addEventListener('click',e=>{if(!(e.target.closest&&e.target.closest('.ck.want.swl')))shutAll()},true);}
  async function wantAdd(note){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再加');return false}
   (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
   try{await LV.api.tideLogAdd('note',{ref:note.src||undefined,source:'面板',note});tlLoad(true);return true}catch(e){TL.shift();LV.sig='';paint();toast('沒存上：'+LERR(e));return false}}
@@ -5139,6 +5147,24 @@ function chFrom(m){if(m.itemTitle)return m.itemTitle;if(m.ctx)return ctxLabel(m.
   const box=`<section class="pres" aria-label="成果與要你做">${drafts.length?`<p class="h4">擬好的成果</p>${drafts.map((d,i)=>`<blockquote class="pdraft"><p>${esc(d)}</p><button class="btn sm" data-act="cpdraft" data-id="${i}">複製</button></blockquote>`).join('')}`:''}${ask?`<p class="pask"><b>要你做</b>${esc(ask)}</p>`:''}</section>`;
   const k=h.indexOf('</dl>',h.indexOf('<dl class="pk">'));return k<0?h:h.slice(0,k+5)+box+h.slice(k+5)}catch(e){return h}}}
 ACT.cpdraft=i=>{const d=(window.__pdrafts||[])[+i];if(!d)return;(navigator.clipboard?navigator.clipboard.writeText(d):Promise.reject()).then(()=>toast('複製好了')).catch(()=>toast('複製不了，長按文字複製'))};
+/* v142 逐流 msg 906 老大：「聊天視窗幫我改長按訊息可以回覆該訊息」
+   → 對話裡長按任一則（電腦按右鍵）＝回覆它：輸入框上面出現「回覆：…」可按 ✕ 取消；送出時帶上被回覆那句，對方看得到在回哪一句，畫面上顯示成小引言。 */
+let RQ='';
+function rqBar(){const cin=document.querySelector('#chat .cin');if(!cin)return;let r=document.getElementById('cReply');
+ if(!RQ){if(r)r.remove();return}
+ if(!r){r=document.createElement('div');r.id='cReply';r.className='creply';cin.parentNode.insertBefore(r,cin)}
+ r.innerHTML=`<span>回覆：「${esc(RQ)}」</span><button type="button" aria-label="取消回覆" data-rqx="1">✕</button>`}
+{const _st=sendTo;sendTo=function(b,text,ctx){if(RQ&&text){text='［回覆：「'+RQ+'」］\n'+text;RQ='';rqBar()}return _st(b,text,ctx)}}
+{let LT=0,X=0,Y=0,ate=0;const pick=el=>{const raw=(el.cloneNode(true));raw.querySelectorAll('small,.cmfrom,.cmq').forEach(x=>x.remove());const t=raw.textContent.replace(/\s+/g,' ').trim();if(!t)return;
+  RQ=t.length>40?t.slice(0,40)+'…':t;ate=Date.now();rqBar();el.classList.add('rqhit');setTimeout(()=>el.classList.remove('rqhit'),500);try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}const c=document.getElementById('cText');if(c)c.focus()};
+ const ok=el=>el&&!el.classList.contains('gray')&&!el.querySelector('.dots');
+ document.addEventListener('touchstart',e=>{const el=e.target.closest&&e.target.closest('#clog .cm');clearTimeout(LT);if(!ok(el))return;const t=e.touches[0];X=t.clientX;Y=t.clientY;LT=setTimeout(()=>pick(el),450)},{passive:true});
+ document.addEventListener('touchmove',e=>{const t=e.touches[0];if(t&&Math.hypot(t.clientX-X,t.clientY-Y)>10)clearTimeout(LT)},{passive:true});
+ document.addEventListener('touchend',()=>clearTimeout(LT),{passive:true});
+ document.addEventListener('contextmenu',e=>{const el=e.target.closest&&e.target.closest('#clog .cm');if(!ok(el))return;e.preventDefault();pick(el)});
+ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-rqx]')){RQ='';rqBar();return}if(Date.now()-ate<600&&e.target.closest&&e.target.closest('#clog .cm')){e.preventDefault();e.stopPropagation()}},true);
+ new MutationObserver(()=>{if(RQ&&!document.getElementById('cReply'))rqBar()}).observe(document.body,{childList:true,subtree:true});
+ {const _o=openChat;openChat=function(){RQ='';return _o.apply(this,arguments)}}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
