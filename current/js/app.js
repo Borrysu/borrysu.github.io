@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v167');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v168');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3452,7 +3452,7 @@ window.__zlWF={parse:wfParse};
    2「卡片裡的每一個步驟，我也要都可以編輯」：步驟卡每一步多「狀態」（還沒開始、正在做、做完、跳過、卡住），案子詳情頁的按鈕改叫「編輯每一步」，階段打開也有同一顆。 */
 const SCRIPT_RE=/劇本|編劇|分場|腳本|影集|長片/,SCRIPT_MK=/^［劇本］\n?/m;
 const isScript=p=>{const c=p.raw||{};return SCRIPT_RE.test([p.title,p.short,c.title,c.shortTitle].join(' '))||SCRIPT_MK.test(String(c.why||''))};
-{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj,n=E()?0:DB.proj.filter(isScript).length,btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:script">劇本 ${n}</button>`;
+{const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj,n=E()?0:(window.__allProj||DB.proj).filter(isScript).length,btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:script">劇本 ${n}</button>`;
  const segRe=/(<div class="seg" role="group" aria-label="案子分類">[\s\S]*?)(<\/div>)/;
  if(s!=='script')return _zp().replace(segRe,(x,a,b)=>a+btn(false)+b);
  const all=DB.proj;DB.proj=all.filter(isScript);S.sub.proj='proj';let h;try{h=_zp()}finally{DB.proj=all;S.sub.proj='script'}
@@ -4518,7 +4518,7 @@ const coCaseLink=c=>coRowOf(c)?`皮條客 id ${coSrcOf(c)}`:'皮條客上還沒�
 // 3 公司分頁＝原生公司案子
 {const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,nat=all.filter(isCoCase),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?d.cards.filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
   btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:co">公司 ${n}</button>`,segRe=/(<div class="seg" role="group" aria-label="案子分類">)([\s\S]*?)(<\/div>)/,fix=h=>h.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,'');
-  if(s!=='co'){DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all}
+  if(s!=='co'){window.__allProj=all;if(s!=='script')DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all;window.__allProj=null}   // v168 msg 1017：劇本分頁跨個人與公司，公司的劇本案（例：直男行不行）也列
    return /data-id="proj:co"/.test(h)?h.replace(/(data-id="proj:co">)公司 \d+/,`$1公司 ${n}`):h.replace(segRe,(x,a,b,c)=>a+b+btn(false)+c)}
   S.sub.proj='proj';DB.proj=nat;let h;try{h=_zp()}finally{DB.proj=all;S.sub.proj='co'}
   h=h.replace(segRe,(x,a,b,c)=>{const b2=b.replace(/aria-pressed="true"/g,'aria-pressed="false"');return a+(/data-id="proj:co"/.test(b2)?b2.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,btn(true)):b2+btn(true))+c});   // v161 msg 997：點了「公司」原地亮起，不跑到最後
