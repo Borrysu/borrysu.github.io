@@ -1,7 +1,7 @@
 // 只快取同網域的畫面檔，讓離線時還打得開。API 請求在別的網域，這裡完全不碰。
 // 規則：先連網路，連不上才用快取，所以改版後不會卡在舊版。
-const CACHE = 'opp-shell-v226-20261126';
-const SHELL = ['./', 'index.html', 'css/app.css?v226', 'js/app.js?v226', 'js/adapter.js?v226', 'js/mock.js?v226', 'js/demo.js?v226', 'js/bot_face.js?v226', 'js/bot_voice.js?v226', 'manifest.webmanifest', 'icons/icon.svg?v=20261124d', 'icons/icon-192.png?v=20261124d'];
+const CACHE = 'opp-shell-v227-20261126';
+const SHELL = ['./', 'index.html', 'css/app.css?v227', 'js/app.js?v227', 'js/adapter.js?v227', 'js/mock.js?v227', 'js/demo.js?v227', 'js/bot_face.js?v227', 'js/bot_voice.js?v227', 'manifest.webmanifest', 'icons/icon.svg?v=20261124d', 'icons/icon-192.png?v=20261124d'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('opp-shell-') && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {

@@ -61,6 +61,23 @@ async def run_size(p, w, h):
             r = await pg.evaluate("""async()=>{const z=window.__zl,id=window.__rp,p=z.DB.proj.find(x=>x.id===id);const st=(p.raw.progressSteps||[]).map((s,i)=>i===0?Object.assign({},s,{result:'回歸測試結果',result_link:'https://example.com/x'}):s);
               await z.LV.api.act(id,'steps',{steps:st});const q=await z.LV.api.get(id);const s0=q&&(q.progressSteps||[])[0];return {alive:!!q,status:q&&q.status,res:s0&&s0.result,link:s0&&s0.result_link}}""")
             check(f'{tag} 存步驟後卡片還在、結果欄位沒被丟掉', r.get('alive') and r.get('status') not in ('closed',) and r.get('res') == '回歸測試結果', r)
+        # msg 1574：沒寫時間不顯示時間；按「安排」才排、照寫的時長；寫了時間的錨定不動
+        await pg.evaluate("()=>{const z=window.__zl;z.S.page=null;z.S.sheet=null;z.paint('keep')}"); await pg.wait_for_timeout(500)
+        if await pg.query_selector('[data-act="ckday"][data-id="1"]'):
+            await pg.click('[data-act="ckday"][data-id="1"]'); await pg.wait_for_timeout(800)
+            for t in ['回歸澆花', '13:25 回歸開會', '回歸寫企劃 2小時 下午']:
+                await pg.fill('#ckIn', t); await pg.press('#ckIn', 'Enter'); await pg.wait_for_timeout(1500)
+            await pg.mouse.click(5, 5); await pg.wait_for_timeout(500)
+            rows = await pg.evaluate("()=>[...document.querySelectorAll('.ckbox .ck.want')].map(li=>({t:(li.querySelector('.cksg')||{innerText:''}).innerText,x:(li.querySelector('.ckt')||{innerText:''}).innerText}))")
+            nt = [r for r in rows if '回歸澆花' in r['x']]
+            check(f'{tag} 節奏沒寫時間就不顯示時間', bool(nt) and nt[0]['t'] == '', rows)
+            dup = [r for r in rows if '回歸開會' in r['x']]
+            check(f'{tag} 節奏寫了時間標題不重複時間', bool(dup) and '13:25' not in dup[0]['x'] and dup[0]['t'].startswith('13:25'), dup)
+            await pg.click('[data-act="ckarrange"]'); await pg.wait_for_timeout(3500)
+            rows = await pg.evaluate("()=>[...document.querySelectorAll('.ckbox .ck.want')].map(li=>({t:(li.querySelector('.cksg')||{innerText:''}).innerText,x:(li.querySelector('.ckt')||{innerText:''}).innerText}))")
+            wk = [r for r in rows if '回歸寫企劃' in r['x']]; mt = [r for r in rows if '回歸開會' in r['x']]
+            okw = bool(wk) and wk[0]['t'][:2].isdigit() and 13 <= int(wk[0]['t'][:2]) < 18 and '～' in wk[0]['t']
+            check(f'{tag} 安排照時段與時長排、錨定的沒動', okw and bool(mt) and mt[0]['t'].startswith('13:25'), rows)
         # msg 1565：新增行程兩個行事曆可勾，標題是對外的事自動勾公司
         await pg.evaluate("()=>{const z=window.__zl;z.S.page=null;z.S.sheet=null;z.paint('keep');z.ACT.cenew()}"); await pg.wait_for_timeout(1000)
         if await pg.query_selector('#ceT'):

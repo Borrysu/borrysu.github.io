@@ -2076,3 +2076,7 @@ button.pask .chev{margin-left:auto;color:var(--ink2)}
 .decint{margin:10px 0 0;line-height:1.6}.decdet{margin-top:10px;display:grid;gap:8px;line-height:1.6}.decdet p{margin:0}.decdet ol{margin:0;padding-left:1.3em;display:grid;gap:6px}
 /* v224（msg 1565）：新增行程兩個行事曆勾選 */
 .cecal{border:0;padding:0;margin:12px 0 0}.cecal legend{font-size:13px;color:var(--ink2);margin-bottom:6px}.ceck{display:flex;align-items:center;gap:10px;min-height:44px;font-size:16px}.ceck input{width:22px;height:22px}
+/* v227（msg 1574）：安排鈕、錨定鈕、安排出來的時間 */
+.ckh{display:flex;align-items:center;gap:8px}.ckh h2{flex:1;min-width:0}.ckarr{flex:none}
+.ckanc{border:0;background:none;color:var(--ink2);opacity:.45;font-size:14px;min-width:32px;min-height:32px;padding:0;cursor:pointer}.ckanc.on{opacity:1;color:var(--pri)}
+.cksg.arr{color:var(--ink2);font-style:italic}
