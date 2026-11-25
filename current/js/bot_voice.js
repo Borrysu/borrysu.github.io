@@ -1046,8 +1046,8 @@
     window.__zlPendGo = b.onclick = async function () {
       var Z = window.__zl, L = Z && Z.LV; if (!L || !L.api || !L.api.say || !pend) return;
       var t = document.getElementById('cText'), said = t ? t.value.trim() : '';
-      var AQN = { 'claude-b': 'Claude 個人（claude B）', 'codex': 'Codex 好咖', 'codex-p': 'Codex 個人（codex B）', 'agy-b': 'AGY 個人（agy B）' };
-      if (window.__aqPick && AQN[window.__aqPick]) said = (said ? said + '\n' : '') + '（老大指定這件用 ' + AQN[window.__aqPick] + ' 跑，Claude 好咖額度快滿）';
+      var AQN = { 'claude': 'Claude 好咖（claude）', 'claude-b': 'Claude 個人（claude B）', 'codex': 'Codex 好咖', 'codex-p': 'Codex 個人（codex B）', 'agy-b': 'AGY 個人（agy B）' };
+      if (window.__aqPick && AQN[window.__aqPick]) said = (said ? said + '\n' : '') + '（老大指定這件用 ' + AQN[window.__aqPick] + ' 跑，Claude 個人額度快滿）';
       if (pend.who === '霸霸') {   // 2026-11-25 v125：霸霸就在霸霸自己的對話裡派，不再經大器
         b.disabled = true; var P2 = pend, c2 = (L.items || []).find(function (q) { return q.id === P2.id; }) || {}, nm = String(c2.title || P2.title || '這件').slice(0, 100), item2 = c2.id ? P2.id : null;
         var intent = /規劃/.test(P2.label || '') ? '規劃步驟' : (P2.k === 'proj' ? '推進這個案子' : '轉派');
@@ -1187,14 +1187,14 @@
   var SHORT = { 'claude': 'Claude 好咖', 'claude-b': 'Claude 個人', 'codex': 'Codex 好咖', 'codex-p': 'Codex 個人', 'agy-b': 'AGY 個人' };
   // 2026-11-25 逐流 msg 787 老大：「這邊顯示做額度的內容，我也不能點選它，我是要怎麼改 另外額度的部分我就再不用在這邊顯示，除非現在當下我們的本體帳號額度真的快滿了才再給我其他的選項。 額度你安排到某個地方小小的顯示就好。」
   // → 派工處只在本體（Claude 好咖）≥85% 才出現，給可點的「改用 X」；平常只在頂端時間旁一個小點（點了看各帳號）。退回：刪掉 MAIN 判斷與 #aqDot 那段。
-  var MAIN = 'claude';
+  var MAIN = 'claude-b';   // 2026-11-25 msg 826 老大：「我們額度的部分是預設使用，我們自己個人帳戶的cloude」
   function pctOf(r) { return Math.max(r.wk_pct || 0, r.h5_pct || 0); }
   function html(rows) {
     var main = rows.filter(function (r) { return r.account === MAIN; })[0];
     if (!main || pctOf(main) < 85) return '';
     var alt = rows.filter(function (r) { return SHORT[r.account] && r.account !== MAIN && r.wk_pct != null && pctOf(r) < 70; }).sort(function (a, b) { return pctOf(a) - pctOf(b); });
     var pick = window.__aqPick || '';
-    return '<div class="aqrow" aria-label="本體額度快滿"><span class="aqt2">Claude 好咖額度 ' + Math.round(pctOf(main)) + '%，這件改用：</span>' +
+    return '<div class="aqrow" aria-label="本體額度快滿"><span class="aqt2">Claude 個人額度 ' + Math.round(pctOf(main)) + '%，這件改用：</span>' +
       alt.map(function (r) { return '<button type="button" class="aq aqp' + (pick === r.account ? ' on' : '') + '" data-aq="' + r.account + '">' + SHORT[r.account] + ' <b>' + Math.round(pctOf(r)) + '%</b></button>'; }).join('') + '</div>';
   }
   function _oldHtml(rows) {

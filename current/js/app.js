@@ -2537,7 +2537,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v126');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v127');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4752,9 +4752,19 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   MISS={};miss.forEach(m=>{MISS[m.ref]=m});
   const done=wants.filter(w=>doneOf(w.id)).length;
   const face=(b,wid,lab)=>`<button class="aif" data-act="ckchat" data-id="${b}|${esc(wid)}" aria-label="${lab}"><span class="bm bf" data-b="${b}" aria-hidden="true"></span></button>`;
-  const wrow=w=>{const wid=String(w.id),d=doneOf(wid),r=relOf(w),tmp=wid.indexOf('tmp')===0;
+  // 2026-11-25 msg 826 老大：「沒有寫時間就可以給我規劃一個建議時間，因為我可能不知道我那天有哪些時段可以做那件事？」
+  const SG={};{const Zq=window.__zl,info=Zq&&Zq.tlDay?Zq.tlDay(calAll().filter(e=>e.d===n&&!e.cancel)):null,nh=(()=>{const x=new Date(Date.now()+8*3600e3);return x.getUTCHours()+x.getUTCMinutes()/60})();
+   let gaps=info?info.free.map(f=>n===0?[Math.max(f[0],Math.ceil(nh*2)/2),f[1]]:[f[0],f[1]]).filter(f=>f[1]-f[0]>=0.5):[];
+   const f2=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
+   wants.slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))).forEach(w=>{const wid=String(w.id);if(doneOf(wid))return;const t=String(w.note.text||'');   // 照寫下的先後排
+    const tm=/(?:(上午|下午|晚上|早上|中午)\s*)?(\d{1,2})(?:[:：](\d{2})|點(半)?)/.exec(t);if(tm){let h=+tm[2];if(/下午|晚上/.test(tm[1]||'')&&h<12)h+=12;SG[wid]={t:f2(h+(tm[3]?+tm[3]/60:tm[4]?0.5:0)),own:1};return}
+    const tr=(window.__tideRows||[]).find(r=>r.ref==='want:'+wid&&r.at);if(tr){const x=new Date(Date.parse(tr.at)+8*3600e3),h=x.getUTCHours()+x.getUTCMinutes()/60,e=+((tr.meta||{}).est_hours||0);SG[wid]={t:f2(h)+(e?'～'+f2(Math.min(24,h+e)):''),tide:1};return}
+    const hrs=+(w.note.hours||((/(\d+(?:\.\d+)?)\s*(?:小時|h)/i.exec(t)||[])[1])||1);
+    const g=gaps.find(f=>f[1]-f[0]>=hrs-1e-6);if(!g){SG[wid]={t:'排不下',none:1};return}
+    SG[wid]={t:f2(g[0])+'～'+f2(g[0]+hrs)};g[0]+=hrs});}
+  const wrow=w=>{const wid=String(w.id),d=doneOf(wid),r=relOf(w),tmp=wid.indexOf('tmp')===0,sg=!d&&SG[wid];
    const rel=r?`<button class="ckrel" data-act="${(DB.proj||[]).some(p=>p.id===r.id)?'cerel':'sheet'}" data-id="${(DB.proj||[]).some(p=>p.id===r.id)?esc(r.id):'cview:todo:'+esc(r.id)}">相關：${esc(clip(r.short||r.title,14))} ›</button>`:'';
-   return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm"><span>${esc(w.note.text||'')}</span>${rel}</div>${d?'':`<div class="ckb">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}</div>`}</li>`};
+   return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<span>${esc(w.note.text||'')}</span>${rel}</div>${d?'':`<div class="ckb">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}</div>`}</li>`};
   let h=`<section class="sec ckbox" aria-label="${n?'明天':'今天'}要做"><div class="ckh"><h2>${n?'明天':'今天'}要做<small>${wants.length?`做完 ${done}／${wants.length}`:''}</small></h2><span class="tdh-r">${mb(n?'看今天':'看明天','ckday',String(n?0:1))}</span></div>`;
   h+=`<div class="ckadd"><input id="ckIn" type="text" placeholder="${n?'明天':'今天'}要做什麼？寫一件加一件" aria-label="今天要做什麼">${B('加進去','ckwant',String(n),'pri sm')}</div>`;
   h+=`<ul>${wants.length?wants.map(wrow).join(''):'<li class="cknone">還沒寫。寫下來就是確認你吸收了，張弛會幫你排時段，大家也會知道。</li>'}</ul>`;
@@ -4765,9 +4775,16 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
   try{await LV.api.tideLogAdd('note',{ref:note.src||undefined,source:'面板',note});tlLoad(true);return true}catch(e){TL.shift();LV.sig='';paint();toast('沒存上：'+LERR(e));return false}}
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){if(el)el.focus();return}
-  const m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(txt),note={type:'want',text:txt,day};if(m)note.hours=+m[1];if(el)el.value='';
-  const r=relOf({note});if(r)note.card=r.id;
-  if(await wantAdd(note))toast('記下了，張弛會排時段')};
+  // 2026-11-25 msg 826 老大：「如果我一行裡面打得多個項目，你們自己讀取之後要自己懂得分開」→ 逗號、頓號、分號、換行都拆；空白前面是三個字以上的中文詞就拆（「木星 Reels」這種短詞＋英文不拆；時間、時數跟著前一件）
+  const parts=splitWants(txt);if(el)el.value='';let ok=0;
+  for(const one of parts){const m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(await wantAdd(note))ok++}
+  if(ok)toast(parts.length>1?`拆成 ${parts.length} 件記下了，沒寫時間的先照空檔建議`:'記下了，沒寫時間的先照空檔建議')};
+ function splitWants(txt){const CJK=/[\u3400-\u9fff]/,out=[];
+  String(txt||'').split(/[，,、；;／/\n]+|\s{2,}/).forEach(seg=>{const toks=seg.trim().split(/\s+/).filter(Boolean);if(!toks.length)return;let cur=toks[0];
+   for(let i=1;i<toks.length;i++){const nx=toks[i],last=cur.slice(-1),run=(cur.match(/[\u3400-\u9fff]+$/)||[''])[0].length;
+    const mod=/^(\d|上午|下午|晚上|早上|中午|傍晚|約|大概|小時|分鐘|點)/.test(nx),cut=!mod&&CJK.test(last)&&(CJK.test(nx[0])||run>=3);if(cut){out.push(cur);cur=nx}else cur+=' '+nx}
+   out.push(cur)});
+  return out.map(x=>x.replace(/^(分成|還有|然後|以及|跟|和)/,'').trim()).filter(x=>x.length>=1)}
  ACT.ckadd=async ref=>{const m=MISS[ref];if(!m)return;const n=dayN(),note={type:'want',text:m.text,day:ymdT(n),src:ref};if(m.card)note.card=m.card;
   if(await wantAdd(note))toast('加進今天要做了')};
  async function doneSet(wid,type){if(!LV.api||!LV.api.tideLogAdd)return;const day=ymdT(dayN()),note={type,ref:'want:'+wid,day};

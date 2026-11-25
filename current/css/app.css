@@ -1770,3 +1770,4 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .ck.want .ckb .aif{width:44px;height:44px}
 .ck.want .ckm{display:block}
 .ck.want .ckm>span{display:block}
+.ckbox .cksg{font-size:12px;color:var(--ink2);min-width:0!important;margin-right:4px;white-space:nowrap}.ckbox .cksg.none{color:#f0605a}
