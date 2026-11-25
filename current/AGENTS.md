@@ -39,6 +39,8 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 - 籃子：個人版不收公司標案，`basket='company'` 新卡寫入時自動收走（72 小時內可救回）。新籃 `todo`＝Borry 的待辦（要請 AI 建置的事），不會自動過期。
 - 前端欄位順序：個人案、創作資金、成就機會、非本業（`other`，含非本業賺錢與 AI 可代跑）、進行中（doing／delivered／paid，含既有案與案務欄位）、待辦、封存。
 - 跟大器說：`opp_msg_add(p_item_id 或 null, p_body)`、`opp_msg_list(p_item_id, p_limit)`。用 AI協作金鑰寫的會顯示成「大器」並直接算已處理。
+- **總聊天／子聊天（v131，2026-11-25）**：老大原話「每隻機器人會有總聊天…點擊某一張卡片或者是某一處，那他要有一個子聊天…可是總聊天會看見子聊天」。讀：`opp_msg_thread(p_bot, p_scope, p_limit)`，p_scope＝`all`（總聊天，所有卡與各處）｜`item:<卡id>`｜`ctx:<位置>`（目標、決策等卡片以外的地方）｜`gen`。寫：卡片照舊 `opp_msg_add(p_item_id,…)`；卡片以外的地方用 `opp_msg_say(p_item_id null, p_body, p_bot, p_ctx)`。回話不用帶 ctx，資料庫會沿用老大那句的位置。
+- **逐流監工（bot＝`jian`）與大器分工**：老大原話「編修應該是直接與逐流監工對話，逐流的大器才是櫃檯 一個是改面板架構設計 一個是負責內容的」。面板「編修」清單與「逐流監工」對話都寫 bot jian，Mac relay（`opp_jian_take`）直送【監工】逐流視窗，不經櫃檯；監工用 AI協作金鑰 `opp_msg_add(…, p_bot:"jian")` 回話。櫃檯不接面板改版，收到改面板的事轉給監工。
 - Mac 收件：`opp_msg_pending`／`opp_msg_handled(p_ids)`，由 launchd `com.borry.opportunity-daqi-relay` 轉給側欄視窗「【機會雷達】大器櫃台」，說明在 `/Users/borry/Claude-Projects/Tools/opportunity-daqi/櫃台說明.md`。
 - 待辦：`opp_todo_add(p_title, p_note)`；去執行：`opp_run(p_id)`（待辦卡變 doing、run_status=queued，並留一則 kind=run 訊息）。
 - 進度：`opp_progress_set(p_id, p_steps, p_note, p_blocker, p_run_status, p_run_session, p_run_note)`，steps 是 `[{name,status(pending/current/done/skipped/blocked),note}]`，最多 30 步。
