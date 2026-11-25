@@ -86,3 +86,12 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 - 老大可以不帶金鑰直接開，用 email 登入碼登入；網址金鑰照常能用。帳號只有一個，要在 Supabase 儀表板建（不要自己登入老大的帳號）。
 - 案子房間「公司」分頁：公司電腦的肉咖同步皮條客的卡過來（`hub_company_summary_write`，肉咖鑰匙），老大點肉咖的臉派公司電腦做、點大器的臉跟大器說。大器收到帶「公司卡」的訊息，做完 `tools/rpc.sh hub_job_set '{"p_title":"…","p_agent":"大器","p_status":"done","p_source_key":"cotask:編號"}'`。
 - 肉咖鑰匙只能用三支：`hub_company_summary_write`、`hub_rouka_take`、`hub_rouka_report`。細節 `CLAUDE.md` 第 41 條。
+
+## 收卡規則（2026-11-25，所有 AI 都要照做）
+
+老大原話：「我看卡片跟大家還是會把已經做完或正在做的事當成沒做推給我欸」。
+
+- **誰發的卡誰收**：你發過的「要你決定」卡（`hub_decision_add`）、你寫的「等你：…」步驟、你開的工作（`hub_job_set`），事情做完或不用做了，**當場**收掉：決策卡用 `hub_decision_close`（附一句結果），步驟改 done／skipped，工作改 done，`run_status` 清掉（`opp_progress_set` 傳 `p_run_status:"stopped"`）。
+- **發卡前先查**：要問老大前，先 `hub_today` 看 `open` 有沒有同一件已經在等，或已經做完的證據（行事曆已建、卡片步驟已 done、交接帳有記），有就不要再發。
+- **不替老大答他的卡**：老大點的卡只能老大點；你只能收掉「你自己發、而且已經不需要他決定」的卡，收的時候寫明為什麼。
+- 面板每張決策卡都有「✓ 已經處理了」，老大看到過期的卡可以一鍵收。

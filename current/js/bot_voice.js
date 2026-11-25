@@ -1165,3 +1165,18 @@
     var s = document.querySelector('#sheet .stplanr'); if (s) put(s.parentNode);
   }, 120); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* 2026-11-25 每張「要你決定」卡都有「已經處理了」（老大：「我看卡片跟大家還是會把已經做完或正在做的事當成沒做推給我欸」）。
+   原本只有要登入的卡才有「我已經弄好了」；其他卡做完了也只能選選項。這裡補一顆小鈕，按了照舊走 pick _done（記下「我已經弄好了」、可復原）。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  function run() {
+    document.querySelectorAll('[data-dec]').forEach(function (box) {
+      var id = box.dataset.dec; if (!id || box.querySelector('[data-k="_done"]')) return;
+      var host = box.querySelector('.btns, .mrow') || box;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'mb'; b.dataset.act = 'pick'; b.dataset.id = id; b.dataset.k = '_done';
+      b.textContent = '✓ 已經處理了'; host.appendChild(b);
+    });
+  }
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 80); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
