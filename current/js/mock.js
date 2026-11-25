@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v122';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v123';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -315,12 +315,14 @@ export function mockAdapter(modeStr) {
       const hit = cl.filter(r => (!year || yr(r) === +year) && (!q || [r.title, r.short_title, r.org, r.folder_name].join(' ').toLowerCase().includes(String(q).toLowerCase())));
       return { items: hit.map(r => normalize(view(r))), years: [...new Set(cl.map(yr))].sort((a, b) => b - a) };
     },
+    async tideLog() { await wait(100); return (window.__mockTideLog || []).slice().reverse(); },
+    async tideLogAdd(kind, patch) { await wait(150); const r = { id: 'tl' + Date.now(), kind, at: new Date().toISOString(), note: (patch && patch.note) || {}, source: '面板' }; (window.__mockTideLog = window.__mockTideLog || []).push(r); return { ok: true, id: r.id }; },
     async tidePlan() { await wait(150); const d = n => { const t = new Date(); t.setDate(t.getDate() + n); return t; }, at = (n, h, m) => { const t = d(n); t.setHours(h, m || 0, 0, 0); return t.toISOString(); };
       return [   // 示範用虛構節奏
         { kind: 'leave', verb: '出門', title: '與客戶討論分鏡', at: at(0, 9, 30) },
-        { kind: 'start', weight: 'heavy', title: '某品牌形象短片 粗剪', at: at(0, 14) },
+        { id: 'tp1', kind: 'start', weight: 'heavy', title: '某品牌形象短片 粗剪', at: at(0, 14), meta: { est_hours: 3 } },
         { kind: 'internal_due', title: '某咖啡品牌開幕短片 試看帶', at: at(0, 18), meta: { note: '這件接不上前一段，可能要往後挪' } },
-        { kind: 'start', weight: 'light', title: '回覆報價信', at: at(1, 10) },
+        { id: 'tp2', kind: 'start', weight: 'light', title: '回覆報價信', at: at(1, 10), meta: { est_hours: 1 } },
         { kind: 'hard_stop', title: '出門前收手', at: at(1, 16, 30) }]; },
     async aiQuota() { await wait(150); return [   // 示範用虛構數字
       { account: 'claude', tool: 'claude', label: 'Claude 好咖（claude）', wk_pct: 100, wk_reset: '2026-11-27T07:00:00Z' },

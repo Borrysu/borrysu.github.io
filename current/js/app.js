@@ -2532,7 +2532,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v122');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v123');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4732,6 +4732,57 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   if(ago)h+=`<p class="tdu">行事曆 ${esc(ago)}更新${mb('↻','calnow','',' aria-label="現在更新"')}</p>`;
   return h+'</section>'};
  window.__tideInline=true;}
+/* ---------- v123（2026-11-25）：「今天的節奏」＝做事前的確認清單 ----------
+   老大：「今天的節奏可以這樣設計 有點像是我每天醒來確認每件事情怎麼處理一樣 你會先弄好"已經排好"跟你"建議排入"的時間，然後我在上面按」
+   「我按確認就表示那天我會這樣做」「我也會寫入 可能我要安排的東西」
+   「今天的節奏就變成我早上確認（或者前一天晚上確認明天的事）要做事之前的todo list 版的確定，版型依照你原本那樣可以」
+   做法：首頁「今天」下面一塊清單：已經排好（行事曆）／建議排入（張弛排的開工時段，含出門、內部截止當提醒）／我想排（老大自己寫的）。
+   每件可「確認」「改時間」「不做」，寫進 hub_tide_log（kind=note，note.type=confirm／retime／skip／want，note.ref、note.day），可按「復原」。
+   張弛在 Mac 上讀這些：確認的建議排進 Google 行事曆、我想排的找時段排進建議（交給【監工】節律技能）。晚上 18 點後預設確認明天。退回：刪掉這一段。 */
+{const ymdT=n=>{const t=new Date(Date.now()+8*3600e3+n*864e5);return t.toISOString().slice(0,10)};
+ const tw2=iso=>{const x=new Date(Date.parse(iso)+8*3600e3);return{h:x.getUTCHours()+x.getUTCMinutes()/60,day:x.toISOString().slice(0,10)}};
+ const f3=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
+ let TL=null,TLAT=0,TLBUSY=false;
+ function tlLoad(force){if(!LV.api||!LV.api.tideLog||TLBUSY)return;if(!force&&TL&&Date.now()-TLAT<300000)return;TLBUSY=true;
+  LV.api.tideLog(ymdT(-1)+'T00:00:00+08:00','note').then(d=>{TL=Array.isArray(d)?d:[];TLAT=Date.now();TLBUSY=false;LV.sig='';paint()}).catch(()=>{TL=TL||[];TLAT=Date.now();TLBUSY=false})}
+ const stOf=(ref,day)=>{const l=(TL||[]).filter(x=>x.note&&x.note.ref===ref&&x.note.day===day&&x.note.type!=='want');return l.length&&l[0].note.type!=='undo'?l[0]:null};   // 新的在前；最新一筆是復原就沒狀態
+ const dayN=()=>S.ckDay!=null?S.ckDay:(new Date(Date.now()+8*3600e3).getUTCHours()>=18?1:0);
+ function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
+  const cal=calAll().filter(e=>e.d===n&&!e.cancel&&e.src!=='tide');
+  const sug=(window.__tideRows||[]).filter(r=>r.at&&tw2(r.at).day===day&&r.kind==='start');
+  const info=(window.__tideRows||[]).filter(r=>r.at&&tw2(r.at).day===day&&r.kind!=='start');
+  const wants=(TL||[]).filter(x=>x.note&&x.note.type==='want'&&x.note.day===day);
+  const btns=(ref,kind,label)=>{const s=stOf(ref,day);if(s){const t=s.note.type;return `<span class="ckst" data-t="${t}">${t==='confirm'?'✓ 確認了':t==='skip'?'不做':'改到 '+esc(s.note.time||'')}</span>${mb('復原','ckundo',ref)}`}
+   return `${B('確認','ckset','confirm|'+ref+'|'+kind,'pri sm')}${mb('改時間','ckset','retime|'+ref+'|'+kind)}${mb('不做','ckset','skip|'+ref+'|'+kind)}`};
+  const row=(ref,kind,tm,title,sub)=>{const s=stOf(ref,day);return `<li class="ck${s?' done '+s.note.type:''}" data-ref="${esc(ref)}"><div class="ckm"><b class="num">${esc(tm)}</b><span>${esc(title)}</span>${sub?`<small>${esc(sub)}</small>`:''}</div><div class="ckb">${btns(ref,kind,title)}</div></li>`};
+  const tOf=e=>e.all||!e.t?'全天':e.t+(e.e?'～'+e.e:'');
+  const done=[...cal.map(e=>'cal:'+e.id),...sug.map(r=>'tide:'+r.id)].filter(r=>stOf(r,day)).length,total=cal.length+sug.length;
+  let h=`<section class="sec ckbox" aria-label="${n?'明天':'今天'}的節奏"><div class="ckh"><h2>${n?'明天':'今天'}的節奏<small>${total?`確認了 ${done}／${total}`:''}</small></h2><span class="tdh-r">${mb(n?'看今天':'看明天','ckday',String(n?0:1))}</span></div>`;
+  h+=`<p class="ckg">已經排好</p><ul>${cal.length?cal.map(e=>row('cal:'+e.id,'cal',tOf(e),(e.cs?e.cs+'・':'')+e.n,e.place||'')).join(''):'<li class="cknone">行事曆上沒有</li>'}</ul>`;
+  h+=`<p class="ckg">建議排入<small>張弛照交件往回推</small></p><ul>${sug.length?sug.map(r=>{const a=tw2(r.at).h,est=+((r.meta||{}).est_hours||0);return row('tide:'+r.id,'tide',f3(a)+(est?'～'+f3(Math.min(24,a+est)):''),String(r.title||'').replace(/\s*@Borry/i,''),est?'約 '+est+' 小時':'')}).join(''):'<li class="cknone">沒有建議</li>'}</ul>`;
+  if(info.length)h+=`<p class="ckinfo">${info.map(r=>{const k=r.kind==='leave'?(r.verb||'出門'):r.kind==='internal_due'?'內部截止':'收手';return `${f3(tw2(r.at).h)} ${k}｜${esc(String(r.title||'').replace(/\s*@Borry/i,''))}`}).join('<br>')}</p>`;
+  h+=`<p class="ckg">我想排</p><ul>${wants.map(w=>`<li class="ck want"><div class="ckm"><b>＋</b><span>${esc(w.note.text||'')}</span><small>${w.note.hours?'約 '+esc(String(w.note.hours))+' 小時・':''}等張弛排進建議</small></div></li>`).join('')}</ul>`;
+  h+=`<div class="ckadd"><input id="ckIn" type="text" placeholder="${n?'明天':'今天'}還想排什麼？例：回客戶信 1 小時" aria-label="想排的事">${B('加進去','ckwant',String(n),'pri sm')}</div>`;
+  return h+'</section>'}
+ ACT.ckday=id=>{S.ckDay=+id;render('keep')};
+ ACT.ckset=async v=>{const [t,ref,kind]=v.split('|'),n=dayN(),day=ymdT(n);let time=null;
+  if(t==='retime'){try{time=prompt('改到幾點？（例：15:30）','')}catch(e){}if(!time)return;time=String(time).trim()}
+  if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再按');return}
+  const note={type:t,ref,kind,day};if(time)note.time=time;
+  (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
+  try{await LV.api.tideLogAdd('note',{ref,source:'面板',note});toast(t==='confirm'?'確認了，這天照這樣做':t==='skip'?'記下了，這件今天不做':'記下了，改到 '+time);tlLoad(true)}
+  catch(e){TL.shift();LV.sig='';paint();toast('沒存上：'+LERR(e))}};
+ ACT.ckundo=async ref=>{const n=dayN(),day=ymdT(n);if(!LV.api||!LV.api.tideLogAdd)return;
+  (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note:{type:'undo',ref,day},at:new Date().toISOString()});
+  // 復原＝寫一筆 undo；stOf 只看最新一筆，undo 不算狀態
+  try{await LV.api.tideLogAdd('note',{ref,source:'面板',note:{type:'undo',ref,day}});tlLoad(true)}catch(e){}LV.sig='';paint()};
+ ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){if(el)el.focus();return}
+  const m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(txt),hours=m?+m[1]:null;if(el)el.value='';
+  if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再加');return}
+  const note={type:'want',text:txt,day};if(hours)note.hours=hours;(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
+  try{await LV.api.tideLogAdd('note',{source:'面板',note});toast('記下了，張弛下次排的時候會放進建議');tlLoad(true)}catch(e){toast('沒存上：'+LERR(e))}};
+ WRITE.push('ckset','ckundo','ckwant');
+ {const _t=todayStrip;todayStrip=function(){const h=_t();return h?h+tideCheck():h}}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

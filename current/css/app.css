@@ -1697,3 +1697,18 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .tday.v122 .tdmk{cursor:default}.tday.v122 .tdmk b{font-weight:600}.tday.v122 .tdmk[data-k="internal_due"] .tm,.tday.v122 .tdmk[data-k="internal_due"] b{color:var(--urg,#f87171)}
 .tday.v122 .tdnote{margin:6px 0 0;font-size:12px;color:var(--ink2)}
 .tday.v122 .tdtmr{margin:8px 0 0;padding-top:8px;border-top:1px solid var(--line);font-size:13px;color:var(--ink2)}.tday.v122 .tdtmr b{color:var(--ink);margin-right:4px}
+
+/* v123 今天的節奏＝確認清單 */
+.ckbox{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--sf)}
+.ckbox .ckh{display:flex;justify-content:space-between;align-items:center}.ckbox h2{font-size:16px;margin:0}.ckbox h2 small{margin-left:8px;font-size:12px;color:var(--ink2);font-weight:400}
+.ckbox .ckg{margin:12px 0 4px;font-size:12px;color:var(--ink2)}.ckbox .ckg small{margin-left:6px}
+.ckbox ul{list-style:none;margin:0;padding:0}
+.ckbox .ck{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)}
+.ckbox .ck:first-child{border-top:0}
+.ckbox .ckm{display:flex;gap:8px;align-items:baseline;min-width:0;flex:1 1 180px}.ckbox .ckm b{min-width:44px;font-size:14px}.ckbox .ckm span{font-size:14px;overflow-wrap:anywhere}.ckbox .ckm small{color:var(--ink2);font-size:12px}
+.ckbox .ckb{display:flex;gap:4px;align-items:center;flex-wrap:wrap}.ckbox .ckb .btn.sm,.ckbox .ckb .mb{min-height:36px}
+.ckbox .ck.done.confirm .ckm{opacity:.7}.ckbox .ck.done.skip .ckm span{text-decoration:line-through;opacity:.55}
+.ckbox .ckst{font-size:12px;color:var(--ink2)}.ckbox .ckst[data-t="confirm"]{color:#34c27a}
+.ckbox .cknone{padding:6px 0;font-size:13px;color:var(--ink2)}
+.ckbox .ckinfo{margin:8px 0 0;font-size:12px;color:var(--ink2);line-height:1.6}
+.ckbox .ckadd{display:flex;gap:6px;margin-top:10px}.ckbox .ckadd input{flex:1;min-width:0;min-height:40px;padding:0 12px;border-radius:12px;border:1px solid var(--line2);background:transparent;color:var(--ink);font:inherit}
