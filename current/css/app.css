@@ -1801,3 +1801,9 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .ckbx::before{content:"";position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;border:2px solid var(--line2,#666);box-sizing:border-box}
 .ck.want.done .ckbx::before{background:var(--ok,#2fb26a);border-color:var(--ok,#2fb26a)}.ck.want.done .ckbx{color:#000}
 .ckbx{z-index:0}.ckbx::before{z-index:-1}
+/* v137 msg 896 老大：「這邊按鈕呈現看能不能簡潔一點，太大顆笨重了」→ 編修列改小：存好＝小膠囊，取消、刪除＝純文字，時間欄縮窄 */
+.cke .ckerow{gap:4px 10px}
+.cke .ckerow .btn{min-height:32px!important;height:32px;padding:0 12px!important;font-size:13px!important;border-radius:999px!important;box-shadow:none!important;width:auto!important;flex:none}
+.cke .ckerow .btn:not(.pri){background:transparent!important;border:0!important;padding:0 6px!important;color:var(--ink2)!important}
+.cke .ckerow .btn.warn{color:#f0605a!important;margin-left:auto}
+.cke .cketm input{min-height:32px;height:32px;font-size:13px;padding:0 6px}
