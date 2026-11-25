@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v158');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v159');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5294,6 +5294,8 @@ function ctoBar(){const cin=document.querySelector('#chat .cin');let r=document.
 {const _st=sendTo;sendTo=function(b,text,ctx){if(S.chat&&!S.chat.ctx&&CTO&&!CTO.dismiss){const c2=CTO.item?'proj:'+CTO.item:CTO.ctx;return _st(b,text,c2)}return _st(b,text,ctx)}}
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-ctox]')){if(CTO)CTO.dismiss=CTO.key;const r=document.getElementById('cTo');if(r)r.remove()}},true);
 new MutationObserver(()=>{if(CTO&&!CTO.dismiss&&!document.getElementById('cTo'))ctoBar()}).observe(document.body,{childList:true,subtree:true});
+// v159 msg 993 老大：「我按小三角形收起來之後，結果他變成一個超級大塊的空白格」→ 收合／展開時，把防跳動留下的最小高度一起清掉
+document.addEventListener('click',e=>{const z=e.target.closest&&e.target.closest('.zcolb');if(!z)return;setTimeout(()=>{const sec=z.closest('section,[data-zcol]');if(sec)sec.style.minHeight='';const v=document.getElementById('view');if(v)v.style.minHeight='';const pg=document.getElementById('page');if(pg&&pg.firstElementChild)pg.firstElementChild.style.minHeight=''},0)},true);
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
