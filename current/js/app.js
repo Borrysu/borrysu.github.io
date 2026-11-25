@@ -232,7 +232,8 @@ function projCard(p){const op=!!S.open[p.id];
  return `<article class="card"><div class="meta">${chip(p.due,p.urg)}<span class="lbl">${esc(p.who)}</span></div><h3>${esc(p.title)}</h3><p>${esc(p.next)}</p>${pxOf(p).block!=='沒有卡住'?`<p class="note" style="margin-top:4px">▲ 卡在：${esc(pxOf(p).block)}</p>`:''}<div class="steps" role="img" aria-label="${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步">${p.steps.map((s,i)=>`<i class="${i<p.cur?'d':i===p.cur?'c':''}"></i>`).join('')}</div><p class="note">${p.cur<p.steps.length?'現在：'+esc(p.steps[p.cur]):'全部做完'}・${esc(p.money)}</p>${projSync(p)}
  <div class="btns">${B('看詳情 ›','page','proj:'+p.id,'pri')}</div>${op?`<ul class="tl fadein" style="margin-top:14px">${p.hist.map(h=>`<li>${esc(h)}</li>`).join('')}</ul>`:''}</article>`}
 function zoneProj(){const s=S.sub.proj,ps=projs(),sm=zsum('proj');let h=zoneHead('proj',ps.length?`${sm.n} ${sm.u}，${esc(sm.s)}`:'還沒有案子');
- h+=`<div class="seg" role="group" aria-label="案子分類">${[['proj','案子 '+ps.length],['todo','待辦 '+(E()?0:DB.todo.length)],['arch','封存 '+(E()?0:DB.arch.length)]].map(x=>`<button aria-pressed="${s===x[0]}" data-act="sub" data-id="proj:${x[0]}">${x[1]}</button>`).join('')}</div>`;
+ const projectCount=E()?0:window.__allProj?window.__allProj.filter(p=>!isCoCase(p)).length:ps.length;
+ h+=`<div class="seg" role="group" aria-label="案子分類">${[['proj','案子 '+projectCount],['todo','待辦 '+(E()?0:DB.todo.length)],['arch','封存 '+(E()?0:DB.arch.length)]].map(x=>`<button aria-pressed="${s===x[0]}" data-act="sub" data-id="proj:${x[0]}">${x[1]}</button>`).join('')}</div>`;
  if(s==='proj'){if(!ps.length)return h+emptyBox('還沒有案子','跟大器說一聲，就會開一個案子，下一步和卡在哪會出現在這裡。',aiF('daqi','new:proj'));
   [['need','要你看'],['doing','進行中'],['delivered','已交件，等收款'],['paid','已收款']].forEach(g=>{const a=projs(g[0]);if(a.length)h+=`<section class="sec">${sh('',g[1],a.length+' 件')}<div class="stack stg grid2">${a.map(projCard).join('')}</div></section>`})}
  else{const a=E()?[]:DB[s];h+=a.length?`<section class="sec"><h2 class="vh">${s==='todo'?'待辦':'封存'}</h2><div class="stack stg">${a.map(t=>`<article class="card"><div class="meta">${chip(t.st)}</div><h3>${esc(t.title)}</h3><p>${esc(t.next)}</p></article>`).join('')}</div></section>`:emptyBox(s==='todo'?'沒有待辦':'封存是空的',s==='todo'?'想到要做的事，跟大器說一句就會記在這裡。':'結案的案子會收在這裡，不會自動消失。',s==='todo'?aiF('daqi','new:todo'):'')}
@@ -2570,7 +2571,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v170');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v171');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4539,7 +4540,9 @@ const coCaseLink=c=>coRowOf(c)?`皮條客 id ${coSrcOf(c)}`:'皮條客上還沒�
   btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:co">公司 ${n}</button>`,segRe=/(<div class="seg" role="group" aria-label="案子分類">)([\s\S]*?)(<\/div>)/,fix=h=>h.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,'');
   if(s!=='co'){window.__allProj=all;if(s!=='script')DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all;window.__allProj=null}   // v168 msg 1017：劇本分頁跨個人與公司，公司的劇本案（例：直男行不行）也列
    return /data-id="proj:co"/.test(h)?h.replace(/(data-id="proj:co">)公司 \d+/,`$1公司 ${n}`):h.replace(segRe,(x,a,b,c)=>a+b+btn(false)+c)}
-  S.sub.proj='proj';DB.proj=nat;let h;try{h=_zp()}finally{DB.proj=all;S.sub.proj='co'}
+  window.__allProj=all;
+  S.sub.proj='proj';DB.proj=nat;let h;
+  try{h=_zp()}finally{DB.proj=all;S.sub.proj='co';window.__allProj=null}
   h=h.replace(segRe,(x,a,b,c)=>{const b2=b.replace(/aria-pressed="true"/g,'aria-pressed="false"');return a+(/data-id="proj:co"/.test(b2)?b2.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,btn(true)):b2+btn(true))+c});   // v161 msg 997：點了「公司」原地亮起，不跑到最後
   h=h.replace(/<div class="addtop"><button[^>]*data-id="padd"[^>]*>[^<]*<\/button><\/div>/g,'');
   const top=`<div class="addtop">${B('＋ 新增公司案子','sheet','padd:co','pri')}</div>`,k=h.indexOf('aria-label="案子分類">'),e=k<0?-1:h.indexOf('</div>',k);
