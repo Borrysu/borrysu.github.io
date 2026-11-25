@@ -1891,3 +1891,18 @@ button[data-act="sheet"][data-id="beats"].wide{white-space:nowrap;overflow:hidde
 .ckbox .ck.want .cklp .ckdel.ckx{background:transparent!important;border:0!important;box-shadow:none!important;color:inherit}
 .ckbox .ck.want .cklp .ckdel.ckx svg{width:34px;height:34px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
 .ckbox .ck.want .cklp .ckdel.ckx:active svg{transform:scale(.9)}
+/* v153 休息段（張弛主動排）：非工作色＝淡青斜紋 */
+.tlseg[data-s="rest"],.dtb[data-s="rest"]{background:repeating-linear-gradient(135deg,rgba(64,196,170,.55) 0 4px,rgba(64,196,170,.25) 4px 8px)!important;color:#bff3e6}
+.tdi[data-s="rest"],.tdi.rest{opacity:.85}
+.ring .rg.rw .rgw{color:#40c4aa}.ring .rgrw{display:block;font-style:normal;font-size:9px;color:#40c4aa;line-height:1}
+.cecs{margin-left:6px;padding:1px 6px;border-radius:6px;background:rgba(242,169,59,.2);color:#f2a93b;font-size:11px;font-weight:600}
+/* v153 msg 960 老大：「為什麼會重疊？」（iPhone 的日期欄不肯縮）→ 日期欄可縮，放不下就換行 */
+.ce .cerow{flex-wrap:wrap}.ce .cerow .f{flex:1 1 170px}.ce .cerow input[type="date"],.ce input[type="time"]{min-width:0;width:100%;max-width:100%;display:block;-webkit-appearance:none;appearance:none;box-sizing:border-box}
+.tdi.rest b{color:#7fe0cb;font-weight:500}
+/* v154 msg 962 老大：「全天跟後面的進度調重疊在一起了怎麼辦」→ 「全天 N」移到時間條上緣外面，不蓋住色塊 */
+.tlbar{overflow:visible}.tlall{top:auto;bottom:calc(100% + 2px);transform:none;right:0;font-size:10px;line-height:14px;padding:0 5px;background:transparent;color:var(--ink2);border:1px solid var(--line2,#555)}
+/* v154 msg 963：卡片上方的刪除 */
+.ce{position:relative}.ce .cedel2{position:absolute;top:-46px;right:84px;display:flex;align-items:center;gap:2px;height:40px;padding:0 6px;border:0;background:transparent;color:#f0605a;font:inherit;font-size:13px;font-weight:600}
+.ce .cedel2 svg{width:26px;height:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
+.ce .cedelw{display:none}
+section.tl .tlpg{will-change:transform}

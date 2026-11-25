@@ -2234,7 +2234,11 @@ function calFix(){if(!LV.cal||!Array.isArray(LV.cal.items))return;
   const x=new Date(Date.parse(r.at)+8*3600e3),d=Math.round((Date.UTC(x.getUTCFullYear(),x.getUTCMonth(),x.getUTCDate())-t0.getTime())/864e5);if(d<0||d>13)return;
   const hh=x.getUTCHours()+x.getUTCMinutes()/60,f=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
   {const tk=calKey(String(r.title||'').replace(/\s*@Borry/i,''));if(tk.length>=2&&CAL.some(x=>x.src!=='tide'&&!x.del&&x.d===d&&calKey(x.n).length>=2&&(calKey(x.n)===tk||calKey(x.n).includes(tk)||tk.includes(calKey(x.n)))))return}   // 2026-11-25 v125：已經寫進行事曆的張弛排入，同一天同名只留行事曆那一筆
-  CAL.push({id:'tide:'+r.id,d,t:f(hh),e:f(Math.min(24,hh+est)),all:0,n:'張弛排：'+String(r.title||'').replace(/\s*@Borry/i,''),src:'tide',place:'',why:'張弛照交件倒推排的開工時段（不在 Google 行事曆上）',from:1,go:'',real:0})})}
+  CAL.push({id:'tide:'+r.id,d,t:f(hh),e:f(Math.min(24,hh+est)),all:0,n:'張弛排：'+String(r.title||'').replace(/\s*@Borry/i,''),src:'tide',place:'',why:'張弛照交件倒推排的開工時段（不在 Google 行事曆上）',from:1,go:'',real:0})});
+ // v153 逐流 msg 939 老大：「希望我休息時間可以變成主動的安排，而不是被動的等到事情做完才排」→ 張弛排的休息段（kind=rest）畫成獨立一類：算已排、不算工作時數；不推播、不寫行事曆、不用確認
+ tr.forEach(r=>{if(r.kind!=='rest'||!r.at)return;const m=r.meta||{};const a=new Date(Date.parse(r.at)+8*3600e3),d=Math.round((Date.UTC(a.getUTCFullYear(),a.getUTCMonth(),a.getUTCDate())-t0.getTime())/864e5);if(d<0||d>13)return;
+  const h0=a.getUTCHours()+a.getUTCMinutes()/60,b=m.end?new Date(Date.parse(m.end)+8*3600e3):null,h1=b?b.getUTCHours()+b.getUTCMinutes()/60+(b.getUTCDate()!==a.getUTCDate()?24:0):h0+((+m.minutes||15)/60),f=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
+  CAL.push({id:'rest:'+r.id,d,t:f(h0),e:f(Math.min(24,h1)),all:0,n:String(r.title||'留白'),src:'rest',restT:m.rest_type||'',place:'',why:'張弛主動排的休息（不在 Google 行事曆上，不用確認）',from:1,go:'',real:0})})}
 window.__zl=Object.assign(window.__zl||{},{reCal:()=>{applyCal();LV.sig='';paint()}});
 {const _cs=calSheet;calSheet=function(id){if(String(id).startsWith('tide:')){const e=calFind(id);if(!e)return shHead('這段不在了');return shHead(esc(e.n))+`<div class="meta" style="margin-top:8px"><span class="lbl">${dlw(e.d)}　${e.t}～${e.e}</span></div><p style="margin-top:8px">張弛照你的交件時間往回推，建議這段開工。它不在 Google 行事曆上，所以這裡不能改時間；要調整就跟大器說。</p>`}return _cs(id)}}
 function calAsk(text,ok){LV.api.say(null,'【行事曆】'+text+'（照 14 號行事曆準則建立或修改，做完回報；逐流面板只讀，同步後會出現在行程）','daqi').then(()=>toast(ok)).catch(e=>toast('沒送出：'+LERR(e)))}
@@ -2548,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v152');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v153');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4700,10 +4704,10 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
  // v146 msg 921 老大：「這邊左右滑動 會跳喔」→ 換週只換時間條那一塊，不重畫整頁；高度慢慢變
  ACT.tlwk=id=>{const n=+id,old=S.tlwk?1:0,el=document.querySelector('section.tl');if(el&&!RM&&n!==old){S.tlwk=n;S.calsel=null;
    const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f),tmp=document.createElement('div');tmp.innerHTML=tlPanel(all);const nt=tmp.querySelector('section.tl');
-   if(nt){const h0=el.offsetHeight,pg0=el.querySelector('.tlpg');if(pg0){pg0.style.transition='transform .13s ease-in,opacity .13s ease-in';pg0.style.transform=`translateX(${n>old?-50:50}%)`;pg0.style.opacity='0'}
-    setTimeout(()=>{const cur=document.querySelector('section.tl');if(!cur)return;keepCol(cur,nt,'.tlhd');nt.style.height=h0+'px';nt.style.overflow='hidden';cur.replaceWith(nt);const pg=nt.querySelector('.tlpg');if(pg){pg.style.transition='none';pg.style.transform=`translateX(${n>old?50:-50}%)`;pg.style.opacity='0'}
+   if(nt){const h0=el.offsetHeight,pg0=el.querySelector('.tlpg');if(pg0){pg0.style.transition='transform .12s cubic-bezier(.4,0,1,1),opacity .12s linear';pg0.style.transform=`translateX(${n>old?-28:28}%)`;pg0.style.opacity='0'}
+    setTimeout(()=>{const cur=document.querySelector('section.tl');if(!cur)return;keepCol(cur,nt,'.tlhd');nt.style.height=h0+'px';nt.style.overflow='hidden';cur.replaceWith(nt);const pg=nt.querySelector('.tlpg');if(pg){pg.style.transition='none';pg.style.transform=`translateX(${n>old?28:-28}%)`;pg.style.opacity='0'}
      nt.style.height='';nt.style.overflow='';nt.style.minHeight=h0+'px';   // 不縮：時間條在頁尾，縮了瀏覽器會把畫面往上拉
-     requestAnimationFrame(()=>{if(pg){pg.style.transition='transform .2s ease-out,opacity .2s ease-out';pg.style.transform='';pg.style.opacity=''}})},130);return}}
+     requestAnimationFrame(()=>{if(pg){pg.style.transition='transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s ease-out';pg.style.transform='';pg.style.opacity=''}})},120);return}}
   const top=el?el.getBoundingClientRect().top:null;S.tlwk=n;S.calsel=null;render('keep');   // v144 msg 910：「左右滑動 不流暢絲滑 會跳動」→ 位置固定、整頁從滑的方向滑進來
   const e2=document.querySelector('section.tl');if(e2&&top!=null){const dy=e2.getBoundingClientRect().top-top;if(Math.abs(dy)>1)window.scrollBy(0,dy)}
   const pg=e2&&e2.querySelector('.tlpg');if(pg&&n!==old&&!RM){pg.classList.remove('tlin-l','tlin-r');void pg.offsetWidth;pg.classList.add(n>old?'tlin-l':'tlin-r')}};
@@ -4725,6 +4729,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
   const hit=segs.find(x=>h>=x.a&&h<=x.b)||segs.filter(x=>Math.min(Math.abs(h-x.a),Math.abs(h-x.b))<=0.35).sort((p,q)=>Math.min(Math.abs(h-p.a),Math.abs(h-p.b))-Math.min(Math.abs(h-q.a),Math.abs(h-q.b)))[0];
   // v144 msg 910 老大：「點選的時候是希望小小浮出那是啥 點了浮出的才編修？」→ 先在點的位置浮出小標籤（那件是什麼／這段空多久），點標籤才開編修或新增
   const f2=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
+  if(hit&&String(hit.id).indexOf('rest:')===0){const e3=calAll().find(x=>String(x.id)===String(hit.id));tlPop(e.clientX,r.top,`<b>${esc(f2(hit.a))}～${esc(f2(hit.b))}</b> 休息：${esc(e3?e3.n:'')}<small>張弛主動排的</small>`,()=>{});return}
   if(hit){const e2=calAll().find(x=>String(x.id)===String(hit.id));tlPop(e.clientX,r.top,`<b>${esc(f2(hit.a))}～${esc(f2(hit.b))}</b> ${esc(e2?String(e2.n||'').replace(/^張弛排：/,''):'')}${e2&&e2.cs?`<small>${esc(e2.cs)}</small>`:''}<em>點這裡改 ›</em>`,()=>ACT.sheet('cal:'+hit.id));return}
   const prev=Math.max(h<FW0?TL0:FW0,...segs.filter(x=>x.b<=h).map(x=>x.b)),next=Math.min(h>FW1?TL1:FW1,...segs.filter(x=>x.a>=h).map(x=>x.a));
   const hh=Math.max(TL0,Math.min(23.5,Math.floor(h*2)/2)),t=String(Math.floor(hh)).padStart(2,'0')+':'+(hh%1?'30':'00');
@@ -4741,9 +4746,10 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
  function ringHTML(days,d0,now){const shut=ringShut(),need=S.tlneed||0,R0=15,C=2*Math.PI*R0,SPAN=FW1-FW0;
   const one=d=>{const fh=d.n===0?d0.freeNow:d.i.freeH,busy=Math.max(0,Math.min(1,(SPAN-fh)/SPAN)),fit=need?fitOf(d.i,need,d.n===0?now:0):null,
     st=need?(fit?'ok':'no'):(fh<2?'no':fh<5?'mid':'ok'),lab=d.n===0?'今':WK[d.x.w],we=d.x.w===0||d.x.w===6;
-   return `<button class="rg${we?' we':''}${S.calsel===d.n?' on':''}" data-act="ringpick" data-id="${d.n}" data-st="${st}" aria-label="${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]} ${d.x.m}/${d.x.d}，${d.i.n?d.i.n+' 件，':''}還空 ${hrs(fh)} 小時${need?(fit?'，放得下 '+need+' 小時':'，放不下 '+need+' 小時'):''}">
+   const rw=calAll().some(x=>x.d===d.n&&x.src==='rest'&&x.restT==='week');
+   return `<button class="rg${we?' we':''}${rw?' rw':''}${S.calsel===d.n?' on':''}" data-act="ringpick" data-id="${d.n}" data-st="${st}" aria-label="${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]} ${d.x.m}/${d.x.d}，${d.i.n?d.i.n+' 件，':''}還空 ${hrs(fh)} 小時${need?(fit?'，放得下 '+need+' 小時':'，放不下 '+need+' 小時'):''}">
     <svg viewBox="0 0 40 40" aria-hidden="true"><circle class="rgb" cx="20" cy="20" r="${R0}"/><circle class="rgf" cx="20" cy="20" r="${R0}" stroke-dasharray="${(busy*C).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 20 20)"/>
-    <text class="rgn" x="20" y="${need?22:23}">${need?(fit?'✓':'✕'):hrs(fh)}</text></svg><span class="rgw">${lab}</span><small class="rgd num">${d.x.d}</small></button>`};
+    <text class="rgn" x="20" y="${need?22:23}">${need?(fit?'✓':'✕'):hrs(fh)}</text></svg><span class="rgw">${lab}</span><small class="rgd num">${d.x.d}</small>${rw?'<em class="rgrw">留白</em>':''}</button>`};
   const free7=days.slice(0,7).reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
   return `<section class="ring${shut?' shut':''}" aria-label="兩週負荷">
    <div class="rgh"><b>兩週負荷</b><small>${shut?`這 7 天還空 ${hrs(free7)} 小時`:(need?`✓ 放得下 ${need} 小時・✕ 放不下`:'圈越滿越忙・中間＝還空幾小時')}</small><button class="rgt" data-act="ringtog" aria-expanded="${!shut}" aria-label="${shut?'展開':'收合'}兩週負荷"></button></div>
@@ -4779,7 +4785,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const pc=v=>Math.max(0,Math.min(100,(v-8)/16*100));
  const nowH=()=>{const x=new Date(Date.now()+8*3600e3);return x.getUTCHours()+x.getUTCMinutes()/60};
  function dayOf(n){const Z=window.__zl,its=calAll().filter(e=>e.d===n&&!e.cancel),i=Z&&Z.tlDay?Z.tlDay(its):null,nh=nowH();
-  const marks=(window.__tideRows||[]).filter(r=>r.kind!=='start'&&r.at&&tw(r.at).d===n).map(r=>({h:tw(r.at).h,r}));
+  const marks=(window.__tideRows||[]).filter(r=>r.kind!=='start'&&r.kind!=='rest'&&r.at&&tw(r.at).d===n).map(r=>({h:tw(r.at).h,r}));
   let free=i?i.free.map(f=>n===0?[Math.max(f[0],nh),f[1]]:f).filter(f=>f[1]-f[0]>=0.5):[];
   const fh=Math.max(0,free.reduce((t,f)=>t+f[1]-f[0],0)-((i&&i.est)||0)),big=free.slice().sort((a,b)=>(b[1]-b[0])-(a[1]-a[0]))[0];
   const notes=[];(window.__tideRows||[]).forEach(r=>{if(!r.at||tw(r.at).d!==n)return;const m=r.meta||{};[m.note,m.warn].forEach(x=>{if(x&&notes.indexOf(x)<0)notes.push(x)})});
@@ -4787,7 +4793,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  function bar(){return ''}   // v137 msg 897 老大：「這些按鈕功能我不會用到 很怪 拿掉吧」→ 首頁今天不放空檔小標（行事曆頁的兩週負荷圈與時間條照舊）
  function rows(D){const out=[];
   
-  D.its.filter(e=>!(e.all||!e.t)).forEach(e=>{const m=/^(\d+):(\d+)/.exec(e.t);out.push({k:m?+m[1]+m[2]/60:0,h:`<button class="tdi${e.src==='tide'?' tide':''}" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${esc(e.t)}${e.e?'～'+esc(e.e):''}</span><b>${e.cs&&e.src!=='tide'?esc(e.cs)+'・':''}${esc(e.src==='tide'?String(e.n).replace(/^張弛排：/,''):e.n)}</b>${e.pend?evState(e):e.src==='tide'?'<small>張弛排的開工時段</small>':e.place?`<small>${esc(e.place)}</small>`:''}<i class="tdd" data-s="${e.src}"></i></button>`})});
+  D.its.filter(e=>!(e.all||!e.t)).forEach(e=>{const m=/^(\d+):(\d+)/.exec(e.t);out.push({k:m?+m[1]+m[2]/60:0,h:`<button class="tdi${e.src==='tide'?' tide':''}${e.src==='rest'?' rest':''}" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${esc(e.t)}${e.e?'～'+esc(e.e):''}</span><b>${e.cs&&e.src!=='tide'&&e.src!=='rest'?esc(e.cs)+'・':''}${esc(e.src==='tide'?String(e.n).replace(/^張弛排：/,''):e.n)}</b>${e.pend?evState(e):e.src==='tide'?'<small>張弛排的開工時段</small>':e.src==='rest'?'<small>張弛排的休息</small>':e.place?`<small>${esc(e.place)}</small>`:''}<i class="tdd" data-s="${e.src}"></i></button>`})});
   D.marks.forEach(m=>{const r=m.r,k=r.kind==='leave'?(r.verb||'出門'):(KIND[r.kind]||r.kind);out.push({k:m.h-0.001,h:`<div class="tdi tdmk" data-k="${r.kind}"><span class="tm">${f2(m.h)}</span><b>${esc(k)}</b><small>${esc(String(r.title||'').replace(/\s*@Borry/i,''))}</small></div>`})});
   return out.sort((a,b)=>a.k-b.k).map(x=>x.h)}
  ACT.tdmore=()=>{S.tdOpen=!S.tdOpen;render('keep')};
@@ -4832,7 +4838,10 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const TMRE=/^(\d{1,2}[:：]\d{2})(?:\s*[～~-]\s*(\d{1,2}[:：]\d{2}))?\s+/;
  const splitTm=t=>{const m=TMRE.exec(String(t||''));return m?{tm:m[1].replace('：',':'),te:m[2]?m[2].replace('：',':'):'',text:String(t).slice(m[0].length)}:{tm:'',te:'',text:String(t||'')}};   // msg 860：有時間欄，標題就不再寫時間
  const relOf=w=>{const pool=[].concat(DB.proj||[],DB.todo||[]);if(w.note.card){const c=pool.find(p=>p.id===w.note.card);if(c)return c}
-  const k=calKey(w.note.text);if(k.length<2)return null;return pool.find(p=>[calKey(p.short),calKey(p.title)].some(x=>x&&x.length>=2&&(k.includes(x)||(k.length>=3&&x.includes(k)))))||null};
+  const k=calKey(w.note.text);if(k.length<2)return null;const hit=pool.find(p=>[calKey(p.short),calKey(p.title)].some(x=>x&&x.length>=2&&(k.includes(x)||(k.length>=3&&x.includes(k)))));if(hit)return hit;
+  // v154 msg 964 老大：「如果寫了台江簡報那是不是應該要有對應的卡片啊？我記得這個有耶」→ 標題對不到時，看卡片內容（下一步、步驟、說明）：開頭兩個字加上至少再一段兩個字都出現才算
+  const cj=(String(w.note.text||'').match(/[\u3400-\u9fff]{2,}/g)||[]).join('');if(cj.length<3)return null;const ch=[];for(let i=0;i+2<=cj.length;i++)ch.push(cj.slice(i,i+2));
+  let best=null,bs=0;pool.forEach(p=>{const r=p.raw||{};const tx=[p.title,p.short,p.next,r.progressNote,r.why,(r.progressSteps||[]).map(x=>x.name).join(' ')].join(' ');if(tx.indexOf(ch[0])<0)return;const n=new Set(ch.filter(c=>tx.indexOf(c)>-1)).size;if(n>=2&&n>bs){bs=n;best=p}});return best};
  function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
   // v146 msg 920 老大：「這邊有說同時多項的時候要幫我拆解 想一想怎麼樣可以無感無痛順暢不卡不用等」→ 已經存成一件、其實寫了好幾件的，背景自動拆開，不用按
   wantsOf(day).filter(w=>wstOf(String(w.id))==='open'&&String(w.id).indexOf('tmp')!==0&&!SPLIT[w.id]&&!w.note.src&&!w.note.card&&!/[＠@]/.test(String(w.note.text||''))&&splitWants(splitTm(w.note.text).text||w.note.text).length>1).forEach(w=>{SPLIT[w.id]=1;setTimeout(()=>autoSplit(w),0)});
@@ -4904,15 +4913,17 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   tlLoad(true);toast(`「${clip(sp.text||w.note.text,10)}」拆成 ${parts.length} 件`)}
  // v148 msg 930 老大：「我在這一個欄位點選的時候有些地方沒反應我一定要點到字他才會跳出出來」→ 點那一列任何地方（打勾、小臉、相關除外）都打開編修
  document.addEventListener('click',e=>{const li=e.target.closest&&e.target.closest('.ckbox .ck.want:not(.edit):not(.done):not(.swl)');if(!li||e.target.closest('button,a,input,.cklp'))return;const wid=li.dataset.wid;if(wid&&wid.indexOf('tmp')!==0)ACT.ckedit(wid)});
- ACT.ckedit=wid=>{S.ckEdit=String(wid);render('keep');setTimeout(()=>{const i=$('#ckEt');if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}}},30)};
- ACT.ckcancel=()=>{S.ckEdit='';render('keep')};
+ ACT.ckedit=wid=>{S.ckEdit=String(wid);ckSwap();setTimeout(()=>{const i=$('#ckEt');if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}}},30)};
+ ACT.ckcancel=()=>{S.ckEdit='';ckSwap()};
+ // v154 msg 961 老大：「我點選的時候畫面會跳動，我覺得不應該跳動，而是他直接會變成編修狀態」→ 只換節奏這一塊
+ function ckSwap(){const box=document.querySelector('.ckbox');if(!box){render('keep');return}const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;if(!nb){render('keep');return}keepCol(box,nb,'.ckh');box.replaceWith(nb);try{faceSync()}catch(_){}}
  async function undoWant(wid){const day=ymdT(dayN()),note={type:'drop',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
   try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note:{type:'undo',ref:'want:'+wid,day}});await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}   // v151：先寫 undo（張弛舊規則）再寫 drop（新規則，曾打勾的也確實撤掉）
  ACT.ckdrop=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');S.ckEdit='';if(!w)return;
   if(await undoWant(wid)){tlLoad(true);toast('刪掉了',async()=>{const nt=Object.assign({},w.note);delete nt.src;await wantAdd(nt)})}};
  ACT.cksave=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w)return;
   const t=($('#ckEt')||{}).value||'',tm=($('#ckEtm')||{}).value||'',sp=splitTm(t.trim());const text=(sp.text||t).trim();if(!text){toast('標題不能空白');return}
-  const time=tm||sp.tm||'';const old=splitTm(w.note.text);if(text===(old.text||w.note.text)&&time===(w.note.time||old.tm||'')){S.ckEdit='';render('keep');return}
+  const time=tm||sp.tm||'';const old=splitTm(w.note.text);if(text===(old.text||w.note.text)&&time===(w.note.time||old.tm||'')){S.ckEdit='';ckSwap();return}
   S.ckEdit='';const parts=splitWants(text);
   if(parts.length>1){if(await undoWant(wid)){for(let i=0;i<parts.length;i++){const q=splitTm(parts[i]),nt={type:'want',text:q.text||parts[i],day:w.note.day};const tm2=i===0?(time||q.tm):q.tm;if(tm2)nt.time=tm2;const r=relOf({note:nt});if(r)nt.card=r.id;await wantAdd(nt)}tlLoad(true);toast(`拆成 ${parts.length} 件了`)}return}
   const note=Object.assign({},w.note,{text,day:w.note.day});if(time)note.time=time;else delete note.time;delete note.end;
@@ -5041,6 +5052,7 @@ function calEditHTML(id){
  const e=id?calFind(id):null;
  if(id&&!e)return shHead('這筆行程不在了')+'<p style="margin-top:8px">可能已經取消、改到 14 天以外，或剛被改掉。</p>';
  if(e&&e.pend&&PEND[e.pend]){const p=PEND[e.pend];return shHead(esc(stripTag(e.n)))+`<div class="ce"><p style="margin-top:8px">${p.st==='fail'?`▲ 這次改動沒寫進 Google 行事曆${p.err?'（'+esc(p.err)+'）':''}。`:'這次改動正在同步到 Google 行事曆，寫進去之後才能再改。'}</p>${p.st==='fail'?`<div class="btns">${B('重試寫入','calretry',e.pend,'pri wide')}${B('放棄這次改動','calgiveup',e.pend,'wide')}</div>`:''}</div>`}
+ if(e&&e.src==='rest')return shHead('休息：'+esc(e.n))+`<div class="ce"><p style="margin-top:8px"><b>${esc(e.t)}～${esc(e.e)}</b></p><p class="note">${e.restT==='week'?'這週留的半天，不排工作。':e.restT==='long'?'連著忙滿 3 小時，中間插一段。':'上一段做完接著留白。'}張弛主動排的，不用確認、不推播、不寫進行事曆。</p></div>`;
  const isNew=!e,isTide=!!e&&e.src==='tide',m=isTide?tideMatch(e):null,tgt=isTide?m:e;
  const pre=S.cePre&&S.cePre.id===id?S.cePre:null;
  const d0=isNew?(S.ceDate||ymd(0)):ymd(e.d),all=isNew?false:!!(e.all||!e.t);
@@ -5048,9 +5060,11 @@ function calEditHTML(id){
  const title=isNew?'':stripTag(e.n),rel=isNew?null:ceRelated(e);
  const multi=!!(tgt&&tgt.all&&tgt.rs&&tgt.re&&diffD(tgt.rs,tgt.re)>1);
  let h=shHead(isNew?'新增行程':'這筆行程')+`<div class="ce" data-id="${esc(id||'')}">`;
+ // v154 msg 963 老大：「我發現這邊沒有刪除鈕耶」→ 卡片最上面一顆紅色立體叉：行事曆上的＝刪掉這筆（照舊要再確認一次）；張弛排的＝這天不排這段
+ if(!isNew)h+=`<button class="cedel2" data-act="${isTide?'ceskip':'cedel'}" data-id="${esc(id)}" aria-label="${isTide?'這天不排這段':'刪掉這筆'}"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="cexg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a80"/><stop offset=".55" stop-color="#f0453a"/><stop offset="1" stop-color="#b8231b"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35"><path d="M12 12l16 16M28 12L12 28" stroke="#000" stroke-width="8.5" stroke-linecap="round"/></g><path d="M12 12l16 16M28 12L12 28" stroke="url(#cexg)" stroke-width="8" stroke-linecap="round"/><path d="M13.2 12.4l4.6 4.6M26.8 12.4l-2.4 2.4" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/></svg><span>${isTide?'不排這段':'刪除'}</span></button>`;
  if(!isNew)h+=`<div class="meta" style="margin-top:6px">${srcTag(e)}${e.pend?evState(e):''}</div>`;
  if(isTide)h+=`<p class="cehint">張弛照交件往回推排的開工時段。${m?`存好會把行事曆上的「${esc(stripTag(m.n))}」${m.all?'從全天改成這個時段':'改到這個時間'}，不會另外新增。`:'行事曆上沒有對應的事，存好會新增一筆。'}</p>`;
- h+=`<label class="f">標題<input id="ceT" type="text" value="${esc(title)}" placeholder="例：品牌短片交片給客戶" autocomplete="off"></label>
+ h+=`<label class="f">標題${e&&e.cs?`<span class="cecs">${esc(e.cs)}</span>`:''}<input id="ceT" type="text" value="${esc(title)}" placeholder="例：品牌短片交片給客戶" autocomplete="off"></label>
  <div class="cerow"><label class="f">日期<input id="ceD" type="date" value="${d0}"></label><label class="cek"><input id="ceA" type="checkbox"${all?' checked':''}> 全天</label></div>
  <div class="cerow" id="ceTm"${all?' hidden':''}><label class="f">開始<input id="ceS" type="time" step="900" value="${esc(s0)}"></label><label class="f">結束<input id="ceE" type="time" step="900" value="${esc(e0)}"></label></div>`;
  if(isNew)h+=`<label class="f">放在<select id="ceC"><option value="me">個人行事曆</option><option value="co">公司行事曆</option></select></label>`;
@@ -5111,6 +5125,10 @@ ACT.cesave=id=>{const F=ceRead(),err=ceCheck(F);if(err){ceMsg(err);return}
  const plan=cePlan(id,F);if(!plan){ceMsg('沒有改動');return}
  if(plan.confirm){ceConfirm(plan);return}ceGo(plan)};
 /* 刪除：一定要確認一次（刪掉就回不來） */
+ACT.ceskip=async id=>{const e=calFind(id);if(!e||e.src!=='tide')return;const rowId=String(e.id).replace(/^tide:/,''),day=ymd(e.d);
+ if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再試');return}
+ try{await LV.api.tideLogAdd('note',{ref:'tide:'+rowId,source:'面板',note:{type:'skip',ref:'tide:'+rowId,day}});e.del=1;try{TDONE[e.id]=Date.now();tdSave()}catch(_){}closeThen(()=>{LV.sig='';paint()});toast('這天不排這段了，張弛下一輪會照這個重排')}catch(err){toast('沒存上：'+LERR(err))}};
+WRITE.push('ceskip');
 ACT.cedel=id=>{const e=calFind(id);if(!e)return;const F=ceRead(),cal=e.src==='co'?'co':'me',evId=baseId(e.id),name0=stripTag(e.n),req=rid();
  const multi=!!(e.all&&e.rs&&e.re&&diffD(e.rs,e.re)>1);let plan;
  if(multi&&F.scope!=='all')plan=splitPlan({tgt:e,F,cal,evId,name0,summary:null,mk:o=>Object.assign({type:'cal_write',req_id:req},o),view:null,tide:null,del:true});
