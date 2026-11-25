@@ -2005,7 +2005,7 @@ pxOf=function(p){const c=p.raw||{},dates=[],money=[],files=[];
  if(c.quoteAmount!=null)money.push(['報價',nt(c.quoteAmount)]);if(c.depositAmount!=null)money.push(['訂金',nt(c.depositAmount)+(c.depositDate?'（'+c.depositDate+'）':'')]);
  if(c.finalAmount!=null)money.push(['尾款',nt(c.finalAmount)+(c.finalDue?'，'+c.finalDue+' 前':'')]);if(c.receivedAmount!=null)money.push(['已收',nt(c.receivedAmount)]);if(c.paymentTerms)money.push(['付款條件',c.paymentTerms]);
  if(c.earnings&&c.earnings.net!=null)money.push(['實拿',nt(c.earnings.net)+(c.earnings.hourly!=null?`，時薪 ${nt(c.earnings.hourly)}`:'')]);if(!money.length)money.push(['狀態',p.money]);
- if(c.folderPath)files.push(['案子資料夾',c.folderPath]);(c.links||[]).forEach(l=>files.push([l.label||({pool:'Pool（素材與專案檔）',review:'內審（給你看的版本）',pay:'付款',other:'連結'}[l.kind]),l.path||l.url]));
+ if(c.folderPath&&/^\//.test(c.folderPath))files.push(['案子資料夾',c.folderPath]);(c.links||[]).forEach(l=>files.push([l.label||({pool:'Pool（素材與專案檔）',review:'內審（給你看的版本）',pay:'付款',other:'連結'}[l.kind]),l.path||l.url]));
  return {client:c.org||'沒寫',doNext:p.next,block:c.progressBlocker||(p.g==='delivered'?'等對方付款':'沒有卡住'),left:p.due,leftSub:'',dates,money,team:[[p.who,'負責'],['你','拍板']],files}};
 {const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj;if(s==='proj')return _zp();   // v39：待辦、封存卡照設計稿（標籤、標題、一句話），舊版正式功能收進「⋯」
  const h=_zp(),k=s==='todo'?'待辦':'封存',i=h.indexOf(`<section class="sec"><h2 class="vh">${k}</h2>`);if(i<0)return h;const a=DB[s];
@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v164');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v165');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3623,7 +3623,7 @@ const HTTPS_RE=/https:\/\/[^\s<>"'）)」』，。、]+/g;
 const projSteps=p=>{const c=p.raw||{};if(c.progressSteps&&c.progressSteps.length)return c.progressSteps;return (p.steps||[]).map((n,i)=>({name:n,status:i<p.cur?'done':i===p.cur?'current':'pending'}))};
 const projKind=p=>isScript(p)?['劇本','script']:isBid(p)?['投標','bid']:['一般','gen'];
 function projPaths(p){const c=p.raw||{},out=[],seen={},add=(l,v)=>{v=String(v||'').trim();if(!v||/^[（(]/.test(v)||seen[v])return;seen[v]=1;out.push({l,p:v})};
- add('案子資料夾',c.folderPath);(c.links||[]).forEach(l=>{if(l.path)add(l.kind==='review'?'內審':l.kind==='pool'?'Pool':l.label||'資料夾',l.path)});return out}
+ if(/^\//.test(c.folderPath||''))add('案子資料夾',c.folderPath);(c.links||[]).forEach(l=>{if(l.path)add(l.kind==='review'?'內審':l.kind==='pool'?'Pool':l.label||'資料夾',l.path)});return out}
 function projLinks(p){const c=p.raw||{},out=[],seen={};
  (c.links||[]).forEach(l=>{if(l.url&&l.kind!=='pay'&&!seen[l.url]){seen[l.url]=1;out.push({u:l.url,l:l.label||(l.kind==='pool'?'Pool':l.kind==='review'?'內審':'連結')})}});
  String(c.why||'').replace(HTTPS_RE,u=>{u=u.replace(/[.,;]+$/,'');if(!seen[u]){seen[u]=1;let h='';try{h=new URL(u).hostname.replace(/^www\./,'')}catch(e){}out.push({u,l:h||'連結'})}return u});
