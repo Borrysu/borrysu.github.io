@@ -676,7 +676,7 @@
       if (last < p.length) parent.appendChild(document.createTextNode(p.slice(last)));
     });
   }
-  function fmtBubble(el) { var _r = fmtBubble0(el), f = el.__from; if (f) { el.insertBefore(f, el.firstChild); el.__from = null; } if (window.__zlLink) window.__zlLink(el); return _r; }
+  function fmtBubble(el) { var _r = fmtBubble0(el), f = el.__from; if (f) { el.insertBefore(f, el.firstChild); el.__from = null; } if (window.__zlLink) window.__zlLink(el); if (window.__zlPin) window.__zlPin(); return _r; }
   function fmtBubble0(el) {
     if (el.dataset.fmt || el.classList.contains('card') || el.querySelector('.dots')) return;
     var fromEl = el.querySelector('.cmfrom'); if (fromEl) { fromEl.remove(); el.__from = fromEl; }   // v131：總聊天每則上方的「來自哪張卡」，排版時先拿出來再放回最上面

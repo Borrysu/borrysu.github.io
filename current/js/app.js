@@ -2548,7 +2548,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v150');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v151');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4701,7 +4701,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
  ACT.tlwk=id=>{const n=+id,old=S.tlwk?1:0,el=document.querySelector('section.tl');if(el&&!RM&&n!==old){S.tlwk=n;S.calsel=null;
    const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f),tmp=document.createElement('div');tmp.innerHTML=tlPanel(all);const nt=tmp.querySelector('section.tl');
    if(nt){const h0=el.offsetHeight,pg0=el.querySelector('.tlpg');if(pg0){pg0.style.transition='transform .13s ease-in,opacity .13s ease-in';pg0.style.transform=`translateX(${n>old?-50:50}%)`;pg0.style.opacity='0'}
-    setTimeout(()=>{const cur=document.querySelector('section.tl');if(!cur)return;nt.style.height=h0+'px';nt.style.overflow='hidden';cur.replaceWith(nt);const pg=nt.querySelector('.tlpg');if(pg){pg.style.transition='none';pg.style.transform=`translateX(${n>old?50:-50}%)`;pg.style.opacity='0'}
+    setTimeout(()=>{const cur=document.querySelector('section.tl');if(!cur)return;keepCol(cur,nt,'.tlhd');nt.style.height=h0+'px';nt.style.overflow='hidden';cur.replaceWith(nt);const pg=nt.querySelector('.tlpg');if(pg){pg.style.transition='none';pg.style.transform=`translateX(${n>old?50:-50}%)`;pg.style.opacity='0'}
      nt.style.height='';nt.style.overflow='';nt.style.minHeight=h0+'px';   // 不縮：時間條在頁尾，縮了瀏覽器會把畫面往上拉
      requestAnimationFrame(()=>{if(pg){pg.style.transition='transform .2s ease-out,opacity .2s ease-out';pg.style.transform='';pg.style.opacity=''}})},130);return}}
   const top=el?el.getBoundingClientRect().top:null;S.tlwk=n;S.calsel=null;render('keep');   // v144 msg 910：「左右滑動 不流暢絲滑 會跳動」→ 位置固定、整頁從滑的方向滑進來
@@ -4823,11 +4823,11 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   if(typeof CKBUSY!=='undefined'&&CKBUSY){setTimeout(ckRefresh,300);return}
   const a=document.activeElement;if(a&&box.contains(a)&&/^(INPUT|TEXTAREA)$/.test(a.tagName))return;
   const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;if(!nb)return;if(nb.outerHTML===box.outerHTML)return;
-  box.replaceWith(nb);try{faceSync()}catch(_){}}
+  keepCol(box,nb,'.ckh');box.replaceWith(nb);try{faceSync()}catch(_){}}
  // 2026-11-25 v125：「今天的節奏」＝老大自己寫的今天要做（老大：「我寫下來是確認我自己吸收了那天要做的事情…節奏那邊輔助我 不要漏」）
  let MISS={};
  const wantsOf=day=>(TL||[]).filter(x=>x.note&&x.note.type==='want'&&x.note.day===day);
- const wstOf=wid=>{let st='open';(TL||[]).filter(x=>x.note&&x.note.ref==='want:'+wid&&(x.note.type==='done'||x.note.type==='undo')).slice().reverse().forEach(x=>{st=x.note.type==='done'?'done':st==='done'?'open':'drop'});return st};   // v134：undo 前面是 done＝取消打勾，否則＝撤掉（跟張弛規格一致）
+ const wstOf=wid=>{let st='open';(TL||[]).filter(x=>x.note&&x.note.ref==='want:'+wid&&(x.note.type==='done'||x.note.type==='undo'||x.note.type==='drop')).slice().reverse().forEach(x=>{st=x.note.type==='drop'?'drop':st==='drop'?'drop':x.note.type==='done'?'done':st==='done'?'open':'drop'});return st};   // v151：drop＝撤掉（不管前面有沒有打勾）   // v134：undo 前面是 done＝取消打勾，否則＝撤掉（跟張弛規格一致）
  const doneOf=wid=>wstOf(String(wid))==='done';
  const TMRE=/^(\d{1,2}[:：]\d{2})(?:\s*[～~-]\s*(\d{1,2}[:：]\d{2}))?\s+/;
  const splitTm=t=>{const m=TMRE.exec(String(t||''));return m?{tm:m[1].replace('：',':'),te:m[2]?m[2].replace('：',':'):'',text:String(t).slice(m[0].length)}:{tm:'',te:'',text:String(t||'')}};   // msg 860：有時間欄，標題就不再寫時間
@@ -4882,7 +4882,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   if(ul){ul.style.transition='transform .14s ease-in,opacity .14s ease-in';ul.style.transform=`translateX(${dir*55}%)`;ul.style.opacity='0'}
   setTimeout(()=>{S.ckDay=n;S.ckEdit='';const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;
    if(!nb){CKBUSY=0;render('keep');return}
-   nb.style.height=h0+'px';nb.style.overflow='hidden';const cur=document.querySelector('.ckbox');if(!cur){CKBUSY=0;render('keep');return}cur.replaceWith(nb);try{faceSync()}catch(_){}
+   nb.style.height=h0+'px';nb.style.overflow='hidden';const cur=document.querySelector('.ckbox');if(!cur){CKBUSY=0;render('keep');return}keepCol(cur,nb,'.ckh');cur.replaceWith(nb);try{faceSync()}catch(_){}
    const nu=nb.querySelector('.cklist');if(nu){nu.style.transition='none';nu.style.transform=`translateX(${-dir*55}%)`;nu.style.opacity='0'}
    nb.style.height='auto';const h1=nb.offsetHeight;nb.style.height=h0+'px';void nb.offsetHeight;nb.style.transition='height .2s ease';nb.style.height=h1+'px';
    requestAnimationFrame(()=>{if(nu){nu.style.transition='transform .2s ease-out,opacity .2s ease-out';nu.style.transform='';nu.style.opacity=''}});
@@ -4906,8 +4906,8 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  document.addEventListener('click',e=>{const li=e.target.closest&&e.target.closest('.ckbox .ck.want:not(.edit):not(.done):not(.swl)');if(!li||e.target.closest('button,a,input,.cklp'))return;const wid=li.dataset.wid;if(wid&&wid.indexOf('tmp')!==0)ACT.ckedit(wid)});
  ACT.ckedit=wid=>{S.ckEdit=String(wid);render('keep');setTimeout(()=>{const i=$('#ckEt');if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}}},30)};
  ACT.ckcancel=()=>{S.ckEdit='';render('keep')};
- async function undoWant(wid){const day=ymdT(dayN()),note={type:'undo',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
-  try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}
+ async function undoWant(wid){const day=ymdT(dayN()),note={type:'drop',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
+  try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note:{type:'undo',ref:'want:'+wid,day}});await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}   // v151：先寫 undo（張弛舊規則）再寫 drop（新規則，曾打勾的也確實撤掉）
  ACT.ckdrop=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');S.ckEdit='';if(!w)return;
   if(await undoWant(wid)){tlLoad(true);toast('刪掉了',async()=>{const nt=Object.assign({},w.note);delete nt.src;await wantAdd(nt)})}};
  ACT.cksave=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w)return;
@@ -5252,6 +5252,13 @@ function rqBar(){const cin=document.querySelector('#chat .cin');if(!cin)return;l
 {let X0=0,Y0=0,on=0,H=null;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];on=t&&e.target.closest&&e.target.closest('section.tl .tlpg')?1:0;if(on){X0=t.clientX;Y0=t.clientY;H=null}},{passive:true});
  document.addEventListener('touchmove',e=>{if(!on)return;const t=e.touches[0],dx=t.clientX-X0,dy=t.clientY-Y0;if(H===null&&Math.hypot(dx,dy)>8)H=Math.abs(dx)>Math.abs(dy)*1.2;if(!H)return;const pg=document.querySelector('section.tl .tlpg');if(!pg)return;const ok=(dx<0&&!S.tlwk)||(dx>0&&S.tlwk);pg.style.transition='none';pg.style.transform=`translateX(${ok?dx*0.6:dx*0.15}px)`;pg.style.opacity=ok?String(Math.max(.35,1-Math.abs(dx)/400)):'1'},{passive:true});
  document.addEventListener('touchend',e=>{if(!on)return;on=0;const t=e.changedTouches&&e.changedTouches[0],dx=t?t.clientX-X0:0,pg=document.querySelector('section.tl .tlpg');if(!pg)return;const go=H&&Math.abs(dx)>=60&&((dx<0&&!S.tlwk)||(dx>0&&S.tlwk));if(!go){pg.style.transition='transform .18s ease-out,opacity .18s';pg.style.transform='';pg.style.opacity=''}},{passive:true});}
+// v151 msg 953 老大：「這邊按這個七天跟下個七天的時候會跳動感覺跟這個收和的小三角形按鈕有關」→ 局部換新時，收合鈕和收合狀態一起帶過去，不等它晚一拍才長出來
+function keepCol(oldEl,newEl,headSel){try{const z=oldEl.querySelector('.zcolb'),h=newEl.querySelector(headSel);if(z&&h&&!h.querySelector('.zcolb'))h.appendChild(z.cloneNode(true));['zcol'].forEach(c=>newEl.classList.toggle(c,oldEl.classList.contains(c)));if(oldEl.dataset.zcol)newEl.dataset.zcol=oldEl.dataset.zcol}catch(e){}}
+// v151 msg 954 老大：「點開聊天室窗的時候他都不會是直接移動到最新最下面的情況」→ 對話一打開、或你本來就在最下面時，回覆排版完、圖載入後都貼齊最下面；你往上翻時不搶
+{let stick=true;document.addEventListener('scroll',e=>{const l=e.target;if(l&&l.id==='clog')stick=l.scrollHeight-l.scrollTop-l.clientHeight<40},true);
+ const pin=()=>{const l=document.getElementById('clog');if(l&&stick)l.scrollTop=l.scrollHeight};window.__zlPin=pin;
+ {const _o=openChat;openChat=function(){stick=true;const r=_o.apply(this,arguments);[0,80,250,600,1200].forEach(t=>setTimeout(pin,t));return r}}
+ {const _l=logSync;logSync=function(){const r=_l.apply(this,arguments);setTimeout(pin,0);setTimeout(pin,200);return r}}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
