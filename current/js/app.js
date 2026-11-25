@@ -2616,7 +2616,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v213');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v214');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5746,10 +5746,15 @@ window.__pst={stepsOf,saveSteps};
    只改顯示，按鈕走既有派肉咖單（coPush），不讀公司資料。連動設計見 面板工坊/AI工作夾/06_紀錄/1125_皮條客連動設計.md。 */
 {const EMPTY='<p class="note">還沒有步驟。</p>';const _p=pageHTML;pageHTML=function(){const h=_p();try{const x=(S.page||'').split(':');if(x[0]!=='proj'||h.indexOf(EMPTY)<0)return h;
  const p=DB.proj.find(q=>q.id===x[1]),c=p&&p.raw;if(!c||c.basket!=='company'||!coSrcOf(c))return h;
- return h.replace(EMPTY,`<div class="card bidtip"><p><b>此案步驟在好咖皮條客</b>：點下面請肉咖把內容與步驟帶來，逐流只顯示、不回寫皮條客。</p><div class="btns">${B(bm('rouka','','sm')+'請肉咖帶來','coMirrorAsk',p.id,'rk')}</div></div>`)}catch(e){return h}}}
+ const pend=coCaseTasks(c).filter(t=>/^【請帶來內容與步驟】/.test(String(t.body||''))&&!t.result&&['queued','taken','running'].indexOf(t.status)>-1).sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)))[0];
+ const hm=at=>{const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)},age=pend?(Date.now()-Date.parse(pend.created_at))/60000:0;
+ const st=pend?`<p class="note" role="status">⏳ 等肉咖帶來：${hm(pend.created_at)} 送出${pend.taken_at?'，'+hm(pend.taken_at)+' 肉咖接手了':'，肉咖還沒接手'}，還在整理，帶來後這裡會出現。</p>`:'';
+ return h.replace(EMPTY,`<div class="card bidtip"><p><b>此案步驟在好咖皮條客</b>：點下面請肉咖把內容與步驟帶來，逐流只顯示、不回寫皮條客。</p>${st}<div class="btns">${pend&&age<30?'':B(bm('rouka','','sm')+(pend?'再請肉咖帶來一次':'請肉咖帶來'),'coMirrorAsk',p.id,'rk')}</div></div>`)}catch(e){return h}}}
+const CMA={};
 ACT.coMirrorAsk=async id=>{const p=DB.proj.find(q=>q.id===id),c=p&&p.raw;if(!c)return;
+ if(CMA[id]&&Date.now()-CMA[id]<15000){toast('已經送出了，請稍等一下');return}CMA[id]=Date.now();toast('送出中…請肉咖帶來');
  const ok=await coPush(c,`【請帶來內容與步驟】皮條客 ${coSrcOf(c)}「${c.title}」：請把這案目前的下一步、步驟（名稱與狀態）、期限整理成摘要回報到這張單。只要摘要，不帶金額、合約與個資。逐流只顯示，不回寫皮條客。`);
- if(ok){toast('交給肉咖了，帶來後會出現在這張卡的「派過的工作」');try{await coLoad()}catch(e){}render('keep')}};
+ if(ok){toast('已交給肉咖。接手後會顯示在步驟區，帶來的內容也會出現在這張卡的「派過的工作」');try{await coLoad()}catch(e){}render('keep')}else{delete CMA[id]}};   // 失敗原因由 coPush 的提示顯示，這裡不蓋掉
 
 /* ---------- v202（2026-11-25，意見 1257）：步驟可以關聯到別張卡，反向顯示來自哪一步 ----------
    關聯存在步驟物件的 rel（卡 id）。資料庫的步驟是 jsonb，多一個欄位不影響；任何地方重存步驟時，用名稱把原本的 rel 帶回去，不會被洗掉。 */
