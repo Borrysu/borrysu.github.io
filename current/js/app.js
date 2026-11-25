@@ -2618,7 +2618,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v220');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v221');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5858,18 +5858,20 @@ function coVisible(cards){try{const D=coDismissedSet(),open=new Set();ckCards().
    原本只有 hub_decision 決策卡進這一區；各視窗在卡片「卡點」寫「等你決定…」、步驟停在「你讀過決定」「供老大檢驗」，卻沒建決策卡，所以首頁看不到。
    這裡把它們接成同一區的卡（不另開新區）：看這張卡／我處理了（清掉卡點或把那步做完），處理後立刻消失。已有同案決策卡的不重複。 */
 const CW_BLK=/^(等你|等待你)|你(決定|拍板|檢驗|確認)|(供|待)老大(檢驗|確認|決定|拍板)/,CW_STEP=/^你(讀過|看|定|決定|拍板|選)|供老大檢驗|待老大|老大(檢驗|拍板|確認|定案)/;
-function addCardWaits(){try{if(E()||!LV.items)return;DB.dec=(DB.dec||[]).filter(d=>d.kind!=='cardwait');const have=d=>DB.dec.some(x=>x.proj===d||String(x.projFull||'').indexOf(d)>-1||String(x.q||'').indexOf(d)>-1);
+function addCardWaits(){try{if(E()||!LV.items)return;DB.dec=(DB.dec||[]).filter(d=>d.kind!=='cardwait');LV.cw=[];const have=d=>DB.dec.some(x=>x.proj===d||String(x.projFull||'').indexOf(d)>-1||String(x.q||'').indexOf(d)>-1);
  (LV.items||[]).forEach(c=>{if(!c||['doing','delivered'].indexOf(c.status)<0)return;const nm=c.shortTitle||c.title;if(have(nm)||have(c.title))return;const seenN=(()=>{try{return JSON.parse(localStorage.getItem('zl_cwn')||'{}')}catch(e){return {}}})();
   const steps=c.progressSteps||[],si=steps.findIndex(s=>s&&['current','blocked'].indexOf(s.status)>-1&&CW_STEP.test(String(s.name||'').trim())),blk=String(c.progressBlocker||'').trim();
-  if(si>-1){const s=steps[si];DB.dec.push({id:'cw:'+c.id+':s'+si,kind:'cardwait',cid:c.id,si,proj:nm,projFull:c.title,q:'等你：'+clip(s.name,60),detail:String(s.note||'').replace(/〔[^〕]*〕/g,'').trim().slice(0,160),by:c.progressUpdatedBy||'大器',origin:'卡片步驟',ago:LAGO(c.progressUpdatedAt),opts:[]});return}
+  if(si>-1){const s=steps[si];LV.cw.push({id:'cw:'+c.id+':s'+si,kind:'cardwait',cid:c.id,si,proj:nm,projFull:c.title,q:'等你：'+clip(s.name,60),detail:String(s.note||'').replace(/〔[^〕]*〕/g,'').trim().slice(0,160),by:c.progressUpdatedBy||'大器',origin:'卡片步驟',ago:LAGO(c.progressUpdatedAt),opts:[]});return}
   const nt=String(c.progressNote||''),CW_NOTE=/待老大(確認|檢驗|決定)|等你(確認|決定|說)|等老大說/;
-  if(!(blk&&CW_BLK.test(blk))&&CW_NOTE.test(nt)&&!seenN['cw:'+c.id+':n|'+nt.slice(0,200).length]){const sent=nt.split(/[。；\n]/).find(x=>CW_NOTE.test(x))||nt;DB.dec.push({id:'cw:'+c.id+':n',kind:'cardwait',cid:c.id,si:-1,noteWait:1,proj:nm,projFull:c.title,q:'等你：'+clip(sent.trim(),70),detail:nt.slice(0,200),by:c.progressUpdatedBy||'大器',origin:'卡片現況',ago:LAGO(c.progressUpdatedAt),opts:[]});return}
-  if(blk&&CW_BLK.test(blk))DB.dec.push({id:'cw:'+c.id+':b',kind:'cardwait',cid:c.id,si:-1,proj:nm,projFull:c.title,q:'等你：'+clip(blk.replace(/^等你決定[：:]?/,'決定：'),70),detail:String(c.progressNote||'').slice(0,160),by:c.progressUpdatedBy||'大器',origin:'卡片卡點',ago:LAGO(c.progressUpdatedAt),opts:[]})})}catch(e){}}
+  if(!(blk&&CW_BLK.test(blk))&&CW_NOTE.test(nt)&&!seenN['cw:'+c.id+':n|'+nt.slice(0,200).length]){const sent=nt.split(/[。；\n]/).find(x=>CW_NOTE.test(x))||nt;LV.cw.push({id:'cw:'+c.id+':n',kind:'cardwait',cid:c.id,si:-1,noteWait:1,proj:nm,projFull:c.title,q:'等你：'+clip(sent.trim(),70),detail:nt.slice(0,200),by:c.progressUpdatedBy||'大器',origin:'卡片現況',ago:LAGO(c.progressUpdatedAt),opts:[]});return}
+  if(blk&&CW_BLK.test(blk))LV.cw.push({id:'cw:'+c.id+':b',kind:'cardwait',cid:c.id,si:-1,proj:nm,projFull:c.title,q:'等你：'+clip(blk.replace(/^等你決定[：:]?/,'決定：'),70),detail:String(c.progressNote||'').slice(0,160),by:c.progressUpdatedBy||'大器',origin:'卡片卡點',ago:LAGO(c.progressUpdatedAt),opts:[]})});(LV.cw||[]).forEach(cwAsk)}catch(e){}}
 {const _ad=applyData;applyData=function(){const r=_ad.apply(this,arguments);addCardWaits();return r}}
 {const _da=decActs;decActs=function(d){if(d.kind!=='cardwait')return _da(d);
  return `<div data-dec="${esc(d.id)}"><p class="note">來源：${esc(d.origin)}（${esc(d.by)}）。要你拍板的事寫在這張卡上，這裡幫你集中。</p><div class="btns">${B('看這張卡 ›','cwview',d.id,'pri big')}${B(d.si>-1?'這步我處理了':'我處理了，清掉卡點','cwdone',d.id,'ghost')}</div></div>`}}
-ACT.cwview=id=>{const d=DB.dec.find(x=>x.id===id);if(!d)return;if(d.si>-1)S.open['pst:'+d.cid+':'+d.si]=1;if(DB.proj.some(p=>p.id===d.cid))ACT.page('proj:'+d.cid);else toast('這張卡不在案子清單裡')};
-ACT.cwdone=async id=>{const d=DB.dec.find(x=>x.id===id);if(!d||!LV.api||!LV.api.act){toast('離線中，連上再按');return}
+function cwAsk(d){try{if(!LV.api||!LV.api.say||S.st!=='ok'||LV.mode!=='live')return;let o={};try{o=JSON.parse(localStorage.getItem('zl_cwask')||'{}')}catch(e){}const k=d.cid+'|'+String(d.q).length;if(o[k])return;o[k]=Date.now();localStorage.setItem('zl_cwask',JSON.stringify(o));
+ LV.api.say(d.cid,`【面板自動請求】這張卡上標了「${clip(d.q.replace(/^等你：/,''),50)}」要老大拍板，但首頁「要你決定」只顯示決定卡。請原視窗用 hub_decision_add 建一張決定卡（p_project 填「${d.proj}」，題目一句、選項 2～3 個、建議放第一、細節放 detail），建好後把卡點清掉。`,'daqi').catch(()=>{})}catch(e){}}
+ACT.cwview=id=>{const d=(LV.cw||[]).find(x=>x.id===id)||DB.dec.find(x=>x.id===id);if(!d)return;if(d.si>-1)S.open['pst:'+d.cid+':'+d.si]=1;if(DB.proj.some(p=>p.id===d.cid))ACT.page('proj:'+d.cid);else toast('這張卡不在案子清單裡')};
+ACT.cwdone=async id=>{const d=(LV.cw||[]).find(x=>x.id===id)||DB.dec.find(x=>x.id===id);if(!d||!LV.api||!LV.api.act){toast('離線中，連上再按');return}
  try{if(d.si>-1){const P=window.__pst,old=P&&P.stepsOf(d.cid);if(!old||!old[d.si]){toast('找不到那一步');return}const nw=old.map(s=>({...s}));nw[d.si].status='done';const n=nw.findIndex((s,k)=>k>d.si&&s.status==='pending');if(n>-1&&!nw.some(s=>s.status==='current'))nw[n].status='current';await P.saveSteps(d.cid,nw,old,'這步標成做完了')}
   else if(d.noteWait){try{const o=JSON.parse(localStorage.getItem('zl_cwn')||'{}');o[d.id+'|'+d.detail.length]=Date.now();localStorage.setItem('zl_cwn',JSON.stringify(o))}catch(e){}paint('keep');toast('這件先收起來了（卡上現況更新後會再出現）')}
   else{const c=(LV.items||[]).find(x=>x.id===d.cid),old=String((c&&c.progressBlocker)||'');await LV.api.act(d.cid,'blocker',{text:''});await reload();paint('keep');toast('清掉卡點了',async()=>{try{await LV.api.act(d.cid,'blocker',{text:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}}
@@ -5878,7 +5880,7 @@ WRITE.push('cwdone');
 
 /* ---------- v220（2026-11-26）：案子房間各分類底下，每張卡顯示「要你看」 ----------
    同一筆資料（首頁「要你決定」的卡片等待、決策卡、新進度待檢閱），只多一個入口：在案子清單每張卡底下列出，點進去回那張卡，標已看／已處理後兩處一起消失。 */
-function cardPending(p){const out=[],nm=p.short||p.title;(DB.dec||[]).forEach(d=>{if(d.kind==='cardwait'&&d.cid===p.id)out.push({l:d.q.replace(/^等你：/,''),act:'cwview',id:d.id,ok:'cwdone',tag:d.si>-1?'待你看這步':'等你拍板'});
+function cardPending(p){const out=[],nm=p.short||p.title;(LV.cw||[]).forEach(d=>{if(d.cid===p.id)out.push({l:d.q.replace(/^等你：/,''),act:'cwview',id:d.id,ok:'cwdone',tag:'等內容整理'})});(DB.dec||[]).forEach(d=>{if(false){}
   else if(d.kind!=='cardwait'&&(d.proj===nm||d.proj===p.title||(d.projFull&&d.projFull===p.title)))out.push({l:d.q,act:'sheet',id:'why:'+d.id,tag:'決策卡'})});
  try{rvItems().filter(x=>x.id===p.id).forEach(x=>out.push({l:x.step.replace(/^[\s·]+/,'')+'：'+clip(String(x.res).replace(/\s+/g,' '),50),act:'rvopen',id:x.k,tag:x.st==='blocked'?'卡住，等你看':'做完，等你檢閱'}))}catch(e){}return out}
 {const _pc=projCard;projCard=function(p){let h=_pc(p);const L=cardPending(p);if(!L.length)return h;
