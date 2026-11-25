@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v190');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v191');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4916,7 +4916,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
   // v146 msg 920 老大：「這邊有說同時多項的時候要幫我拆解 想一想怎麼樣可以無感無痛順暢不卡不用等」→ 已經存成一件、其實寫了好幾件的，背景自動拆開，不用按
   wantsOf(day).filter(w=>wstOf(String(w.id))==='open'&&String(w.id).indexOf('tmp')!==0&&!SPLIT[w.id]&&!w.note.src&&!w.note.card&&!/[＠@]/.test(String(w.note.text||''))&&splitWants(splitTm(w.note.text).text||w.note.text).length>1).forEach(w=>{SPLIT[w.id]=1;setTimeout(()=>autoSplit(w),0)});
-  const wants=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop').slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))),/* 照寫下的先後，新的在下面靠近輸入列 */have=new Set(wantsOf(day).map(w=>w.note.src).filter(Boolean)),/* v155 msg 966：刪過、做完的也算有了，不再建議 */hk=wants.map(w=>calKey(w.note.text)).filter(x=>x.length>=2);
+  const wants=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop').slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))).filter((w,i,a)=>a.findIndex(z=>wkey(z.note)===wkey(w.note))===i),   /* v191：同一天同字同時間只顯示一份（舊資料裡已經重複的先收成一份） *//* 照寫下的先後，新的在下面靠近輸入列 */have=new Set(wantsOf(day).map(w=>w.note.src).filter(Boolean)),/* v155 msg 966：刪過、做完的也算有了，不再建議 */hk=wants.map(w=>calKey(w.note.text)).filter(x=>x.length>=2);
   const seen=t=>{const k=calKey(t);return k.length>=2&&hk.some(x=>x.includes(k)||k.includes(x))};
   const miss=[],tOf=e=>e.t+(e.e?'～'+e.e:'');
   const nowH=(()=>{const x=new Date(Date.now()+8*3600e3);return x.getUTCHours()+x.getUTCMinutes()/60})(),past=t=>{if(n!==0)return false;const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?(+m[1]+m[2]/60)<nowH:false};   // v155 msg 966：今天已經過去的不建議
@@ -4993,8 +4993,12 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  async function undoWant(wid){const day=ymdT(dayN()),note={type:'drop',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
   try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note:{type:'undo',ref:'want:'+wid,day}});await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}   // v151：先寫 undo（張弛舊規則）再寫 drop（新規則，曾打勾的也確實撤掉）
  ACT.ckdrop=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');S.ckEdit='';if(!w)return;
-  if(await undoWant(wid)){tlLoad(true);toast('刪掉了',async()=>{const nt=Object.assign({},w.note);delete nt.src;await wantAdd(nt)})}};
+  const twins=(TL||[]).filter(x=>x.note&&x.note.type==='want'&&String(x.id)!==String(wid)&&String(x.id).indexOf('tmp')!==0&&wstOf(String(x.id))!=='drop'&&wkey(x.note)===wkey(w.note)).map(x=>String(x.id));
+  if(await undoWant(wid)){for(const t of twins)await undoWant(t);tlLoad(true);toast('刪掉了',async()=>{const nt=Object.assign({},w.note);delete nt.src;await wantAdd(nt)})}};
+ const CKSAVING={};
  ACT.cksave=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w)return;
+  if(wstOf(String(wid))==='drop'||CKSAVING[wid]){S.ckEdit='';ckSwap();return}   // v191：這件已經改過／刪掉，或正在存，不再存第二次（原本舊編號可重複存，每次多生一份）
+  CKSAVING[wid]=1;setTimeout(()=>{delete CKSAVING[wid]},4000);
   const t=($('#ckEt')||{}).value||'',tm=($('#ckEtm')||{}).value||'',sp=splitTm(t.trim());const text=(sp.text||t).trim();if(!text){toast('標題不能空白');return}
   const time=tm||sp.tm||'';const old=splitTm(w.note.text);if(text===(old.text||w.note.text)&&time===(w.note.time||old.tm||'')){S.ckEdit='';ckSwap();return}
   S.ckEdit='';const parts=splitWants(text);
@@ -5020,7 +5024,9 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
     li.style.setProperty('--sx',(was?-W:0)+'px');if(!was)li.style.removeProperty('--sx');return}
    if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7)return;if(tg.closest('input,textarea'))return;shutAll();const n=dayN();if(dx<0&&n===0)ACT.ckday('1');else if(dx>0&&n===1)ACT.ckday('0')},{passive:true});
   document.addEventListener('click',e=>{if(!(e.target.closest&&e.target.closest('.ck.want.swl')))shutAll()},true);}
+ const wkey=n=>[n&&n.day,String(n&&n.text||'').replace(/\s+/g,'').toLowerCase(),n&&n.time||''].join('|');   // v191 msg 1169：同一天、同字、同時間算同一件
  async function wantAdd(note){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再加');return false}
+  if(note&&note.type==='want'&&(TL||[]).some(x=>x.note&&x.note.type==='want'&&wstOf(String(x.id))!=='drop'&&wkey(x.note)===wkey(note))){toast('這件已經有了，沒重複加');return true}
   (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
   try{await LV.api.tideLogAdd('note',{ref:note.src||undefined,source:'面板',note});tlLoad(true);return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){const sg=el&&el.dataset.sug;if(sg&&MISS[sg]){ACT.ckadd(sg);return}if(el)el.focus();return}
