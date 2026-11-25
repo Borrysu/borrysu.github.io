@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v185');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v186');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3176,9 +3176,23 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  function bar(){let b=$('#mkBar');if(!MK.on){if(b)b.remove();document.documentElement.classList.remove('marking');return}
   if(!b){b=document.createElement('div');b.id='mkBar';b.className='mkbar';b.setAttribute('role','toolbar');b.setAttribute('aria-label','標記修改意見');document.body.appendChild(b)}
   document.documentElement.classList.add('marking');const n=MK.list.length;
-  b.innerHTML=`<span class="mkt"><b>編修模式</b>${n?`已記 ${n} 則，繼續點或送出`:'點要改的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="jian" aria-label="跟逐流監工說">監工</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
+  b.innerHTML=`<span class="mkt"><b>編修模式</b>${n?`已記 ${n} 則，繼續點或送出`:'點要改的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="prog" aria-label="看編修意見的處理進度">進度</button><button class="btn ghost" data-mk="jian" aria-label="跟逐流監工說">監工</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
+ // v186（mcp-31bc89630ca0）：編修「進度」＝老大送給逐流監工的每一則意見，顯示票號（msg 編號）與狀態：已收／處理中／已上線 vN。
+ // 狀態由監工的回覆推算（沒有狀態欄）：有回覆＝處理中；監工回「vN 已上線」就依先後結掉最早還沒結的一則。
+ let PG={ms:null,err:'',busy:0};
+ function progState(ms){const out=[];(ms||[]).forEach(m=>{if(m.kind==='user'){const b=String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,'');if(/^［前情｜/.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:''})}
+   else if(m.kind==='bot'){const open=out.filter(x=>x.st!=='done');if(!open.length)return;const t=String(m.body||''),v=/v(\d{2,4})\s*已上線/.exec(t);if(v){open[0].st='done';open[0].ver='v'+v[1]}else open.forEach(x=>{if(x.st==='recv')x.st='work'})}});
+  return out.reverse()}
+ function progLoad(){if(PG.busy)return;PG.busy=1;PG.err='';(LV.api&&LV.api.msgs?LV.api.msgs(null,'jian'):Promise.reject(new Error('還沒連上'))).then(ms=>{PG.ms=ms}).catch(e=>{PG.err=typeof LERR==='function'?LERR(e):e.message}).then(()=>{PG.busy=0;if(MK.box==='prog')box('prog')})}
+ function progHTML(){if(PG.err)return `<p class="mkw">讀不到進度</p><p class="mkp">${esc(PG.err)}</p><div class="btns"><button class="btn ghost" data-mk="prog">再讀一次</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`;
+  if(!PG.ms)return `<p class="mkw">編修進度</p><p class="mkp">讀取中…</p>`;
+  const L=progState(PG.ms).slice(0,15),lab={recv:'已收',work:'處理中',done:'已上線'};
+  const first=b=>{const t=String(b).replace(/^【面板修改意見】[^\n]*\n/,'');const m=/^\s*\d+\.\s*(.+)/m.exec(t);return cut((m?m[1]:t).replace(/\s+/g,' ').trim(),46)},cnt=b=>{const n=(String(b).match(/^\s*\d+\. /gm)||[]).length;return n>1?`（共 ${n} 則）`:''};
+  const tm=at=>{if(!at)return '';const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)};
+  return `<p class="mkw">編修進度（最近 ${L.length} 則）</p>`+(L.length?`<ul class="mkpg">${L.map(x=>`<li class="pg-${x.st}"><div class="pgh"><b>#${esc(String(x.id))}</b><span class="pgs">${lab[x.st]}${x.ver?' '+esc(x.ver):''}</span><small>${esc(tm(x.at))}</small></div><p>${esc(first(x.body))}${cnt(x.body)}</p></li>`).join('')}</ul>`:'<p class="mkp">還沒有送過意見。</p>')+`<p class="mkp">狀態由監工的回覆推算：有回覆是處理中，回「已上線」才算做完。</p><div class="btns"><button class="btn ghost" data-mk="prog">重新整理</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
  function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
   MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
+  if(kind==='prog'){x.setAttribute('aria-label','編修進度');x.innerHTML=progHTML();return}
   if(kind==='pick'){const p=MK.pick;x.setAttribute('aria-label','寫修改意見');
    x.innerHTML=`<p class="mkw">${esc(p.where||'這裡')}</p><p class="mkp">你點的：${p.txt?'「'+esc(p.txt)+'」':'（沒有字的地方）'}</p><textarea id="mkIn" rows="3" placeholder="這裡哪裡怪、想改成怎樣"></textarea><div class="btns"><button class="btn pri" data-mk="add">加進清單</button><button class="btn ghost" data-mk="cancel">取消</button></div>`;
    setTimeout(()=>{const i=$('#mkIn');if(i)i.focus()},50)}
@@ -3201,6 +3215,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   if(m){stop(e);if(m.disabled)return;const a=m.dataset.mk;
    if(a==='end'){setOn(false);if(MK.list.length)toast(`${MK.list.length} 則還沒送，下次按「編修」接著寫`)}
    if(a==='jian'){setOn(false);openChat('jian','',null)}
+   else if(a==='prog'){clearSel();progLoad();box('prog')}
    else if(a==='list'){clearSel();box('list')}
    else if(a==='cancel'){clearSel();box('')}
    else if(a==='del'){MK.list.splice(+m.dataset.i,1);save();bar();box(MK.list.length?'list':'')}
