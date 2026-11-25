@@ -1895,7 +1895,7 @@ function mapProj(c){const st=c.status,dl=c.deadline||(c.deliveryDate?Date.parse(
  else{steps=['製作','交件','收款'];cur=st==='doing'?0:st==='delivered'?2:3}
  const urg=dd!=null&&dd<=3&&st==='doing';
  const g=st==='delivered'?'delivered':st==='paid'?'paid':(c.progressBlocker||c.runStatus==='failed'||urg)?'need':'doing';
- const due=st==='paid'?(c.paidAt?LMD(c.paidAt)+' 入帳':'已收款'):st==='delivered'?(c.expectedPayDate?`約定 ${c.expectedPayDate.slice(5).replace('-','/')} 前付`:'等收款'):dd!=null?(dd<0?'已過期限':dd===0?'今天要交':`剩 ${dd} 天`):'沒有期限';
+ const due=st==='paid'?(c.paidAt?LMD(c.paidAt)+' 入帳':'已收款'):st==='delivered'?(c.expectedPayDate?`約定 ${fmtMD(c.expectedPayDate)} 前付`:'等收款'):dd!=null?(dd<0?'已過期限':dd===0?'今天要交':`剩 ${dd} 天`):'沒有期限';
  const money=st==='paid'&&c.receivedAmount!=null?'實收 '+nt(c.receivedAmount):st==='delivered'&&c.finalAmount!=null?'待收 '+nt(c.finalAmount):c.quoteAmount!=null?'報價 '+nt(c.quoteAmount):(c.amountDisplay||'');   // v150 msg 946：沒金額就不顯示
  return {id:c.id,g,short:c.shortTitle||c.title,title:c.title,next:c.progressNote||c.firstStep||c.why||'還沒寫下一步',steps,cur,due,urg,who:c.progressUpdatedBy||'大器',money,hist:LV.hist[c.id]||[],raw:c}}
 const RUNST={queued:'排隊中',running:'進行中',done:'做完了',failed:'失敗'};
@@ -2047,9 +2047,9 @@ ACT.dive=id=>oppDo(id,'dive','已請集集讀完整公告，讀完會放進「�
 
 /* ---------- 案子 ---------- */
 pxOf=function(p){const c=p.raw||{},dates=[],money=[],files=[];
- if(c.deadline)dates.push(['截止',LMD(c.deadline)]);if(c.deliveryDate)dates.push(['交件',c.deliveryDate]);if(c.expectedPayDate)dates.push(['預計付款',c.expectedPayDate]);if(!dates.length)dates.push(['期限',p.due]);
- if(c.quoteAmount!=null)money.push(['報價',nt(c.quoteAmount)]);if(c.depositAmount!=null)money.push(['訂金',nt(c.depositAmount)+(c.depositDate?'（'+c.depositDate+'）':'')]);
- if(c.finalAmount!=null)money.push(['尾款',nt(c.finalAmount)+(c.finalDue?'，'+c.finalDue+' 前':'')]);if(c.receivedAmount!=null)money.push(['已收',nt(c.receivedAmount)]);if(c.paymentTerms)money.push(['付款條件',c.paymentTerms]);
+ if(c.deadline)dates.push(['截止',LMD(c.deadline)]);if(c.deliveryDate)dates.push(['交件',fmtMD(c.deliveryDate)]);if(c.expectedPayDate)dates.push(['預計付款',fmtMD(c.expectedPayDate)]);if(!dates.length)dates.push(['期限',p.due]);
+ if(c.quoteAmount!=null)money.push(['報價',nt(c.quoteAmount)]);if(c.depositAmount!=null)money.push(['訂金',nt(c.depositAmount)+(c.depositDate?'（'+fmtMD(c.depositDate)+'）':'')]);
+ if(c.finalAmount!=null)money.push(['尾款',nt(c.finalAmount)+(c.finalDue?'，'+fmtMD(c.finalDue)+' 前':'')]);if(c.receivedAmount!=null)money.push(['已收',nt(c.receivedAmount)]);if(c.paymentTerms)money.push(['付款條件',c.paymentTerms]);
  if(c.earnings&&c.earnings.net!=null)money.push(['實拿',nt(c.earnings.net)+(c.earnings.hourly!=null?`，時薪 ${nt(c.earnings.hourly)}`:'')]);if(!money.length)money.push(['狀態',p.money]);
  if(c.folderPath&&/^\//.test(c.folderPath))files.push(['案子資料夾',c.folderPath]);(c.links||[]).forEach(l=>files.push([l.label||({pool:'Pool（素材與專案檔）',review:'內審（給你看的版本）',pay:'付款',other:'連結'}[l.kind]),l.path||l.url]));
  return {client:c.org||'沒寫',doNext:p.next,block:c.progressBlocker||(p.g==='delivered'?'等對方付款':'沒有卡住'),left:p.due,leftSub:'',dates,money,team:[[p.who,'負責'],['你','拍板']],files}};
@@ -2409,7 +2409,9 @@ WRITE.push('add','done','saverout','routdel','buy','bought','wishadd','wishdel',
 const PDF=[['delivery_date','交件日'],['expected_pay_date','預計付款日'],['final_due','尾款期限']],PDK={delivery_date:'deliveryDate',expected_pay_date:'expectedPayDate',final_due:'finalDue'};
 {const _d=dtBody;dtBody=function(pid){const h=_d(pid);if(h)return h;const p=DB.proj.find(x=>x.id===pid);if(!p||!p.raw||!p.raw.id)return '';const c=p.raw;
  return (c.deadline?`<div class="dt"><div class="li"><div><b>截止</b><small>${LMD(c.deadline)}（公告的日期）</small></div></div></div>`:'')+PDF.map(([f,lab])=>{const v=c[PDK[f]]||'';
-  return `<div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>${lab}</b><small>${v?esc(String(v).slice(0,10)):'還沒寫'}</small></div><label class="vh" for="pd_${f}">改${lab}</label><input type="date" class="pdi" id="pd_${f}" data-pid="${esc(pid)}" data-f="${f}" value="${esc(String(v).slice(0,10))}" style="flex:0 0 auto;width:158px;max-width:48%"></div></div>`}).join('')+`<p class="note">改了直接存，案子日期同步到行事曆還沒接上。</p>`}}
+  if(f==='expected_pay_date'&&LV.pl&&LV.pl[pid]===undefined)plLoad(pid);
+  if(f==='expected_pay_date'&&LV.pl&&(LV.pl[pid]||[]).length)return `<div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>${lab}</b><small>${v?esc(fmtMD(v)):'都收完了'}（由分筆收款最近一筆還沒收的帶出，要改請到「報價與收款」）</small></div></div></div>`;
+  return `<div class="dt"><div class="li"><div style="flex:1;min-width:0"><b>${lab}</b><small>${v?esc(fmtMD(v)):'還沒寫'}</small></div><label class="vh" for="pd_${f}">改${lab}</label><input type="date" class="pdi" id="pd_${f}" data-pid="${esc(pid)}" data-f="${f}" value="${esc(String(v).slice(0,10))}" style="flex:0 0 auto;width:158px;max-width:48%"></div></div>`}).join('')+`<p class="note">改了直接存，案子日期同步到行事曆還沒接上。</p>`}}
 document.addEventListener('change',e=>{const t=e.target;if(!t.classList||!t.classList.contains('pdi'))return;if(S.st==='offline'){toast('離線中，這個動作連上線再做');return}
  const id=t.dataset.pid,f=t.dataset.f,p=DB.proj.find(x=>x.id===id);if(!p)return;const old=p.raw[PDK[f]]||null,v=t.value||null,lab=(PDF.find(x=>x[0]===f)||[])[1];
  LV.api.act(id,'work',{patch:{[f]:v}}).then(c=>{if(c){const i=LV.items.findIndex(x=>x.id===id);if(i>-1)LV.items[i]=c}LV.sig='';paint();
@@ -2441,7 +2443,7 @@ function askEvt(e){if(e.raw&&e.raw.ask)return askOwn(e.raw.ask);const t=askCut(e
 const OPV={fund:'申請',honor:'報名',personal:'接',other:'接'};
 function askOpp(o){const c=o.raw||{};if(c.ask)return askOwn(c.ask);return askCut(`看要不要${OPV[o.b]||'接'}：${c.shortTitle||o.title}`,ASKN+4)}
 function askProj(p){const c=p.raw||{};if(c.ask)return askOwn(c.ask);
- if(c.status==='delivered')return '確認對方付款'+(c.expectedPayDate?`，${c.expectedPayDate.slice(5).replace('-','/')} 前`:'');
+ if(c.status==='delivered')return '確認對方付款'+(c.expectedPayDate?`，${fmtMD(c.expectedPayDate)} 前`:'');
  if(c.status==='paid')return '已收款，看要不要結案';
  if(c.progressBlocker){const b=String(c.progressBlocker),m=b.match(/^等\s*(Borry|老大|你)\s*/);return m?askCut(b.slice(m[0].length)):askCut('解決：'+b,ASKN+3)}
  const n=c.progressNote||c.firstStep||'';return n?askCut(n):'決定下一步'}
@@ -2616,7 +2618,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v214');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v215');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5611,7 +5613,7 @@ function plRow(l,id){const q=(f,h)=>`data-pid="${esc(id)}" data-lid="${l.id}" da
  return `<div class="plr dt" data-pid="${esc(id)}" data-lid="${l.id}"><div class="li" style="flex-wrap:wrap;gap:8px;align-items:center">
   <input type="text" class="plf" ${q('label')} value="${esc(l.label||'')}" placeholder="說明（哪一支）" maxlength="80" autocomplete="off" aria-label="這筆的說明" style="flex:1 1 100%;min-width:0">
   <input type="text" inputmode="decimal" class="plf" ${q('amount')} value="${l.amount?esc(String(l.amount)):''}" placeholder="NT$ 金額" autocomplete="off" aria-label="這筆金額" style="flex:1 1 40%;min-width:0;text-align:right">
-  <input type="date" class="plf" ${q('date')} value="${esc(String(l.expected_date||'').slice(0,10))}" aria-label="預計付款日" style="flex:1 1 45%;min-width:0">
+  <input type="date" class="plf" ${q('date')} value="${esc(String(l.expected_date||'').slice(0,10))}" aria-label="預計付款日" style="flex:1 1 45%;min-width:0"><small class="pldf" style="flex:1 1 100%;opacity:.7">${l.expected_date?'預計付款：'+esc(fmtMD(l.expected_date)):'還沒填預計付款日'}</small>
   <button type="button" class="btn ghost plq" data-pq="d5" data-pid="${esc(id)}" data-lid="${l.id}">下個 5 號</button><button type="button" class="btn ghost plq" data-pq="d10" data-pid="${esc(id)}" data-lid="${l.id}">下個 10 號</button>
   <label style="display:inline-flex;gap:6px;align-items:center;margin-left:auto"><input type="checkbox" class="plf" ${q('received')} ${l.received?'checked':''}> 已收${l.received&&l.received_date?'（'+esc(String(l.received_date).slice(5,10).replace('-','/'))+'）':''}</label>
   <button type="button" class="btn ghost plq" data-pq="del" data-pid="${esc(id)}" data-lid="${l.id}" aria-label="刪掉這筆">刪掉</button></div></div>`}
@@ -5622,7 +5624,7 @@ function plRow(l,id){const q=(f,h)=>`data-pid="${esc(id)}" data-lid="${l.id}" da
  if(Array.isArray(L)){const tot=L.reduce((a,x)=>a+Number(x.amount||0),0),got=L.filter(x=>x.received).reduce((a,x)=>a+Number(x.amount||0),0);
   h+=`<p class="h4" style="margin-top:14px">分筆收款</p>`+(L.length?L.map(l=>plRow(l,id)).join(''):'<p class="note">還沒分筆。一案分幾支、先後收款，就在這裡一筆一筆加。</p>')
    +`<div class="btns" style="margin-top:8px"><button type="button" class="btn pri plq" data-pq="add" data-pid="${esc(id)}">＋ 加一筆</button></div>`
-   +(L.length?`<p class="note">共 ${nt(tot)}，已收 ${nt(got)}，還沒收 ${nt(tot-got)}。合計會自動寫回報價與已收。</p>`:'');
+   +(L.length?`<p class="note">共 ${nt(tot)}，已收 ${nt(got)}，還沒收 ${nt(tot-got)}。${(()=>{const n=L.filter(x=>!x.received&&x.expected_date).map(x=>String(x.expected_date).slice(0,10)).sort()[0];return n?'下一筆預計付款：'+esc(fmtMD(n))+'。':''})()}合計與下一筆日期會自動寫回報價、已收、預計付款日。</p>`:'');
   const keep=['payment_terms'].concat(PMF.filter(r=>['deposit_amount','deposit_date','final_amount','final_due'].indexOf(r[0])>-1&&c[r[2]]!=null&&c[r[2]]!=='').map(r=>r[0]));
   return h+(L.length?_mb(p,id,'',keep):_mb(p,id,''))}
  if(L===null)h+='<p class="note">讀不到分筆收款，先用下面單筆填。</p>';
@@ -5813,6 +5815,12 @@ function projOrder(a,b){projMeta(a);projMeta(b);const g=x=>x.dts==null?2:x.dlate
  if(ga<2&&a.dts!==b.dts)return a.dts-b.dts;if(a.dtotal!==b.dtotal)return a.dtotal?-1:1;
  return (+((b.raw||{}).progressUpdatedAt)||0)-(+((a.raw||{}).progressUpdatedAt)||0)}
 {const _pc=projCard;projCard=function(p){let h=_pc(p);projMeta(p);if(!p.dlab)return h;return h.replace(/(<div class="meta">)([\s\S]*?)(<\/div>)/,(m,a,b,c)=>a+b+`<span class="pdl${p.dlate?' late':''}">${esc(p.dlab)}</span>`+c)}}
+
+/* ---------- v215（2026-11-26，msg 1440）：付款日統一 ----------
+   唯一來源＝分筆收款每筆的預計付款日；案子單欄「預計付款日」＝最近一筆還沒收的（資料庫同步，有分筆時畫面唯讀）。
+   全部畫面同一格式「12/5（五）」：只看日期（台北日期，不帶時間），沒分筆的卡仍用單欄。 */
+function fmtMD(v){const m=/^(\d{4})-(\d{2})-(\d{2})/.exec(String(v||''));if(!m)return String(v||'');const d=new Date(Date.UTC(+m[1],+m[2]-1,+m[3]));return `${+m[2]}/${+m[3]}（${'日一二三四五六'[d.getUTCDay()]}）`}
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('plf')&&t.dataset.f==='date'){const l=t.parentElement&&t.parentElement.querySelector('.pldf');if(l)l.textContent=t.value?'預計付款：'+fmtMD(t.value):'還沒填預計付款日'}});
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
