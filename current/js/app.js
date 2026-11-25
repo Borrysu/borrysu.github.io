@@ -1868,7 +1868,7 @@ const BEAT_HELP={
  '大器 LINE 收訊':['接收 LINE 傳給大器的訊息的程式，大約每 35 分鐘自己檢查一次有沒有活著。','沒報到代表收 LINE 的程式可能掛了，傳 LINE 給大器會沒人收到。','先等看門狗自己重開（約 10 分鐘），還是沒好再跟大器說。'],
  '大器 LINE 看門狗':['每 10 分鐘巡一次，確認收 LINE 的程式和 LINE 的連線都正常，壞了會自己重開。','沒報到代表連「看守的人」都沒在跑，LINE 出狀況也沒人救。','請跟大器說一聲，這個比較要緊。'],
  '大器工作區同步':['每 15 分鐘把大器的規則、技能、交接資料備份到雲端（GitHub）。右邊那串英數字是這次備份的編號。','沒報到代表最近的改動還沒備份上去。','不影響你用，備份不上去時換電腦才會看到舊版。超過一天沒報到再跟大器說。'],
- '大器引擎':['決定現在由哪一個大器（Claude 或 Codex 代班）處理事情。備註會寫目前是誰、有沒有自動切換。','寫著「Claude」是正常；寫「Codex 代班」代表 Claude 額度用完，換人頂；寫「兩邊額度用完」代表都沒得用。','只有看到「兩邊額度用完」才需要處理，跟大器說，不用自己動手。'],
+ '大器引擎':['讓大器在模型額度變動時繼續接手處理事情。','顯示「大器在線」代表可以照常使用；顯示額度暫停時，訊息會保留等待恢復。','平常不用操作；只有額度暫停時跟大器說。'],
  '提醒事項同步':['把你手機、Mac 上的「提醒事項」同步進逐流，讓代辦和提醒對得上。','沒報到代表新加的提醒可能暫時沒進來。','通常不用管，等 Mac 醒來會補。'],
  '肉咖 LINE':['公司 LINE 官方帳號背後的 AI「肉咖」有沒有在線，能不能收訊息。','沒報到代表公司 LINE 可能暫時沒人回。','在公司群有急事沒人回時，跟大器說一聲請他看；不然不用管。'],
  '逐流轉交':['把你在逐流寫的話、編修意見，轉給大器和監工的程式，每 15 秒查一次有沒有新訊息，每 5 分鐘報到一次。','沒報到代表你在逐流送出的話，可能沒人接。','先換個管道（LINE）跟大器說一聲，他會去重開。'],
@@ -1877,7 +1877,8 @@ const BEAT_HELP={
  '雲端大器叫醒':['記錄雲端大器最近一次被叫醒的原因（例如 Mac 失聯）。','這是留紀錄，不是好壞燈。備註寫得出原因，代表它有被叫醒過。','不用管；常常被叫醒的話，代表 Mac 常常失聯，可以跟大器說。']};
 function beatRow(b){const k='bt:'+b.name,o=!!S.open[k],h=BEAT_HELP[b.name]||['這個程式是做什麼的，我還沒寫說明。','燈亮「正常」代表它有照時間報到。','沒報到時跟大器說一聲就好。'],ev=b.ev?(b.ev>=60?Math.round(b.ev/60)+' 小時':b.ev+' 分鐘'):'';
  const st=b.late?`已經超過它該報到的時間${ev?'（約每 '+ev+' 報到一次）':''}沒聽到它的消息，所以標「沒報到」。`:`它有在預期的時間內報到${ev?'（約每 '+ev+' 一次）':''}，所以是「正常」。`;
- return `<div class="rowi"><button class="rowb" data-act="open" data-id="${esc(k)}" aria-expanded="${o}"><span class="tx"><b>${b.late?'▲ ':'● '}${esc(b.name)}</b><small>${esc(b.note)}・${esc(b.ago)}</small></span><span class="rt">${chip(b.late?'沒報到':'正常',b.late)}<span class="chev" aria-hidden="true">${o?'⌃':'⌄'}</span></span></button></div>${o?`<div class="rowi"><div class="rowx fadein" style="padding-top:14px"><dl class="kvs" style="margin-top:0"><dt>它在做什麼</dt><dd>${esc(h[0])}</dd><dt>現在這個燈</dt><dd>${esc(st)}</dd><dt>怎麼看異常</dt><dd>${esc(h[1])}</dd><dt>你要做什麼</dt><dd>${esc(h[2])}</dd></dl></div></div>`:''}`}
+ const note=b.name==='大器引擎'?(b.note.startsWith('兩邊')?'額度暫停':'大器在線'):b.note;
+ return `<div class="rowi"><button class="rowb" data-act="open" data-id="${esc(k)}" aria-expanded="${o}"><span class="tx"><b>${b.late?'▲ ':'● '}${esc(b.name)}</b><small>${esc(note)}・${esc(b.ago)}</small></span><span class="rt">${chip(b.late?'沒報到':'正常',b.late)}<span class="chev" aria-hidden="true">${o?'⌃':'⌄'}</span></span></button></div>${o?`<div class="rowi"><div class="rowx fadein" style="padding-top:14px"><dl class="kvs" style="margin-top:0"><dt>它在做什麼</dt><dd>${esc(h[0])}</dd><dt>現在這個燈</dt><dd>${esc(st)}</dd><dt>怎麼看異常</dt><dd>${esc(h[1])}</dd><dt>你要做什麼</dt><dd>${esc(h[2])}</dd></dl></div></div>`:''}`}
 function mapBeat(b){const ev=b.every?Math.round(b.every/60):0;return {ev,name:b.name,note:b.note||b.machine||'',late:b.late,ago:(b.lastAt?LAGO(b.lastAt):'還沒報到過')+(b.late&&ev?`，該 ${ev>=60?Math.round(ev/60)+' 小時':ev+' 分鐘'}一次`:'')}}
 function oppDue(c){const dd=LDAYS(c.deadline),ex=LDAYS(c.expiresAt);
  if(dd!=null)return {days:dd,due:dd<0?'已過截止':dd===0?'今天截止':dd===1?'明天截止':dd+' 天後截止'};
@@ -2615,7 +2616,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v206');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v207');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5518,12 +5519,12 @@ window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(
    前端只讀這一筆：燈號頁用顏色分三態（綠＝Claude、黃＝Codex 代班、紅＝兩邊都沒額度），代班時首頁頂端一行提示。
    退回：git revert v175 的 commit（資料庫與 Mac 端不受影響）。 */
 const engBeat=()=>{if(E())return null;const b=(DB.beats||[]).find(x=>x.name==='大器引擎');if(!b)return null;const n=b.note||'';return {b,tone:/^兩邊/.test(n)?'r':/^Codex/.test(n)?'y':'g',note:n}};
-const engChip=e=>e.tone==='r'?`<span class="chip urg">▲ 額度用完</span>`:e.tone==='y'?`<span class="chip engy">Codex 代班</span>`:`<span class="chip engg">Claude</span>`;
+const engChip=e=>e.tone==='r'?`<span class="chip urg">▲ 額度暫停</span>`:`<span class="chip engg">大器在線</span>`;
 {const _s=sheetHTML;sheetHTML=function(){const h=_s();if(S.sheet!=='beats')return h;const e=engBeat();if(!e)return h;
  return h.replace(/(<b>)[●▲]( 大器引擎<\/b>[\s\S]*?)<span class="chip">正常<\/span>/,(m,a,b)=>a+(e.tone==='r'?'▲':'●')+b+engChip(e))}}
-const engBar=()=>{const e=engBeat();if(!e||e.tone==='g'||e.b.late)return '';const t=e.note.split('｜');
- const hm=esc((t[1]||'').replace('預計 ','').replace(/\s*(切回|恢復)$/,'')),txt=e.tone==='r'?`兩邊額度用完，${hm} 恢復`:`Claude 額度用完，Codex 代班，${hm} 切回`;
- return `<button type="button" class="engbar ${e.tone==='r'?'engr':'engy2'}" data-act="sheet" data-id="beats"><b>${e.tone==='r'?'▲ ':''}大器引擎</b><span>${txt}</span><span aria-hidden="true">›</span></button>`};
+const engBar=()=>{const e=engBeat();if(!e||e.tone!=='r'||e.b.late)return '';const t=e.note.split('｜');
+ const hm=esc((t[1]||'').replace('預計 ','').replace(/\s*(切回|恢復)$/,''));
+ return `<button type="button" class="engbar engr" data-act="sheet" data-id="beats"><b>▲ 大器引擎</b><span>額度暫停，${hm} 恢復</span><span aria-hidden="true">›</span></button>`};
 {const _a=homeL1;homeL1=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
 {const _a=homeL2;homeL2=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
 {const _a=homeL3;homeL3=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
