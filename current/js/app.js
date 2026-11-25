@@ -617,16 +617,26 @@ function chatShell(on){const b=on.b,bot=BOTS[b],cn=ctxName(on.ctx);
  <div class="cq" id="cq"></div><p class="err" id="cErr" role="alert" hidden>▲ 還沒寫字。先寫一句再傳。</p>
  <div class="cin"><textarea id="cText" rows="1" aria-label="想跟${bot.name}說什麼" placeholder="${PH[b]}" enterkeyhint="send"></textarea><button class="btn pri" data-act="chatsend">傳給${bot.name}</button></div>
  <p class="cfoot">原型：回覆是示意，不會真的送出</p>`}
+function chatStamp(at) {
+ if (!at) return '';
+ const date = new Date(at);
+ if (!Number.isFinite(date.getTime())) return '';
+ const formatted = new Intl.DateTimeFormat('zh-TW', {
+  timeZone:'Asia/Taipei', month:'numeric', day:'numeric',
+  hour:'2-digit', minute:'2-digit', hourCycle:'h23'
+ }).format(date);
+ return `<time class="cmtime" datetime="${date.toISOString()}">${esc(formatted)}</time>`;
+}
 function msgHTML(m){const f=m.fresh?' new':'';m.fresh=0;
- if(m.gray)return `<div class="cm gray${f}">${esc(m.t)}</div>`;
+ if(m.gray)return `<div class="cm gray${f}">${esc(m.t)}${chatStamp(m.at)}</div>`;
  if(m.wait)return `<div class="cm bot${f}"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>${BOTS[m.b].name}處理中</div>`;
  if(m.k==='order')return `<div class="cm bot card${f}">${orderHTML(m.id)}</div>`;
  if(m.k==='din')return `<div class="cm bot card${f}">${dinHTML(m)}</div>`;
  const rq=/^［回覆：「([^」]*)」］\n?/.exec(String(m.t||'')),body=rq?String(m.t).slice(rq[0].length):m.t;
- return `<div class="cm ${m.w}${f}">${m.from?(m.go?`<button class="cmfrom cmgo" data-act="chgo" data-id="${esc(m.go)}">${esc(m.from)} ›</button>`:`<span class="cmfrom">${esc(m.from)}</span>`):''}${rq?`<span class="cmq">${esc(rq[1])}</span>`:''}${esc(body)}${m.w==='me'?'<small>已送出</small>':''}</div>`}
+ return `<div class="cm ${m.w}${f}">${m.from?(m.go?`<button class="cmfrom cmgo" data-act="chgo" data-id="${esc(m.go)}">${esc(m.from)} ›</button>`:`<span class="cmfrom">${esc(m.from)}</span>`):''}${rq?`<span class="cmq">${esc(rq[1])}</span>`:''}${esc(body)}${m.w==='me'?'<small>已送出</small>':''}${chatStamp(m.at)}</div>`}
 // 對話裡提到的案子名稱變成可點的連結（排版後在文字節點上找，最多 4 個，名稱兩個字以上）
 window.__zlLink=el=>{try{if(!el||el.dataset.lk)return;el.dataset.lk='1';const ps=(DB.proj||[]).map(p=>({id:p.id,n:String(p.short||'').trim()||String(p.title||'').trim()})).filter(p=>p.n.length>=2).sort((a,b)=>b.n.length-a.n.length);let n=0;
-  const walk=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:t=>t.parentNode.closest('button,.cmq,small')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});const nodes=[];while(walk.nextNode())nodes.push(walk.currentNode);
+  const walk=document.createTreeWalker(el,NodeFilter.SHOW_TEXT,{acceptNode:t=>t.parentNode.closest('button,.cmq,small,time')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});const nodes=[];while(walk.nextNode())nodes.push(walk.currentNode);
   for(const p of ps){if(n>=4)break;for(const t of nodes){const i=t.nodeValue.indexOf(p.n);if(i<0)continue;const r=t.splitText(i);r.splitText(p.n.length);const b=document.createElement('button');b.className='cmlink';b.dataset.act='chgo';b.dataset.id='page|proj:'+p.id;b.textContent=p.n;r.replaceWith(b);n++;nodes.splice(nodes.indexOf(t),1);break}}}catch(e){}};
 function logSync(){const on=S.chat,l=$('#clog');if(!on||!l)return;const a=CH[on.b],un=on.b==='peng'&&!S.bound;
  l.innerHTML=a.map(msgHTML).join('')+(un?`<div class="cm bot card"><b>還沒綁定朋朋</b><div class="btns">${B('綁定朋朋','bindok',null,'pri')}</div></div>`:'');
@@ -2095,7 +2105,7 @@ async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id
  try{const ms=await LV.api.msgs(id,b,scope);if(!S.chat||S.chat.b!==b)return;LV.lastThread=ms;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
   const last=ms[ms.length-1],waiting=b!=='daqi'&&last&&last.kind==='user';
   const pend=CH[b].filter(m=>m.local&&!(m.gray&&ms.some(x=>String(x.body||'').indexOf(m.t)>-1)));
-  CH[b]=ms.map(m=>{const g=m.kind==='user'?/^［前情｜([^］]*)］/.exec(String(m.body||'')):null;if(g)return{w:'bot',gray:1,t:g[1],b};const me=m.kind==='user'||m.kind==='run';return{w:me?'me':'bot',t:me?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b,from:scope==='all'?chFrom(m):'',go:scope==='all'?chGo(m):''}}).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
+  CH[b]=ms.map(m=>{const g=m.kind==='user'?/^［前情｜([^］]*)］/.exec(String(m.body||'')):null;if(g)return{w:'bot',gray:1,t:g[1],b,at:m.at};const me=m.kind==='user'||m.kind==='run';return{w:me?'me':'bot',at:m.at,t:me?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b,from:scope==='all'?chFrom(m):'',go:scope==='all'?chGo(m):''}}).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
   if(!ms.length&&!pend.length)CH[b]=[{w:'bot',t:HI(b),b}];
   const lb=ms.filter(m=>m.kind==='bot').pop();if(lb)seenMark(b,lb.id);
   if(fresh){logSync();if(had&&last&&last.kind!=='user'){mood(b,'speaking');hop($('#cAv'));setTimeout(()=>{if(S.chat&&S.chat.b===b)mood(b,'idle')},2200)}else mood(b,waiting?'thinking':'idle')}
@@ -2571,7 +2581,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v171');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v172');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5260,7 +5270,7 @@ function rqBar(){const cin=document.querySelector('#chat .cin');if(!cin)return;l
  if(!r){r=document.createElement('div');r.id='cReply';r.className='creply';cin.parentNode.insertBefore(r,cin)}
  r.innerHTML=`<span>回覆：「${esc(RQ)}」</span><button type="button" aria-label="取消回覆" data-rqx="1">✕</button>`}
 {const _st=sendTo;sendTo=function(b,text,ctx){if(RQ&&text){text='［回覆：「'+RQ+'」］\n'+text;RQ='';rqBar()}return _st(b,text,ctx)}}
-{let LT=0,X=0,Y=0,ate=0;const pick=el=>{const raw=(el.cloneNode(true));raw.querySelectorAll('small,.cmfrom,.cmq').forEach(x=>x.remove());const t=raw.textContent.replace(/\s+/g,' ').trim();if(!t)return;
+{let LT=0,X=0,Y=0,ate=0;const pick=el=>{const raw=(el.cloneNode(true));raw.querySelectorAll('small,time,.cmfrom,.cmq').forEach(x=>x.remove());const t=raw.textContent.replace(/\s+/g,' ').trim();if(!t)return;
   RQ=t.length>40?t.slice(0,40)+'…':t;ate=Date.now();rqBar();el.classList.add('rqhit');setTimeout(()=>el.classList.remove('rqhit'),500);try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}const c=document.getElementById('cText');if(c)c.focus()};
  const ok=el=>el&&!el.classList.contains('gray')&&!el.querySelector('.dots');
  document.addEventListener('touchstart',e=>{const el=e.target.closest&&e.target.closest('#clog .cm');clearTimeout(LT);if(!ok(el))return;const t=e.touches[0];X=t.clientX;Y=t.clientY;LT=setTimeout(()=>pick(el),450)},{passive:true});

@@ -1837,7 +1837,7 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .ckbox .ck.want.drag>*,.ckbox .ck.want.drag .cklp{transition:none!important}
 .ckbox .ck.want .cklp .aif{width:44px;height:44px;flex:none}
 .ckbox .ck.want .cklp .ckdel{height:40px;width:64px;padding:0;border-radius:10px;flex:none}
-@media (hover:hover) and (pointer:fine){.ckbox .ck.want:hover{--sx:-168px}}
+
 .ckbox .ckblank::after{content:"一件往左滑：交給大器、霸霸或刪除・標題列左右滑換今天明天"}
 @media (prefers-reduced-motion:reduce){.ckbox .ck.want>*,.ckbox .ck.want .cklp{transition:none!important}}
 /* v143 msg 909：換天滑入 */
@@ -1856,7 +1856,7 @@ section.tl .tlpg.tlin-l{animation:tlInL .22s ease-out}section.tl .tlpg.tlin-r{an
 .ckbox .ck.want .cklp .ckdel.ckx{width:44px;height:44px;border-radius:50%;padding:0;display:grid;place-items:center;background:#f0605a;color:#fff;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
 .ckbox .ck.want .cklp .ckdel.ckx svg{width:20px;height:20px}
 .ckbox .ck.want .cklp{transform:translateX(calc(144px + var(--sx,0px)))!important}
-@media (hover:hover) and (pointer:fine){.ckbox .ck.want:hover{--sx:-144px}}
+
 /* v145 msg 917 老大：「不要白底框 可能是虛線透明底？不然看起來好厚重」 */
 .tlpop{background:rgba(20,20,26,.62);color:var(--ink,#f3efe0);border:1px dashed rgba(243,239,224,.55);box-shadow:none;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:6px 10px;font-size:12.5px;border-radius:10px}
 .tlpop small{opacity:.65}.tlpop em{color:#c3a6ff;font-weight:600}
@@ -1925,3 +1925,25 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .pstr.on .chev{background:#a37aff;border-color:#a37aff;color:#111}
 /* v162：關掉瀏覽器自己的捲動錨定，只用面板的「按的那顆釘在原位」，兩個不再互相拉扯 */ html,body,#page,#view{overflow-anchor:none}
 /* v164：監工改用 BotFace 光環臉，舊的 icon 晃動不再用 */ .bm.bmicon{animation:none}
+
+/* Desktop actions stay in their own column while the title is edited. */
+@media (hover:hover) and (pointer:fine) {
+ .ckbox .ck.want:not(.edit) .cklp {
+  position:static!important;
+  transform:none!important;
+  flex:0 0 auto;
+  background:transparent;
+ }
+ .ckbox .ck.want:not(.drag):not(.swl)>*:not(.cklp),
+ .ckbox .ck.want.edit>.cke {transform:none!important}
+ .ckbox .ckblank::after {content:"點項目可編輯；右側可交給大器、霸霸或刪除"}
+}
+#clog time.cmtime {
+ display:block;
+ margin-top:3px;
+ font-size:11px;
+ line-height:1.3;
+ color:inherit;
+ opacity:.8;
+ font-variant-numeric:tabular-nums;
+}

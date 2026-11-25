@@ -680,8 +680,12 @@
   function fmtBubble0(el) {
     if (el.dataset.fmt || el.classList.contains('card') || el.querySelector('.dots')) return;
     var fromEl = el.querySelector('.cmfrom'); if (fromEl) { fromEl.remove(); el.__from = fromEl; }   // v131：總聊天每則上方的「來自哪張卡」，排版時先拿出來再放回最上面
-    var raw = el.textContent; if (!raw || raw.length < 2) return;
-    el.dataset.fmt = '1'; el.textContent = '';
+    var stamp = el.querySelector('time.cmtime');
+    if (stamp) stamp.remove();
+    var raw = el.textContent;
+    el.dataset.fmt = '1';
+    if (!raw || raw.length < 2) { if (stamp) el.appendChild(stamp); return; }
+    el.textContent = '';
     var lines = raw.split(/\n/), list = null;
     lines.forEach(function (ln) {
       var t = ln.trim(); if (!t) { list = null; return; }
@@ -689,6 +693,7 @@
       if (m) { if (!list) { list = document.createElement(/^\d/.test(t) ? 'ol' : 'ul'); list.className = 'zlist'; el.appendChild(list); } var li = document.createElement('li'); inline(li, m[1]); list.appendChild(li); return; }
       list = null; var p = document.createElement('p'); p.className = /[：:]$/.test(t) && t.length < 24 ? 'zh' : 'zp'; inline(p, t); el.appendChild(p);
     });
+    if (stamp) el.appendChild(stamp);
   }
   function linkify(root) {
     var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: function (n) {
