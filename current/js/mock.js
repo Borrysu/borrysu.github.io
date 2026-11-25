@@ -17,7 +17,7 @@
 //   longname     第一張卡改成很長的案名（驗右上角不跑版）
 //   xss          第一張卡的文字欄都塞惡意 HTML、連結改成 javascript:（驗跳脫用，window.__xss 應一直是 undefined）
 //   以上資料一律轉成後端（opp_list）的欄位格式再交給 normalize，所以示範與真後端走同一條路。
-import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v174';
+import { AdapterError, normalize, normScan, normHistory, normMsgs, normInbox, normHub, normMoney } from './adapter.js?v175';
 
 const H = 3600e3, D = 24 * H;
 const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -191,6 +191,9 @@ export function mockAdapter(modeStr) {
   hub.jobs.push({ id: 'j11', agent: 'Gig Gig', machine: 'Gig Gig 的電腦', project: '機會雷達', title: '掃創作補助新公告', status: 'running', note: '進度：Gig Gig 讀完 3 份公告，Kim Kim 在對預算', updated_at: new Date(Date.now() - 8 * 60e3).toISOString() });
   // 2026-11-24 v94 示範：網址預覽與「讀不到」換路（虛構網址與內容）
   hub.jobs.push({ id: 'j7', agent: '大器（Claude）', machine: 'Mac', project: '示範工作坊（示意）', title: '看活動頁決定要不要報名', status: 'waiting_you', ask: '看示範工作坊活動頁，決定要不要報名', note: '活動頁：https://example.org/events/demo-workshop\n群組裡的報名表 PDF 大器讀不到（附件打不開）\n想去的話回「我做好了」，大器接著幫你報名', updated_at: new Date(Date.now() - 15 * 60e3).toISOString() });
+  // 大器引擎燈：?mock=codex（Codex 代班）、?mock=quota（兩邊額度用完）、其餘＝Claude 正常
+  hub.beats.push({ name: '大器引擎', machine: 'MacBook', expect_every_s: 3600, last_at: new Date(Date.now() - 60e3).toISOString(), late: false,
+    note: flags.has('quota') ? '兩邊額度用完｜17:40 恢復' : flags.has('codex') ? 'Codex 代班｜預計 17:40 切回' : 'Claude｜額度正常' });
   if (flags.has('empty')) { hub.open = []; hub.answered = []; hub.jobs = []; hub.events = []; hub.beats = []; }
   // v41 示範資料
   const iso = n => { const x = new Date(Date.now() + n * D); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };

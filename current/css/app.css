@@ -1947,3 +1947,11 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
  opacity:.8;
  font-variant-numeric:tabular-nums;
 }
+
+/* v175 大器引擎燈：綠＝Claude、黃＝Codex 代班、紅＝兩邊都沒額度 */
+.chip.engg{background:transparent;border:1.5px solid #4ca56f;color:var(--ink)}
+.chip.engy{background:transparent;border:1.5px solid #e0a82e;color:var(--ink);font-weight:700}
+.engbar{display:flex;align-items:center;gap:8px;width:100%;min-height:44px;margin:0 0 10px;padding:8px 12px;border-radius:12px;font:inherit;font-size:13px;text-align:left;color:var(--ink);background:var(--sf2);border:1.5px solid #e0a82e;cursor:pointer}
+.engbar>span:nth-child(2){flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink2)}
+.engbar.engr{border-color:var(--urg);background:var(--urg-bg);color:var(--urg-ink)}
+.engbar.engr>span:nth-child(2){color:var(--urg-ink)}

@@ -2581,7 +2581,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v174');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v175');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5354,6 +5354,22 @@ document.addEventListener('click',e=>{const z=e.target.closest&&e.target.closest
 window.__TIDE_OFF=true;window.__tideRows=[];
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
+/* ── v175 大器引擎燈（2026-11-25）：個人 Claude 額度用完自動轉 Codex 代班，恢復自動切回。
+   後端：Mac relay 的 engine.py 每輪寫 hub_beat「大器引擎」，note 開頭 Claude｜／Codex 代班｜／兩邊額度用完｜。
+   前端只讀這一筆：燈號頁用顏色分三態（綠＝Claude、黃＝Codex 代班、紅＝兩邊都沒額度），代班時首頁頂端一行提示。
+   退回：git revert v175 的 commit（資料庫與 Mac 端不受影響）。 */
+const engBeat=()=>{if(E())return null;const b=(DB.beats||[]).find(x=>x.name==='大器引擎');if(!b)return null;const n=b.note||'';return {b,tone:/^兩邊/.test(n)?'r':/^Codex/.test(n)?'y':'g',note:n}};
+const engChip=e=>e.tone==='r'?`<span class="chip urg">▲ 額度用完</span>`:e.tone==='y'?`<span class="chip engy">Codex 代班</span>`:`<span class="chip engg">Claude</span>`;
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();if(S.sheet!=='beats')return h;const e=engBeat();if(!e)return h;
+ return h.replace(/(<b>)[●▲]( 大器引擎<\/b>[\s\S]*?)<span class="chip">正常<\/span>/,(m,a,b)=>a+(e.tone==='r'?'▲':'●')+b+engChip(e))}}
+const engBar=()=>{const e=engBeat();if(!e||e.tone==='g'||e.b.late)return '';const t=e.note.split('｜');
+ const hm=esc((t[1]||'').replace('預計 ','').replace(/\s*(切回|恢復)$/,'')),txt=e.tone==='r'?`兩邊額度用完，${hm} 恢復`:`Claude 額度用完，Codex 代班，${hm} 切回`;
+ return `<button type="button" class="engbar ${e.tone==='r'?'engr':'engy2'}" data-act="sheet" data-id="beats"><b>${e.tone==='r'?'▲ ':''}大器引擎</b><span>${txt}</span><span aria-hidden="true">›</span></button>`};
+{const _a=homeL1;homeL1=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
+{const _a=homeL2;homeL2=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
+{const _a=homeL3;homeL3=function(){const h=_a.apply(this,arguments),b=engBar();return b?b+h:h}}
+
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
 })();
+
