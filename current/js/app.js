@@ -2581,7 +2581,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v172');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v173');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3513,7 +3513,7 @@ document.addEventListener('change',e=>{const t=e.target;if(t&&t.classList&&t.cla
    它回了一行一步的清單，對話裡出現「套用成步驟卡」，老大按了才寫入，可復原。 */
 const STEPQ=t=>`幫我把「${t}」規劃成步驟卡。一行一步，格式：步驟｜建議模型（Opus 5.5、Fable 5.2、Codex、AGY、Grok 擇一，不用就寫不指定）｜監工本身或開子視窗｜技能（沒有就空白）。最後一行列出哪裡要我決定。`;
 const stTitle=id=>{const t=todoOf(id);return t?(t.title||(t.raw&&t.raw.title)||''):''};
-const stPlanRow=id=>`<div class="mrow stplanr">${mb(bm('din')+'請定定規劃步驟','stplan','din|'+id)}${mb(bm('daqi')+'請大器規劃步驟','stplan','daqi|'+id)}</div>`;
+const stPlanRow=id=>`<div class="mrow stplanr">${mb(bm('din')+'請定定規劃步驟','stplan','din|'+id)}${mb(bm('daqi')+'請大器規劃步驟','stplan','daqi|'+id)}${mb(bm('baba')+'請霸霸規劃步驟','bbplan',id)}</div>`;   // v172 msg 1043：霸霸那顆一起畫出來，不再晚 0.2 秒才冒出來造成閃動
 {const _s=sheetHTML;sheetHTML=function(){const h=_s(),a=(S.sheet||'').split(':');
  if(a[0]==='stepx'){const id=S.sheet.slice(6);return h.replace(/(<p class="note">一步一張卡[\s\S]*?<\/p>)/,'$1'+stPlanRow(id))}
  if(a[0]==='pedit'){const id=S.sheet.slice(6);return h.replace(/(<label class="f">案名)/,`<p class="h4">步驟</p>${stPlanRow(id)}<div class="mrow">${mb('🧩 自己編每一步','sheet','stepx:'+id)}</div>$1`)}
