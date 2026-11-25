@@ -1207,8 +1207,24 @@
     var notes = [];
     rows.forEach(function (r) { var d = ymd(new Date(r.at)) === t0 ? '今天' : '明天'; (groups[d] = groups[d] || []).push(r); var m = r.meta || {}; [m.note, m.warn].forEach(function (n) { if (n && notes.indexOf(n) < 0) notes.push(n); }); });
     var h = '<section id="tideBox" class="tidebox" aria-label="今天的節奏"><h3>今天的節奏</h3>';
+    // 2026-11-25 老大：「原本我們在裡面的行事曆那個 還有多少時間多少空檔 幾個小時那個我真的覺得還不錯 可能可以結合？」
+    // 每天一條時間條（8～24 點，跟行事曆頁同一套算法 __zl.tlDay）：忙的上色、節奏時間點成小點、右邊空幾小時與最長空檔
+    function bar(n, rs) {
+      var Zc = window.__zl; if (!Zc || !Zc.tlDay || !Zc.CAL) return '';
+      var its = Zc.CAL.filter(function (e) { return e.d === n && !e.cancel && !e.del; }), i = Zc.tlDay(its);
+      var nowH = (function () { var x = new Date(Date.now() + 8 * 3600e3); return x.getUTCHours() + x.getUTCMinutes() / 60; })();
+      var pc = function (v) { return Math.max(0, Math.min(100, (v - 8) / 16 * 100)); };
+      var free = i.free.map(function (f) { return n === 0 ? [Math.max(f[0], nowH), f[1]] : f; }).filter(function (f) { return f[1] - f[0] >= 0.5; });
+      var fh = free.reduce(function (t, f) { return t + f[1] - f[0]; }, 0), big = free.slice().sort(function (a, b) { return (b[1] - b[0]) - (a[1] - a[0]); })[0];
+      var fmt = function (v) { var H = Math.floor(v), M = Math.round((v - H) * 60); return String(H).padStart(2, '0') + ':' + String(M).padStart(2, '0'); };
+      var segs = i.segs.map(function (sg) { return '<i class="tdseg" data-s="' + sg.e.src + '" style="left:' + pc(sg.a) + '%;width:' + Math.max(1.5, pc(sg.b) - pc(sg.a)) + '%"></i>'; }).join('');
+      var pins = rs.map(function (r) { var x = new Date(new Date(r.at).getTime() + 8 * 3600e3), v = x.getUTCHours() + x.getUTCMinutes() / 60; return '<i class="tdpin" data-k="' + esc(r.kind) + '" style="left:' + pc(v) + '%"></i>'; }).join('');
+      var past = n === 0 ? '<i class="tdpast" style="width:' + pc(nowH) + '%"></i>' : '';
+      var hrs = Math.round(fh * 2) / 2;
+      return '<div class="tdbar"><span class="tdtrack">' + past + segs + pins + '</span><span class="tdfree' + (fh < 2 ? ' tight' : '') + '"><b class="num">' + hrs + '</b> 小時空' + (big ? '<small>最長 ' + fmt(big[0]) + '～' + fmt(big[1]) + '</small>' : '') + '</span></div>';
+    }
     ['今天', '明天'].forEach(function (g) { if (!groups[g]) return;
-      h += '<p class="tdg">' + g + '</p><ul>' + groups[g].map(function (r) { var k = r.kind === 'leave' ? (r.verb || '出門') : (KIND[r.kind] || r.kind);
+      h += '<p class="tdg">' + g + '</p>' + bar(g === '今天' ? 0 : 1, groups[g]) + '<ul>' + groups[g].map(function (r) { var k = r.kind === 'leave' ? (r.verb || '出門') : (KIND[r.kind] || r.kind);
         return '<li data-k="' + esc(r.kind) + '"><b class="num">' + hm(r.at) + '</b> ' + esc(k) + '<span>｜' + esc(String(r.title || '').replace(/\s*@Borry/i, '')) + '</span></li>'; }).join('') + '</ul>'; });
     if (notes.length) h += '<p class="tdn">' + notes.map(esc).join('；') + '</p>';
     anchor.insertAdjacentHTML('beforebegin', h + '</section>');
@@ -1217,7 +1233,11 @@
   st.textContent = '.tidebox{margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--sf)}.tidebox h3{margin:0 0 6px;font-size:15px}' +
     '.tidebox .tdg{margin:8px 0 2px;font-size:12px;color:var(--ink2)}.tidebox ul{list-style:none;margin:0;padding:0}.tidebox li{display:flex;gap:6px;align-items:baseline;padding:4px 0;font-size:14px;line-height:1.4;border-top:1px solid var(--line)}' +
     '.tidebox li:first-child{border-top:0}.tidebox li b{min-width:44px}.tidebox li span{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}' +
-    '.tidebox li[data-k="internal_due"] b{color:var(--urg,#f87171)}.tidebox .tdn{margin:8px 0 0;font-size:12px;color:var(--ink2)}';
+    '.tidebox li[data-k="internal_due"] b{color:var(--urg,#f87171)}'+
+    '.tdbar{display:flex;align-items:center;gap:8px;margin:2px 0 6px}.tdtrack{position:relative;flex:1;height:16px;border-radius:5px;background:rgba(127,127,127,.16);overflow:hidden}' +
+    '.tdseg{position:absolute;top:0;bottom:0;border-radius:3px;background:#5b8cff}.tdseg[data-s="co"]{background:#f2a93b}.tdpast{position:absolute;left:0;top:0;bottom:0;background:repeating-linear-gradient(135deg,rgba(127,127,127,.28) 0 3px,transparent 3px 7px)}' +
+    '.tdpin{position:absolute;top:2px;bottom:2px;width:3px;margin-left:-1px;border-radius:2px;background:var(--ink)}.tdpin[data-k="internal_due"]{background:#f0605a}' +
+    '.tdfree{display:flex;flex-direction:column;align-items:flex-end;min-width:86px;font-size:12px;color:var(--ink2);line-height:1.2}.tdfree b{font-size:16px;color:var(--ink)}.tdfree.tight b{color:#f0605a}.tdfree small{font-size:11px}.tidebox .tdn{margin:8px 0 0;font-size:12px;color:var(--ink2)}';
   (document.head || document.documentElement).appendChild(st);
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () { if (document.getElementById('tideBox') || !document.querySelector('#view [data-z="goal"]')) { if (!document.querySelector('#view [data-z="goal"]')) return; if (document.getElementById('tideBox')) return; }
     if (cache && Date.now() - at < 600000) draw(); else load(); }, 150); }).observe(document.documentElement, { childList: true, subtree: true });
