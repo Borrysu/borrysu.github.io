@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v153');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v154');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4845,11 +4845,12 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
   // v146 msg 920 老大：「這邊有說同時多項的時候要幫我拆解 想一想怎麼樣可以無感無痛順暢不卡不用等」→ 已經存成一件、其實寫了好幾件的，背景自動拆開，不用按
   wantsOf(day).filter(w=>wstOf(String(w.id))==='open'&&String(w.id).indexOf('tmp')!==0&&!SPLIT[w.id]&&!w.note.src&&!w.note.card&&!/[＠@]/.test(String(w.note.text||''))&&splitWants(splitTm(w.note.text).text||w.note.text).length>1).forEach(w=>{SPLIT[w.id]=1;setTimeout(()=>autoSplit(w),0)});
-  const wants=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop').slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))),/* 照寫下的先後，新的在下面靠近輸入列 */have=new Set(wants.map(w=>w.note.src).filter(Boolean)),hk=wants.map(w=>calKey(w.note.text)).filter(x=>x.length>=2);
+  const wants=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop').slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))),/* 照寫下的先後，新的在下面靠近輸入列 */have=new Set(wantsOf(day).map(w=>w.note.src).filter(Boolean)),/* v155 msg 966：刪過、做完的也算有了，不再建議 */hk=wants.map(w=>calKey(w.note.text)).filter(x=>x.length>=2);
   const seen=t=>{const k=calKey(t);return k.length>=2&&hk.some(x=>x.includes(k)||k.includes(x))};
   const miss=[],tOf=e=>e.t+(e.e?'～'+e.e:'');
-  calAll().filter(e=>e.d===n&&!e.cancel&&e.src!=='tide'&&!(e.all||!e.t)).forEach(e=>{const ref='cal:'+e.id,ti=(e.cs?e.cs+'・':'')+e.n;if(have.has(ref)||seen(e.n))return;const r=window.__zl.ceRelated?window.__zl.ceRelated(e):null;miss.push({ref,k:'行事曆',tm:e.t,text:e.t+' '+ti,card:r&&r.id||''})});
-  (window.__tideRows||[]).filter(r=>r.at&&tw2(r.at).day===day).forEach(r=>{const ti=String(r.title||'').replace(/\s*@Borry/i,'');if(r.kind==='start'){const ref='tide:'+r.id;if(have.has(ref)||seen(ti))return;miss.push({ref,k:'張弛建議',tm:f3(tw2(r.at).h),text:f3(tw2(r.at).h)+' '+ti,card:''})}
+  const nowH=(()=>{const x=new Date(Date.now()+8*3600e3);return x.getUTCHours()+x.getUTCMinutes()/60})(),past=t=>{if(n!==0)return false;const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?(+m[1]+m[2]/60)<nowH:false};   // v155 msg 966：今天已經過去的不建議
+  calAll().filter(e=>e.d===n&&!e.cancel&&e.src!=='tide'&&e.src!=='rest'&&!(e.all||!e.t)&&!past(e.e||e.t)).forEach(e=>{const ref='cal:'+e.id,ti=(e.cs?e.cs+'・':'')+e.n;if(have.has(ref)||seen(e.n))return;const r=window.__zl.ceRelated?window.__zl.ceRelated(e):null;miss.push({ref,k:'行事曆',tm:e.t,text:e.t+' '+ti,card:r&&r.id||''})});
+  (window.__tideRows||[]).filter(r=>r.at&&tw2(r.at).day===day&&r.kind!=='rest'&&!(n===0&&tw2(r.at).h<nowH)).forEach(r=>{const ti=String(r.title||'').replace(/\s*@Borry/i,'');if(r.kind==='start'){const ref='tide:'+r.id;if(have.has(ref)||seen(ti))return;miss.push({ref,k:'張弛建議',tm:f3(tw2(r.at).h),text:f3(tw2(r.at).h)+' '+ti,card:''})}
    else if(r.kind==='internal_due'||r.kind==='leave'){const ref='tide:'+r.id;if(have.has(ref))return;const v=r.kind==='leave'?(r.verb||'出門'):'內部截止';miss.push({ref,k:v,tm:f3(tw2(r.at).h),text:f3(tw2(r.at).h)+' '+v+'：'+ti,card:''})}});
   (LV.items||[]).forEach(c=>{if(c.status==='closed'||c.closed)return;const hit=c.deliveryDate===day?'交件':c.finalDue===day?'尾款到期':'';if(!hit)return;const ref='card:'+c.id;if(have.has(ref))return;miss.push({ref,k:'今天到期',tm:'',text:(c.title||'')+' '+hit,card:c.id})});
   MISS={};miss.forEach(m=>{MISS[m.ref]=m});
