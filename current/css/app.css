@@ -2011,6 +2011,14 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .pstr .pstfold .chip,.pstr .pstfold .chev{flex:0 0 auto}
 .pstr .pstn>.pstrl{flex:0 1 auto;max-width:35%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pstr .pstb{min-width:0}
+.pstr .pstd .kv{align-items:start}
+.pstr .pstd .kv>b{min-width:0;overflow-wrap:anywhere}
+.pstr .pstd .pstsub-wrap{min-width:0;flex:1;overflow-wrap:anywhere}
+.pstsub-intro{margin:0 0 10px;font-weight:500;line-height:1.55}
+.pstsub{list-style:none;padding:0;margin:0;display:grid;gap:9px;font-weight:400}
+.pstsub li{display:flex;gap:9px;align-items:start;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--solid,#17171d)}
+.pstsub-num{display:grid;place-items:center;flex:none;width:23px;height:23px;border-radius:50%;background:var(--line);font-size:12px;font-weight:700}
+.pstsub li>div{min-width:0}.pstsub li b{display:block;font-weight:600;line-height:1.45}.pstsub li small{display:block;margin-top:5px;color:var(--ink2);font-size:12px;font-weight:400;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
 
 /* v204：每一步原地展開與編輯，不擠壓拖拉把手或關聯。 */
 .pstn .pstfold{display:flex;align-items:center;gap:8px;flex:1;min-width:0;width:auto}.pstfold b{flex:1;min-width:0;text-align:left;white-space:normal}.pst-inline{padding:12px;border:1px solid var(--line);border-radius:12px}.pst-inline .st3{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}.pst-inline input,.pst-inline textarea,.pst-inline select{width:100%;min-width:0;user-select:text;-webkit-user-select:text}.pst-inline textarea{resize:vertical}.pst-inline label{margin-top:8px}

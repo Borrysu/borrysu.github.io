@@ -2616,7 +2616,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v207');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v209');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3700,25 +3700,24 @@ async function pstMsgs(id){if(PSM[id]&&Date.now()-PSM[id].t<60e3)return;PSM[id]=
 function pstMeta(s){const a={},m=SMETA.exec(s.note||'');if(m)m[1].split('｜').forEach(x=>{const j=x.indexOf('：');if(j>0)a[x.slice(0,j)]=x.slice(j+1)});return a}
 function pstInline(p,s,i){const o=stepOf(s),a=pstMeta(s),k=p.id+'|'+i,opt=(xs,v)=>sOpt([...new Set([...xs,v].filter(Boolean))],v),bots=['不指定','大器','逐流監工','霸霸','塔塔','集集','朋朋','金金','萌萌','定定','肉咖'];
  const models=[...SMODEL,...(typeof SCLI!=='undefined'?SCLI.flatMap(c=>c.models.map(x=>x[0])):[])];
- return `<div class="pstd pst-inline" id="pstInline"><p class="h4">編輯第 ${i+1} 步</p><label class="f">這步做什麼<input id="pstName" value="${esc(o.name)}" maxlength="120"></label><div class="st3"><label class="f">模型<select id="pstModel">${opt(models,o.model)}</select></label><label class="f">執行方式<select id="pstMode">${opt([...SMODE,'老大'],o.mode)}</select></label><label class="f">CLI<select id="pstCli"><option value="">照預設</option>${SCLIK.map(x=>`<option${x===o.cli?' selected':''}>${esc(x)}</option>`).join('')}</select></label></div><label class="f">技能（@中文或英文，多個以頓號分隔）<input id="pstSkill" value="${esc(o.skill)}" placeholder="@意匠、@耳目"></label><div class="st3"><label class="f">AI 助理<select id="pstAssistant">${opt(bots,a['助理']||'不指定')}</select></label><label class="f">派工對象<select id="pstAssignee">${opt(bots,a['派工']||'不指定')}</select></label></div><label class="f">備註<textarea id="pstNote" rows="3">${esc(o.note)}</textarea></label><div class="mrow">${mb('存好這一步','pstsaveone',k)}${mb('問 AI 助理','pstask',k)}${mb('取消','pst',k+'|edit')}</div></div>`}
+ return `<div class="pstd pst-inline" id="pstInline"><p class="h4">編輯第 ${i+1} 步</p><label class="f">這步做什麼<input id="pstName" value="${esc(o.name)}" maxlength="120"></label><div class="st3"><label class="f">模型<select id="pstModel">${opt(models,o.model)}</select></label><label class="f">執行方式<select id="pstMode">${opt([...SMODE,'老大'],o.mode)}</select></label><label class="f">CLI<select id="pstCli"><option value="">照預設</option>${SCLIK.map(x=>`<option${x===o.cli?' selected':''}>${esc(x)}</option>`).join('')}</select></label></div><label class="f">技能（@中文或英文，多個以頓號分隔）<input id="pstSkill" value="${esc(o.skill)}" placeholder="@意匠、@耳目"></label><div class="st3"><label class="f">AI 助理<select id="pstAssistant">${opt(bots,a['助理']||'不指定')}</select></label><label class="f">派工對象<select id="pstAssignee">${opt(bots,a['派工']||'不指定')}</select></label></div><div class="st3"><label class="f">預定執行時間<input id="pstWhen" type="datetime-local" value="${esc(a['執行時間']||'')}"></label><label class="f">開始條件<select id="pstAfter"><option value="">隨時可做</option>${i?`<option value="前一步"${a['完成後']==='前一步'?' selected':''}>依序，前一步完成後</option>`:''}${(p.raw.progressSteps||[]).slice(0,i).map((x,j)=>`<option value="${j+1}"${a['完成後']===String(j+1)?' selected':''}>第 ${j+1} 步完成後：${esc(x.name.slice(0,25))}</option>`).join('')}</select></label></div><label class="f">備註<textarea id="pstNote" rows="3">${esc(o.note)}</textarea></label><div class="mrow">${mb('存好這一步','pstsaveone',k)}${mb('問 AI 助理','pstask',k)}${mb('取消','pst',k+'|edit')}</div></div>`}
 ACT.pstsaveone=async v=>{const [id,si]=v.split('|'),i=+si,P=window.__pst,old=P&&P.stepsOf(id);if(!old||!old[i]||!$('#pstInline'))return;
  const name=$('#pstName').value.trim();if(!name){toast('先寫這一步要做什麼');return}
  const a=pstMeta(old[i]),set=(k,v,def)=>{if(!v||v===def)delete a[k];else a[k]=v};
  const skill=$('#pstSkill').value.split(/[、,，\s]+/).map(x=>x.replace(/^@/,'')).filter(Boolean).map(x=>skExact(x)||x).join('、');
  set('模型',$('#pstModel').value,'不指定');set('方式',$('#pstMode').value,'監工本身');set('CLI',$('#pstCli').value);set('技能',skill);set('助理',$('#pstAssistant').value,'不指定');set('派工',$('#pstAssignee').value,'不指定');
+ set('執行時間',$('#pstWhen').value);set('完成後',$('#pstAfter').value);
  const nw=old.map(s=>({...s})),meta=Object.entries(a).map(([k,v])=>k+'：'+v).join('｜');nw[i]={...nw[i],name,note:(meta?'〔'+meta+'〕':'')+$('#pstNote').value};
  if(await P.saveSteps(id,nw,old,'這一步已存好')){S.pstEdit=null;render('keep')}};
 WRITE.push('pstsaveone');
 function pstDetail(p,s,i){const c=p.raw||{},o=stepOf(s),tg=stepTags(o),live=s.status==='current'||s.status==='blocked';
- const a=pstMeta(s),kv=[['這步備註',o.note],['模型與方式',tg],['CLI',o.cli],['AI 助理',a['助理']],['派工對象',a['派工']]];
+ const a=pstMeta(s),kv=[['預定執行',a['執行時間']&&a['執行時間'].replace('T',' ')],['開始條件',a['完成後']==='前一步'?'前一步完成後':a['完成後']?`第 ${a['完成後']} 步完成後`:'隨時可做'],['這步備註',o.note],['模型與方式',tg],['CLI',o.cli],['AI 助理',a['助理']],['派工對象',a['派工']]];
  if(live){kv.push(['執行',RUNST2[c.runStatus]||'還沒送出執行'],['視窗',(String(c.runNote||'').match(/【[^】]+】[^\s，。]*/)||[''])[0]||c.runNote],['進度',c.progressNote],['卡在',c.progressBlocker],['最後更新',c.progressUpdatedAt?LAGO(c.progressUpdatedAt)+(c.progressUpdatedBy?'・'+c.progressUpdatedBy:''):''])}
- const rows=kv.filter(x=>x[1]).map(x=>`<div class="kv"><span>${esc(x[0])}</span><b>${esc(x[1])}</b></div>`).join('');
+ const stepNoteHtml=v=>{const lines=String(v).split(/\n/),parts=[],intro=[];for(let j=0;j<lines.length;j++){const m=lines[j].match(/^\s*([0-9]+)[．.、]\s*(.+)$/);if(m){let detail='';if(lines[j+1]&&/^\s*〔/.test(lines[j+1]))detail=lines[++j].trim();parts.push(`<li><span class="pstsub-num">${esc(m[1])}</span><div><b>${esc(m[2])}</b>${detail?`<small>${esc(detail)}</small>`:''}</div></li>`)}else if(parts.length&&lines[j].trim()){parts[parts.length-1]=parts[parts.length-1].replace('</div></li>',`<small>${esc(lines[j].trim())}</small></div></li>`)}else if(lines[j].trim())intro.push(lines[j].trim())}return parts.length?`${intro.length?`<p class="pstsub-intro">${esc(intro.join(' '))}</p>`:''}<ol class="pstsub">${parts.join('')}</ol>`:esc(v)};
+ const rows=kv.filter(x=>x[1]).map(x=>`<div class="kv"><span>${esc(x[0])}</span>${x[0]==='這步備註'?`<div class="pstsub-wrap">${stepNoteHtml(x[1])}</div>`:`<b>${esc(x[1])}</b>`}</div>`).join('');
  let msg='';if(live){const m=PSM[p.id];if(!m)pstMsgs(p.id);msg=`<p class="h4">最近對話</p>`+(!m||m.a===null?'<p class="note">讀取中…</p>':m.a.length?`<ul class="tl">${m.a.map(x=>`<li>${esc((x.kind==='user'?'你：':'大器：')+String(x.body||'').replace(/^［[^］]*］\n?/,'').slice(0,140))}</li>`).join('')}</ul>`:'<p class="note">這張卡還沒有對話。</p>')+`<div class="mrow">${mb(bm('daqi')+'跟大器問這步','pstask',p.id+'|'+i)}</div>`}
  return `<div class="pstd">${rows||'<p class="note">這步還沒有更多資料。按「✎ 改」可以補備註、模型與技能。</p>'}${msg}</div>`}
-{const _p=pageHTML;pageHTML=function(){let h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw)return h;
- const st=p.raw.progressSteps||[];let i=-1;
- return h.replace(/<li class="pstr" data-s="([^"]*)" data-i="[^"]+"><div class="pstn">([\s\S]*?)<\/div>/g,(m,s,inner)=>{i++;const k='pst:'+p.id+':'+i,op=!!S.open[k];
-  return `<li class="pstr${op?' on':''}" data-s="${s}"><button class="pstn pstbtn" data-act="open" data-id="${esc(k)}" aria-expanded="${op}">${inner}<span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></button>`+(op&&st[i]?pstDetail(p,st[i],i):'')})}}
+// 步驟列已在主模板內提供唯一收合按鈕；不再包第二層按鈕。
 ACT.pstask=v=>{const [id,i]=v.split('|'),p=DB.proj.find(q=>q.id===id),s=p&&p.raw&&(p.raw.progressSteps||[])[+i];if(!s)return;
  const names={'大器':'daqi','逐流監工':'jian','霸霸':'baba','塔塔':'tata','集集':'jiji','朋朋':'peng','金金':'kim','萌萌':'mon','定定':'din','肉咖':'rouka'},a=pstMeta(s),sel=$('#pstAssistant'),bot=names[sel?sel.value:a['助理']]||'daqi'; openChat(BOTS[bot]?bot:'daqi','proj:'+id,null,()=>{const t=$('#cText');if(t){t.value=`第 ${+i+1} 步「${s.name}」現在做到哪？`;t.focus()}})};
 /* ---------- v84（2026-11-23）：老大面板意見 msg 245、253（先做的部分） ----------
@@ -3974,13 +3973,17 @@ const PSR={};
  return h.replace(/(<li class="pstr[^"]*" data-s="([^"]*)"(?: data-i="[^"]*")?>[\s\S]*?<div class="pstb">)/g,(m,a,s)=>{i++;const k=p.id+'|'+i;
   if(s==='done'||s==='skipped')return m;
   {const o=stepOf(st[i]||{});if(o.mode==='老大')return a+(sendStep(o)?sendBox(p,i,o):`<span class="chip">要你本人做，做完按「⋯」的「這步做完」</span>`)}   /* v177：〔方式：老大〕的步驟不給「▶ 執行這步」 */
-  if((busy&&(s==='current'||s==='blocked'))||(PSR[k]&&Date.now()-PSR[k]<15*60e3))return a+`<span class="chip urg pstrun-on">${busy&&(s==='current'||s==='blocked')?'跑中':'已送出'}</span>`;
+  if(busy&&(s==='current'||s==='blocked'))return a+`<button class="mb pstrun" data-act="pstresume" data-id="${esc(k)}">查進度／續做</button>`;
+  if(PSR[k]&&Date.now()-PSR[k]<15*60e3)return a+`<span class="chip pstrun-on">已送出</span>`;
   return a+`<button class="mb pstrun" data-act="pstrun" data-id="${esc(k)}">▶ 執行這步</button>`})}}
 ACT.pstrun=async v=>{const [id,si]=v.split('|'),i=+si,p=DB.proj.find(q=>q.id===id),c=p&&p.raw,s=c&&(c.progressSteps||[])[i];if(!s)return;
+ const gate=pstMeta(s),all=c.progressSteps||[],need=gate['完成後']==='前一步'?i-1:Number(gate['完成後'])-1;
+ if(gate['完成後']&&(!Number.isInteger(need)||need<0||need>=i||!['done','skipped'].includes((all[need]||{}).status))){toast('先完成指定的前置步驟');return}
+ if(gate['執行時間']){const at=new Date(gate['執行時間']).getTime();if(Number.isFinite(at)&&Date.now()<at){toast('這步排在 '+gate['執行時間'].replace('T',' ')+'，時間還沒到');return}}
  const k=id+'|'+i;if(PSR[k]&&Date.now()-PSR[k]<15*60e3){toast('這步剛送出過，Mac 在開視窗');return}
  if(['running','queued'].includes(c.runStatus)&&(s.status==='current'||s.status==='blocked')){toast('這步已經在跑了');return}
  if(!LV.api||!LV.api.act||!LV.api.say){toast('離線中，連上再送');return}
- const o=stepOf(s),a=pstMeta(s),body=`【只做這一步】第 ${i+1} 步：${o.name}。用 ${o.model==='不指定'?'預設模型':o.model}，${o.mode}${o.skill?'，技能 '+o.skill:''}。${a['派工']?'指定派工：'+a['派工']+'。':''}${a['助理']?'指定 AI 助理：'+a['助理']+'。':''}${o.note?'這步備註：'+o.note+'。':''}其他步驟不要動；做完把這步標做完，回報成果位置。`;
+ const o=stepOf(s),a=pstMeta(s),body=`【只做這一步】第 ${i+1} 步：${o.name}。用 ${o.model==='不指定'?'預設模型':o.model}，${o.mode}${o.skill?'，技能 '+o.skill:''}。${a['執行時間']?'預定執行：'+a['執行時間'].replace('T',' ')+'。':''}${a['完成後']?'開始條件：'+(a['完成後']==='前一步'?'前一步':`第 ${a['完成後']} 步`)+'完成後。':''}${a['派工']?'指定派工：'+a['派工']+'。':''}${a['助理']?'指定 AI 助理：'+a['助理']+'。':''}${o.note?'這步備註：'+o.note+'。':''}其他步驟不要動；做完把這步標做完，回報成果位置。`;
  PSR[k]=Date.now();render('keep');
  if(o.mode==='Grok機器人'){try{await LV.api.say(id,`【只做這一步・交給 Grok 機器人】第 ${i+1} 步：${o.name}。${o.note?'備註：'+o.note+'。':''}霸霸請判斷交給哪隻機器人（或自己做），直接執行；做完把這步標做完、成果寫回這張卡。要花錢、對外發布的先問老大。`,'baba');LV.sig='';paint('keep');toast(`第 ${i+1} 步交給霸霸派給機器人了，進度寫回這張卡`)}catch(e){delete PSR[k];render('keep');toast('沒送出：'+LERR(e))}return}
  try{await LV.api.say(id,body,'daqi')}catch(e){delete PSR[k];render('keep');toast('沒送出：'+LERR(e));return}
@@ -3988,6 +3991,8 @@ ACT.pstrun=async v=>{const [id,si]=v.split('|'),i=+si,p=DB.proj.find(q=>q.id===i
  LV.sig='';paint('keep');
  toast(ran?`送出第 ${i+1} 步。Mac 會開新視窗只做這步；開不了窗時，Claude App 側欄會出現開窗卡，點一下就開工`:`第 ${i+1} 步交給大器櫃台了，它會照這步開視窗；進度寫回這張卡`);setTimeout(()=>reload&&reload(),4e3)};
 WRITE.push('pstrun');
+ACT.pstresume=async v=>{const [id,si]=v.split('|'),p=DB.proj.find(q=>q.id===id),c=p&&p.raw,s=c&&(c.progressSteps||[])[+si];if(!s||!LV.api||!LV.api.say)return;try{await LV.api.say(id,`【查進度／續做】第 ${+si+1} 步「${s.name}」顯示進行中。請先核對實際視窗、工作收據與成果；若已停住，從已完成處接續，避免重做或重送。把真實進度寫回這張卡。`,'daqi');toast('已請大器核對並接續，進度會回這張卡')}catch(e){toast('沒送出：'+LERR(e))}};
+WRITE.push('pstresume');
 // 4 詳情區：卡片格，圖示＋標題＋重點大字
 const PDI={step:'🧭',date:'📅',money:'💰',team:'👥',file:'📁',hist:'🕘'};
 {const _p=pageHTML;pageHTML=function(){let h=_p();if(!/^proj:/.test(S.page||''))return h;
@@ -4450,8 +4455,8 @@ stdLoad=function(id){const it=todoOf(id),c=it&&it.raw;if(!c)return null;const st
 {const _a=ACT.stadd;ACT.stadd=()=>{_a();if(STD){const o=STD.steps[STD.steps.length-1];if(o&&o.cli==null)o.cli=''}}}
 {const _v=ACT.stsave;ACT.stsave=id=>{if(STD&&STD.id===id){const _n2=stepNote;let k=0;
   // 存檔時照順序把每步的 CLI 帶進 stepNote（原本的 stsave 只傳模型、方式、技能、備註）
-  const live=STD.steps.filter(s=>s.name||s.note||s.skills.length);const q=live.map(s=>s.cli||'');
-  stepNote=function(o){return _n2(Object.assign({},o,{cli:q[k++]||''}))};try{return _v(id)}finally{stepNote=_n2}}return _v(id)}}
+  const live=STD.steps.filter(s=>s.name||s.note||s.skills.length),prior=(todoOf(id)?.raw?.progressSteps||[]);const q=live.map((s,j)=>({cli:s.cli||'',meta:pstMeta(prior.find(p=>p.name===s.name)||prior[j]||{})}));
+  stepNote=function(o){const x=q[k++]||{},r=_n2(Object.assign({},o,{cli:x.cli})),a=x.meta||{},extra=['執行時間','完成後'].filter(key=>a[key]).map(key=>key+'：'+a[key]);if(!extra.length)return r;const m=SMETA.exec(r);return m?`〔${m[1]}｜${extra.join('｜')}〕`+r.slice(m[0].length):`〔${extra.join('｜')}〕`+r};try{return _v(id)}finally{stepNote=_n2}}return _v(id)}}
 
 /* ---------- 2026-11-24：公司卡也能「做完／改步驟／派工」，經肉咖同步回皮條客（拍板 current-company-sync-1124） ----------
    老大原話（逐流 msg 508）：「反正在這邊我的行為動作是可以同步到皮條客那邊去的 另外公司專案的部分也是在這邊而且也適用監工與子監工邏輯 以及各種CLI工具 差別就插在我要在公司那台電腦上鎖還是我的電腦上面做」
