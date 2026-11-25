@@ -91,7 +91,7 @@ Borry 2026-11-17：「你讓 GPT AGY 都有權利去改我機會雷達，然後�
 
 老大原話：「我看卡片跟大家還是會把已經做完或正在做的事當成沒做推給我欸」。
 
-- **誰發的卡誰收**：你發過的「要你決定」卡（`hub_decision_add`）、你寫的「等你：…」步驟、你開的工作（`hub_job_set`），事情做完或不用做了，**當場**收掉：決策卡用 `hub_decision_close`（附一句結果），步驟改 done／skipped，工作改 done，`run_status` 清掉（`opp_progress_set` 傳 `p_run_status:"stopped"`）。
+- **誰發的卡誰收**：你發過的「要你決定」卡（`hub_decision_add`）、你寫的「等你：…」步驟、你開的工作（`hub_job_set`），事情做完或不用做了，**當場**收掉：決策卡用 `hub_decision_close`（只帶 p_id，不能附字；收完用 `opp_msg_add` 跟老大說一句為什麼收），步驟改 done／skipped，工作改 done，`run_status` 清掉（`opp_progress_set` 傳 `p_run_status:"stopped"`）。
 - **發卡前先查**：要問老大前，先 `hub_today` 看 `open` 有沒有同一件已經在等，或已經做完的證據（行事曆已建、卡片步驟已 done、交接帳有記），有就不要再發。
 - **不替老大答他的卡**：老大點的卡只能老大點；你只能收掉「你自己發、而且已經不需要他決定」的卡，收的時候寫明為什麼。
 - 面板每張決策卡都有「✓ 已經處理了」，老大看到過期的卡可以一鍵收。
