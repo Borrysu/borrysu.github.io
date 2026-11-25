@@ -1546,6 +1546,20 @@ document.addEventListener('click',e=>{if(performance.now()-cvNoClick<350&&e.targ
 document.addEventListener('keydown',e=>{const d=e.target.closest&&e.target.closest('.mzdot');if(!d)return;const z=d.parentNode.dataset.cv,m=CV[z];if(!m)return;
  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();cvGo(z,(S.cv[z]||0)+(e.key==='ArrowRight'?1:-1),true)}
  else if(e.key==='Home'||e.key==='End'){e.preventDefault();cvGo(z,e.key==='Home'?0:m.ids.length-1,true)}});
+/* v180 電腦板大色卡（msg 1100）：滑鼠拖曳本來就有，補上讓它更穩：擋掉瀏覽器自己的拖曳圖片與選字；滾輪橫向（觸控板左右滑、shift+滾輪）；滑鼠停在色卡上按左右鍵翻頁；頁點本來就能點。觸控滑動不動。 */
+{let CVH=null,wAt=0;
+ document.addEventListener('pointerover',e=>{const v=e.target.closest&&e.target.closest('.mzv[data-cv]');if(v)CVH=v},{passive:true});
+ document.addEventListener('pointerout',e=>{if(CVH&&!(e.relatedTarget&&CVH.contains(e.relatedTarget)))CVH=null},{passive:true});
+ document.addEventListener('dragstart',e=>{if(e.target.closest&&e.target.closest('.mzv[data-cv]'))e.preventDefault()});
+ document.addEventListener('selectstart',e=>{if(CVD&&CVD.on)e.preventDefault()});
+ document.addEventListener('wheel',e=>{const v=e.target.closest&&e.target.closest('.mzv[data-cv]');if(!v||e.ctrlKey)return;
+  const dx=Math.abs(e.deltaX)>=Math.abs(e.deltaY)?e.deltaX:(e.shiftKey?e.deltaY:0);if(Math.abs(dx)<4)return;
+  e.preventDefault();const t=performance.now();if(t-wAt<420)return;wAt=t;const z=v.dataset.cv;cvGo(z,(S.cv[z]||0)+(dx>0?1:-1))},{passive:false});
+ document.addEventListener('keydown',e=>{if((e.key!=='ArrowLeft'&&e.key!=='ArrowRight')||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey||e.defaultPrevented)return;
+  const a=document.activeElement,tag=a&&a.tagName;if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||(a&&a.isContentEditable)||(a&&a.closest&&a.closest('.mzdot')))return;
+  if(S.sheet||S.chat||(window.__zlMK&&window.__zlMK.on))return;
+  const v=(a&&a.closest&&a.closest('.mzv[data-cv]'))||(CVH&&document.contains(CVH)?CVH:null);if(!v)return;
+  const z=v.dataset.cv,m=CV[z];if(!m)return;e.preventDefault();cvGo(z,(S.cv[z]||0)+(e.key==='ArrowRight'?1:-1))})}
 // 每次畫完量高度；「⋯」抽屜關掉後焦點回到開它的那顆
 let cvSh=null;
 {const _r=render;render=function(d){_r(d);cvWatch();
@@ -2583,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v179');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v180');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;

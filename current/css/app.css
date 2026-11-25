@@ -1988,3 +1988,6 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .sendok .sk-btns .mb{min-height:44px}
 .sendok .sk-go{flex:1 1 220px;text-align:center;overflow-wrap:anywhere}
 .sendok .sk-note{color:var(--ink2);font-size:12px;line-height:1.5}
+
+/* v180 電腦板大色卡：滑鼠游標是抓手，拖的時候不選字 */
+@media (hover:hover) and (pointer:fine){.mzv[data-cv]{cursor:grab}.mzv[data-cv].drag{cursor:grabbing}.mzv[data-cv] img{-webkit-user-drag:none;user-drag:none}.mzv[data-cv] button,.mzv[data-cv] a{cursor:pointer}}
