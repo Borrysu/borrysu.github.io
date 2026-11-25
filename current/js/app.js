@@ -1856,7 +1856,7 @@ const greet=()=>{const h=new Date().getHours();return (h<5?'晚安':h<11?'早安
 const BK={personal:'personal',funding:'fund',achievement:'honor',other:'other'};
 function mapDec(d){let opts=d.options.map(o=>({k:o.key,label:o.label,note:o.note,rec:o.recommended?1:0}));
  const kind=d.kind==='talk'||!opts.length?'talk':'choice';
- return {id:d.id,proj:d.project||'大器',q:d.question,detail:d.detail,kind,by:d.askedBy||'大器',origin:d.origin||'大器',ago:LAGO(d.createdAt),link:LWEB(d.link),opts}}
+ return {id:d.id,ask:d.ask||'',proj:d.project||'大器',q:d.question,detail:d.detail,kind,by:d.askedBy||'大器',origin:d.origin||'大器',ago:LAGO(d.createdAt),link:LWEB(d.link),opts}}
 const JST={queued:['排隊中',0],running:['進行中',0],waiting_mac:['等 Mac 開機',1],waiting_you:['等你',1],failed:['失敗',1],done:['做完',0]};
 function mapJob(j){const s=JST[j.status]||['進行中',0];return {id:j.id,bot:LBOT(j.agent),who:j.agent||'大器',title:j.title||j.project||'工作',st:s[0],wait:!!s[1],ago:LAGO(j.updatedAt)}}
 function mapEvt(e){return {at:LAGO(e.at),who:e.actor||'系統',bot:LBOT(e.actor),text:(e.project?e.project+'：':'')+e.summary}}
@@ -2618,7 +2618,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v219');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v220');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5875,6 +5875,35 @@ ACT.cwdone=async id=>{const d=DB.dec.find(x=>x.id===id);if(!d||!LV.api||!LV.api.
   else{const c=(LV.items||[]).find(x=>x.id===d.cid),old=String((c&&c.progressBlocker)||'');await LV.api.act(d.cid,'blocker',{text:''});await reload();paint('keep');toast('清掉卡點了',async()=>{try{await LV.api.act(d.cid,'blocker',{text:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}}
  catch(e){toast('沒處理到：'+LERR(e))}};
 WRITE.push('cwdone');
+
+/* ---------- v220（2026-11-26）：案子房間各分類底下，每張卡顯示「要你看」 ----------
+   同一筆資料（首頁「要你決定」的卡片等待、決策卡、新進度待檢閱），只多一個入口：在案子清單每張卡底下列出，點進去回那張卡，標已看／已處理後兩處一起消失。 */
+function cardPending(p){const out=[],nm=p.short||p.title;(DB.dec||[]).forEach(d=>{if(d.kind==='cardwait'&&d.cid===p.id)out.push({l:d.q.replace(/^等你：/,''),act:'cwview',id:d.id,ok:'cwdone',tag:d.si>-1?'待你看這步':'等你拍板'});
+  else if(d.kind!=='cardwait'&&(d.proj===nm||d.proj===p.title||(d.projFull&&d.projFull===p.title)))out.push({l:d.q,act:'sheet',id:'why:'+d.id,tag:'決策卡'})});
+ try{rvItems().filter(x=>x.id===p.id).forEach(x=>out.push({l:x.step.replace(/^[\s·]+/,'')+'：'+clip(String(x.res).replace(/\s+/g,' '),50),act:'rvopen',id:x.k,tag:x.st==='blocked'?'卡住，等你看':'做完，等你檢閱'}))}catch(e){}return out}
+{const _pc=projCard;projCard=function(p){let h=_pc(p);const L=cardPending(p);if(!L.length)return h;
+ const box=`<div class="cwl" role="group" aria-label="這張卡有事等你">${L.slice(0,3).map(x=>`<div class="cwi"><button type="button" class="cwb" data-act="${x.act}" data-id="${esc(x.id)}"><span class="cwt">${esc(x.tag)}</span>${esc(clip(x.l,56))} ›</button>${x.ok?`<button type="button" class="cwok" data-act="${x.ok}" data-id="${esc(x.id)}" aria-label="我處理了">✓</button>`:''}</div>`).join('')}${L.length>3?`<p class="note">還有 ${L.length-3} 件</p>`:''}</div>`;
+ const i=h.lastIndexOf('</article>');return i>-1?h.slice(0,i)+box+h.slice(i):h+box}}
+
+/* ---------- v220（2026-11-26，老大：決定卡密密麻麻、連結點不開）：決定卡面改版 ----------
+   卡面只放：一句問題（粗體）、一句為什麼、建議、2～3 顆大按鈕（建議第一顆）；長內容收進「看細節」分段條列；本機路徑與 .md 不顯示；沒有可決定的內容就寫「內容整理中」，不擺按鈕。 */
+function cleanTxt(t){return String(t||'').replace(/(?:~|\/Users)\/[^\s，。；、）)」』]*/g,'').replace(/[^\s，。；、（(「『]*AI工作夾[^\s，。；、）)」』]*/g,'').replace(/[A-Za-z0-9_\-㐀-鿿./]*\.(?:md|json|html|py|sh|txt)\b/g,'').replace(/[ \t]{2,}/g,' ').replace(/（\s*）|\(\s*\)|「\s*」/g,'')}
+function decFmt(t){const L=cleanTxt(t).split(/\n+/).map(x=>x.trim()).filter(Boolean);if(!L.length)return '';let h='',ul=false;L.forEach(x=>{const m=/^(?:\d+[.、)）]|[-•・])\s*(.*)$/.exec(x);if(m){if(!ul){h+='<ol class="dcl">';ul=true}h+=`<li>${esc(m[1])}</li>`}else{if(ul){h+='</ol>';ul=false}h+=`<p>${esc(x)}</p>`}});if(ul)h+='</ol>';return h}
+function decWhy(d){const f=cleanTxt(d.detail||'').split(/[。\n]/).map(x=>x.trim()).find(x=>x.length>3);return f?clip(f,44):(d.kind==='cardwait'?`${d.by||'大器'}在卡上標了等你`:`${d.by||'大器'}問・${d.ago||''}`)}
+function decFace(d){const q=clip(cleanTxt(d.ask||d.q).replace(/^神將皇后[:：]|^等你[:：]/,function(m){return m}),26)||clip(cleanTxt(d.q),26);
+ if(d.kind==='cardwait')return {q:clip(cleanTxt(d.q.replace(/^等你：/,'')).replace(/^[｜|\s：:]+/,''),26),why:decWhy(d),rec:null,btns:`${B('看這張卡 ›','cwview',d.id,'pri big')}${B(d.si>-1?'這步我處理了':'我處理了','cwdone',d.id,'ghost')}`,more:''};
+ if(d.kind==='talk')return {q,why:decWhy(d),rec:null,btns:decActs(d),more:''};
+ const opts=d.opts||[];if(!opts.length&&!String(d.detail||'').trim())return {q,why:decWhy(d),rec:null,btns:'<p class="note dcwait">內容整理中，整理好會出現按鈕。</p>',more:'',wait:1};
+ const rec=opts.find(o=>o.rec)||opts[0],rest=opts.filter(o=>o!==rec),show=rest.slice(0,2),more=rest.slice(2);
+ const btns=rec?`<div class="btns dcb"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>建議</small></button>${show.map(o=>`<button class="btn big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(o.k)}"><span>${esc(o.label)}</span></button>`).join('')}</div>`:'';
+ return {q,why:decWhy(d),rec,btns,more:more.length?`<div class="btns">${more.map(o=>`<button class="btn" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div>`:'',alt:true}}
+function decCardX(d,slide){const f=decFace(d),det=decFmt(d.detail),open=!!S.open['dcd:'+d.id],alt=f.alt&&(S.more[d.id]?`<label class="f">寫別的做法<textarea rows="2" placeholder="例：先給我聽兩版再說"></textarea></label>${S.err===d.id?'<p class="err" role="alert">▲ 先寫一句你要的做法，再交給大器。</p>':''}<div class="btns">${B('照我寫的做','pickalt',d.id)}</div>`:`<div class="btns">${B('其他做法，或自己寫','more',d.id,'ghost',' aria-expanded="false"')}</div>`);
+ return `${slide?`<div class="dslide dcx" data-card="${esc(d.id)}">${mineB('dec:'+d.id,'這件拍板')}<div class="bandtop"><span class="lbl who">${aiF('daqi','dec:'+d.id)}<span class="dproj">${esc(d.proj)}</span></span><span class="lbl">${esc(d.ago||'')}</span></div>`:`<article class="card dcx" data-card="${esc(d.id)}"><div class="meta">${bm('daqi','thinking','sm')}${chip(d.proj)}<span class="lbl">${esc(d.by||'大器')}問・${esc(d.ago||'')}</span></div>`}<h3 class="dcq">${esc(f.q)}</h3><p class="dcw">${esc(f.why)}</p>${f.rec&&f.rec.label?`<p class="dcr"><b>建議</b>：${esc(clip(cleanTxt(f.rec.label),40))}${f.rec.note?'（'+esc(clip(cleanTxt(f.rec.note),30))+'）':''}</p>`:''}${f.btns}`
+  +(det||f.more||alt?`<button type="button" class="dcdb" data-act="open" data-id="${esc('dcd:'+d.id)}" aria-expanded="${open}">${open?'收起細節':'看細節'} ${open?'⌃':'⌄'}</button>${open?`<div class="dcd">${det||''}${f.more||''}${alt||''}</div>`:''}`:'')
+  +(slide?`${aifs([dinB('dec:'+d.id)])}</div>`:`</article>`)}
+decCard=function(d){return decCardX(d)};
+decSlide=function(d,n){return {id:d.id,name:d.proj,html:decCardX(d,1)}};
+decRow=function(d){return `<div class="rowi">${decCardX(d)}</div>`};
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
