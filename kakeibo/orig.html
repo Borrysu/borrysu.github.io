@@ -4320,7 +4320,7 @@ function kkExDecorate() {
   document.querySelectorAll('.cardrow.acr[data-aid]').forEach(function (b) { var a = acctId(b.dataset.aid), box = b.querySelector('div[style*="flex:1"]'); if (a && box) kkExSet(box, KKCF.pdHtml('acct', a.name)); });
   var top = DET[DET.length - 1], ds = document.querySelector('#det .dsum'); if (top && top.t === 'acct' && ds) { var a2 = acctId(top.arg && top.arg.id != null ? top.arg.id : top.arg); if (a2) kkExSet(ds, KKCF.pdHtml('acct', a2.name)); }
 }
-var KK_VER = 'kk-v36.3', KK_SHELL = '#shell', KK_TITLE = '#top h1';
+var KK_VER = 'kk-v36.6', KK_SHELL = '#shell', KK_TITLE = '#top h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
@@ -5018,7 +5018,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)
     var b = BUSY[it.key];
     var ok = it.kind === 'diff' ? '要對帳' : it.kind === 'unb' ? '請塔塔補' : it.kind === 'cats' ? '都對' : it.kind === 'oldno' ? '作廢' : '對', no = it.kind === 'diff' ? '不用' : it.kind === 'unb' ? '不用補' : it.kind === 'oldno' ? '不用' : '不對', ed = it.kind === 'cats' ? '一筆一筆看' : '我自己改';
     var hit = FOCUS && (it.kind === 'pend' || it.kind === 'oldno') && (FOCUS === 'all' || FOCUS === 'acct:' + it.acct);
-    return '<div class="kkcf-i' + (hit ? ' hit' : '') + '" data-cfk="' + esc(it.key) + '"><div class="kkcf-t">' + esc(it.title) + '</div>' + (it.detail ? '<div class="kkcf-d">' + esc(it.detail) + '</div>' : '') + '<div class="kkcf-src">' + esc(it.src) + '</div>' +
+    return '<div class="kkcf-i' + (hit ? ' hit' : '') + '" data-cfk="' + esc(it.key) + '"><div class="kkcf-t"><span>' + esc(it.title) + '</span>' + (/^(pend|oldno|tnote)$/.test(it.kind) ? '<button type="button" class="kkcf-go" data-cfa="detail">看詳情 ›</button>' : '') + '</div>' + (it.detail ? '<div class="kkcf-d">' + esc(it.detail) + '</div>' : '') + '<div class="kkcf-src">' + esc(it.src) + '</div>' +
       '<div class="kkcf-a"><button type="button" class="ok" data-cfa="ok"' + (b ? ' disabled' : '') + '>' + ok + '</button><button type="button" data-cfa="no"' + (b ? ' disabled' : '') + '>' + no + '</button><button type="button" data-cfa="edit"' + (b ? ' disabled' : '') + '>' + ed + '</button></div></div>';
   }
   function html(all) {
@@ -5028,6 +5028,76 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)
     if (!n) return '<section class="kkcf" data-flip="kkcf" aria-label="塔塔要你確認"><p class="kkcf-h">塔塔有 <b>0</b> 件要你確認</p><p class="kkcf-zero">沒有要你看的推估。主畫面的數字都是銀行實查或交易算出來的。</p>' + ns + fx + '</section>';
     return '<section class="kkcf" data-flip="kkcf" aria-label="塔塔要你確認"><p class="kkcf-h">塔塔有 <b>' + n + '</b> 件要你確認</p><p class="kkcf-s">這些是塔塔推估的，按「對」才算數；按「不對」會交回塔塔。</p>' + show.map(itemHtml).join('') +
       (n > show.length ? '<button type="button" class="kkcf-more" data-cfa="more">還有 ' + (n - show.length) + ' 件，全部展開</button>' : '') + ns + fx + '</section>';
+  }
+
+  /* ---------- kk-v36.6 看詳情（老大 11/25 意見 2：確認卡片要能點開看詳情、人看得懂）----------
+     點整列或「看詳情 ›」開一個疊在最上面的小視窗；一筆只打一次 kk_tx_context（唯讀、驗鑰匙），結果記在這次開啟的頁面裡不重打。
+     「為什麼要你確認」由前端依資料決定，不叫 AI 編；塔塔的推估不改任何合計。 */
+  var DT = {}, DTSRC = { bank_import: '網銀明細', line_wallet: 'LINE 錢包通知', line_pay: 'LINE Pay 通知', line_bank: '銀行 LINE 通知', line_notice: 'LINE 通知' };
+  (function () {
+    var st = document.createElement('style'); st.id = 'kkdt-css';
+    st.textContent = '.kkcf-t{display:flex;gap:8px;align-items:flex-start;justify-content:space-between}.kkcf-t>span{flex:1;min-width:0}.kkcf-go{flex:none;min-height:44px;min-width:44px;padding:0 8px;border:0;background:transparent;color:inherit;font:inherit;font-size:13px;font-weight:700;opacity:.75;cursor:pointer;white-space:nowrap}' +
+      '.kkcf-i[data-cfk^="pend:"],.kkcf-i[data-cfk^="oldno:"],.kkcf-i[data-cfk^="tnote:"]{cursor:pointer}' +
+      '.kkdt{position:fixed;inset:0;z-index:2147482500;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.45)}' +
+      '.kkdt-p{width:100%;max-width:520px;max-height:88vh;overflow:auto;padding:14px 14px calc(env(safe-area-inset-bottom,0px) + 16px);border-radius:16px 16px 0 0;background:var(--x-surface-solid,var(--solid,var(--surface,#fff)));color:var(--ink,#1a1a1a);font:15px/1.5 system-ui,-apple-system,"PingFang TC",sans-serif;box-shadow:0 -10px 40px rgba(0,0,0,.3)}' +
+      '.kkdt-h{display:flex;align-items:center;gap:8px;margin:0 0 6px}.kkdt-h b{flex:1;font-size:17px;word-break:break-word}' +
+      '.kkdt-x{min-height:44px;min-width:44px;border-radius:12px;border:1.5px solid var(--line,#bbb);background:transparent;color:inherit;font:inherit;font-weight:700;cursor:pointer}' +
+      '.kkdt-lead{margin:0 0 10px;font-size:15px}.kkdt h4{margin:12px 0 4px;font-size:13px;color:var(--muted,#666)}.kkdt ul{margin:0;padding-left:18px}.kkdt li{margin:2px 0}' +
+      '.kkdt dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:14px}.kkdt dt{color:var(--muted,#666)}.kkdt dd{margin:0;word-break:break-word}' +
+      '.kkdt-note{white-space:pre-wrap;word-break:break-word;font-size:14px;margin:0}.kkdt-ask{display:block;width:100%;min-height:44px;margin-top:12px;border-radius:12px;border:1.5px dashed var(--line,#bbb);background:transparent;color:inherit;font:inherit;font-weight:700;opacity:.6}.kkdt-w{color:var(--muted,#666);margin:6px 0}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
+  function dtSrc(c) { return DTSRC[c.source_kind] || (c.evidence_type ? c.evidence_type + '資料' : '通知'); }
+  function dtHuman(c) {
+    var amt = Number(c.amount) || 0, sg = c.type === 'income' ? amt : -amt, nm = c.merchant || '一筆帳';
+    return '塔塔在 ' + md(c.evidence_at || c.occurred_at) + ' 依「' + dtSrc(c) + '」記了一筆「' + nm + '」' + fmt(sg) + (c.account_name ? '，進「' + c.account_name + '」' : '') + (c.category ? '，分類猜「' + c.category + '」' : '') + '。' + (c.unbilled ? '這是信用卡未出帳的匯入，還沒進正式帳單。' : '');
+  }
+  function dtWhy(c) {
+    var w = [];
+    if (c.guess_reason) w.push('塔塔的理由：' + cut(c.guess_reason, 200));
+    if (c.unbilled) w.push('信用卡未出帳匯入：金額與日期以網銀為準，出帳後可能還會變。');
+    if (c.category) w.push('分類「' + c.category + '」是塔塔猜的，不是你選的。');
+    if (c.same_amount_count > 0) w.push('前後 3 天內有 ' + c.same_amount_count + ' 筆同金額同類型的帳，可能重複記了。');
+    if ((c.same_merchant || []).some(function (m) { return m.same_category === false; })) w.push('同店家最近的帳分類不一樣，這筆的分類可能要改。');
+    if ((c.bill_name_matches || []).length) w.push('金額跟帳單「' + c.bill_name_matches.join('、') + '」一樣，可能是那張帳單的繳費。');
+    if (c.bill_payments_count > 0) w.push('這筆已對到帳單繳費紀錄。');
+    if (c.evidence_type === '其他' && /^line/.test(c.source_kind || '')) w.push('證據只有 LINE 通知文字，沒有網銀明細或收據。');
+    w.push('塔塔寫入的帳，要你按「對」才算進正式數字。');
+    return w;
+  }
+  function dtBody(it, c, err) {
+    var h = '';
+    if (err) return '<p class="kkdt-w">讀不到詳情：' + esc(err) + '。列表上的資訊和三顆鈕都沒受影響。</p>';
+    if (!c) return '<p class="kkdt-w">讀取中…</p>';
+    if (!c.found) return '<p class="kkdt-w">找不到這筆（可能已作廢）。重新整理看看。</p>';
+    h += '<p class="kkdt-lead">' + esc(dtHuman(c)) + '</p>';
+    h += '<h4>為什麼要你確認</h4><ul>' + dtWhy(c).map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>';
+    var amt = Number(c.amount) || 0, sg = c.type === 'income' ? amt : -amt;
+    h += '<h4>這筆資料</h4><dl><dt>日期</dt><dd>' + esc(md(c.occurred_at)) + '</dd><dt>店家</dt><dd>' + esc(c.merchant || '（沒寫）') + '</dd><dt>金額</dt><dd>' + esc(fmt(sg)) + '</dd><dt>帳戶</dt><dd>' + esc(c.account_name || '') + '</dd>' +
+      (c.payment_method ? '<dt>付款方式</dt><dd>' + esc(c.payment_method) + '</dd>' : '') + (c.category ? '<dt>分類</dt><dd>' + esc(c.category) + '</dd>' : '') +
+      '<dt>塔塔怎麼知道</dt><dd>' + esc(dtSrc(c)) + (c.evidence_at ? '（' + esc(md(c.evidence_at)) + '）' : '') + '</dd>' + (c.edits_count ? '<dt>改過</dt><dd>' + c.edits_count + ' 次</dd>' : '') + '</dl>';
+    if (c.note) h += '<h4>備註原文</h4><p class="kkdt-note">' + esc(c.note) + '</p>';
+    h += '<h4>交叉比對</h4>';
+    if ((c.same_amount || []).length) h += '<p class="kkdt-w">前後 3 天同金額：</p><ul>' + c.same_amount.map(function (s) { return '<li>' + esc(md(s.occurred_at) + '・' + (s.merchant || '') + (s.account_name ? '・' + s.account_name : '') + '（#' + s.id + '）') + '</li>'; }).join('') + '</ul>';
+    else h += '<p class="kkdt-w">前後 3 天沒有同金額的帳，不像重複。</p>';
+    if ((c.same_merchant || []).length) h += '<p class="kkdt-w">同店家最近幾筆：</p><ul>' + c.same_merchant.map(function (s) { return '<li>' + esc(md(s.occurred_at) + '・' + fmt(s.amount) + '・' + (s.category || '') + (s.same_category === false ? '（分類跟這筆不同）' : '')) + '</li>'; }).join('') + '</ul>';
+    h += '<button type="button" class="kkdt-ask" disabled>請塔塔查（還沒開）</button>';
+    return h;
+  }
+  function closeDetail() { var o = document.querySelector('.kkdt'); if (o) o.remove(); document.removeEventListener('keydown', dtKey, true); }
+  function dtKey(e) { if (e.key === 'Escape') closeDetail(); }
+  async function openDetail(it) {
+    closeDetail(); var id = it.rid, ov = document.createElement('div');
+    ov.className = 'kkdt'; ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', '這筆的詳情');
+    ov.innerHTML = '<div class="kkdt-p"><div class="kkdt-h"><b>' + esc(it.title) + '</b><button type="button" class="kkdt-x" data-dtx="1">關閉</button></div><div class="kkdt-c"></div></div>';
+    var cont = ov.querySelector('.kkdt-c'), draw = function (c, err) { cont.innerHTML = dtBody(it, c, err); };
+    ov.addEventListener('click', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-dtx]'))) closeDetail(); });
+    ov.addEventListener('touchend', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('[data-dtx]'))) { e.preventDefault(); closeDetail(); } }, { passive: false });
+    document.addEventListener('keydown', dtKey, true); document.body.appendChild(ov);
+    if (DT[id]) { draw(DT[id]); return; }
+    draw(null);
+    try { var c = await rpc('kk_tx_context', { p_id: id }); DT[id] = c; if (document.body.contains(ov)) draw(c); }
+    catch (e) { if (document.body.contains(ov)) draw(null, voidWhy(e)); }
   }
   /* ---------- 動作 ---------- */
   function uuid() { try { return crypto.randomUUID(); } catch (e) { return 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2); } }
@@ -5043,6 +5113,7 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)
   function say(m) { if (!C('toast', [m])) { try { console.log('[kkcf] ' + m); } catch (e) {} } }
   async function act(key, a) {
     var it = items().filter(function (x) { return x.key === key; })[0]; if (!it || BUSY[key]) return;
+    if (a === 'detail') { if (/^(pend|oldno|tnote)$/.test(it.kind)) openDetail(it); return; }
     if (a === 'edit' && it.kind === 'cats') { CATX = true; OPEN = true; paint(); return; }
     if (a === 'edit') { if (it.kind === 'pend' || it.kind === 'tnote' || it.kind === 'oldno') C('editTx', [it.rid]); else C('editAcct', [it.rid]); return; }
     BUSY[key] = 1; paint();
@@ -5143,6 +5214,17 @@ details.kk-more[open]>summary .kk-dots{background:var(--ink2);color:var(--solid)
     if (document.documentElement.classList.contains('kkfb-on')) return; /* 編修模式下由編修模組攔 */
     e.preventDefault(); e.stopPropagation(); if (Date.now() - lastT < 800) return; fire(b);
   }, true);
+  /* kk-v36.6：點整列（不是點鈕）開詳情；原版進化列有左滑手勢會吃 click，所以也接 touchend */
+  function rowKey(e) {
+    var r = e.target && e.target.closest && e.target.closest('.kkcf-i'); if (!r || document.documentElement.classList.contains('kkfb-on')) return null;
+    if (e.target.closest('button,a,input,textarea,select,[data-cfa]')) return null;
+    var k = r.getAttribute('data-cfk'); return k && /^(pend|oldno|tnote):/.test(k) ? k : null;
+  }
+  window.addEventListener('click', function (e) { var k = rowKey(e); if (!k) return; e.preventDefault(); e.stopPropagation(); if (Date.now() - lastT < 800) return; act(k, 'detail'); }, true);
+  window.addEventListener('touchend', function (e) {
+    var k = rowKey(e); if (!k) return; var t = e.changedTouches[0]; if (t && (Math.abs(t.clientX - tx0) > 10 || Math.abs(t.clientY - ty0) > 10)) return;
+    e.preventDefault(); e.stopPropagation(); lastT = Date.now(); act(k, 'detail');
+  }, { capture: true, passive: false });
   var raf = 0;
   try { new MutationObserver(function () { if (painting || raf) return; raf = requestAnimationFrame(function () { raf = 0; paint(); }); }).observe(document.body, { childList: true, subtree: true }); } catch (e) {}
   window.KKCF = { items: items, html: html, count: function () { return items().length; }, paint: paint, acctDiff: acctDiff, mark: mark, done: done, excl: excl, isExcl: isExcl, pendSum: pendSum, pdHtml: pdHtml, focus: focus };
