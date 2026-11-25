@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v188');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v189');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3181,8 +3181,9 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  // 狀態由監工的回覆推算（沒有狀態欄）：有回覆＝處理中；監工回「vN 已上線」就依先後結掉最早還沒結的一則。
  let PG={ms:null,err:'',busy:0};
  function progState(ms){const out=[],byT={},TK=/mcp-[0-9a-f]{12}/i;   // v188（mcp-e61d33cc9e0b）：AI 轉單帶 mcp-票號，狀態只認同票號的回覆；老大自己的意見照舊用先後配
-  (ms||[]).forEach(m=>{const body=String(m.body||''),tk=(TK.exec(body)||[''])[0].toLowerCase(),vv=/v(\d{2,4})\s*已上線/.exec(body);
-   if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk};byT[tk]=e;out.push(e);if(vv){e.st='done';e.ver='v'+vv[1]}return}
+  (ms||[]).forEach(m=>{const body=String(m.body||''),tk=(TK.exec(body)||[''])[0].toLowerCase(),vm=/v(\d{2,4})\s*已上線|已上線\s*v(\d{2,4})/.exec(body),vv=vm?[0,vm[1]||vm[2]]:null;   // v189（mcp-f66c041304d5）：「vN 已上線」「已上線 vN」兩種寫法都認
+   
+   if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk};byT[tk]=e;out.push(e);if(vv&&!/請求/.test(body.slice(0,60))){e.st='done';e.ver='v'+vv[1]}return}   // 首次出現若是「請求」本文，裡面引用的「已上線」不算
     if(vv){e.st='done';e.ver='v'+vv[1]}else if(e.st==='recv')e.st='work';return}
    if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'');if(/^［前情｜/.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:''})}
    else if(m.kind==='bot'){const open=out.filter(x=>x.st!=='done'&&!x.tk);if(!open.length)return;if(vv){open[0].st='done';open[0].ver='v'+vv[1]}else open.forEach(x=>{if(x.st==='recv')x.st='work'})}});
