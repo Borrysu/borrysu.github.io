@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v231');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v232');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3235,7 +3235,7 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
     if(vv){e.st='done';e.ver='v'+vv[1]}else if(e.st==='recv')e.st='work';return}
    if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'');if(!PR.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:'',rep:0,handled:!!m.handledAt})}
    // v231（msg 1598）：自動回的「這件我接到了」「收到，正在看」「收到。我讓…去做」只算處理中，不算已回覆；要有結果（已上線、改好、修好、做完、原因…）才算處理完。不再用「已標處理」當完成。
-   else if(m.kind==='bot'||m.kind==='daqi'){const OUT=/(已上線|上線了|改好|修好|做完|處理完|已還原|還原了|已改|找到了|原因[：:是]|查到|回答你|結論|建成|建好|補好|補上|放進|上傳好|已經處理)/.test(body)&&!/^(老大，這件我接到了|收到，正在看)/.test(body),ACKB=!OUT;
+   else if(m.kind==='bot'||m.kind==='daqi'){const OUT=/(已上線|上線了|改好|修好|做完|處理完|已還原|還原了|已改|找到了|原因[：:是]|查到|回答你|結論|建成|建好|補好|補上|放進|上傳好|已經處理|併進|合併了|已合併|收掉了)/.test(body)&&!/^(老大，這件我接到了|收到，正在看)/.test(body),ACKB=!OUT;
     const ids=(body.match(/(?:msg\s*)?\b(1\d{3,4})\b/g)||[]).map(x=>+x.replace(/\D/g,'')),cand=out.filter(x=>!x.tk),hit=ids.length?cand.filter(x=>ids.includes(+x.id)):[];
     const tgt=hit.length?hit:(()=>{const r=cand.filter(x=>OUT?!x.out:!x.ack&&!x.out);return r.length?[r[r.length-1]]:[]})();   // 回覆有寫 msg 編號就對那幾則；沒寫就對最近一則還沒回的
     tgt.forEach(x=>{if(OUT)x.out=1;else x.ack=1});if(vv){const open=out.filter(x=>!x.tk&&!x.ver);if(open.length)open[0].ver='v'+vv[1]}}});
