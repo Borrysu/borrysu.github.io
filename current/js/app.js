@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v155');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v156');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3262,7 +3262,7 @@ WRITE.push('pasave','pesave');
    並且希望這些卡片會等同一個視窗或多個視窗 可以在裡面裡 標記到我的技能庫」
    存法：不加資料庫欄位。步驟照舊存 progress_steps（opp_progress_set 的 p_steps），模型、方式、技能寫在每步 note 開頭：〔模型：Opus 5.5｜方式：開子視窗｜技能：eyear〕備註。
    送出執行時櫃台 brief 會帶步驟（櫃台說明.md 第 2 點已補一句：照這些指定執行）。 */
-const SMODEL=['不指定','Opus 5.5','Fable 5.2','Codex','AGY','Grok'],SMODE=['監工本身','開子視窗'];
+const SMODEL=['不指定','Opus 5.5','Fable 5.2','Codex','AGY','Grok'],SMODE=['監工本身','開子視窗','Grok機器人'];   // v156 msg 973 老大：「這邊應該要多一個 就是Grok bots機器人直接執行」
 const SSKILL=['archimise','canon','copybook','craft','diagram-design','distill','eagle','eyear','eyear-meeting-notes','fieldwork','folio','glean','handy','herald','hyperframes','intake','last30days','lilt','media-use','minimise','mise','motion','present','proof','score','splice','stage','sweep','tableread','trophy','vault','weigh'];
 const SMETA=/^〔([^〕]*)〕\s*/;
 function stepOf(s){const o={name:s.name||'',status:s.status||'pending',model:'不指定',mode:'監工本身',skill:'',note:s.note||''},m=SMETA.exec(o.note);
@@ -3270,7 +3270,7 @@ function stepOf(s){const o={name:s.name||'',status:s.status||'pending',model:'�
  return o}
 function stepNote(o){const a=[];if(o.model&&o.model!=='不指定')a.push('模型：'+o.model);if(o.mode&&o.mode!=='監工本身')a.push('方式：'+o.mode);if(o.skill)a.push('技能：'+o.skill);
  return (a.length?`〔${a.join('｜')}〕`:'')+(o.note||'')}
-const stepTags=o=>[o.model!=='不指定'?o.model:'',o.mode==='開子視窗'?'子視窗':'',o.skill?'技能 '+o.skill:''].filter(Boolean).join('・');
+const stepTags=o=>[o.model!=='不指定'?o.model:'',o.mode==='開子視窗'?'子視窗':o.mode==='Grok機器人'?'Grok 機器人':'',o.skill?'技能 '+o.skill:''].filter(Boolean).join('・');
 const sOpt=(a,v)=>a.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('');
 const stepRow=(o,i)=>`<div class="strow" data-st="${i}" data-status="${esc(o.status)}"><div class="strh"><b>第 ${i+1} 步</b><button type="button" class="mb" data-act="stdel" data-id="${i}">拿掉</button></div>
  <label class="f">這步做什麼<input class="st-name" maxlength="80" value="${esc(o.name)}" placeholder="例：整理素材清單"></label>
@@ -3494,7 +3494,7 @@ ACT.stplan=v=>{const [b,id]=v.split('|'),t=stTitle(id);if(!t)return;const ctx='p
 function parseSteps(txt){const out=[];String(txt||'').split('\n').forEach(l=>{const m=l.match(/^\s*(?:\d+\s*[.、)）:：]|[①-⑳]|[-・•*])\s*(.+)$/);if(!m)return;
  const p=m[1].split(/[｜|]/).map(s=>s.replace(/\*\*/g,'').trim());const name=p[0].replace(/[：:]\s*$/,'');if(!name||/要我決定|需要你決定/.test(name))return;
  const mt=(p[1]||'')+' ',model=/fable/i.test(mt)?'Fable 5.2':/opus/i.test(mt)?'Opus 5.5':/codex/i.test(mt)?'Codex':/agy|gemini/i.test(mt)?'AGY':/grok/i.test(mt)?'Grok':'不指定';
- const mode=/子視窗/.test(p[2]||'')?'開子視窗':'監工本身',sk=(p[3]||'').toLowerCase(),skill=SSKILL.find(x=>sk.includes(x))||'';
+ const mode=/子視窗/.test(p[2]||'')?'開子視窗':/grok|機器人/i.test(p[2]||'')?'Grok機器人':'監工本身',sk=(p[3]||'').toLowerCase(),skill=SSKILL.find(x=>sk.includes(x))||'';
  out.push({name:name.slice(0,80),model,mode,skill,note:'',status:'pending'})});return out.slice(0,30)}
 // v150 msg 951 老大：「聊天視窗裡面會出現套用什麼五個步驟的卡片按鈕可是我一直不知道那個是什麼意思」→ 只有你按過「規劃成步驟卡」、而且是緊接著的那則回覆才出現；回覆裡隨便有條列不算
 const lastPlan=b=>{const all=CH[b]||[];let ask=-1;for(let i=all.length-1;i>=0;i--){if(all[i].w==='me'&&/步驟卡|規劃成步驟/.test(String(all[i].t||''))){ask=i;break}}if(ask<0)return null;
@@ -3864,6 +3864,7 @@ ACT.pstrun=async v=>{const [id,si]=v.split('|'),i=+si,p=DB.proj.find(q=>q.id===i
  if(!LV.api||!LV.api.act||!LV.api.say){toast('離線中，連上再送');return}
  const o=stepOf(s),body=`【只做這一步】第 ${i+1} 步：${o.name}。用 ${o.model==='不指定'?'預設模型':o.model}，${o.mode}${o.skill?'，技能 '+o.skill:''}。${o.note?'這步備註：'+o.note+'。':''}其他步驟不要動；做完把這步標做完，回報成果位置。`;
  PSR[k]=Date.now();render('keep');
+ if(o.mode==='Grok機器人'){try{await LV.api.say(id,`【只做這一步・交給 Grok 機器人】第 ${i+1} 步：${o.name}。${o.note?'備註：'+o.note+'。':''}霸霸請判斷交給哪隻機器人（或自己做），直接執行；做完把這步標做完、成果寫回這張卡。要花錢、對外發布的先問老大。`,'baba');LV.sig='';paint('keep');toast(`第 ${i+1} 步交給霸霸派給機器人了，進度寫回這張卡`)}catch(e){delete PSR[k];render('keep');toast('沒送出：'+LERR(e))}return}
  try{await LV.api.say(id,body,'daqi')}catch(e){delete PSR[k];render('keep');toast('沒送出：'+LERR(e));return}
  let ran=true;try{const nc=await LV.api.act(id,'run');if(nc){const j=LV.items.findIndex(q=>q.id===id);if(j>-1)LV.items[j]=nc}}catch(e){ran=false}
  LV.sig='';paint('keep');
@@ -3899,15 +3900,15 @@ const skFind=q=>{q=String(q||'').toLowerCase();return SSKILL.filter(k=>!q||k.inc
 const skExact=w=>{w=String(w||'').toLowerCase();return SSKILL.find(k=>k===w||SKZH[k]===w)||''};
 let STD=null,SSUG=null;
 const stdNew=()=>({name:'',status:'pending',model:'不指定',mode:'監工本身',skills:[],note:'',pk:''});
-function stdLoad(id){const it=todoOf(id),c=it&&it.raw;if(!c)return null;const st=(c.progressSteps||[]).map(s=>{const o=stepOf(s);return {name:o.name,status:o.status,model:SMDL.some(m=>m[0]===o.model)?o.model:'不指定',mode:o.mode==='開子視窗'?'開子視窗':'監工本身',skills:skSplit(o.skill),note:o.note,pk:''}});
+function stdLoad(id){const it=todoOf(id),c=it&&it.raw;if(!c)return null;const st=(c.progressSteps||[]).map(s=>{const o=stepOf(s);return {name:o.name,status:o.status,model:SMDL.some(m=>m[0]===o.model)?o.model:'不指定',mode:o.mode==='開子視窗'||o.mode==='Grok機器人'?o.mode:'監工本身',skills:skSplit(o.skill),note:o.note,pk:''}});
  if(!st.length)st.push(stdNew());return {id,steps:st}}
 const stsL=v=>(STS.find(x=>x[0]===v)||STS[0])[1];
-function stcHTML(o,i){const pk=o.pk,sub=o.mode==='開子視窗';
+function stcHTML(o,i){const pk=o.pk,sub=o.mode==='開子視窗',gk=o.mode==='Grok機器人',mi=gk?2:sub?1:0;
  const opts=pk==='model'?SMDL.map(([m,h])=>`<button type="button" class="stc-o${m===o.model?' on':''}" data-act="stcset" data-id="${i}|model|${esc(m)}"><b>${esc(m)}</b><small>${esc(h)}</small></button>`).join('')
   :pk==='status'?STS.map(([k,l])=>`<button type="button" class="stc-o s-${k}${k===o.status?' on':''}" data-act="stcset" data-id="${i}|status|${k}"><b>${esc(l)}</b></button>`).join(''):'';
  return `<div class="stc s-${esc(o.status)}" data-i="${i}">
  <div class="stc-top"><span class="stc-n" aria-hidden="true">${i+1}</span>
-  <div class="stc-seg${sub?' r':''}" role="group" aria-label="第 ${i+1} 步誰來做"><i aria-hidden="true"></i><button type="button" data-act="stcmode" data-id="${i}|監工本身" aria-pressed="${!sub}">監工</button><button type="button" data-act="stcmode" data-id="${i}|開子視窗" aria-pressed="${sub}">子視窗</button></div>
+  <div class="stc-seg s3" data-m="${mi}" role="group" aria-label="第 ${i+1} 步誰來做"><i aria-hidden="true"></i><button type="button" data-act="stcmode" data-id="${i}|監工本身" aria-pressed="${mi===0}">監工</button><button type="button" data-act="stcmode" data-id="${i}|開子視窗" aria-pressed="${mi===1}">子視窗</button><button type="button" data-act="stcmode" data-id="${i}|Grok機器人" aria-pressed="${mi===2}">機器人</button></div>
   <button type="button" class="stc-c mdl${o.model==='不指定'?' dim':''}" data-act="stcpk" data-id="${i}|model" aria-expanded="${pk==='model'}"><span aria-hidden="true">◆</span>${esc(o.model==='不指定'?'模型':o.model)}</button>
   <button type="button" class="stc-c sts s-${esc(o.status)}" data-act="stcpk" data-id="${i}|status" aria-expanded="${pk==='status'}">${esc(stsL(o.status))}</button>
   <button type="button" class="stc-x" data-act="stdel" data-id="${i}" aria-label="拿掉第 ${i+1} 步">✕</button></div>
@@ -3927,7 +3928,7 @@ ACT.stadd=()=>{if(!STD)return;if(STD.steps.length>=30){toast('最多 30 步');re
 ACT.stdel=i=>{if(!STD)return;i=+i;const old=STD.steps.slice();STD.steps.splice(i,1);if(!STD.steps.length)STD.steps.push(stdNew());stcRedraw();
  toast(`拿掉第 ${i+1} 步（還沒存）`,()=>{if(!STD)return;STD.steps=old;stcRedraw()})};
 ACT.stcmode=v=>{if(!STD)return;const [i,m]=v.split('|'),o=STD.steps[+i];if(!o)return;o.mode=m;const el=document.querySelector(`#stRows .stc[data-i="${i}"] .stc-seg`);if(!el)return;
- el.classList.toggle('r',m==='開子視窗');el.querySelectorAll('button').forEach((b,k)=>b.setAttribute('aria-pressed',String((k===1)===(m==='開子視窗'))))};
+ const mi=m==='Grok機器人'?2:m==='開子視窗'?1:0;el.dataset.m=mi;el.classList.toggle('r',mi===1);el.querySelectorAll('button').forEach((b,k)=>b.setAttribute('aria-pressed',String(k===mi)))};
 ACT.stcpk=v=>{if(!STD)return;const [i,k]=v.split('|'),o=STD.steps[+i];if(!o)return;o.pk=o.pk===k?'':k;STD.steps.forEach((x,j)=>{if(j!==+i)x.pk=''});
  document.querySelectorAll('#stRows .stc').forEach(el=>{const j=+el.dataset.i,x=STD.steps[j];if(!x)return;const p=el.querySelector('.stc-pk');
   if(j===+i&&o.pk){const t=document.createElement('div');t.innerHTML=stcHTML(o,j);p.firstElementChild.innerHTML=t.querySelector('.stc-pk>div').innerHTML;p.setAttribute('aria-label',k==='model'?'選模型':'選狀態')}
@@ -4309,7 +4310,7 @@ const cliCmd=(c,m)=>c.cmd.replace('{m}',m);
 {const _o=stepOf;stepOf=function(s){const o=_o(s);o.cli='';const m=SMETA.exec(s.note||'');if(m)m[1].split('｜').forEach(kv=>{const i=kv.indexOf('：');if(kv.slice(0,i)==='CLI'&&SCLIK.includes(kv.slice(i+1)))o.cli=kv.slice(i+1)});return o}}
 {const _n=stepNote;stepNote=function(o){const r=_n(o);if(!o.cli)return r;const m=SMETA.exec(r);return m?`〔${m[1]}｜CLI：${o.cli}〕`+r.slice(m[0].length):`〔CLI：${o.cli}〕`+r}}
 stdLoad=function(id){const it=todoOf(id),c=it&&it.raw;if(!c)return null;const st=(c.progressSteps||[]).map(s=>{const o=stepOf(s),cl=cliOf(o.cli);
- return {name:o.name,status:o.status,cli:cl?cl.k:'',model:cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定'),mode:o.mode==='開子視窗'?'開子視窗':'監工本身',skills:skSplit(o.skill),note:o.note,pk:''}});
+ return {name:o.name,status:o.status,cli:cl?cl.k:'',model:cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定'),mode:o.mode==='開子視窗'||o.mode==='Grok機器人'?o.mode:'監工本身',skills:skSplit(o.skill),note:o.note,pk:''}});
  if(!st.length)st.push(Object.assign(stdNew(),{cli:''}));return {id,steps:st}};
 {const _h=stcHTML;stcHTML=function(o,i){const cl=cliOf(o.cli);let h;
  if(o.pk==='cli'){const sv=o.pk;o.pk='';h=_h(o,i);o.pk=sv;
@@ -4368,7 +4369,7 @@ ACT.codoneok=async id=>{const c=coFind(id);if(!c)return;const body=`【做完】
  try{await LV.api.coTask(id,'rouka',body);back();toast('交給肉咖了，皮條客那邊改好會回報');await coLoad();render('keep')}catch(e){toast(NOFN(e)?'資料庫還沒更新，派工還沒接上':'沒送出：'+LERR(e))}};
 // 步驟卡：沿用同一套編輯器，多「在哪做」
 {const _l=stdLoad;stdLoad=function(id){if(String(id).indexOf('co:')!==0)return _l(id);const c=coFind(id.slice(3));if(!c)return null;
- const st=coStepsOf(c).map(s=>{const o=stepOf(s),cl=cliOf(o.cli);return {name:o.name,status:o.status,cli:cl?cl.k:'',model:cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定'),mode:o.mode==='開子視窗'?'開子視窗':'監工本身',skills:skSplit(o.skill),note:o.note,where:coWhere(o),pk:''}});
+ const st=coStepsOf(c).map(s=>{const o=stepOf(s),cl=cliOf(o.cli);return {name:o.name,status:o.status,cli:cl?cl.k:'',model:cl?cliMdl(cl,o.model):(SMDL.some(m=>m[0]===o.model)?o.model:'不指定'),mode:o.mode==='開子視窗'||o.mode==='Grok機器人'?o.mode:'監工本身',skills:skSplit(o.skill),note:o.note,where:coWhere(o),pk:''}});
  if(!st.length)st.push(Object.assign(stdNew(),{cli:'',where:'公司'}));return {id,steps:st}}}
 {const _h=stcHTML;stcHTML=function(o,i){const h=_h(o,i);if(!STD||!isCoStd(STD.id))return h;const w=coWhere(o);
  const seg=`<div class="stc-seg${w==='我電腦'?' r':''}" role="group" aria-label="第 ${i+1} 步在哪做"><i aria-hidden="true"></i><button type="button" data-act="stcwhr" data-id="${i}|公司" aria-pressed="${w==='公司'}">公司電腦</button><button type="button" data-act="stcwhr" data-id="${i}|我電腦" aria-pressed="${w==='我電腦'}">我電腦</button></div>`;

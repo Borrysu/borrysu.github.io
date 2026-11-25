@@ -1906,3 +1906,10 @@ button[data-act="sheet"][data-id="beats"].wide{white-space:nowrap;overflow:hidde
 .ce .cedel2 svg{width:26px;height:26px;filter:drop-shadow(0 2px 3px rgba(0,0,0,.25))}
 .ce .cedelw{display:none}
 section.tl .tlpg{will-change:transform}
+/* v156 msg 973：步驟卡三選一（監工／子視窗／機器人） */
+.stc-seg.s3 i{width:calc(33.333% - 2px)}.stc-seg.s3[data-m="0"] i{transform:none}.stc-seg.s3[data-m="1"] i{transform:translateX(100%)}.stc-seg.s3[data-m="2"] i{transform:translateX(200%)}
+.stc-seg.s3 button{min-width:50px;padding:0 9px}
+/* v156 msg 940、979 老大：「點開機器人聊天的時候那個什麼就讓大器或就讓霸霸這樣做的按鈕排版調整一下」→ 對齊對話內容，收成一張小卡 */
+#cBaba{margin:0 16px 8px!important;padding:10px 12px!important;border:1px solid var(--line2,#444);border-radius:14px;background:rgba(127,127,127,.08);gap:6px 10px!important;align-items:center!important}
+#cBaba .btn.pri{min-height:40px;padding:0 16px;border-radius:12px;flex:none}
+#cBaba>:not(.btn){flex:1 1 160px;min-width:0;margin:0!important;font-size:12px;line-height:1.45;color:var(--ink2)}
