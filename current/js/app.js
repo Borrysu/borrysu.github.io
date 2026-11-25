@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v154');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v155');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5041,7 +5041,10 @@ function calSend(note,view,tide){
 function ceRelated(e){if(!e)return null;const keys=[e.cs,stripTag(e.n)].filter(Boolean).map(x=>calKey(x)).filter(x=>x.length>=2);
  const pool=[].concat(DB.proj||[],DB.todo||[]);
  for(const k of keys){const c=pool.find(p=>[calKey(p.title),calKey(p.short)].some(x=>x&&x.length>=2&&(x.includes(k)||k.includes(x))));if(c)return c}
- return null}
+ return relByText((e.cs||'')+stripTag(e.n),pool)}
+// v155 msg 967 老大：「點開這個要有相關卡片的跳轉」→ 標題對不到時看卡片內容：開頭兩個字加上至少再一段兩個字都出現才算
+function relByText(text,pool){const cj=(String(text||'').match(/[\u3400-\u9fff]{2,}/g)||[]).join('');if(cj.length<3)return null;const ch=[];for(let i=0;i+2<=cj.length;i++)ch.push(cj.slice(i,i+2));
+ let best=null,bs=0;(pool||[]).forEach(p=>{const r=p.raw||{};const tx=[p.title,p.short,p.next,r.progressNote,r.why,(r.progressSteps||[]).map(x=>x.name).join(' ')].join(' ');if(tx.indexOf(ch[0])<0)return;const n=new Set(ch.filter(c=>tx.indexOf(c)>-1)).size;if(n>=2&&n>bs){bs=n;best=p}});return best}
 function tideMatch(e){const k=calKey(stripTag(e.n));if(k.length<2)return null;
  const ok=x=>x.src!=='tide'&&!x.cancel&&x.real&&!x.pend&&x.d===e.d&&(()=>{const kk=calKey(stripTag(x.n));return kk.length>=2&&(kk===k||kk.includes(k)||k.includes(kk))})();
  const all=calAll();return all.find(x=>ok(x)&&x.src==='me')||all.find(x=>ok(x))||null}
