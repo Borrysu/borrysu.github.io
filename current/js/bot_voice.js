@@ -1040,6 +1040,8 @@
     b.onclick = async function () {
       var Z = window.__zl, L = Z && Z.LV; if (!L || !L.api || !L.api.say || !pend) return;
       var t = document.getElementById('cText'), said = t ? t.value.trim() : '';
+      var AQN = { 'claude-b': 'Claude 個人（claude B）', 'codex': 'Codex 好咖', 'codex-p': 'Codex 個人（codex B）', 'agy-b': 'AGY 個人（agy B）' };
+      if (window.__aqPick && AQN[window.__aqPick]) said = (said ? said + '\n' : '') + '（老大指定這件用 ' + AQN[window.__aqPick] + ' 跑，Claude 好咖額度快滿）';
       if (pend.go) {
         b.disabled = true; var G = pend.go;
         try { await G(said); if (t && said) t.value = ''; drop(); pend = null; if (Z.paint) Z.paint('keep'); } catch (e) { b.disabled = false; toast('沒送出，再按一次'); }
@@ -1143,7 +1145,19 @@
     return Z.LV.api.aiQuota().then(function (d) { cache = Array.isArray(d) ? d : []; at = Date.now(); busy = false; return cache; }).catch(function () { busy = false; return cache; });
   }
   var SHORT = { 'claude': 'Claude 好咖', 'claude-b': 'Claude 個人', 'codex': 'Codex 好咖', 'codex-p': 'Codex 個人', 'agy-b': 'AGY 個人' };
+  // 2026-11-25 逐流 msg 787 老大：「這邊顯示做額度的內容，我也不能點選它，我是要怎麼改 另外額度的部分我就再不用在這邊顯示，除非現在當下我們的本體帳號額度真的快滿了才再給我其他的選項。 額度你安排到某個地方小小的顯示就好。」
+  // → 派工處只在本體（Claude 好咖）≥85% 才出現，給可點的「改用 X」；平常只在頂端時間旁一個小點（點了看各帳號）。退回：刪掉 MAIN 判斷與 #aqDot 那段。
+  var MAIN = 'claude';
+  function pctOf(r) { return Math.max(r.wk_pct || 0, r.h5_pct || 0); }
   function html(rows) {
+    var main = rows.filter(function (r) { return r.account === MAIN; })[0];
+    if (!main || pctOf(main) < 85) return '';
+    var alt = rows.filter(function (r) { return SHORT[r.account] && r.account !== MAIN && r.wk_pct != null && pctOf(r) < 70; }).sort(function (a, b) { return pctOf(a) - pctOf(b); });
+    var pick = window.__aqPick || '';
+    return '<div class="aqrow" aria-label="本體額度快滿"><span class="aqt2">Claude 好咖額度 ' + Math.round(pctOf(main)) + '%，這件改用：</span>' +
+      alt.map(function (r) { return '<button type="button" class="aq aqp' + (pick === r.account ? ' on' : '') + '" data-aq="' + r.account + '">' + SHORT[r.account] + ' <b>' + Math.round(pctOf(r)) + '%</b></button>'; }).join('') + '</div>';
+  }
+  function _oldHtml(rows) {
     var show = rows.filter(function (r) { return SHORT[r.account] && r.wk_pct != null; });
     if (!show.length) return '';
     var hi = show.filter(function (r) { return Math.max(r.wk_pct || 0, r.h5_pct || 0) >= 85; });
@@ -1156,13 +1170,34 @@
     if (!where || where.querySelector('.aqrow')) return;
     get().then(function (rows) { if (!rows || where.querySelector('.aqrow')) return; var h = html(rows); if (h) where.insertAdjacentHTML('afterbegin', h); });
   }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('[data-aq]'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    window.__aqPick = window.__aqPick === b.dataset.aq ? '' : b.dataset.aq;
+    document.querySelectorAll('[data-aq]').forEach(function (x) { x.classList.toggle('on', x.dataset.aq === window.__aqPick); });
+  }, true);
+  // 頂端時間旁的小點：綠＝本體還夠、黃＝過 60%、紅＝過 85%；點了用提示列出各帳號
+  function dot() {
+    var st0 = document.getElementById('stamp'); if (!st0 || document.getElementById('aqDot')) return;
+    get().then(function (rows) { if (!rows || !rows.length || document.getElementById('aqDot')) return;
+      var m = rows.filter(function (r) { return r.account === MAIN; })[0], p = m ? pctOf(m) : 0;
+      var d = document.createElement('button'); d.type = 'button'; d.id = 'aqDot'; d.className = 'aqdot' + (p >= 85 ? ' hot' : p >= 60 ? ' mid' : '');
+      d.setAttribute('aria-label', 'AI 額度'); d.textContent = '額度';
+      d.onclick = function (ev) { ev.stopPropagation(); var tt = document.getElementById('toastMsg'), tb = document.getElementById('toast'); if (!tt || !tb) return;
+        tt.textContent = rows.filter(function (r) { return SHORT[r.account] && r.wk_pct != null; }).map(function (r) { return SHORT[r.account] + ' ' + Math.round(pctOf(r)) + '%'; }).join('・') + '（本週已用）';
+        var u = document.getElementById('toastUndo'); if (u) u.hidden = true; tb.classList.add('in'); clearTimeout(dot.t); dot.t = setTimeout(function () { tb.classList.remove('in'); }, 5000); };
+      st0.parentNode.insertBefore(d, st0.nextSibling); });
+  }
   var st = document.createElement('style');
-  st.textContent = '.aqrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px;font-size:12px;color:var(--ink2)}.aqh{margin-right:2px}' +
+  st.textContent = '.aqdot{margin-left:6px;padding:0 6px;min-height:22px;border:0;border-radius:999px;font-size:11px;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;gap:4px}.aqdot::before{content:"";width:7px;height:7px;border-radius:50%;background:#34c27a}.aqdot.mid::before{background:#f2a93b}.aqdot.hot::before{background:#f0605a}' +
+    '.aqt2{flex-basis:100%;color:#f0605a}.aqp{cursor:pointer;background:transparent;color:var(--ink);font:inherit;font-size:12px;min-height:30px}.aqp.on{background:var(--ink);color:var(--bg)}.aqp.on b{color:var(--bg)}' +
+    '.aqrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px;font-size:12px;color:var(--ink2)}.aqh{margin-right:2px}' +
     '#cBaba .aqrow{flex-basis:100%;margin-bottom:2px}.aq{padding:2px 8px;border-radius:999px;border:1px solid var(--line)}.aq b{color:var(--ink)}.aq.mid b{color:#f2a93b}.aq.hot{border-color:#f0605a}.aq.hot b{color:#f0605a}.aqt{flex-basis:100%;color:#f0605a}';
   (document.head || document.documentElement).appendChild(st);
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () {
     var c = document.getElementById('cBaba'); if (c) put(c.parentNode.querySelector('#cBaba') ? c : null);
     var s = document.querySelector('#sheet .stplanr'); if (s) put(s.parentNode);
+    dot();
   }, 120); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
 
