@@ -676,8 +676,10 @@
       if (last < p.length) parent.appendChild(document.createTextNode(p.slice(last)));
     });
   }
-  function fmtBubble(el) {
+  function fmtBubble(el) { var _r = fmtBubble0(el), f = el.__from; if (f) { el.insertBefore(f, el.firstChild); el.__from = null; } return _r; }
+  function fmtBubble0(el) {
     if (el.dataset.fmt || el.classList.contains('card') || el.querySelector('.dots')) return;
+    var fromEl = el.querySelector('.cmfrom'); if (fromEl) { fromEl.remove(); el.__from = fromEl; }   // v131：總聊天每則上方的「來自哪張卡」，排版時先拿出來再放回最上面
     var raw = el.textContent; if (!raw || raw.length < 2) return;
     el.dataset.fmt = '1'; el.textContent = '';
     var lines = raw.split(/\n/), list = null;
