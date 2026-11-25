@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v184');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v185');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4873,7 +4873,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  function tlLoad(force){if(!LV.api||!LV.api.tideLog||TLBUSY)return;if(!force&&TL&&Date.now()-TLAT<300000)return;TLBUSY=true;
   LV.api.tideLog(ymdT(-1)+'T00:00:00+08:00','note').then(d=>{TL=Array.isArray(d)?d:[];TLAT=Date.now();TLBUSY=false;ckRefresh()}).catch(()=>{TL=TL||[];TLAT=Date.now();TLBUSY=false})}
  const stOf=(ref,day)=>{const l=(TL||[]).filter(x=>x.note&&x.note.ref===ref&&x.note.day===day&&x.note.type!=='want');return l.length&&l[0].note.type!=='undo'?l[0]:null};   // 新的在前；最新一筆是復原就沒狀態
- const dayN=()=>S.ckDay!=null?S.ckDay:(new Date(Date.now()+8*3600e3).getUTCHours()>=18?1:0);
+ const dayN=()=>S.ckDay!=null?S.ckDay:0;   // v185 msg 1152：預設一律今日節奏（原本晚上 6 點後預設明日）；選明日只在本次停留有效
  // v146 msg 919 老大：「滑明天流暢來 但滑回來會跳動」→ 原因：回今天時重讀節奏紀錄，讀到後整頁重畫。改成只換節奏這一塊（高度不變處理），其他頁照舊重畫。
  function ckRefresh(){const box=document.querySelector('.ckbox');if(!box||S.sheet||S.ckEdit||typeof tideCheck!=='function'){LV.sig='';paint();return}
   if(typeof CKBUSY!=='undefined'&&CKBUSY){setTimeout(ckRefresh,300);return}
@@ -5522,7 +5522,7 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
 let BRT=0;
 function brandDraft(){return [...document.querySelectorAll('#app input[type=text],#app textarea,#sheet input[type=text],#sheet textarea,.chat textarea,#cText')].some(e=>e.offsetParent!==null&&String(e.value||'').trim()&&!/\b(pmi|plf|pdi)\b/.test(e.className))}
 async function brandHome(){const st=$('#stamp'),old=st?st.textContent:'';
- S.sheet=null;S.page=null;S.chat=null;S.tab='today';S.filt='all';H.length=0;render('keep');window.scrollTo({top:0,behavior:'smooth'});
+ S.sheet=null;S.page=null;S.chat=null;S.tab='today';S.filt='all';S.ckDay=null;S.ckEdit='';H.length=0;render('keep');{const t0=document.querySelector('.ckseg [data-act="ckday"][data-id="0"][aria-selected="false"]');if(t0)t0.click()}window.scrollTo({top:0,behavior:'smooth'});
  if(st)st.textContent='更新中…';
  try{await reload()}catch(e){toast('沒更新到：'+LERR(e))}
  LV.sig='';try{paint('keep')}catch(e){}const s2=$('#stamp');if(s2&&/更新中/.test(s2.textContent))s2.textContent=old||'已更新'}
