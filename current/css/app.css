@@ -1914,3 +1914,5 @@ section.tl .tlpg{will-change:transform}
 #cBaba .btn.pri{min-height:40px;padding:0 16px;border-radius:12px;flex:none}
 #cBaba>:not(.btn){flex:1 1 160px;min-width:0;margin:0!important;font-size:12px;line-height:1.45;color:var(--ink2)}
 .cto{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:6px 10px;border-left:3px solid #f2a93b;border-radius:8px;background:rgba(242,169,59,.1);font-size:13px}.cto span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cto button{width:32px;height:32px;border:0;background:transparent;color:var(--ink2);font-size:16px}
+/* v158 msg 990 老大：「不用白底 跟取消一樣即可」→ 節奏編修列的「存好」也改純文字（顏色稍亮表示主要） */
+.cke .ckerow .btn.pri{background:transparent!important;border:0!important;box-shadow:none!important;padding:0 6px!important;color:var(--ink)!important;font-weight:700}
