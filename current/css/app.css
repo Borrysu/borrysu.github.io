@@ -2011,6 +2011,14 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .pstr .pstfold .chip,.pstr .pstfold .chev{flex:0 0 auto}
 .pstr .pstn>.pstrl{flex:0 1 auto;max-width:35%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pstr .pstb{min-width:0}
+@media(max-width:600px){
+ .pstr .pstn{display:grid;grid-template-columns:18px minmax(0,1fr);gap:6px 8px;align-items:start}
+ .pstr .pstg{grid-column:1;grid-row:1;margin:10px 0 0}
+ .pstr .pstfold{grid-column:2;grid-row:1;width:100%;min-width:0;align-items:flex-start}
+ .pstr .pstfold b{white-space:normal;overflow-wrap:anywhere;line-height:1.45}
+ .pstr .pstn>.pstrl{grid-column:2;grid-row:2;max-width:100%;width:fit-content;margin:0;white-space:normal;overflow-wrap:anywhere;text-align:left}
+ .pstr .pstb{gap:4px 8px}
+}
 .pstr .pstd .kv{align-items:start}
 .pstr .pstd .kv>b{min-width:0;overflow-wrap:anywhere}
 .pstr .pstd .pstsub-wrap{min-width:0;flex:1;overflow-wrap:anywhere}
