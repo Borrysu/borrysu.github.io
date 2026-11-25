@@ -1861,3 +1861,7 @@ section.tl .tlpg.tlin-l{animation:tlInL .22s ease-out}section.tl .tlpg.tlin-r{an
 .tlpop{background:rgba(20,20,26,.62);color:var(--ink,#f3efe0);border:1px dashed rgba(243,239,224,.55);box-shadow:none;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:6px 10px;font-size:12.5px;border-radius:10px}
 .tlpop small{opacity:.65}.tlpop em{color:#c3a6ff;font-weight:600}
 @media (prefers-color-scheme:light){.tlpop{background:rgba(255,255,255,.55);color:#1a1a1f;border-color:rgba(26,26,31,.45)}.tlpop em{color:#6a3df0}}
+/* v147 msg 924、926：燈號頁額度排版、首頁報到鈕不換行不跳 */
+button[data-act="sheet"][data-id="beats"].wide{white-space:nowrap;overflow:hidden}button[data-act="sheet"][data-id="beats"].wide>span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0}
+.aqsheet .aqr{grid-template-columns:7.5em 1fr 3em}.aqsheet .aqr .aqd{grid-column:1/-1;margin-top:-2px;font-size:11px;color:var(--ink2)}
+.aqsheet .aqr{grid-template-columns:minmax(8.5em,auto) 1fr 3em}.aqsheet .aqr em{white-space:nowrap}

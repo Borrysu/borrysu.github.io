@@ -1190,7 +1190,10 @@
   // 2026-11-25 逐流 msg 787 老大：「這邊顯示做額度的內容，我也不能點選它，我是要怎麼改 另外額度的部分我就再不用在這邊顯示，除非現在當下我們的本體帳號額度真的快滿了才再給我其他的選項。 額度你安排到某個地方小小的顯示就好。」
   // → 派工處只在本體（Claude 好咖）≥85% 才出現，給可點的「改用 X」；平常只在頂端時間旁一個小點（點了看各帳號）。退回：刪掉 MAIN 判斷與 #aqDot 那段。
   var MAIN = 'claude-b';   // 2026-11-25 msg 826 老大：「我們額度的部分是預設使用，我們自己個人帳戶的cloude」
-  function pctOf(r) { return Math.max(r.wk_pct || 0, r.h5_pct || 0); }
+  // v147 msg 924 老大：「額度跟我看到的不符合」→ 視窗已經重置的舊讀數不算（例：昨天 5 小時用 93%，早就重置了）
+  function live(v, reset) { if (v == null) return null; var t = reset ? Date.parse(reset) : NaN; return isFinite(t) && t < Date.now() ? 0 : +v; }
+  function pctOf(r) { return Math.max(live(r.wk_pct, r.wk_reset) || 0, live(r.h5_pct, r.h5_reset) || 0); }
+  function ago(r) { var t = Date.parse(r.fetched_at || ''); if (!isFinite(t)) return ''; var m = Math.round((Date.now() - t) / 60000); return m < 60 ? m + ' 分鐘前' : m < 1440 ? Math.round(m / 60) + ' 小時前' : Math.round(m / 1440) + ' 天前'; }
   function html(rows) {
     var main = rows.filter(function (r) { return r.account === MAIN; })[0];
     if (!main || pctOf(main) < 85) return '';
@@ -1230,16 +1233,17 @@
       var m = rows.filter(function (r) { return r.account === MAIN; })[0], p = m ? Math.round(pctOf(m)) : null, lv = p == null ? '' : p >= 85 ? 'hot' : p >= 60 ? 'mid' : 'ok';
       document.querySelectorAll('button[data-act="sheet"][data-id="beats"].wide').forEach(function (b) {
         if (b.querySelector('.aqin') || p == null) return;
-        var x = document.createElement('small'); x.className = 'aqin'; x.dataset.lv = lv; x.textContent = 'Claude 個人額度 ' + p + '%';
+        var x = document.createElement('small'); x.className = 'aqin'; x.dataset.lv = lv; x.textContent = '額度 ' + p + '%';
         var last = b.lastElementChild; b.insertBefore(x, last);
       });
       var sh2 = document.querySelector('#sheet'); if (!(sh2 && Z.S.sheet === 'beats') || sh2.querySelector('.aqsheet')) return;
-      var host = sh2.querySelector('.shb') || sh2.querySelector('[class*="body"]') || sh2.lastElementChild || sh2;
+      var aif = sh2.querySelector('.aifs'), host = aif ? aif.parentNode : (sh2.querySelector('.shb') || sh2);
       var sec = document.createElement('section'); sec.className = 'aqsheet'; sec.setAttribute('aria-label', 'AI 額度');
       var list = rows.filter(function (r) { return SHORT[r.account] && r.wk_pct != null; }).sort(function (a, b) { return (a.account === MAIN ? -1 : 0) - (b.account === MAIN ? -1 : 0); });
-      sec.innerHTML = '<h3>AI 額度<small>本週已用，每 30 分鐘更新</small></h3>' + list.map(function (r) { var q = Math.round(pctOf(r)), l = q >= 85 ? 'hot' : q >= 60 ? 'mid' : 'ok';
-        return '<div class="aqr" data-lv="' + l + '"><span>' + SHORT[r.account] + (r.account === MAIN ? '<em>主帳號</em>' : '') + '</span><i><b style="width:' + Math.min(100, q) + '%"></b></i><span class="num">' + q + '%</span></div>'; }).join('');
-      host.appendChild(sec);
+      sec.innerHTML = '<h3>AI 額度<small>取本週與 5 小時內較高的；已重置的不算</small></h3>' + list.map(function (r) { var q = Math.round(pctOf(r)), l = q >= 85 ? 'hot' : q >= 60 ? 'mid' : 'ok';
+        var h5 = live(r.h5_pct, r.h5_reset), wk = live(r.wk_pct, r.wk_reset);
+        return '<div class="aqr" data-lv="' + l + '"><span>' + SHORT[r.account] + (r.account === MAIN ? '<em>主帳號</em>' : '') + '</span><i><b style="width:' + Math.min(100, q) + '%"></b></i><span class="num">' + q + '%</span><small class="aqd">' + (wk != null ? '本週 ' + Math.round(wk) + '%' : '') + (h5 ? '・5 小時內 ' + Math.round(h5) + '%' : '') + (ago(r) ? '・' + ago(r) + '讀到' : '') + '</small></div>'; }).join('');
+      if (aif) host.insertBefore(sec, aif); else host.appendChild(sec);
     });
   }
   var st = document.createElement('style');
