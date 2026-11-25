@@ -1222,14 +1222,14 @@
     get().then(function (rows) { if (!rows || !rows.length || document.getElementById('aqDot')) return;
       var m = rows.filter(function (r) { return r.account === MAIN; })[0], p = m ? pctOf(m) : 0;
       var d = document.createElement('button'); d.type = 'button'; d.id = 'aqDot'; d.className = 'aqdot' + (p >= 85 ? ' hot' : p >= 60 ? ' mid' : '');
-      d.setAttribute('aria-label', 'AI 額度'); d.textContent = '額度';
+      d.setAttribute('aria-label', 'AI 額度（點一下看各帳號）'); d.title = 'AI 額度';
       d.onclick = function (ev) { ev.stopPropagation(); var tt = document.getElementById('toastMsg'), tb = document.getElementById('toast'); if (!tt || !tb) return;
         tt.textContent = rows.filter(function (r) { return SHORT[r.account] && r.wk_pct != null; }).map(function (r) { return SHORT[r.account] + ' ' + Math.round(pctOf(r)) + '%'; }).join('・') + '（本週已用）';
         var u = document.getElementById('toastUndo'); if (u) u.hidden = true; tb.classList.add('in'); clearTimeout(dot.t); dot.t = setTimeout(function () { tb.classList.remove('in'); }, 5000); };
       st0.parentNode.insertBefore(d, st0.nextSibling); });
   }
   var st = document.createElement('style');
-  st.textContent = '.aqdot{margin-left:6px;padding:0 6px;min-height:22px;border:0;border-radius:999px;font-size:11px;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;gap:4px}.aqdot::before{content:"";width:7px;height:7px;border-radius:50%;background:#34c27a}.aqdot.mid::before{background:#f2a93b}.aqdot.hot::before{background:#f0605a}' +
+  st.textContent = '.brand{white-space:nowrap;display:flex;align-items:center;gap:6px;min-width:0}.brand small{white-space:nowrap}.aqdot{margin-left:2px;padding:0;width:24px;min-width:24px;justify-content:center;min-height:24px;border:0;border-radius:999px;font-size:11px;background:transparent;color:var(--ink2);display:inline-flex;align-items:center;gap:4px}.aqdot::before{content:"";width:7px;height:7px;border-radius:50%;background:#34c27a}.aqdot.mid::before{background:#f2a93b}.aqdot.hot::before{background:#f0605a}' +
     '.aqt2{flex-basis:100%;color:#f0605a}.aqp{cursor:pointer;background:transparent;color:var(--ink);font:inherit;font-size:12px;min-height:30px}.aqp.on{background:var(--ink);color:var(--bg)}.aqp.on b{color:var(--bg)}' +
     '.aqrow{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 0 8px;font-size:12px;color:var(--ink2)}.aqh{margin-right:2px}' +
     '#cBaba .aqrow{flex-basis:100%;margin-bottom:2px}.aq{padding:2px 8px;border-radius:999px;border:1px solid var(--line)}.aq b{color:var(--ink)}.aq.mid b{color:#f2a93b}.aq.hot{border-color:#f0605a}.aq.hot b{color:#f0605a}.aqt{flex-basis:100%;color:#f0605a}';
@@ -1319,4 +1319,39 @@
     if (cache && Date.now() - at < 600000) draw(); else load(); }, 150);
     if (!cache && !busy) load();   /* 2026-11-25 行事曆頁也要張弛時段（算忙碌），不只首頁才讀 */
   }).observe(document.documentElement, { childList: true, subtree: true });
+})();
+
+/* 2026-11-25 首頁「今天」「今天要做」、行事曆頁上方時間條可以收合（逐流 msg 846，老大：「立體樓 顯示不好看 可以換一個方式呈現，而且他是可以收合的 因為我隨時隨地都要看哪一個畫面」）。
+   標題列右邊一顆 ⌃／⌄，收起來只留標題一行；記在這台裝置（localStorage），讀不到就照常展開。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var KEY = 'zl_collapse';
+  function get() { try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; } }
+  function set(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+  var T = [['tday', '.tday', '.tdh'], ['todo', '.ckbox', '.ckh'], ['tl', 'section.tl', '.tlhd']];
+  function run() {
+    var st = get();
+    T.forEach(function (t) {
+      var sec = document.querySelector('#view ' + t[1] + ', #page ' + t[1]); if (!sec) return;
+      var head = sec.querySelector(t[2]); if (!head) return;
+      sec.classList.toggle('zcol', !!st[t[0]]); sec.dataset.zcol = t[0];
+      if (head.querySelector('.zcolb')) { head.querySelector('.zcolb').setAttribute('aria-expanded', String(!st[t[0]])); return; }
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'zcolb'; b.dataset.k = t[0];
+      b.setAttribute('aria-label', '收合或展開'); b.setAttribute('aria-expanded', String(!st[t[0]]));
+      head.appendChild(b);
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest && e.target.closest('.zcolb'); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    var st = get(), k = b.dataset.k; st[k] = !st[k]; set(st);
+    var sec = b.closest('[data-zcol]'); if (sec) sec.classList.toggle('zcol', st[k]);
+    b.setAttribute('aria-expanded', String(!st[k]));
+  }, true);
+  var css = document.createElement('style');
+  css.textContent = '.zcolb{margin-left:6px;width:36px;height:36px;border:0;border-radius:10px;background:transparent;color:var(--ink2);font-size:16px;flex:none}.zcolb::before{content:"⌃"}.zcolb[aria-expanded="false"]::before{content:"⌄"}' +
+    '.tdh,.ckh{display:flex;align-items:center}.tdh h2,.ckh h2{flex:1}' +
+    '.zcol>*:not(.tdh):not(.ckh):not(.tlhd){display:none!important}.zcol .tlhd>*:not(.zcolb):not(.tlsum){display:none!important}.zcol .tlhd{display:flex;align-items:center}.zcol .tlhd .tlsum{flex:1;margin:0;font-size:14px}';
+  (document.head || document.documentElement).appendChild(css);
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 100); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
