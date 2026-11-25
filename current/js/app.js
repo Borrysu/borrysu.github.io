@@ -2618,7 +2618,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v216');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v217');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5796,7 +5796,10 @@ function pmHTML(id){pmLoad(id);const d=LV.pm[id];if(!d)return `<section class="s
  const tm=at=>{const x=new Date(at);return isNaN(x)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(x)};
  return `<section class="sec pmsec"><h3>最新回報</h3>`+(L.length?L.map(m=>{const k='pm:'+id+':'+m.id,o=!!S.open[k],b=String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,'');
   return `<div class="pmi"><button type="button" class="pmh" data-act="open" data-id="${esc(k)}" aria-expanded="${o}"><b>${esc(m.author||'大器')}</b><small>${esc(tm(m.at))}</small><span class="chev" aria-hidden="true">${o?'⌃':'⌄'}</span></button><p class="pmb${o?' on':''}">${esc(o?b:clip(b.replace(/\s+/g,' '),110))}</p></div>`}).join(''):'<p class="note">這張卡還沒有大器、監工或機器人的回報。</p>')
-  +`<div class="btns" style="margin-top:6px">${B('打開完整對話','talk',id,'ghost')}</div></section>`}
+  +`<div class="btns" style="margin-top:6px">${B('打開完整對話','talk',id,'ghost')}${(()=>{const p=DB.proj.find(q=>q.id===id);if(!p)return '';projMeta(p);return B(p.dwait&&p.g!=='delivered'?'取消「等待中」':'⏳ 標成等待中（不算逾期）','pwait',id,'ghost')})()}</div></section>`}
+ACT.pwait=async id=>{const p=DB.proj.find(q=>q.id===id);if(!p||!LV.api||!LV.api.act){toast('離線中，連上再改');return}projMeta(p);const was=p.dwait,old=String((p.raw||{}).progressBlocker||'');
+ try{await LV.api.act(id,'blocker',{text:was?'':'等待中：等對方回覆'});await reload();paint('keep');toast(was?'取消了等待中':'標成等待中了，不會再算逾期',async()=>{try{await LV.api.act(id,'blocker',{text:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}catch(e){toast('沒改到：'+LERR(e))}};
+WRITE.push('pwait');
 {const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj'||!x[1]||!DB.proj.find(q=>q.id===x[1]))return h;
  const sec=pmHTML(x[1]),i=h.indexOf('<section class="sec pstep">');return i>-1?h.slice(0,i)+sec+h.slice(i):h+sec}}
 
@@ -5809,12 +5812,16 @@ function projMeta(p){if(p.__m)return p;p.__m=1;const raw=p.raw||{},T=new Date(Da
  let dt=p.g==='delivered'||p.g==='paid'?(ymd(raw.expectedPayDate)||ymd(raw.finalDue)||ymd(raw.deliveryDate)):(ymd(raw.deliveryDate)||fromTs(raw.deadline)||ymd(raw.finalDue)||ymd(raw.expectedPayDate)),src=dt?'欄位':'';
  if(!dt){const m=/^(\d{2})(\d{2})(?:[_\-\s]|$)/.exec(String(p.title||p.short||''));if(m&&+m[1]>=1&&+m[1]<=12&&+m[2]>=1&&+m[2]<=31){let y=T.getUTCFullYear(),d0=Date.UTC(y,+m[1]-1,+m[2]);if(d0<today-200*DAY)d0=Date.UTC(y+1,+m[1]-1,+m[2]);dt=d0;src='名稱'}}
  p.dts=dt;p.dsrc=src;p.dtotal=/總表/.test(String(p.title||''));
- if(dt!=null){const n=Math.round((dt-today)/DAY),x=new Date(dt);p.dlate=n<0;p.dlab=`${x.getUTCMonth()+1}/${x.getUTCDate()}・${n<0?'逾期 '+(-n)+' 天':n===0?'今天':n===1?'明天':'還有 '+n+' 天'}`;p.dn=n}
+ // v217（msg 1441）：等待中（交件後等收款、卡點寫「等…」、老大標了等待中）不算逾期，顯示「等 X」；名稱備援日期也不算逾期，只有欄位上的日期過了且不是在等才標逾期
+ const blk=String(raw.progressBlocker||'').trim(),waiting=p.g==='delivered'||(/^(等|等待)(?!你)/.test(blk)||/等(待|回|對方|客戶|主辦|通知|結果)/.test(blk))&&!/^等你/.test(blk);p.dwait=waiting;p.dwlab=waiting?('等 '+(blk.replace(/^等待中[：:]?\s*/,'').replace(/^等\s*/,'')||'對方').slice(0,12)):'';
+ if(dt!=null){const n=Math.round((dt-today)/DAY),x=new Date(dt),md=`${x.getUTCMonth()+1}/${x.getUTCDate()}`;p.dlate=n<0&&!waiting&&src==='欄位';p.dn=n;
+  p.dlab=`${md}・${n<0?(waiting?'已過 '+(-n)+' 天・'+p.dwlab:src==='欄位'?'逾期 '+(-n)+' 天':'已過 '+(-n)+' 天'):n===0?'今天':n===1?'明天':'還有 '+n+' 天'}${waiting&&n>=0?'・'+p.dwlab:''}`}
+ else if(waiting)p.dlab=p.dwlab
  return p}
 function projOrder(a,b){projMeta(a);projMeta(b);const g=x=>x.dts==null?2:x.dlate?0:1,ga=g(a),gb=g(b);if(ga!==gb)return ga-gb;
  if(ga<2&&a.dts!==b.dts)return a.dts-b.dts;if(a.dtotal!==b.dtotal)return a.dtotal?-1:1;
  return (+((b.raw||{}).progressUpdatedAt)||0)-(+((a.raw||{}).progressUpdatedAt)||0)}
-{const _pc=projCard;projCard=function(p){let h=_pc(p);projMeta(p);if(!p.dlab)return h;return h.replace(/(<div class="meta">)([\s\S]*?)(<\/div>)/,(m,a,b,c)=>a+b+`<span class="pdl${p.dlate?' late':''}">${esc(p.dlab)}</span>`+c)}}
+{const _pc=projCard;projCard=function(p){let h=_pc(p);projMeta(p);if(!p.dlab)return h;return h.replace(/(<div class="meta">)([\s\S]*?)(<\/div>)/,(m,a,b,c)=>a+b+`<span class="pdl${p.dlate?' late':p.dwait?' wait':''}">${esc(p.dlab)}</span>`+c)}}
 
 /* ---------- v215（2026-11-26，msg 1440）：付款日統一 ----------
    唯一來源＝分筆收款每筆的預計付款日；案子單欄「預計付款日」＝最近一筆還沒收的（資料庫同步，有分筆時畫面唯讀）。
