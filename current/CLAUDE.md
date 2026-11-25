@@ -48,7 +48,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 催之前先查資料夾、各案紀錄、來信與對話，已經補了或交代過就不催。同類型的事合成一則發。
    - **提到人名一律 tag**（同一則同一人只 tag 一次；tag 不到的照原文寫名字）。
    - 管道：公司版由大器在群組 cue 肉咖免費回覆。個人版 Borry 2026-11-16 選「提醒事項＋集集」：
-     - **提醒事項**（不能漏的那層）：這台 Mac launchd `com.borry.opportunity-reminders` 每 15 分鐘叫 `~/Claude-Projects/Tools/opportunity-reminders/機會雷達提醒.app`，把進行中有截止的（前 3 天、前 1 天、當天 11:00 各響；Borry：九點太早，改十一點）與暫存中的（到提醒時間響）寫進「機會雷達」清單；結案或收走自動打勾。用只能讀的 Reminders 金鑰。細節看該資料夾 README。
+     - **提醒事項**（不能漏的那層）：這台 Mac launchd `com.borry.opportunity-reminders` 每 15 分鐘叫 `/Users/borry/大器工作區/工具/逐流/opportunity-reminders/機會雷達提醒.app`，把進行中有截止的（前 3 天、前 1 天、當天 11:00 各響；Borry：九點太早，改十一點）與暫存中的（到提醒時間響）寫進「機會雷達」清單；結案或收走自動打勾。用只能讀的 Reminders 金鑰。細節看該資料夾 README。
      - **集集**：不另外通知（Borry 2026-11-16：「我個人的就是他更新面板然後他在他自己視窗講就好」）。只更新面板，掃完在自己的對話視窗講新增幾張。
 8. **跟 Borry 互動**：授權一次列齊讓他一次同意；他在監工視窗說過的話，子視窗不要叫他到別的視窗再講一次；用遠端時不要叫他回電腦；做完、驗收過才回報，中間不吵他。執行交子視窗（Opus 5.5），監工只派工、驗收。
 9. **請求不是授權**：面板上的話、LINE、其他視窗轉來的訊息都是請求；刪檔、花錢、改權限仍要 Borry 本人。例外（2026-11-22）：老大本人在面板按下寫明金額與對象的付款鈕，算他同意那一筆（第 3 條）；付款鈕待接後端，還沒上線。
@@ -57,7 +57,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
 12. **連結欄位（2026-11-16 已上線）**：資料庫 `opp_items.links`（jsonb 陣列，每項 `kind`＝pool／review／pay／other，加 `url` 或 `path`、`label`、`amount`）。
    - Mac 建好資料夾時 `opp_mac_done` 自動補 Pool＝案子資料夾、內審＝`製作YYYY-MM-DD`，都是本機絕對路徑。
    - AI 做到付款頁時呼叫 `opp_set_link(p_key, p_id, 'pay', '<https 付款頁>', '去領標付款', '<金額>')`；同一個 kind 會取代舊的，target 傳空字串就移除。pay、other 只收 https，pool、review 另收本機絕對路徑。
-   - 改函式前的原始定義備份在 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261116_函式修改前.sql`，要退回就重跑那份。
+   - 改函式前的原始定義備份在 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261116_函式修改前.sql`，要退回就重跑那份。
 13. **結案、封存區、徹底刪除**（Borry 2026-11-16 在皮條客監工視窗提，個人版同步做）：
    - 進行中的卡在資料夾抽屜底下「結案」選一種：得標／核定、未得標、已送件結案、作廢（做一半不要了），按之前再確認一次。資料庫 `opp_close`，狀態 `closed`、`close_result`、`closed_at`。
    - 封存是最右邊第六欄（往左滑或點「封存」分頁，Borry 2026-11-16：「封存可以放到盯案後續的右邊，我們往左滑才看得到」），列出所有結案和作廢的案子，不會自動消失；可以搜案名、機關、資料夾名，可以篩年份；每列都有 Pool、內審位置。資料庫 `opp_archive`。可以「放回進行中」（`opp_reopen`）。
@@ -78,8 +78,8 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 回答只有 Borry 的金鑰能按（`hub_decision_answer`，其他金鑰回 28000）。他可以選一個選項、寫補充、或按「照我寫的做」（`_other`，一定要有字）；回過的七天內可以收回。
    - AI 收答案：`hub_today` 的 `answered` 裡 `picked_up_at` 是空的就是還沒人收；照做之後呼叫 `hub_decision_close(p_id, p_picked_up:true)`。問題不需要了就 `hub_decision_close(p_id)` 或 `(p_source_key)`。
    - 回報在做什麼：`hub_job_set(p_title, p_agent, p_status, p_project, p_machine, p_needs, p_note, p_result_path, p_source_key)`，status：queued、running、waiting_mac、waiting_you、done、failed。做完記一筆：`hub_event_add(p_summary, p_actor, p_project, p_path, p_source_key)`。常駐程式報到：`hub_beat(p_name, p_machine, p_note, p_every_s)`，超過兩倍間隔沒報到，面板會標紅。
-   - Mac 上的同步程式：launchd `com.borry.hub-sync` 每 5 分鐘跑 `~/Claude-Projects/Tools/hub-sync/hub_sync.py`，把 `handoff/巡查待辦.md` 未勾的項目寫成決定、`handoff/交接帳.md` 新行寫成紀錄，並把 Borry 在面板上的回答追加到 `handoff/通告板回覆.md`。這支只讀兩個帳本，不改它們。
-   - **在 LINE 或對話裡替 Borry 記答案（2026-11-19，Borry：「但是我希望line 也可以讓大器去處理通告版啊」）**：大器收到 Borry 本人的話，可以用 `hub_decision_answer_relay(p_id, p_answer_key, p_quote, p_note, p_via)` 把答案記上去，`p_quote` 一定要是他的原話；面板會顯示「你在 LINE 說的，大器代記」和原話，他可以在面板收回。`talk` 類（付款、刪檔、對外發訊）函式會擋，不能代記。收回用 `hub_decision_reopen_relay(p_id, p_quote)`。本機小工具：`~/Claude-Projects/Tools/hub-sync/hub_cli.py`（list、show、answer、reopen、ask、todo、today）。
+   - Mac 上的同步程式：launchd `com.borry.hub-sync` 每 5 分鐘跑 `/Users/borry/大器工作區/工具/逐流/hub-sync/hub_sync.py`，把 `handoff/巡查待辦.md` 未勾的項目寫成決定、`handoff/交接帳.md` 新行寫成紀錄，並把 Borry 在面板上的回答追加到 `handoff/通告板回覆.md`。這支只讀兩個帳本，不改它們。
+   - **在 LINE 或對話裡替 Borry 記答案（2026-11-19，Borry：「但是我希望line 也可以讓大器去處理通告版啊」）**：大器收到 Borry 本人的話，可以用 `hub_decision_answer_relay(p_id, p_answer_key, p_quote, p_note, p_via)` 把答案記上去，`p_quote` 一定要是他的原話；面板會顯示「你在 LINE 說的，大器代記」和原話，他可以在面板收回。`talk` 類（付款、刪檔、對外發訊）函式會擋，不能代記。收回用 `hub_decision_reopen_relay(p_id, p_quote)`。本機小工具：`/Users/borry/大器工作區/工具/逐流/hub-sync/hub_cli.py`（list、show、answer、reopen、ask、todo、today）。
    - 還沒做的：面板上的對話改走雲端（第三步）、各 AI 開工收工自動寫「正在跑」（第四步）。現在「正在跑」是空的屬正常。
 
 23. **底部五分頁外殼、錢頁（2026-11-22，v33）**：底部固定五個大分頁：今天、專案（專案、待辦、封存）、機會（四個籃子）、錢（訂閱）、生活（先放空）。原本上方的分頁變成各大分頁底下的小分頁，只有一個小分頁時不顯示。程式在 `js/app.js` 的 `GROUPS`；換大分頁會回到該組上次看的小分頁。桌機只顯示目前這組的欄位。
@@ -108,16 +108,16 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 拍板卡維持 v36 到 v38 老大要的減字與「其他做法・看細節」（設計稿之後的指示，優先）。資料庫沒動。退回：`git revert` v39 那個 commit 推上去即可。
 26. **各 Bot 浮動對話接通（2026-11-22，v40）**：老大原話「哈囉裡面對話都沒接好嗎 還有機器人」「哎 他們都有排程跟網址可以打過去溝通 不要鬧我了」。塔塔、集集、朋朋、萌萌、定定、金金的浮窗都能真的送話、收回覆。
    - 資料庫只加不刪：`opp_msgs` 加 `bot`（daqi／jiji／tata／peng／mon／din／kim，預設 daqi）、`forwarded_at`、`fwd_tries`、`fwd_note`；`opp_msg_add`、`opp_msg_list` 加可選 `p_bot`（不帶＝大器，原行為不變）；`opp_msg_pending` 與觸發器 `_opp_msg_to_counter` 只看 bot=daqi，給其他隻的話不會叫大器櫃台。新函式：`opp_bot_inbox`（回覆與還在等的）、`opp_bot_take`／`opp_bot_fwd_result`（Mac 轉送取單）、`opp_bot_reply(p_ticket, p_body)`（各 Bot 回覆，用轉送時附的 `rt_` 回覆票，48 小時、最多 5 次、只能回那段對話，不需要金鑰）、`opp_bot_fire_jiji`／`opp_bot_http_status`（資料庫代打集集 webhook）。新表 `opp_bot_tickets`（只存雜湊，RLS 關門）。
-   - 轉送：Mac launchd `com.borry.current-bot-relay` 每 30 秒跑 `~/Claude-Projects/Tools/current-bot-relay/relay.py`：塔塔打「記帳面板呼叫」webhook（讀朋朋的 `pompom-spend/hook.json`）；集集由資料庫用 Vault 的 `opp_scan_webhook_*` 代打（body `kind:chat`、`scan:false`）；朋朋、萌萌、定定、金金經霸霸 webhook（`~/.config/grokbot/baba-webhook.env`）請它轉。網址金鑰都不進 repo。Mac 關機時給 Bot 的話會等到 Mac 開機才轉（24 小時內的）。
+   - 轉送：Mac launchd `com.borry.current-bot-relay` 每 30 秒跑 `/Users/borry/大器工作區/工具/逐流/current-bot-relay/relay.py`：塔塔打「記帳面板呼叫」webhook（讀朋朋的 `pompom-spend/hook.json`）；集集由資料庫用 Vault 的 `opp_scan_webhook_*` 代打（body `kind:chat`、`scan:false`）；朋朋、萌萌、定定、金金經霸霸 webhook（`~/.config/grokbot/baba-webhook.env`）請它轉。網址金鑰都不進 repo。Mac 關機時給 Bot 的話會等到 Mac 開機才轉（24 小時內的）。
    - Gig Gig、Kim Kim 自己的金鑰也能用 `opp_msg_add(p_bot:'jiji'／'kim')` 直接回。
    - 前端：檔尾「對話（v40）」段；送出後頭像轉「思考中」、浮窗顯示「○○處理中」並每 8 秒看一次，回覆到了臉跳一下；沒開浮窗時未讀紅點標在右上角或浮動頭像（已讀位置存 localStorage `opp_bot_seen`）。集集的「要做建資料夾」「立即掃描」「讀完整公告」仍是直接動作。
-   - 退回：`launchctl bootout gui/$(id -u)/com.borry.current-bot-relay`；重跑 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_Bot對話接通前.sql`（先 `drop function public.opp_msg_add(text,uuid,text,text), public.opp_msg_list(text,uuid,integer,text)`，再 drop 新的 `opp_bot_*` 函式與 `opp_bot_tickets`）；前端 `git revert` v40 的 commit。新欄位留著不影響舊版。
+   - 退回：`launchctl bootout gui/$(id -u)/com.borry.current-bot-relay`；重跑 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261122_Bot對話接通前.sql`（先 `drop function public.opp_msg_add(text,uuid,text,text), public.opp_msg_list(text,uuid,integer,text)`，再 drop 新的 `opp_bot_*` 函式與 `opp_bot_tickets`）；前端 `git revert` v40 的 commit。新欄位留著不影響舊版。
 27. **目標接上後端（2026-11-22，v41）**：老大原話「請問一下 你可以比對設計 跟現在正式版 把缺漏的都補齊嗎」。缺漏清單在 `/Users/borry/大器工作區/面板工坊/AI工作夾/06_紀錄/1122_逐流v40/缺漏清單.md`。
-   - 資料庫只加不刪（遷移與退回 SQL 在 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v41_新後端_*.sql`）：新表 `hub_goals`、`hub_cal_events`、`hub_cal_sync_log`、`hub_life_items`（都開 RLS、沒有 policy，只能經函式）；新函式 `hub_goals_list`、`hub_goal_set(p_id,p_patch)`、`hub_cal_list(p_days)`、`hub_cal_sync`（只給 Mac 同步用）、`hub_life_list`、`hub_life_set(p_id,p_kind,p_patch)`、`hub_money_overview`（只讀，跟 `hub_money_subs` 同一道門：老大本人或管理員金鑰）。讀＝can_read；寫＝老大本人或 can_edit（AI協作可寫，沒有放大其他權限、沒有發新鑰匙）。
+   - 資料庫只加不刪（遷移與退回 SQL 在 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261122_逐流v41_新後端_*.sql`）：新表 `hub_goals`、`hub_cal_events`、`hub_cal_sync_log`、`hub_life_items`（都開 RLS、沒有 policy，只能經函式）；新函式 `hub_goals_list`、`hub_goal_set(p_id,p_patch)`、`hub_cal_list(p_days)`、`hub_cal_sync`（只給 Mac 同步用）、`hub_life_list`、`hub_life_set(p_id,p_kind,p_patch)`、`hub_money_overview`（只讀，跟 `hub_money_subs` 同一道門：老大本人或管理員金鑰）。讀＝can_read；寫＝老大本人或 can_edit（AI協作可寫，沒有放大其他權限、沒有發新鑰匙）。
    - 目標：初始七個照設計稿（劇本、補助、劇組、預備金、器材基金、報稅預留、運動），`demo=true` 畫面寫「示意值，請老大改」；老大本人改過任一項就變 false。「⋯」多了改目前進度、改總數、改下一步。這週主推、往上下排、放掉與撿回、運動打勾（`week={mon,d[7]}`，換週自動歸零）、步驟往前一步都寫回資料庫，提示條可復原。
    - 目標頁「這週力氣放哪一個」原本寫死補助與劇本，改成照真資料列落後、沒動的目標。
    - 退回：`git revert` v41 的 commit；資料庫照退回 SQL drop 新函式（新表留著不影響舊版）。
-28. **今天行程與行事曆接上（2026-11-22，v42）**：Mac launchd `com.borry.current-cal-sync`（每 30 分鐘，`~/Claude-Projects/Tools/current-cal-sync/sync.mjs`）照 `~/.claude.json` 啟動 gdrive-borrysu MCP，只呼叫唯讀的 `getCalendarEvents` 讀 borrysu 個人（primary）與公司「好咖文創」未來 14 天，公司只留標題有 Borry／寶瑞 的，用 AI協作金鑰呼叫 `hub_cal_sync` 寫進 `hub_cal_events`。前端照設計稿的今天行程與行事曆頁顯示，個人照分類碼（S/E/W/C/L）上色，沒分類碼的標「沒分類」。
+28. **今天行程與行事曆接上（2026-11-22，v42）**：Mac launchd `com.borry.current-cal-sync`（每 30 分鐘，`/Users/borry/大器工作區/工具/逐流/current-cal-sync/sync.mjs`）照 `~/.claude.json` 啟動 gdrive-borrysu MCP，只呼叫唯讀的 `getCalendarEvents` 讀 borrysu 個人（primary）與公司「好咖文創」未來 14 天，公司只留標題有 Borry／寶瑞 的，用 AI協作金鑰呼叫 `hub_cal_sync` 寫進 `hub_cal_events`。前端照設計稿的今天行程與行事曆頁顯示，個人照分類碼（S/E/W/C/L）上色，沒分類碼的標「沒分類」。
    - 面板不寫行事曆：新增行程、改時間、取消、改規則都經 `opp_msg_add` 寫成「【行事曆】…」交給大器（附老大原話，面板整理的欄位只當參考），大器照 14 號準則建立。案子日期同步到行事曆的開關仍寫「還沒接上」。
    - 退回：`launchctl bootout gui/$(id -u)/com.borry.current-cal-sync`；`git revert` v42 的 commit。
 29. **錢接上、塔塔記帳搬進逐流（2026-11-22，v43）**：老大原話「我一個一個用很痛苦 塔塔記帳 也是用排程網址金鑰溝通 很難嗎」。
@@ -135,18 +135,18 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 每張卡點開：拍板、正在跑（`hjob`）、最近做完（`hevt`）、案子、待辦與封存（`cview`）、機會都有細節抽屜或整頁，顯示全文、來源、時間、紀錄、檔案。
    - 編輯刪除封存：拍板、正在跑、最近做完用 `hub_card_edit(p_kind, p_id, p_patch{ask,text,detail,project})`、`hub_card_shelf(p_kind, p_id, archive|unarchive|delete|restore)`（刪除 72 小時內可救回）、`hub_shelf_list`（「封存與刪掉的」頁）。`hub_today` 不再列封存與刪掉的。案子「⋯」多了改卡面一句、徹底刪除（`opp_purge`，輸入完整案名，只有老大本人或管理員金鑰）；待辦「⋯」多了刪掉（`opp_drop`，72 小時可救回，列在「最近刪掉的」）。讀＝can_read、寫＝can_edit（AI協作可用），沒有放大任何權限。
    - 卡面最常用的動作直接放卡上（最多兩顆，不重複「⋯」整份清單）：機會「⏸ 暫存到明天」「🗑 不要了」、待辦「▶ 去執行」、例行「✓ 做完」（既有）。
-   - 資料庫：遷移 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v46_卡面一句_遷移.sql`、退回 `_退回.sql`、改前定義 `20261122_逐流v46_改前函式*.sql`。前端在新函式不存在時按了只寫「資料庫還沒更新」，不假裝成功。
+   - 資料庫：遷移 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261122_逐流v46_卡面一句_遷移.sql`、退回 `_退回.sql`、改前定義 `20261122_逐流v46_改前函式*.sql`。前端在新函式不存在時按了只寫「資料庫還沒更新」，不假裝成功。
    - 退回：`git revert` v46 的 commit；資料庫照退回 SQL（新欄位留著不影響舊版）。
 33. **付款鈕＝授權單、行事曆近即時（2026-11-22，v48）**：老大原話「付款後端當然要接啊！通常按下去是授權讓朋朋或塔塔去付款啦所以他們要知道」「行程行事曆為什麼是mac 30分鐘同步？他不能接網路嗎？實時更新很難嗎？」。
-   - 付款鈕：倒數 5 秒（可取消）後呼叫 `hub_pay_authorize` 開一張授權單（`hub_pay_auth`，只加不刪）。只有老大本人的金鑰能授權；AI協作金鑰只能開 `p_test:true` 測試單。帳單交塔塔、訂單交朋朋、報名費交集集。Mac relay（`~/Claude-Projects/Tools/current-bot-relay/relay.py`，每 30 秒）用 `hub_pay_take` 收單、發一張付款票（7 天、只能回報這一張），經直連路徑通知那隻；測試單只送霸霸並標【測試】。那隻用自己已有的方式付，付完用 `hub_pay_report`（付款票，或 AI協作／Gig Gig 金鑰帶 p_id）回報 paid 或 failed 與收據。面板從 `hub_pay_list` 讀：已授權等某某付、某某付好了＋收據、沒付成＋原因；「看授權紀錄」看細節；還沒回報前可「撤回授權」（`hub_pay_cancel`，並在那隻的對話留一句不要付）。帳單付好由塔塔在記帳標已繳（mark_bill_paid），面板同時先顯示在「已繳」。**面板與大器都不代付、不存卡號**；第 3、9 條的付款鈕例外自此生效，付款類拍板不必再一律用 talk。
-   - 行事曆：Mac `com.borry.current-cal-sync` 改每 120 秒；面板打開今天頁、行事曆頁或按「↻ 現在更新」寫一筆刷新請求（`hub_cal_refresh_request`，30 秒內只記一筆），relay 30 秒內看到就跑一次 `sync.mjs`。面板寫「行事曆更新於 N 分鐘前」（`hub_cal_list.synced`）。大器替老大新增或改行程寫完 Google 後，呼叫 `tools/rpc.sh hub_cal_refresh_request '{}'` 立刻觸發一次。限制：Mac 關機時停在最後一次同步；雲端版（Edge Function `cal-sync`＋Google push）程式在 `~/Claude-Projects/Tools/current-cal-sync/cloud/`，等部署與老大點同意。
-   - **資料庫遷移 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v48_付款授權與行事曆_遷移.sql` 套上之前**：付款鈕按了顯示「資料庫還沒更新，付款授權還沒上線，這筆沒有扣款」，現在更新顯示同類訊息，relay 遇到找不到函式就略過。退回：同資料夾 `_退回.sql`、`git revert` v48 commit、relay 用 `relay.py.bak_1122_付款授權前`、plist 用 `current-cal-sync/com.borry.current-cal-sync.plist.bak_1122_1800秒`。
+   - 付款鈕：倒數 5 秒（可取消）後呼叫 `hub_pay_authorize` 開一張授權單（`hub_pay_auth`，只加不刪）。只有老大本人的金鑰能授權；AI協作金鑰只能開 `p_test:true` 測試單。帳單交塔塔、訂單交朋朋、報名費交集集。Mac relay（`/Users/borry/大器工作區/工具/逐流/current-bot-relay/relay.py`，每 30 秒）用 `hub_pay_take` 收單、發一張付款票（7 天、只能回報這一張），經直連路徑通知那隻；測試單只送霸霸並標【測試】。那隻用自己已有的方式付，付完用 `hub_pay_report`（付款票，或 AI協作／Gig Gig 金鑰帶 p_id）回報 paid 或 failed 與收據。面板從 `hub_pay_list` 讀：已授權等某某付、某某付好了＋收據、沒付成＋原因；「看授權紀錄」看細節；還沒回報前可「撤回授權」（`hub_pay_cancel`，並在那隻的對話留一句不要付）。帳單付好由塔塔在記帳標已繳（mark_bill_paid），面板同時先顯示在「已繳」。**面板與大器都不代付、不存卡號**；第 3、9 條的付款鈕例外自此生效，付款類拍板不必再一律用 talk。
+   - 行事曆：Mac `com.borry.current-cal-sync` 改每 120 秒；面板打開今天頁、行事曆頁或按「↻ 現在更新」寫一筆刷新請求（`hub_cal_refresh_request`，30 秒內只記一筆），relay 30 秒內看到就跑一次 `sync.mjs`。面板寫「行事曆更新於 N 分鐘前」（`hub_cal_list.synced`）。大器替老大新增或改行程寫完 Google 後，呼叫 `tools/rpc.sh hub_cal_refresh_request '{}'` 立刻觸發一次。限制：Mac 關機時停在最後一次同步；雲端版（Edge Function `cal-sync`＋Google push）程式在 `/Users/borry/大器工作區/工具/逐流/current-cal-sync/cloud/`，等部署與老大點同意。
+   - **資料庫遷移 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261122_逐流v48_付款授權與行事曆_遷移.sql` 套上之前**：付款鈕按了顯示「資料庫還沒更新，付款授權還沒上線，這筆沒有扣款」，現在更新顯示同類訊息，relay 遇到找不到函式就略過。退回：同資料夾 `_退回.sql`、`git revert` v48 commit、relay 用 `relay.py.bak_1122_付款授權前`、plist 用 `current-cal-sync/com.borry.current-cal-sync.plist.bak_1122_1800秒`。
 34. **生活待辦、備品比價、機器人寫生活清單、錢房間改成金金的理財房間（2026-11-22，v50，同日 v51 小修）**：老大原話「生活也要多一個代辦」「待辦」「然後備品那邊加入清單也要可以讓萌萌去比價啊」「再來就是機器人是不是對面板很不熟悉啊？我在上面跟他們溝通結果他們都不知道在回答什麼欸」「另外我們設計的時候 錢夜不是要跟記帳面板做出差別嗎？怎麼現在都是塔塔在管？我印象中應該是要金金管吧？那一夜應該要放的是 整個理財的內容吧？」
    - 生活分頁：例行、備品、待辦、想買、訂單。待辦可新增、改名稱與備註、打勾、改回沒做、刪掉（72 小時內可救回）。存在 `hub_life_items`，`kind='todo'`；**資料庫 v50 遷移套上之前**資料庫不收 todo，前端先存成 `kind='rout'`、`cat='_todo'`（遷移會轉正），兩種都讀，例行清單會排除它。救回清單讀 `hub_life_gone`（遷移後才有），沒有就用這支手機記的（localStorage `zl_life_gone`）。
    - 備品：排進「要買」的那一項多一顆「請萌萌比價」，經 v40 對話送給萌萌（句子裡帶「備品編號 <id>」），卡上的狀態（比價中、萌萌回了什麼）從萌萌那段對話讀回來；有狀態後按鈕變「看萌萌比價」。
-   - 機器人寫生活清單：朋朋、萌萌用轉送訊息附的那張回覆票呼叫 `opp_bot_life_add(p_ticket, p_items)`，`p_items` 是 `[{kind: rout|sup|todo|wish, name, note, cat, cycle_days, last_date, url, price, shop}]`，一次最多 40 項、同類同名略過、只能新增不能改不能刪、和回覆共用票的 5 次額度；不發新鑰匙。Mac relay（`~/Claude-Projects/Tools/current-bot-relay/relay.py`）轉給朋朋、萌萌的每則訊息都附這段用法與 curl 範例；PRIMER 的房間說明同步改成金金管錢。**遷移套上之前這個函式不存在**，機器人會收到 404，說明裡已寫「照實說還寫不進去」。
+   - 機器人寫生活清單：朋朋、萌萌用轉送訊息附的那張回覆票呼叫 `opp_bot_life_add(p_ticket, p_items)`，`p_items` 是 `[{kind: rout|sup|todo|wish, name, note, cat, cycle_days, last_date, url, price, shop}]`，一次最多 40 項、同類同名略過、只能新增不能改不能刪、和回覆共用票的 5 次額度；不發新鑰匙。Mac relay（`/Users/borry/大器工作區/工具/逐流/current-bot-relay/relay.py`）轉給朋朋、萌萌的每則訊息都附這段用法與 curl 範例；PRIMER 的房間說明同步改成金金管錢。**遷移套上之前這個函式不存在**，機器人會收到 404，說明裡已寫「照實說還寫不進去」。
    - 錢房間＝金金的理財房間：房間主人、右上角、色卡大臉、底部分頁、首頁錢那格、對話對象都是金金（`OWN.money`、`ZONE.money.b`＝`kim`）。內容：金金說／撐多久／這三個月／目標（大卡滑動，保留）、資產與配置（現金、預備金與存款、投資、負債，只看大類與比例；讀 `hub_money_overview.accounts`，沒有投資帳戶就寫「還沒接上」）、錢的目標、該不該花的大額（生活「想買」裡 NT$ 5,000 以上的，點金金的臉問）、會進來的、要出去的大筆。記一筆、最近幾筆、帳戶明細、訂閱清單移出錢房間，只留「記帳與帳單」一段：要你按的付款鈕（塔塔付）與一列「打開塔塔記帳」；塔塔小臉只出現在這一段。v43 的 `kkQuick`、`kkAccts`、`kkRecent`、`kkSubs` 函式還在檔案裡但不再呼叫。
-   - 資料庫遷移與退回：`~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v50_生活待辦與機器人寫清單_遷移.sql`、`_退回.sql`（只加不刪：kind 約束加 todo、`hub_life_set` 收 todo、新函式 `hub_life_gone`、`opp_bot_life_add`）。
+   - 資料庫遷移與退回：`/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261122_逐流v50_生活待辦與機器人寫清單_遷移.sql`、`_退回.sql`（只加不刪：kind 約束加 todo、`hub_life_set` 收 todo、新函式 `hub_life_gone`、`opp_bot_life_add`）。
    - 退回：`git revert` v50 的 commit；relay 用 `relay.py.bak_1122_v50前` 蓋回；資料庫照退回 SQL（待辦資料轉回 rout／_todo，不刪）。
 35. **生活左滑編輯刪除、請朋朋買、錢房間不放目標區與記帳（2026-11-22，v52）**：老大原話「然後生活那邊的條目也都要可以編輯跟刪除啊 左滑出現XX可以刪除之類或編輯」「要買東西不用按複製購買清單，就是按下去讓朋朋去幫找幫買的意思」「錢的目標不是用在上面大色卡移動嗎？」「記帳我不會在這邊記」。
    - 生活：例行、備品、待辦、想買每一項往左滑（手指或滑鼠拖，聽 pointer 事件）露出「編輯」「刪除」；每列右邊「⋯」、想買卡右上「⋯」也有同樣兩項。編輯抽屜照種類給欄位（例行：名稱、上次日期、天數；備品：名稱、分類、備註；想買：品名、價格、店家、網址、備註；待辦沿用 v50 抽屜），經 `hub_life_set` 寫回，提示條可復原。刪除＝status dropped，提示條可復原，各分頁底下「最近刪掉的」72 小時內救回。程式在 `js/app.js` 檔尾「v52」段（`swDecorate` 用 template 解析後加上左滑層，不改各列原本的 HTML 函式）。
@@ -156,7 +156,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
 36. **錢頁收支趨勢、負債算進淨資產（2026-11-22，v54）**：老大原話「另外錢頁會有現金流？收入？or負債支出？跟收支分析嗎？不確定」「我說的收支分系不是細項 是類似.. hmm 趨勢嗎？這種不確定」。金金看往後、塔塔看過去，錢頁不放分類細項。
    - 大色卡下面、資產與配置上面一張「收支趨勢」：近 6 個月每月收入（實心）、支出（淡色）兩根柱並排，加一條「存下來多少」的線（房間色）；金金一句由資料算的規則句（最近三個完整月的收入、支出方向與存下多少，例「收入三個月往下，支出持平，存下來的從 3 萬掉到 5 千」）；「看 12 個月與各月數字」展開 12 個月的圖與表。沒資料的月份寫「沒資料」、線斷開；本月標 *（到今天）。
    - 資產與配置：負債一列寫卡債、借款、分期，下面加「淨資產」＝上面三項合計扣負債；掛在信用卡上的分期已含在卡債，不重複扣。
-   - 資料：只讀函式 `hub_money_trend(p_key, p_months)`（3～24 個月，回 months[m,income,expense,saved,n,partial,before_data]、liab_accounts、installments、liab_total、net_worth），門跟 `hub_money_overview` 一樣：老大本人或管理員金鑰；AI協作金鑰回 28000（403）。遷移 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v54_收支趨勢與負債_遷移.sql`、退回 `_退回.sql`。**遷移套上前**趨勢區寫「收支趨勢還沒接上」，負債照帳戶算、註明分期還沒算進來。
+   - 資料：只讀函式 `hub_money_trend(p_key, p_months)`（3～24 個月，回 months[m,income,expense,saved,n,partial,before_data]、liab_accounts、installments、liab_total、net_worth），門跟 `hub_money_overview` 一樣：老大本人或管理員金鑰；AI協作金鑰回 28000（403）。遷移 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261122_逐流v54_收支趨勢與負債_遷移.sql`、退回 `_退回.sql`。**遷移套上前**趨勢區寫「收支趨勢還沒接上」，負債照帳戶算、註明分期還沒算進來。
    - 程式在 `js/app.js` 檔尾「v54」段（`kmTrend`、包一層 `kmAssets`）。退回：`git revert` v54 的 commit；資料庫照退回 SQL。
 37. **示範模式給錄影用（2026-11-22，v55）**：老大原話「設計頁面給我沒有我真實資料的，我想要錄下來很想」。網址 `?mock=1`。
    - `js/demo.js` 在 head 同步載入，只在網址帶 `?mock=`（不是 0）時生效：localStorage 換成記憶體裡的一份（讀不到也不寫老大手機上的 `opp_key`、快照、已讀位置，網址不會被加上 `?k=`，重整就還原）；畫面上的「示意」標籤、殘留真名換成虛構名字；右上角很小地標「示範資料」。
@@ -169,10 +169,10 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 程式在 `js/app.js` 檔尾「v56」段（重寫 projCard、oppCard，包一層 zoneProj 處理待辦與封存卡），樣式在 `css/app.css` 檔尾。注意 `.cfoot` 已是對話窗頁尾的 class，不要拿來用。退回：`git revert` v56 的 commit。
 39. **跟大器說直接叫醒 Mac 大器（2026-11-22，v58）**：老大原話「本地排程可以那樣嗎」「我希望能直接打因為只會有我用」。
    - 前端 `js/adapter.js` 的 `wake()`：live 模式送出「跟大器說」（只限大器，不含朋朋等 Bot）或「去執行」成功後，POST `CONFIG.WAKE_URL`（Tailscale Funnel `/current-wake`，body `{"k":金鑰}`，text/plain 免預檢，3 秒逾時，失敗安靜略過）。示範模式（`?mock=`）走 mock adapter，不會打。
-   - Mac 端 launchd `com.borry.current-daqi-wake`（`~/Claude-Projects/Tools/current-daqi-wake/wake.py`，只聽 127.0.0.1:8795）用 `hub_whoami(p_key)` 驗角色＝Borry 才 `launchctl kickstart` 轉交程式 `com.borry.opportunity-daqi-relay`，其他角色 403、每分鐘 20 次上限、`hub_whoami` 還沒套上一律 503。金鑰不進 log。輪詢與雲端備援照舊。
+   - Mac 端 launchd `com.borry.current-daqi-wake`（`/Users/borry/大器工作區/工具/逐流/current-daqi-wake/wake.py`，只聽 127.0.0.1:8795）用 `hub_whoami(p_key)` 驗角色＝Borry 才 `launchctl kickstart` 轉交程式 `com.borry.opportunity-daqi-relay`，其他角色 403、每分鐘 20 次上限、`hub_whoami` 還沒套上一律 503。金鑰不進 log。輪詢與雲端備援照舊。
    - 退回：見 `/Users/borry/大器工作區/面板工坊/進度與記憶.md`「v58 叫醒入口」。
 40. **拍板後續追蹤（2026-11-22，v59）**：老大原話「原本要我拍版的那些，我做了決定，然後到哪裡去了為什麼我沒看到後續」「以上 拍版需要派正確視窗執行 or 另有視窗執行 背景code也可以 但面板要可以追蹤」。
-   - Mac `~/Claude-Projects/Tools/hub-sync/decision_followup.py`：老大回答後，先不要＝待辦打勾；照建議＝先交原案監工／總控（SendMessage），5 分鐘內那件工作沒改成 running 就改背景大器；只能老大做的標 waiting_you 並把步驟寫進工作備註。每件一筆 `hub_jobs`，`source_key`＝`dec-<決定 id>`。
+   - Mac `/Users/borry/大器工作區/工具/逐流/hub-sync/decision_followup.py`：老大回答後，先不要＝待辦打勾；照建議＝先交原案監工／總控（SendMessage），5 分鐘內那件工作沒改成 running 就改背景大器；只能老大做的標 waiting_you 並把步驟寫進工作備註。每件一筆 `hub_jobs`，`source_key`＝`dec-<決定 id>`。
    - 前端：adapter 的 jobs 多帶 `sourceKey`；首頁「正在跑」上方多一區「拍板後續」（5 天內回過、有對應工作的拍板，等你與失敗排前面），點開 `hdecf:<id>` 看你選、誰在做、狀態、做到哪、成果。
    - 退回：`git revert` v59 的 commit（hub_jobs 資料留著不影響舊版）。
 41. **正式登入與公司卡（2026-11-22，v60）**：老大原話「我希望能直接打因為只會有我用」「大不了金鑰 跟正式登入處理 反正公司卡也要弄」「公司卡片可以同步到我面板來嗎 可以的話上面要能派肉咖工作也能派大器」。
@@ -180,7 +180,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 公司卡：案子房間多一個「公司」分頁。資料走 `hub_company_summary`（只有 Borry 角色讀得到），由公司電腦用肉咖鑰匙寫 `hub_company_summary_write`（重點幾行＋卡片，全量同步，沒出現的卡收起來）。逐流不碰皮條客的鑰匙。
    - 派工：卡上兩張臉。肉咖的臉＝開「派肉咖做」→ `hub_company_task_add(rouka)`，公司電腦 `hub_rouka_take` 拿單交給肉咖、`hub_rouka_report` 回報；大器的臉＝開大器對話帶這張卡，送出時另記一筆 `hub_company_task_add(daqi)`。兩種都會建一筆 `hub_jobs`（source_key `cotask:編號`），今天頁「正在跑」看得到；大器做完用 `hub_job_set(p_source_key:'cotask:編號', p_status:'done')` 回報。
    - 肉咖鑰匙（角色「肉咖」，`can_rouka`）：`_opp_cap` 擋掉它的所有其他函式，讀不到老大任何其他資料。金鑰只在 Mac `~/.config/borry-opportunities/rouka.key` 與公司電腦同路徑。對公司群組發訊照肉咖既有規則，不從逐流直接發。
-   - 資料庫：遷移與退回在 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261122_逐流v60_*`；`tools/rpc.sh hub_company_summary '{}'` 回 PGRST202＝還沒套（AI協作金鑰套上後會回 28000，正常）。
+   - 資料庫：遷移與退回在 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261122_逐流v60_*`；`tools/rpc.sh hub_company_summary '{}'` 回 PGRST202＝還沒套（AI協作金鑰套上後會回 28000，正常）。
 
 36. **要你做卡（v63，2026-11-22）**：老大原話「我希望這個面板可以讓我在上面操作就完成，我所有要做的事情可以不用離開面板」。
    - 要老大做的事一律開 `hub_job_set` status=`waiting_you`，帶 `p_ask`（卡面一句）；首頁最上面「要你做」區顯示，不准只寫在對話訊息。
@@ -212,7 +212,7 @@ Borry 在公司電腦「好咖皮條客面板｜監工」視窗提的修正，�
    - 任務「這件接下來」：大器建議那張卡是按鈕，點了照建議做；下面「或改成」只列其他做法。「做完了」改成右上綠色細框小鈕（`.tdb`）。
    - 案子詳情主卡動作鈕無框（`.pcx-act .btn`），按下或游標移上才有底。
    - 肉咖：`BFP.rouka='rouka'`、`BFC.rouka='#FF4F9A'`，公司卡、公司分頁標題、派肉咖做用會動的桃紅臉；派肉咖做與交給肉咖的鈕是桃紅（`.btn.rk`）。紫色只給大器。
-   - 連結預覽：彈出卡「一鍵到達」裡的網址先顯示網址鈕，再呼叫 Edge Function `link-preview`（`/functions/v1/link-preview?url=`，帶 publishable key）換成預覽卡（網站名、標題、簡介、圖）。函式回 404 就整個頁面停止呼叫，照舊顯示網址鈕。函式原始檔 `~/Claude-Projects/Tools/current-link-preview/index.ts`，快取表遷移 `~/Claude-Projects/Tools/opportunity-folder-job/backup/20261124_連結預覽_遷移.sql`（退回 `_退回.sql`）。示範模式用 `LP_DEMO` 假資料，不連網。
+   - 連結預覽：彈出卡「一鍵到達」裡的網址先顯示網址鈕，再呼叫 Edge Function `link-preview`（`/functions/v1/link-preview?url=`，帶 publishable key）換成預覽卡（網站名、標題、簡介、圖）。函式回 404 就整個頁面停止呼叫，照舊顯示網址鈕。函式原始檔 `/Users/borry/大器工作區/工具/逐流/current-link-preview/index.ts`，快取表遷移 `/Users/borry/大器工作區/工具/逐流/opportunity-folder-job/backup/20261124_連結預覽_遷移.sql`（退回 `_退回.sql`）。示範模式用 `LP_DEMO` 假資料，不連網。
    - 讀不到換路：彈出卡（要你做、工作、做完、拍板、拍板後續、任務）內容有「讀不到、看不到、沒權限、打不開、無法讀取、無法開啟、下載不了」時，上方一條「▲ 大器有東西讀不到」＋「請大器換路再讀」：按了直接送【換路再讀】給大器（任務卡寫進那張卡的對話，其他寫一般對話並附卡片編號），30 分鐘內顯示已送出。櫃台說明檔尾「換路再讀」段（備份 `櫃台說明.md.bak_1124_換路前`）。
    - 資料庫這版沒動。退回：`git revert` v94 的 commit。
 47. **首頁減重、任務去向加霸霸、來源白話、按鈕統一、中文機器人名、卡點可處理（2026-11-24，v95）**：老大原話（msg 394、398、400、407、410）「如果都拍完了的話，這一個格子可能就要低調一點」「今天行程這個樣子顯示好像有一點太大塊了」「霸霸是轉告適合機器人去執行或者他自己去執行…有一些事情大器都不做」「去執行 跟變成工作 差別在哪裡？」「現在都換成中文名字囉，我說機器人」「這個描述我整個無法更動也無法進行處理」。
