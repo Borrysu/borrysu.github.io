@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v229');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v230');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5001,7 +5001,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   if(typeof CKBUSY!=='undefined'&&CKBUSY){setTimeout(ckRefresh,300);return}
   const a=document.activeElement;let refocus=false;if(a&&box.contains(a)&&/^(INPUT|TEXTAREA)$/.test(a.tagName)){if(a.id==='ckIn'&&!a.value)refocus=true;else{if(!LV.ckPend){LV.ckPend=1;setTimeout(()=>{LV.ckPend=0;ckRefresh()},900)}return}}   // v222：剛新增完（輸入框空著）也要重畫，不然新那條看不到；正在打字就稍後再試，不放棄
   const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;if(!nb)return;if(nb.outerHTML===box.outerHTML)return;
-  keepCol(box,nb,'.ckh');box.replaceWith(nb);if(refocus){const ni=document.getElementById('ckIn');if(ni)ni.focus()}try{faceSync()}catch(_){}}
+  keepCol(box,nb,'.ckh');const swl=[...box.querySelectorAll('.ck.want.swl')].map(x=>[x.dataset.wid,x.style.getPropertyValue('--sx')]);box.replaceWith(nb);swl.forEach(([w,sx])=>{const li=nb.querySelector(`.ck.want[data-wid="${w}"]`);if(li){li.classList.add('swl');if(sx)li.style.setProperty('--sx',sx)}});   /* v230（msg 1584）：重畫時已滑開的那一排留著，可以連續點 */if(refocus){const ni=document.getElementById('ckIn');if(ni)ni.focus()}try{faceSync()}catch(_){}}
  // 2026-11-25 v125：「今天的節奏」＝老大自己寫的今天要做（老大：「我寫下來是確認我自己吸收了那天要做的事情…節奏那邊輔助我 不要漏」）
  let MISS={};
  const wantsOf=day=>(TL||[]).filter(x=>x.note&&x.note.type==='want'&&x.note.day===day);
@@ -5039,7 +5039,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    let gaps=info?info.free.map(f=>n===0?[Math.max(f[0],Math.ceil(nh*2)/2),f[1]]:[f[0],f[1]]).filter(f=>f[1]-f[0]>=0.5):[];
    const f2=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
    wants.slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))).forEach(w=>{const wid=String(w.id),dn=doneOf(wid);const t=String(w.note.text||'');   // 照寫下的先後排
-    if(w.note.time){SG[wid]={t:w.note.time+(w.note.end?'～'+w.note.end:''),own:!w.note.arr,arr:!!w.note.arr,anc:w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false)};return}
+    if(w.note.time){const ao=typeof ancOf==='function'?ancOf(wid):null;SG[wid]={t:w.note.time+(w.note.end?'～'+w.note.end:''),own:!w.note.arr,arr:!!w.note.arr,anc:ao!=null?ao:(w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false))};return}
     const sp=splitTm(t);if(sp.tm){SG[wid]={t:sp.tm+(sp.te?'～'+sp.te:''),own:1};return}
     const tm=/(?:(上午|下午|晚上|早上|中午)\s*)?(\d{1,2})(?:[:：](\d{2})|點(半)?)/.exec(t);if(tm){let h=+tm[2];if(/下午|晚上/.test(tm[1]||'')&&h<12)h+=12;SG[wid]={t:f2(h+(tm[3]?+tm[3]/60:tm[4]?0.5:0)),own:1};return}
     const tr=(window.__tideRows||[]).find(r=>r.ref==='want:'+wid&&r.at);if(tr){const x=new Date(Date.parse(tr.at)+8*3600e3),h=x.getUTCHours()+x.getUTCMinutes()/60,e=+((tr.meta||{}).est_hours||0);SG[wid]={t:f2(h)+(e?'～'+f2(Math.min(24,h+e)):''),tide:1};return}
@@ -5167,7 +5167,7 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   const nh=(()=>{const x=new Date(Date.now()+8*3600e3);return x.getUTCHours()+x.getUTCMinutes()/60})();
   let free=info.free.map(f=>n===0?[Math.max(f[0],Math.ceil(nh*2)/2),f[1]]:[f[0],f[1]]).filter(f=>f[1]-f[0]>=.25);
   const ws=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop'&&!doneOf(String(w.id)));
-  const fixed=ws.filter(w=>w.note.time&&(w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false)));
+  const fixed=ws.filter(w=>{if(!w.note.time)return false;const ao=ancOf(String(w.id));return ao!=null?ao:(w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false))});
   fixed.forEach(w=>{const a=tH(w.note.time),b=tH(w.note.end)||(a!=null?a+durOf(w.note.text):null);if(a==null)return;const nf=[];free.forEach(f=>{if(b<=f[0]||a>=f[1])nf.push(f);else{if(a>f[0])nf.push([f[0],a]);if(b<f[1])nf.push([b,f[1]])}});free=nf.filter(f=>f[1]-f[0]>=.25)});
   let todo=ws.filter(w=>!fixed.includes(w));if(only)todo=todo.filter(w=>String(w.id)===String(only));if(!todo.length){toast(only?'這件已錨定，先解除錨定再安排':'沒有要安排的：都做完了或都錨定了');return}
   todo.sort((x,y)=>(winOf(y.note.text)?1:0)-(winOf(x.note.text)?1:0)||String(x.at||'').localeCompare(String(y.at||'')));
@@ -5180,7 +5180,11 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   toast(`排好 ${ok} 件，依你的行事曆空檔；錨定的沒動${miss.length?'；排不下：'+clip(miss.join('、'),30):''}`)}
  ACT.ckarrange=v=>ckArrange(+v||0);
  ACT.ckarrange1=wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid));if(!w)return;const n=w.note.day===ymdT(1)?1:0;S.ckEdit='';ckArrange(n,wid)};
- ACT.ckanchor=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w)return;const on=w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false);const nn=Object.assign({},w.note,{anchor:!on});if(await replaceWant(String(wid),nn))toast(on?'解除錨定：按「安排」時可以幫你改時間':'錨定了：按「安排」時不會動這件的時間')};
+ // v230（msg 1584）：錨定用一筆小紀錄切換，不換掉整條，畫面原地變、滑開的按鈕留著，可以連續點
+ function ancOf(wid){const r=(TL||[]).find(x=>x.note&&x.note.type==='anchor'&&x.note.ref==='want:'+wid);return r?!!r.note.on:null}
+ ACT.ckanchor=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w)return;const ao=ancOf(String(wid)),on=ao!=null?ao:(w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false));
+  const nt={type:'anchor',ref:'want:'+wid,on:!on,day:w.note.day};(TL=TL||[]).unshift({id:'tmpa'+Date.now(),kind:'note',note:nt,at:new Date().toISOString()});ckRefresh();
+  try{await tideW({source:'面板',note:nt});toast(on?'解除錨定':'錨定了：安排不會動這件')}catch(e){TL=TL.filter(x=>x.note!==nt);ckRefresh();toast('沒存上：'+LERR(e))}};
  ACT.cksave=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w){toast('找不到這條，畫面可能不是最新的，已重新讀取');S.ckEdit='';tlLoad(true);ckSwap();return}   // v197 msg 1201：每一條提早結束的路都要說原因，不能靜默
   if(wstOf(String(wid))==='drop'||CKSAVING[wid]){toast(CKSAVING[wid]?'正在存，請稍等一下':'這條已經改過或刪掉了，已重新整理');S.ckEdit='';ckSwap();return}
   {const ti=$('#ckEtm');if(ti){const pt=parseTm(ti.value);if(!pt.ok){toast('時間寫不懂，請寫成 22:30 這樣（24 小時制），或清空');ti.focus();return}if(pt.t!==ti.value.trim()&&pt.t)ti.value=pt.t}}
