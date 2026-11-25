@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v189');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v190');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4908,7 +4908,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const doneAtOf=wid=>{const e=(TL||[]).find(x=>x.note&&x.note.ref==='want:'+wid&&(x.note.type==='done'||x.note.type==='undo'));if(!e||e.note.type!=='done'||!e.at)return '';const x=new Date(Date.parse(e.at)+8*3600e3);return isNaN(x)?'':String(x.getUTCHours()).padStart(2,'0')+':'+String(x.getUTCMinutes()).padStart(2,'0')};   // v184 msg 1144：打勾後時間留著，並寫幾點打勾
  const TMRE=/^(\d{1,2}[:：]\d{2})(?:\s*[～~-]\s*(\d{1,2}[:：]\d{2}))?\s+/;
  const splitTm=t=>{const m=TMRE.exec(String(t||''));return m?{tm:m[1].replace('：',':'),te:m[2]?m[2].replace('：',':'):'',text:String(t).slice(m[0].length)}:{tm:'',te:'',text:String(t||'')}};   // msg 860：有時間欄，標題就不再寫時間
- const relOf=w=>{const pool=[].concat(DB.proj||[],DB.todo||[]);if(w.note.card){const c=pool.find(p=>p.id===w.note.card);if(c)return c}
+ const relOf=w=>{const pool=[].concat(DB.proj||[],DB.todo||[]);if(w.note.card){const c=pool.find(p=>p.id===w.note.card);if(c)return c;const x=ckCards().find(q=>q.id===w.note.card);if(x)return {id:x.id,short:x.shortTitle,title:x.title,ext:1,st:CK_ST[x.status]||''}}
   const k=calKey(w.note.text);if(k.length<2)return null;const hit=pool.find(p=>[calKey(p.short),calKey(p.title)].some(x=>x&&x.length>=2&&(k.includes(x)||(k.length>=3&&x.includes(k)))));if(hit)return hit;
   // v154 msg 964 老大：「如果寫了台江簡報那是不是應該要有對應的卡片啊？我記得這個有耶」→ 標題對不到時，看卡片內容（下一步、步驟、說明）：開頭兩個字加上至少再一段兩個字都出現才算
   const cj=(String(w.note.text||'').match(/[\u3400-\u9fff]{2,}/g)||[]).join('');if(cj.length<3)return null;const ch=[];for(let i=0;i+2<=cj.length;i++)ch.push(cj.slice(i,i+2));
@@ -4946,7 +4946,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   // 做法：一列＝打勾｜時間｜標題｜小臉。點標題就地編修（標題、時間、刪除）；列往左滑露出「刪除」；標題列左右滑切今日／明日；最下面一格空白列，灰字是第一個建議，點進去跳出「別漏了」選單。
   const ed=S.ckEdit||'';
   const wrow=w=>{const wid=String(w.id),d=doneOf(wid),r=relOf(w),tmp=wid.indexOf('tmp')===0,sg=SG[wid],da=d?doneAtOf(wid):'',sp=splitTm(w.note.text),title=sp.text||String(w.note.text||'');
-   const rel=r?`<button class="ckrel" data-act="${(DB.proj||[]).some(p=>p.id===r.id)?'cerel':'sheet'}" data-id="${(DB.proj||[]).some(p=>p.id===r.id)?esc(r.id):'cview:todo:'+esc(r.id)}">相關：${esc(clip(r.short||r.title,14))} ›</button>`:'';
+   const rel=r&&r.ext?`<span class="ckrel">相關：${esc(clip(r.short||r.title,14))}${r.st?'（'+r.st+'）':''}</span>`:r?`<button class="ckrel" data-act="${(DB.proj||[]).some(p=>p.id===r.id)?'cerel':'sheet'}" data-id="${(DB.proj||[]).some(p=>p.id===r.id)?esc(r.id):'cview:todo:'+esc(r.id)}">相關：${esc(clip(r.short||r.title,14))} ›</button>`:'';
    if(ed===wid&&!d){const t0=w.note.time||sp.tm||'';
     return `<li class="ck want edit" data-ref="want:${esc(wid)}"><div class="cke"><input id="ckEt" type="text" value="${esc(title)}" aria-label="要做的事"><div class="ckerow"><label class="cketm">時間<input id="ckEtm" type="time" value="${esc(t0)}" data-day="${n}"></label>${B('存好','cksave',wid,'pri sm')}${B('取消','ckcancel','','sm')}${B('刪除','ckdrop',wid,'sm warn')}</div><p class="ckhit" id="ckHit" aria-live="polite">${esc(hitOf(n,t0))}</p></div></li>`}
    return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${da?`<small class="ckdn">${esc(da)} 打勾</small>`:''}${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}<button class="ckdel ckx" data-act="ckdrop" data-id="${esc(wid)}" aria-label="刪除這件"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="ckxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a80"/><stop offset=".55" stop-color="#f0453a"/><stop offset="1" stop-color="#b8231b"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35"><path d="M12 12l16 16M28 12L12 28" stroke="#000" stroke-width="8.5" stroke-linecap="round"/></g><path d="M12 12l16 16M28 12L12 28" stroke="url(#ckxg)" stroke-width="8" stroke-linecap="round"/><path d="M13.2 12.4l4.6 4.6M26.8 12.4l-2.4 2.4" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/></svg></button></span>`}</li>`};   // v145 msg 914：刪除改成跟小臉同風格的圓形 ✕
@@ -5026,7 +5026,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){const sg=el&&el.dataset.sug;if(sg&&MISS[sg]){ACT.ckadd(sg);return}if(el)el.focus();return}
   // 2026-11-25 msg 826 老大：「如果我一行裡面打得多個項目，你們自己讀取之後要自己懂得分開」→ 逗號、頓號、分號、換行都拆；空白前面是三個字以上的中文詞就拆（「木星 Reels」這種短詞＋英文不拆；時間、時數跟著前一件）
   const parts=splitWants(txt);if(el)el.value='';let ok=0;
-  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&(DB.proj||[]).some(x=>x.id===S.ckRel))note.card=S.ckRel;if(await wantAdd(note))ok++}
+  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&ckCards().some(x=>x.id===S.ckRel))note.card=S.ckRel;S.ckRelAll=false;if(await wantAdd(note))ok++}
   {const rc=$('#ckRc');if(rc)rc.remove();S.ckRel=''}
   if(ok)toast(parts.length>1?`拆成 ${parts.length} 件記下了，沒寫時間的先照空檔建議`:'記下了，沒寫時間的先照空檔建議')};
  function splitWants(txt){const CJK=/[\u3400-\u9fff]/,out=[];
@@ -5525,19 +5525,30 @@ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest
    老大原話：「我新增的時候如果看到關鍵字有關聯的專案卡片請給我選項 我點一下就能關聯」「按這裡回首頁並重新整理更新」
    關聯：輸入文字（組字完成才比對）對已載入的案子卡名稱做本機比對，最多 3 個，點一下記到這件（note.card，原本就有），沒點就不關聯。 */
 const ckNorm=t=>String(t||'').toLowerCase().replace(/[\s　【】（）()\[\]「」『』，。、；：:,.!！?？\-_/|｜]+/g,'');
-function ckRelFind(txt){const sp=(typeof splitTm==='function'?splitTm(txt):{text:txt}),q=ckNorm(sp.text||txt);if(q.length<2)return [];
- const lcs=(a,b)=>{let best=0;for(let i=0;i<a.length;i++)for(let j=0;j<b.length;j++){let k=0;while(i+k<a.length&&j+k<b.length&&a[i+k]===b[j+k])k++;if(k>best)best=k}return best};
- return (DB.proj||[]).map(p=>{const names=[p.short,p.title,p.raw&&p.raw.org].map(ckNorm).filter(x=>x.length>=2);let sc=0;
-  names.forEach(n=>{let v=0;if(n.includes(q))v=q.length>=2?100+q.length:0;else if(q.includes(n))v=80+n.length;else{const l=lcs(q,n);if(l>=3)v=40+l;else if(l>=2&&q.length<=3&&n.startsWith(q.slice(0,2)))v=30}if(v>sc)sc=v});return {p,sc}}).filter(x=>x.sc>0).sort((a,b)=>b.sc-a.sc).slice(0,3).map(x=>x.p)}
+// v190（意見 1166）：候選＝所有載入的卡（案子、機會、交辦、封存，含已放棄／已完成／過期），用「兩字一組」比對；名稱類欄位算重、內文算輕；進行中的排前面，其次相符程度與近期有動。
+const CK_STOP=new Set(['處理','整理','確認','閱讀','思考','討論','啟動','相關','工作','評估','額度','恢復','明天','今天','每天','小時','進行','安排','準備','完成','開始','繼續','需要','一下','下午','上午','晚上']);
+const CK_ACT=new Set(['doing','delivered','paid','new','snoozed','stashed']);
+const CK_ST={dropped:'已放棄',closed:'已完成',expired:'已過期'};
+function ckCards(){const m=new Map();[].concat(LV.items||[],LV.arch||[]).forEach(c=>{if(c&&c.id&&!m.has(c.id))m.set(c.id,c)});return [...m.values()]}
+function ckGrams(t){const q=ckNorm(t),g=new Set();(q.match(/[㐀-鿿]+/g)||[]).forEach(r=>{for(let i=0;i+2<=r.length;i++){const b=r.slice(i,i+2);if(!CK_STOP.has(b))g.add(b)}if(r.length===1)g.add(r)});(q.match(/[a-z0-9]{2,}/g)||[]).forEach(w=>g.add(w));return g}
+function ckRelFind(txt){const sp=(typeof splitTm==='function'?splitTm(txt):{text:txt}),raw=sp.text||txt,q=ckNorm(raw);if(q.length<2)return [];const G=ckGrams(raw);if(!G.size)return [];
+ const out=[];ckCards().forEach(c=>{if(c.basket==='todo'&&0)return;const nm=ckNorm([c.title,c.shortTitle,c.org,c.folderName,c.ask,c.pageTitle].join(' ')),ys=ckNorm(String(c.why||'').slice(0,240)+' '+(c.quick||[]).join(' ')+' '+(c.facts||[]).map(f=>typeof f==='string'?f:(f&&(f.v||f.t||f.label))||'').join(' '));
+  let sc=0,hit=0;G.forEach(g=>{if(nm.includes(g)){sc+=3;hit++}else if(ys.includes(g)){sc+=1}});
+  if(nm&&(nm.includes(q)||(q.length>=3&&ckNorm(c.shortTitle||'').length>=2&&q.includes(ckNorm(c.shortTitle)))))sc+=6;
+  if(!hit&&sc<2)return;if(sc<3)return;
+  out.push({c,sc,act:CK_ACT.has(c.status)?0:1,rec:Number(c.progressUpdatedAt||c.decidedAt||c.foundAt||0)})});
+ return out.sort((a,b)=>a.act-b.act||b.sc-a.sc||b.rec-a.rec).map(x=>x.c)}
 function ckRelShow(){const el=$('#ckIn');if(!el)return;const li=el.closest('li');if(!li)return;let rc=$('#ckRc');const txt=el.value;
- const list=txt.trim().length>=2?ckRelFind(txt):[];if(!list.length){if(rc)rc.remove();if(!list.length&&txt.trim().length<2)S.ckRel='';return}
- if(S.ckRel&&!list.some(p=>p.id===S.ckRel))S.ckRel='';
- const html=`<span class="ckrcl">關聯到：</span>`+list.map(p=>`<button type="button" class="ckrcb${S.ckRel===p.id?' on':''}" data-rid="${esc(p.id)}" aria-pressed="${S.ckRel===p.id}">${esc(clip(p.short||p.title,12))}${S.ckRel===p.id?' ✓':''}</button>`).join('');
+ const all=txt.trim().length>=2?ckRelFind(txt):[];if(!all.length){if(rc)rc.remove();if(txt.trim().length<2)S.ckRel='';return}
+ if(S.ckRel&&!all.some(p=>p.id===S.ckRel))S.ckRel='';
+ const lim=S.ckRelAll?20:6,list=all.slice(0,lim);
+ const chip=p=>{const st=CK_ST[p.status],on=S.ckRel===p.id;return `<button type="button" class="ckrcb${on?' on':''}${st?' old':''}" data-rid="${esc(p.id)}" aria-pressed="${on}">${esc(clip(p.shortTitle||p.title,12))}${st?`<small>${st}</small>`:''}${on?' ✓':''}</button>`};
+ const html=`<span class="ckrcl">關聯到：</span>`+list.map(chip).join('')+(all.length>6?`<button type="button" class="ckrcm" data-ckmore="1">${S.ckRelAll?'收起':'還有 '+(all.length-6)+' 個 ›'}</button>`:'');
  if(!rc){rc=document.createElement('div');rc.id='ckRc';rc.className='ckrc';li.appendChild(rc)}if(rc.innerHTML!==html)rc.innerHTML=html}
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='ckIn'&&!e.isComposing)ckRelShow()});
 document.addEventListener('compositionend',e=>{if(e.target&&e.target.id==='ckIn')ckRelShow()});
-document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('.ckrcb'))e.preventDefault()});
-document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('.ckrcb');if(!b)return;const id=b.dataset.rid;S.ckRel=S.ckRel===id?'':id;ckRelShow();const el=$('#ckIn');if(el)el.focus()});
+document.addEventListener('mousedown',e=>{if(e.target.closest&&e.target.closest('.ckrcb,.ckrcm'))e.preventDefault()});
+document.addEventListener('click',e=>{const mb=e.target.closest&&e.target.closest('.ckrcm');if(mb){S.ckRelAll=!S.ckRelAll;ckRelShow();return}const b=e.target.closest&&e.target.closest('.ckrcb');if(!b)return;const id=b.dataset.rid;S.ckRel=S.ckRel===id?'':id;ckRelShow();const el=$('#ckIn');if(el)el.focus()});
 // 點頂列「逐流」＝回首頁並重讀資料（不整頁 reload）；有沒送出的輸入先提示一次
 let BRT=0;
 function brandDraft(){return [...document.querySelectorAll('#app input[type=text],#app textarea,#sheet input[type=text],#sheet textarea,.chat textarea,#cText')].some(e=>e.offsetParent!==null&&String(e.value||'').trim()&&!/\b(pmi|plf|pdi)\b/.test(e.className))}
