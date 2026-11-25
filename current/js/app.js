@@ -2537,7 +2537,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v127');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v128');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4647,22 +4647,38 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
   if(!free.length)return `<i class="fcap full">排滿</i>`;
   const big=free.slice().sort((x,y)=>(y[1]-y[0])-(x[1]-x[0]))[0];
   return free.map(f=>{const h=f[1]-f[0],fit=need&&h>=need-1e-6;return `<i class="fcap${f===big?' big':''}${fit?' fit':''}">${fq(f[0])}～${fq(f[1])}<small>${hrs(h)} 小時</small></i>`}).join('')+(i.est>0?`<i class="fcest">已預留 ${hrs(i.est)} 小時</i>`:'')}
- function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})(),need=S.tlneed||0;
+// 2026-11-25 msg 836 老大：「怎麼辦？你現在改的這個版本很不好耶我希望可以回到原本那個 因為你現在這個真的沒有意義呀」→ 行事曆頁上方退回 v123 的時間條（立體樓不放回，老大 11/25 說柱狀圖不舒服）；v124 的 capsI 留著給首頁「今天」用
+ function tlPanel(all){const sel=S.calsel,now=(()=>{const t=new Date(Date.now()+8*3600e3);return t.getUTCHours()+t.getUTCMinutes()/60})();
   const days=Array.from({length:14},(_,n)=>({n,x:dOf(n),i:dayInfo(all.filter(e=>e.d===n))}));
+  // 今天只算現在之後的空檔
   const d0=days[0].i;d0.freeNow=Math.max(0,d0.free.reduce((t,[a,b])=>t+Math.max(0,b-Math.max(a,now)),0)-(d0.est||0));
   const wk=days.slice(0,7),freeWk=wk.reduce((t,d)=>t+(d.n===0?d0.freeNow:d.i.freeH),0);
   const best=wk.slice(1).sort((p,q)=>q.i.freeH-p.i.freeH)[0];
   const full=wk.filter(d=>(d.n===0?d0.freeNow:d.i.freeH)<2).length;
+  let nx=null;for(const d of days){const c=d.i.segs.filter(s=>d.n>0||s.a>now).sort((p,q)=>p.a-q.a)[0];if(c){nx={d,s:c};break}}
+  const nxt=nx?(()=>{const mins=Math.round(((nx.d.n*24+nx.s.a)-now)*60),wait=mins<60?mins+' 分鐘後':mins<1440?Math.floor(mins/60)+' 小時'+(mins%60?(mins%60)+' 分':'')+'後':(nx.d.n===1?'明天':'週'+WK[nx.d.x.w]);
+   return `<p class="tlnext"><span>下一件</span><b>${esc(String(nx.s.e.n||''))}</b><small>${nx.d.n===0?'今天':nx.d.n===1?'明天':'週'+WK[nx.d.x.w]} ${fmt(nx.s.a)}・${wait}</small></p>`})():'';
+  const ruler=[8,12,16,20,24].map(h=>`<span style="left:${pct(h)}%">${h}</span>`).join('');
   let rows='';
-  days.forEach(d=>{const i=d.i,we=d.x.w===0||d.x.w===6,open=sel===d.n,lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`;
-   rows+=`<div class="tlday fcd${open?' open':''}${we?' we':''}"><button class="tlrow fcrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${i.n} 件行程"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small><small class="fcn">${i.n?i.n+' 件':'沒排'}</small></span><span class="fcs">${capsI(i,d.n,need)}</span></button>`;
-   if(open){const ev=all.filter(e=>e.d===d.n).sort((p,q)=>(p.all||!p.t?-1:0)-(q.all||!q.t?-1:0)||String(p.t).localeCompare(String(q.t)));
-    rows+=`<div class="tlx">${ev.length?`<div class="rows">${ev.map(evRow).join('')}</div>`:`<p class="tlnone">這天沒有行程。</p>`}<div class="mrow">${mb('＋ 這天新增','cenew',String(d.n))}${mb('看這天時間軸','calday',String(d.n))}</div></div>`}
+  days.forEach(d=>{const i=d.i,we=d.x.w===0||d.x.w===6,fh=d.n===0?d0.freeNow:i.freeH,tight=fh<2,open=sel===d.n;
+   const bars=i.segs.map(s=>{const w=Math.max(1.2,pct(s.b)-pct(s.a));return `<i class="tlseg" data-s="${s.e.src}" style="left:${pct(s.a)}%;width:${w}%">${w>=14?`<span>${esc(String(s.e.n||''))}</span>`:''}</i>`}).join('');
+   const now_=d.n===0&&now>=TL0&&now<=TL1?`<b class="tlnow" style="left:${pct(now)}%" aria-hidden="true"></b>`:'';
+   const past=d.n===0?`<i class="tlpast" style="width:${pct(Math.min(Math.max(now,TL0),TL1))}%"></i>`:'';
+   const lab=`${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}　${d.x.m}/${d.x.d}`,need=S.tlneed||0,fit=need?fitOf(i,need,d.n===0?now:0):null;
+   const fitBox=fit?`<i class="tlfit" style="left:${pct(fit[0])}%;width:${pct(fit[1])-pct(fit[0])}%"></i>`:'';
+   const summ=i.n?`${i.n} 件・空 ${hrs(fh)} 小時`:`整天有空`;
+   rows+=`<div class="tlday${open?' open':''}${we?' we':''}"><button class="tlrow" data-act="tlpick" data-id="${d.n}" aria-expanded="${open}" aria-label="${lab}，${summ}"><span class="tll${we?' we':''}"><b>${d.n===0?'今天':d.n===1?'明天':'週'+WK[d.x.w]}</b><small class="num">${d.x.m}/${d.x.d}</small></span><span class="tlbar${need?(fit?' fit':' nofit'):''}" aria-hidden="true">${past}${bars}${fitBox}${now_}${i.alls.length?`<em class="tlall">全天 ${i.alls.length}</em>`:''}</span>${need?`<span class="tlf tlv ${fit?'ok':'no'}"><b>${fit?'✓':'✕'}</b><small>${fit?fmt(fit[0])+' 起':'不夠'}</small></span>`:''}<span class="tlf${tight?' tight':fh>=6?' roomy':''}"${need?' hidden':''}><b class="num">${hrs(fh)}</b><small>小時空</small>${i.busy>0?`<small class="tlbz">排 ${hrs(i.busy)}</small>`:''}</span></button>`;
+   if(open){const ev=all.filter(e=>e.d===d.n),alls=ev.filter(e=>e.all||!e.t),timed=ev.filter(e=>!(e.all||!e.t));
+    const items=timed.map(e=>({k:hm(e.t)||0,h:`<div class="rows">${evRow(e)}</div>`}));
+    i.free.forEach(([a,b])=>{const A=d.n===0?Math.max(a,now):a;if(b-A<0.5)return;items.push({k:A-0.001,h:`<p class="tlgap"><span><b>空 ${hrs(b-A)} 小時</b>${fmt(A)}～${fmt(b)}</span></p>`})});
+    items.sort((x,y)=>x.k-y.k);
+    rows+=`<div class="tlx">${alls.length?`<div class="rows">${alls.map(evRow).join('')}</div>`:''}${items.length?items.map(x=>x.h).join(''):`<p class="tlnone">這天沒有行程，也沒有空檔可算。</p>`}${i.free.length?'':`<p class="tlnone">9 點到 22 點沒有空檔。</p>`}</div>`}
    rows+='</div>'});
-  return `<section class="tl fcpanel" aria-label="接下來兩週的空檔">
-   <div class="tlhd">${tlEval(days,now)}<p class="tlsum"${need?' hidden':''}>這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p></div>
-   ${rows}<p class="cbhint">點一天看那天的行程；點行程可以直接改</p></section>`}
- ACT.calday=id=>{S.calv='day';S.cald=+id;render('keep')};
+  return `<section class="tl" aria-label="接下來兩週的時間">
+   <div class="tlhd">${tlEval(days,now)}<p class="tlsum"${S.tlneed?' hidden':''}>這 7 天還空 <b class="num">${hrs(freeWk)}</b> 小時${best?`，最空是${best.n===1?'明天':'週'+WK[best.x.w]}（${hrs(best.i.freeH)} 小時）`:''}${full?`，${full} 天幾乎排滿`:''}。</p>
+   <p class="tlkey"><span><i data-s="me"></i>個人</span><span><i data-s="co"></i>公司</span><span><i class="tlk-free"></i>空檔</span><small>空檔只算 9 點到 22 點</small></p>${nxt}</div>
+   <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
+   ${rows}<p class="cbhint">點一天看那天的行程和空檔時段</p></section>`}
  ACT.tlpick=id=>{const n=+id;S.calsel=S.calsel===n?null:n;render('keep')};
  const _cp2=calPage;calPage=function(){const h=_cp2();if(E())return h;const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f);
   // 換掉 v109 的 14 格忙閒格；篩選（全部／個人／公司）放到時間條上面，切了時間條跟著變
