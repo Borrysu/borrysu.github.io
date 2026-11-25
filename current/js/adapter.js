@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v192');
+  const { mockAdapter } = await import('./mock.js?v193');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -155,7 +155,7 @@ const BOTS_OK = ['daqi', 'jiji', 'tata', 'peng', 'mon', 'din', 'kim', 'baba', 'j
 // v40：各 Bot 的回覆與還在等的話（opp_bot_inbox）
 export const normInbox = d => ({ replies: (d && Array.isArray(d.replies) ? d.replies : []).filter(r => BOTS_OK.includes(r.bot)).map(r => ({ id: +r.id || 0, bot: r.bot, item: r.item_id ? str(r.item_id) : null, body: str(r.body), at: ts(r.created_at) })),
   waiting: (d && Array.isArray(d.waiting) ? d.waiting : []).filter(w => BOTS_OK.includes(w.bot)).map(w => ({ id: +w.id || 0, bot: w.bot })) });
-export const normMsgs = d => (Array.isArray(d) ? d : []).map(m => ({ id: +m.id || 0, kind: ['user', 'daqi', 'system', 'run', 'bot'].includes(m.kind) ? m.kind : 'user', bot: BOTS_OK.includes(m.bot) ? m.bot : 'daqi', author: nick(str(m.author)), body: str(m.body), at: ts(m.created_at), item: m.item_id || null, itemTitle: str(m.item_title), ctx: str(m.ctx) })).filter(m => m.body && m.at);
+export const normMsgs = d => (Array.isArray(d) ? d : []).map(m => ({ id: +m.id || 0, kind: ['user', 'daqi', 'system', 'run', 'bot'].includes(m.kind) ? m.kind : 'user', bot: BOTS_OK.includes(m.bot) ? m.bot : 'daqi', author: nick(str(m.author)), body: str(m.body), at: ts(m.created_at), item: m.item_id || null, itemTitle: str(m.item_title), ctx: str(m.ctx), handledAt: ts(m.handled_at) || null })).filter(m => m.body && m.at);
 export const normHistory = h => (Array.isArray(h) ? h : []).map(e => ({ at: ts(e && e.at), actor: nick(str(e && e.actor)), action: str(e && e.action) })).filter(e => e.at && e.action);
 // 掃描請求單：後端籃名 → 前端籃名
 const BACK_BASKET = { company: 'company', personal: 'personal', other: 'other', funding: 'fund', achievement: 'honor' };
@@ -368,6 +368,7 @@ function liveAdapter() {
       }
       throw new AdapterError('server', '未知動作');
     },
+    async progMsgs() { return normMsgs(await rpc(R.msgList, { p_item_id: null, p_limit: 300, p_bot: 'jian' })); },   // v193：編修進度用（含 handled_at）
     // v182：案子分筆收款（hub_proj_payments，只經函式存取）
     async payLines(id) { const d = await rpc('hub_pline_list', { p_item_id: id }); return Array.isArray(d) ? d : []; },
     async payLineSave(id, l) { const d = await rpc('hub_pline_save', { p_item_id: id, p_id: l.id || null, p_label: l.label || '', p_amount: l.amount == null ? 0 : l.amount, p_date: l.date || null, p_received: !!l.received, p_received_date: l.rdate || null }, 0, W); return { lines: Array.isArray(d && d.lines) ? d.lines : [], card: d && d.card && d.card.id ? normalize(d.card) : null }; },

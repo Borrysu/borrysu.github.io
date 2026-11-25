@@ -2597,7 +2597,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v192');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v193');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3179,22 +3179,35 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   b.innerHTML=`<span class="mkt"><b>編修模式</b>${n?`已記 ${n} 則，繼續點或送出`:'點要改的地方'}</span><button class="btn ghost" data-mk="list"${n?'':' disabled'}>清單 ${n}</button><button class="btn pri" data-mk="send"${n?'':' disabled'}>送出</button><button class="btn ghost" data-mk="prog" aria-label="看編修意見的處理進度">進度</button><button class="btn ghost" data-mk="jian" aria-label="跟逐流監工說">監工</button><button class="btn ghost" data-mk="end" aria-label="結束標記">結束</button>`}
  // v186（mcp-31bc89630ca0）：編修「進度」＝老大送給逐流監工的每一則意見，顯示票號（msg 編號）與狀態：已收／處理中／已上線 vN。
  // 狀態由監工的回覆推算（沒有狀態欄）：有回覆＝處理中；監工回「vN 已上線」就依先後結掉最早還沒結的一則。
- let PG={ms:null,err:'',busy:0};
- function progState(ms){const out=[],byT={},TK=/mcp-[0-9a-f]{12}/i;   // v188（mcp-e61d33cc9e0b）：AI 轉單帶 mcp-票號，狀態只認同票號的回覆；老大自己的意見照舊用先後配
-  (ms||[]).forEach(m=>{const body=String(m.body||''),tk=(TK.exec(body)||[''])[0].toLowerCase(),vm=/v(\d{2,4})\s*已上線|已上線\s*v(\d{2,4})/.exec(body),vv=vm?[0,vm[1]||vm[2]]:null;   // v189（mcp-f66c041304d5）：「vN 已上線」「已上線 vN」兩種寫法都認
-   
-   if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk};byT[tk]=e;out.push(e);if(vv&&!/請求/.test(body.slice(0,60))){e.st='done';e.ver='v'+vv[1]}return}   // 首次出現若是「請求」本文，裡面引用的「已上線」不算
+ let PG={ms:null,err:'',busy:0,at:0,all:0};
+ // v193（msg 1171、1175）：狀態以 handled_at 為主。只有「【面板修改意見】」和 mcp 轉單算編修；一般聊天問句不列。
+ // 面板意見：handled_at 有值且之後有回覆＝已處理（有版號寫「已上線 vN」，沒有寫「已回覆」）；handled_at 空才是已收／處理中。mcp 票號照 v188、v189 精確對。
+ function progState(ms){const out=[],byT={},TK=/mcp-[0-9a-f]{12}/i,PR=/^【面板修改意見】/;
+  (ms||[]).forEach(m=>{const body=String(m.body||''),tk=(TK.exec(body)||[''])[0].toLowerCase(),vm=/v(\d{2,4})\s*已上線|已上線\s*v(\d{2,4})/.exec(body),vv=vm?[0,vm[1]||vm[2]]:null;
+   if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk,rep:0};byT[tk]=e;out.push(e);if(vv&&!/請求/.test(body.slice(0,60))){e.st='done';e.ver='v'+vv[1]}return}
     if(vv){e.st='done';e.ver='v'+vv[1]}else if(e.st==='recv')e.st='work';return}
-   if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'');if(/^［前情｜/.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:''})}
-   else if(m.kind==='bot'){const open=out.filter(x=>x.st!=='done'&&!x.tk);if(!open.length)return;if(vv){open[0].st='done';open[0].ver='v'+vv[1]}else open.forEach(x=>{if(x.st==='recv')x.st='work'})}});
+   if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'');if(!PR.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:'',rep:0,handled:!!m.handledAt})}
+   else if(m.kind==='bot'||m.kind==='daqi'){const open=out.filter(x=>!x.tk&&!x.ver);const mine=out.filter(x=>!x.tk&&!x.rep);mine.forEach(x=>{x.rep=1});if(vv&&open.length){open[0].ver='v'+vv[1]}}});
+  out.forEach(x=>{if(!x.tk)x.st=x.handled?(x.rep?(x.ver?'done':'replied'):'recv'):(x.rep?'work':'recv')});
   return out.reverse()}
- function progLoad(){if(PG.busy)return;PG.busy=1;PG.err='';(LV.api&&LV.api.msgs?LV.api.msgs(null,'jian'):Promise.reject(new Error('還沒連上'))).then(ms=>{PG.ms=ms}).catch(e=>{PG.err=typeof LERR==='function'?LERR(e):e.message}).then(()=>{PG.busy=0;if(MK.box==='prog')box('prog')})}
- function progHTML(){if(PG.err)return `<p class="mkw">讀不到進度</p><p class="mkp">${esc(PG.err)}</p><div class="btns"><button class="btn ghost" data-mk="prog">再讀一次</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`;
+ function progLoad(){if(PG.busy&&Date.now()-PG.busy<12000)return;PG.busy=Date.now();PG.err='';
+  if(MK.box==='prog')box('prog');
+  const p=LV.api&&(LV.api.progMsgs||LV.api.msgs)?(LV.api.progMsgs?LV.api.progMsgs():LV.api.msgs(null,'jian')):Promise.reject(new Error('還沒連上'));
+  Promise.race([p,new Promise((_,rj)=>setTimeout(()=>rj(new Error('讀太久了，連線可能不穩')),12000))]).then(ms=>{PG.ms=ms;PG.at=Date.now()}).catch(e=>{PG.err=typeof LERR==='function'?LERR(e):e.message}).then(()=>{PG.busy=0;if(MK.box==='prog')box('prog')})}
+ function progHTML(){const busy=!!PG.busy;
+  if(PG.err&&!PG.ms)return `<p class="mkw">讀不到進度</p><p class="mkp">${esc(PG.err)}${navigator.onLine===false?'（現在離線，連上再按）':''}</p><div class="btns"><button class="btn ghost" data-mk="prog"${busy?' disabled':''}>${busy?'讀取中…':'再讀一次'}</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`;
   if(!PG.ms)return `<p class="mkw">編修進度</p><p class="mkp">讀取中…</p>`;
-  const L=progState(PG.ms).slice(0,15),lab={recv:'已收',work:'處理中',done:'已上線'};
+  const all=progState(PG.ms),lab={recv:'已收',work:'處理中',replied:'已回覆',done:'已處理'},week=Date.now()-7*864e5;
+  const pend=x=>x.st==='recv'||x.st==='work'||(x.tk&&x.st!=='done');
+  const open=all.filter(x=>pend(x)||Date.parse(x.at)>=week&&!x.old),fold=all.filter(x=>!pend(x)&&Date.parse(x.at)<week);
+  const np=all.filter(pend).length,L=PG.all?all.slice(0,40):all.filter(x=>pend(x)||Date.parse(x.at)>=week).slice(0,15),hid=all.length-L.length;
   const first=b=>{const t=String(b).replace(/^【面板修改意見】[^\n]*\n/,'');const m=/^\s*\d+\.\s*(.+)/m.exec(t);return cut((m?m[1]:t).replace(/\s+/g,' ').trim(),46)},cnt=b=>{const n=(String(b).match(/^\s*\d+\. /gm)||[]).length;return n>1?`（共 ${n} 則）`:''};
   const tm=at=>{if(!at)return '';const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)};
-  return `<p class="mkw">編修進度（最近 ${L.length} 則）</p>`+(L.length?`<ul class="mkpg">${L.map(x=>`<li class="pg-${x.st}"><div class="pgh"><b>${x.tk?esc(x.tk):'#'+esc(String(x.id))}</b>${x.tk?'<span class="pgai">AI 轉單</span>':''}<span class="pgs">${lab[x.st]}${x.ver?' '+esc(x.ver):''}</span><small>${esc(tm(x.at))}</small></div><p>${esc(first(x.body))}${cnt(x.body)}</p></li>`).join('')}</ul>`:'<p class="mkp">還沒有送過意見。</p>')+`<p class="mkp">狀態由監工的回覆推算：有回覆是處理中，回「已上線」才算做完。AI 轉單用 mcp 票號對回覆，老大的意見照先後配。</p><div class="btns"><button class="btn ghost" data-mk="prog">重新整理</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
+  const tt=PG.at?new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(PG.at)):'';
+  const chip=x=>x.st==='done'?'已上線'+(x.ver?' '+x.ver:''):(x.st==='replied'&&x.ver?'已上線 '+x.ver:lab[x.st]);
+  return `<p class="mkw">編修進度・未處理 ${np}${busy?'（更新中…）':''}</p>`+(PG.err?`<p class="mkp">更新失敗：${esc(PG.err)}，下面是上次讀到的</p>`:'')+(L.length?`<ul class="mkpg">${L.map(x=>`<li class="pg-${x.st}"><div class="pgh"><b>${x.tk?esc(x.tk):'#'+esc(String(x.id))}</b>${x.tk?'<span class="pgai">AI 轉單</span>':''}<span class="pgs">${esc(chip(x))}</span><small>${esc(tm(x.at))}</small></div><p>${esc(first(x.body))}${cnt(x.body)}</p></li>`).join('')}</ul>`:'<p class="mkp">沒有未處理的。</p>')
+   +(hid>0&&!PG.all?`<div class="btns"><button class="btn ghost" data-mk="progall">已處理 ${hid} 則 ›</button></div>`:PG.all&&all.length>15?`<div class="btns"><button class="btn ghost" data-mk="progall">收起已處理</button></div>`:'')
+   +`<p class="mkp">更新 ${esc(tt||'—')}。以資料庫的「已處理」記號為準；只算【面板修改意見】和 AI 轉單，一般聊天不算。</p><div class="btns"><button class="btn ghost" data-mk="prog"${busy?' disabled':''}>${busy?'更新中…':'重新整理'}</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
  function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
   MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
   if(kind==='prog'){x.setAttribute('aria-label','編修進度');x.innerHTML=progHTML();return}
@@ -3220,7 +3233,8 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
   if(m){stop(e);if(m.disabled)return;const a=m.dataset.mk;
    if(a==='end'){setOn(false);if(MK.list.length)toast(`${MK.list.length} 則還沒送，下次按「編修」接著寫`)}
    if(a==='jian'){setOn(false);openChat('jian','',null)}
-   else if(a==='prog'){clearSel();progLoad();box('prog')}
+   else if(a==='prog'){clearSel();if(MK.box!=='prog')box('prog');progLoad()}
+   else if(a==='progall'){PG.all=PG.all?0:1;box('prog')}
    else if(a==='list'){clearSel();box('list')}
    else if(a==='cancel'){clearSel();box('')}
    else if(a==='del'){MK.list.splice(+m.dataset.i,1);save();bar();box(MK.list.length?'list':'')}
