@@ -1924,3 +1924,4 @@ section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
 .pstr .chev{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1px solid var(--line2,#555);font-size:13px;line-height:1;flex:none}
 .pstr.on .chev{background:#a37aff;border-color:#a37aff;color:#111}
 /* v162：關掉瀏覽器自己的捲動錨定，只用面板的「按的那顆釘在原位」，兩個不再互相拉扯 */ html,body,#page,#view{overflow-anchor:none}
+/* v164：監工改用 BotFace 光環臉，舊的 icon 晃動不再用 */ .bm.bmicon{animation:none}

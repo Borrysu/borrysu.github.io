@@ -128,8 +128,8 @@ const AVEYE='<rect class="ey" x="15.2" y="8.6" width="3.6" height="8" rx="1.8"/>
 const AV={jiji:'<rect class="bd" x="2" y="2" width="28" height="28" rx="8.5"/>'+AVEYE,
  tata:'<circle class="bd" cx="16" cy="16" r="14.5"/><ellipse class="hl" cx="9.5" cy="8.5" rx="4" ry="2.4" transform="rotate(-38 9.5 8.5)"/>'+AVEYE,
  peng:'<circle class="bd" cx="16" cy="16" r="14.5"/><ellipse class="hl" cx="9.5" cy="8.5" rx="4" ry="2.4" transform="rotate(-38 9.5 8.5)"/>'+AVEYE};
-const BFP={daqi:'daqi',jiji:'gig',tata:'tata',peng:'pompom',baba:'baba'},BFC={daqi:'#a37aff',jiji:'#4d86ff',tata:'#ff6700',peng:'#00b351',baba:'#FFFFFF'};
-const bm=(b,m,c)=>b==='jian'?`<span class="bm bmicon${c?' '+c:''}" data-b="jian"${m?` data-m="${m}"`:''} aria-hidden="true"><img src="icons/icon-192.png" alt=""></span>`:window.BotFace&&BFP[b]?`<span class="bm bf${c?' '+c:''}" data-b="${b}"${m?` data-m="${m}"`:''} aria-hidden="true"></span>`:AV[b]?`<span class="bm av" data-b="${b}" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false">${AV[b]}</svg></span>`:`<span class="bm" data-b="${b}" aria-hidden="true">${BOTS[b].mono}</span>`;
+const BFP={daqi:'daqi',jiji:'gig',tata:'tata',peng:'pompom',baba:'baba',jian:'jian'},BFC={daqi:'#a37aff',jiji:'#4d86ff',tata:'#ff6700',peng:'#00b351',baba:'#FFFFFF',jian:'#a37aff'};   // v164 msg 1008：逐流監工＝皮皮做的「大器＋逐流光環」會動小臉（bot_face.js 預設 jian）
+const bm=(b,m,c)=>window.BotFace&&BFP[b]?`<span class="bm bf${c?' '+c:''}" data-b="${b}"${m?` data-m="${m}"`:''} aria-hidden="true"></span>`:AV[b]?`<span class="bm av" data-b="${b}" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false">${AV[b]}</svg></span>`:`<span class="bm" data-b="${b}" aria-hidden="true">${BOTS[b].mono}</span>`;
 const chip=(t,u)=>`<span class="chip${u?' urg':''}">${u?'▲ ':''}${esc(t)}</span>`;
 const B=(label,act,id,cls,x)=>`<button class="btn ${cls||''}" data-act="${act}"${id!=null?` data-id="${esc(id)}"`:''}${x||''}>${label}</button>`;
 const sh=(b,title,small,more)=>`<div class="sh">${b?shF(b):''}<h2>${title}${small?`<small>${small}</small>`:''}</h2>${more||''}</div>`;
@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v163');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v164');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;

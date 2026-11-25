@@ -83,6 +83,10 @@
     kimkim:  { shape: 'star6', color: '#FF6700', label: '金金',
       names: { thinking: '看值不值', logged: '看完了', alert: '先別買' } },
     // 大器：不是 Grok Bot，是照同一套畫法自己設計的。1122-E：紫色球身（App 色票 violet）、黑眼、黑耳內、兩隻黑豹耳
+    // 逐流監工（2026-11-25 老大：逐流監工就是大器，管面板，所以加逐流四色光環；挑「一、光環」，要流動絲滑）
+    jian:   { shape: 'sphere', color: '#9159FE', eye: '#0E0C16', earIn: '#0E0C16',
+      ears: 'panther', fit: 0.86, ring: 'zhuliu', label: '逐流監工',
+      names: { idle: '待命', speaking: '說話中', thinking: '思考中', logged: '改好了', over: '不妙', alert: '要你看', sleepy: '想睡' } },
     daqi:   { shape: 'sphere', color: '#9159FE', eye: '#0E0C16', earIn: '#0E0C16',
       ears: 'panther', fit: 0.86, label: '大器',
       names: { idle: '待命', speaking: '說話中', thinking: '思考中', logged: '完成', over: '不妙', alert: '提醒你', sleepy: '想睡' } }
@@ -664,6 +668,68 @@
     return svg;
   }
 
+  /* ---------- 逐流光環（ring:'zhuliu'）----------
+     臉縮成 0.74 倍，外面一圈斜躺的橢圓環，四色各一段順著環流動。
+     流動＝CSS stroke-dashoffset 關鍵影格：offset(t) = -P·(t/6.0 + 0.45/2π·sin(2πt/6.0))，速度有快慢但不停不倒退，6.0 秒首尾完全接上。
+     後半圈畫在臉後面，前半圈畫在臉前面；前半圈壓一道深紫邊，只裁在臉的圓裡，透明底上不會有淡色邊。 */
+  var RING = { fit: 0.74, rx: 46, ry: 12.5, cy: 9, tilt: -12, P: 199.188, T: 6.0,
+    colors: ['#a37aff', '#4d86ff', '#ff6700', '#00b351'] };
+  var ringStyled = false;
+  function ringStyle(doc) {
+    if (ringStyled) return; ringStyled = true;
+    var P = RING.P, q = P / 4, css = '', N = 60;
+    var arr = function (w, gv) { var d = q - (w + gv); return d.toFixed(3) + ' ' + (P - d).toFixed(3); };
+    for (var i = 0; i < 4; i++) {
+      css += '@keyframes bfRing' + i + '{';
+      for (var j = 0; j <= N; j++) {
+        var off = -P * (j / N + 0.45 / (2 * PI) * Math.sin(2 * PI * j / N)) - i * q;
+        css += (100 * j / N).toFixed(3) + '%{stroke-dashoffset:' + off.toFixed(3) + '}';
+      }
+      css += '}.bf-rg' + i + '{stroke-dashoffset:' + (-i * q).toFixed(3) + ';animation:bfRing' + i + ' ' + RING.T + 's linear infinite}';
+    }
+    css += '.bf-rg{fill:none;stroke-linecap:round}' +
+      '.bf-rb .bf-rg{stroke-width:5.2;stroke-dasharray:' + arr(5.2, 5.8) + ';opacity:.92}' +
+      '.bf-rf .bf-rg{stroke-width:6.4;stroke-dasharray:' + arr(6.4, 4.6) + '}' +
+      '.bf-re{stroke:#5b3bc4;stroke-width:9.2;stroke-dasharray:' + arr(9.2, 1.8) + '}' +
+      '.bf-rw{transform-box:view-box;transform-origin:0 0}.bf-ring-s .bf-rw{transform:scale(.9)}' +
+      '.bf-ring-s .bf-rb .bf-rg{stroke-width:8;stroke-dasharray:' + arr(8, 7.5) + '}' +
+      '.bf-ring-s .bf-rf .bf-rg{stroke-width:9;stroke-dasharray:' + arr(9, 6.5) + '}' +
+      '.bf-ring-s .bf-re{stroke-width:11.5;stroke-dasharray:' + arr(11.5, 4) + '}' +
+      '.bot-face[data-ring-still] .bf-rg{animation-play-state:paused}' +
+      '.bot-face[data-tone=ink] .bf-rg{stroke:var(--bf-b)}.bot-face[data-tone=ink] .bf-re{display:none}';
+    var s = doc.createElement('style'); s.setAttribute('data-bot-face-ring', ''); s.textContent = css;
+    (doc.head || doc.documentElement).appendChild(s);
+  }
+  function addRing(inst, doc) {
+    ringStyle(doc);
+    var svg = inst.svg, k = 1 / RING.fit, defs = svg.querySelector('defs');
+    var id = (svg.querySelector('mask') || { id: 'botfx' }).id + 'r';
+    // 整張圖放大視窗，臉自然縮成 fit 倍；光環用原本 100 單位的座標畫，再放大 1/fit 倍
+    svg.setAttribute('viewBox', (-50 * k).toFixed(3) + ' ' + (-50 * k).toFixed(3) + ' ' + (100 * k).toFixed(3) + ' ' + (100 * k).toFixed(3));
+    var fh = el(doc, 'clipPath', { id: id + 'f' }, defs); el(doc, 'path', { d: 'M-60 0H60V40H-60Z' }, fh);
+    // 以下座標都是「整格 100 單位」：臉在裡面佔 fit 倍
+    var hd = el(doc, 'clipPath', { id: id + 'h' }, defs);
+    el(doc, 'circle', { cx: 0, cy: (R * (1 - inst.fit) * RING.fit).toFixed(3), r: (R * inst.fit * RING.fit + 0.6).toFixed(3) }, hd);
+    var d = 'M0 ' + (-RING.ry) + 'A' + RING.rx + ' ' + RING.ry + ' 0 1 1 0 ' + RING.ry + 'A' + RING.rx + ' ' + RING.ry + ' 0 1 1 0 ' + (-RING.ry) + 'Z';
+    var sc = 'scale(' + k.toFixed(4) + ')', tf = 'translate(0 ' + RING.cy + ') rotate(' + RING.tilt + ')';
+    var lanes = function (g, cls, stroke) {
+      for (var i = 0; i < 4; i++) {
+        var p = el(doc, 'path', { d: d, 'class': 'bf-rg bf-rg' + i + (cls ? ' ' + cls : '') }, g);
+        if (stroke) p.setAttribute('stroke', RING.colors[i]);
+      }
+    };
+    var back = el(doc, 'g', { transform: sc }, null);
+    lanes(el(doc, 'g', { transform: tf, 'class': 'bf-rb' }, el(doc, 'g', { 'class': 'bf-rw' }, back)), '', true);
+    svg.insertBefore(back, inst.body);
+    var front = el(doc, 'g', { transform: sc }, null);
+    // 深紫分隔邊：先裁到臉的圓，再裁到環的前半圈
+    var e1 = el(doc, 'g', { 'clip-path': 'url(#' + id + 'h)' }, front);
+    lanes(el(doc, 'g', { 'clip-path': 'url(#' + id + 'f)' }, el(doc, 'g', { transform: tf }, el(doc, 'g', { 'class': 'bf-rw' }, e1))), 'bf-re', false);
+    lanes(el(doc, 'g', { 'clip-path': 'url(#' + id + 'f)' }, el(doc, 'g', { transform: tf, 'class': 'bf-rf' }, el(doc, 'g', { 'class': 'bf-rw' }, front))), '', true);
+    svg.insertBefore(front, inst.body.nextSibling);
+    return { back: back, front: front };
+  }
+
   /* ---------- 實例 ---------- */
   function Face(host, opts) {
     var doc = host.ownerDocument;
@@ -708,6 +774,7 @@
       this.setColor(opts.color || pre.color);
     }
     this.svg = build(this, doc);
+    this.ring = pick('ring', '') ? addRing(this, doc) : null;
     this.wrap.appendChild(this.svg);
     host.appendChild(this.wrap);
     this.setSize(this.opts.size);
@@ -764,7 +831,8 @@
     else { this.wrap.style.width = '100%'; this.wrap.style.height = '100%'; }
     // 小尺寸把眼睛放大一點，32px 也看得清楚
     var px = this.size || this.wrap.getBoundingClientRect().width || 64;
-    var eff = px * this.fit;                      // 有耳朵的身體比較小，眼睛照實際大小補
+    var eff = px * this.fit * (this.ring ? RING.fit : 1);   // 有耳朵、有光環的身體比較小，眼睛照實際大小補
+    if (this.ring) this.svg.setAttribute('class', px <= 48 ? 'bf-ring-s' : '');
     this.eyeScale = eff < 40 ? 1.3 : eff < 56 ? 1.15 : 1;
     this.small = px < 64;
     // 眼鏡與耳朵的線：固定螢幕粗細（不跟著投影變形）
@@ -804,6 +872,7 @@
   // 依「減少動態、是否在畫面內」決定跑迴圈或畫一張靜止圖
   Face.prototype._sync = function () {
     if (this.dead) return;
+    if (this.ring) { if (this.reduced || !this.visible) this.wrap.setAttribute('data-ring-still', ''); else this.wrap.removeAttribute('data-ring-still'); }
     var def = MOODS[this.key];
     if (this.reduced) {
       removeLive(this);
