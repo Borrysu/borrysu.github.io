@@ -2615,7 +2615,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v201');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v202');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5713,6 +5713,16 @@ function brandTap(){if(brandDraft()&&Date.now()-BRT>4000){BRT=Date.now();toast('
  document.addEventListener('touchmove',e=>{if(PD&&PD.active&&e.cancelable)e.preventDefault()},{passive:false});
  document.addEventListener('contextmenu',e=>{if(PD&&(PD.active||PD.type!=='mouse'))e.preventDefault()},true);
  document.addEventListener('click',e=>{if(window.__pstNoClick&&Date.now()-window.__pstNoClick<400&&e.target.closest&&e.target.closest('.pstl')){e.preventDefault();e.stopPropagation()}},true)}
+
+/* ---------- v202（2026-11-25）：跟好咖皮條客關聯的公司案子，步驟空著時給「請肉咖帶來」入口 ----------
+   老大原話（msg 1259）：「像這種跟好咖皮條客關聯的卡片就要連動內容，步驟也是」。決策 2a0a0288：逐流不碰皮條客鑰匙，全經肉咖。
+   只改顯示，按鈕走既有派肉咖單（coPush），不讀公司資料。連動設計見 面板工坊/AI工作夾/06_紀錄/1125_皮條客連動設計.md。 */
+{const EMPTY='<p class="note">還沒有步驟。</p>';const _p=pageHTML;pageHTML=function(){const h=_p();try{const x=(S.page||'').split(':');if(x[0]!=='proj'||h.indexOf(EMPTY)<0)return h;
+ const p=DB.proj.find(q=>q.id===x[1]),c=p&&p.raw;if(!c||c.basket!=='company'||!coSrcOf(c))return h;
+ return h.replace(EMPTY,`<div class="card bidtip"><p><b>此案步驟在好咖皮條客</b>：點下面請肉咖把內容與步驟帶來，逐流只顯示、不回寫皮條客。</p><div class="btns">${B(bm('rouka','','sm')+'請肉咖帶來','coMirrorAsk',p.id,'rk')}</div></div>`)}catch(e){return h}}}
+ACT.coMirrorAsk=async id=>{const p=DB.proj.find(q=>q.id===id),c=p&&p.raw;if(!c)return;
+ const ok=await coPush(c,`【請帶來內容與步驟】皮條客 ${coSrcOf(c)}「${c.title}」：請把這案目前的下一步、步驟（名稱與狀態）、期限整理成摘要回報到這張單。只要摘要，不帶金額、合約與個資。逐流只顯示，不回寫皮條客。`);
+ if(ok){toast('交給肉咖了，帶來後會出現在這張卡的「派過的工作」');try{await coLoad()}catch(e){}render('keep')}};
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
