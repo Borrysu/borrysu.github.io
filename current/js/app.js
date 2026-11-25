@@ -2543,7 +2543,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v137');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v138');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4744,8 +4744,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   const fh=Math.max(0,free.reduce((t,f)=>t+f[1]-f[0],0)-((i&&i.est)||0)),big=free.slice().sort((a,b)=>(b[1]-b[0])-(a[1]-a[0]))[0];
   const notes=[];(window.__tideRows||[]).forEach(r=>{if(!r.at||tw(r.at).d!==n)return;const m=r.meta||{};[m.note,m.warn].forEach(x=>{if(x&&notes.indexOf(x)<0)notes.push(x)})});
   return {its,i,marks,fh,big,notes}}
- function bar(n,D){const i=D.i;if(!i)return '';const Z=window.__zl;   // 2026-11-25 v124：橫條換成空檔膠囊
-  return `<div class="fc fc1"><span class="fcs">${Z.caps(i,n,0)}</span></div>`}
+ function bar(){return ''}   // v137 msg 897 老大：「這些按鈕功能我不會用到 很怪 拿掉吧」→ 首頁今天不放空檔小標（行事曆頁的兩週負荷圈與時間條照舊）
  function rows(D){const out=[];
   
   D.its.filter(e=>!(e.all||!e.t)).forEach(e=>{const m=/^(\d+):(\d+)/.exec(e.t);out.push({k:m?+m[1]+m[2]/60:0,h:`<button class="tdi${e.src==='tide'?' tide':''}" data-act="sheet" data-id="cal:${esc(e.id)}"><span class="tm">${esc(e.t)}${e.e?'～'+esc(e.e):''}</span><b>${e.cs&&e.src!=='tide'?esc(e.cs)+'・':''}${esc(e.src==='tide'?String(e.n).replace(/^張弛排：/,''):e.n)}</b>${e.pend?evState(e):e.src==='tide'?'<small>張弛排的開工時段</small>':e.place?`<small>${esc(e.place)}</small>`:''}<i class="tdd" data-s="${e.src}"></i></button>`})});
