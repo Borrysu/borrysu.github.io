@@ -2544,7 +2544,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v145');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v146');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4691,7 +4691,14 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
    <div class="tlwk" role="tablist" aria-label="哪一週"><button role="tab" data-act="tlwk" data-id="0" aria-selected="${!WKP}">這 7 天</button><button role="tab" data-act="tlwk" data-id="1" aria-selected="${!!WKP}">下 7 天</button><small>左右滑也可以換</small></div>
    <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
    <div class="tlpg">${rows}</div><p class="cbhint">點色塊改那件、點空白新增；點日期，下面切到那天時間軸</p></section>`}
- ACT.tlwk=id=>{const n=+id,old=S.tlwk?1:0,el=document.querySelector('section.tl'),top=el?el.getBoundingClientRect().top:null;S.tlwk=n;S.calsel=null;render('keep');   // v144 msg 910：「左右滑動 不流暢絲滑 會跳動」→ 位置固定、整頁從滑的方向滑進來
+ // v146 msg 921 老大：「這邊左右滑動 會跳喔」→ 換週只換時間條那一塊，不重畫整頁；高度慢慢變
+ ACT.tlwk=id=>{const n=+id,old=S.tlwk?1:0,el=document.querySelector('section.tl');if(el&&!RM&&n!==old){S.tlwk=n;S.calsel=null;
+   const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f),tmp=document.createElement('div');tmp.innerHTML=tlPanel(all);const nt=tmp.querySelector('section.tl');
+   if(nt){const h0=el.offsetHeight,pg0=el.querySelector('.tlpg');if(pg0){pg0.style.transition='transform .13s ease-in,opacity .13s ease-in';pg0.style.transform=`translateX(${n>old?-50:50}%)`;pg0.style.opacity='0'}
+    setTimeout(()=>{const cur=document.querySelector('section.tl');if(!cur)return;nt.style.height=h0+'px';nt.style.overflow='hidden';cur.replaceWith(nt);const pg=nt.querySelector('.tlpg');if(pg){pg.style.transition='none';pg.style.transform=`translateX(${n>old?50:-50}%)`;pg.style.opacity='0'}
+     nt.style.height='';nt.style.overflow='';nt.style.minHeight=h0+'px';   // 不縮：時間條在頁尾，縮了瀏覽器會把畫面往上拉
+     requestAnimationFrame(()=>{if(pg){pg.style.transition='transform .2s ease-out,opacity .2s ease-out';pg.style.transform='';pg.style.opacity=''}})},130);return}}
+  const top=el?el.getBoundingClientRect().top:null;S.tlwk=n;S.calsel=null;render('keep');   // v144 msg 910：「左右滑動 不流暢絲滑 會跳動」→ 位置固定、整頁從滑的方向滑進來
   const e2=document.querySelector('section.tl');if(e2&&top!=null){const dy=e2.getBoundingClientRect().top-top;if(Math.abs(dy)>1)window.scrollBy(0,dy)}
   const pg=e2&&e2.querySelector('.tlpg');if(pg&&n!==old&&!RM){pg.classList.remove('tlin-l','tlin-r');void pg.offsetWidth;pg.classList.add(n>old?'tlin-l':'tlin-r')}};
  {let X0=0,Y0=0,on=0;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];on=t&&e.target.closest&&e.target.closest('section.tl .tlpg')?1:0;if(on){X0=t.clientX;Y0=t.clientY}},{passive:true});
@@ -4802,9 +4809,15 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const f3=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
  let TL=null,TLAT=0,TLBUSY=false;
  function tlLoad(force){if(!LV.api||!LV.api.tideLog||TLBUSY)return;if(!force&&TL&&Date.now()-TLAT<300000)return;TLBUSY=true;
-  LV.api.tideLog(ymdT(-1)+'T00:00:00+08:00','note').then(d=>{TL=Array.isArray(d)?d:[];TLAT=Date.now();TLBUSY=false;LV.sig='';paint()}).catch(()=>{TL=TL||[];TLAT=Date.now();TLBUSY=false})}
+  LV.api.tideLog(ymdT(-1)+'T00:00:00+08:00','note').then(d=>{TL=Array.isArray(d)?d:[];TLAT=Date.now();TLBUSY=false;ckRefresh()}).catch(()=>{TL=TL||[];TLAT=Date.now();TLBUSY=false})}
  const stOf=(ref,day)=>{const l=(TL||[]).filter(x=>x.note&&x.note.ref===ref&&x.note.day===day&&x.note.type!=='want');return l.length&&l[0].note.type!=='undo'?l[0]:null};   // 新的在前；最新一筆是復原就沒狀態
  const dayN=()=>S.ckDay!=null?S.ckDay:(new Date(Date.now()+8*3600e3).getUTCHours()>=18?1:0);
+ // v146 msg 919 老大：「滑明天流暢來 但滑回來會跳動」→ 原因：回今天時重讀節奏紀錄，讀到後整頁重畫。改成只換節奏這一塊（高度不變處理），其他頁照舊重畫。
+ function ckRefresh(){const box=document.querySelector('.ckbox');if(!box||S.sheet||S.ckEdit||typeof tideCheck!=='function'){LV.sig='';paint();return}
+  if(typeof CKBUSY!=='undefined'&&CKBUSY){setTimeout(ckRefresh,300);return}
+  const a=document.activeElement;if(a&&box.contains(a)&&/^(INPUT|TEXTAREA)$/.test(a.tagName))return;
+  const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;if(!nb)return;if(nb.outerHTML===box.outerHTML)return;
+  box.replaceWith(nb);try{faceSync()}catch(_){}}
  // 2026-11-25 v125：「今天的節奏」＝老大自己寫的今天要做（老大：「我寫下來是確認我自己吸收了那天要做的事情…節奏那邊輔助我 不要漏」）
  let MISS={};
  const wantsOf=day=>(TL||[]).filter(x=>x.note&&x.note.type==='want'&&x.note.day===day);
@@ -4815,7 +4828,9 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const relOf=w=>{const pool=[].concat(DB.proj||[],DB.todo||[]);if(w.note.card){const c=pool.find(p=>p.id===w.note.card);if(c)return c}
   const k=calKey(w.note.text);if(k.length<2)return null;return pool.find(p=>[calKey(p.short),calKey(p.title)].some(x=>x&&x.length>=2&&(k.includes(x)||(k.length>=3&&x.includes(k)))))||null};
  function tideCheck(){if(S.st!=='ok'||E())return '';tlLoad();const n=dayN(),day=ymdT(n);
-  const wants=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop'),have=new Set(wants.map(w=>w.note.src).filter(Boolean)),hk=wants.map(w=>calKey(w.note.text)).filter(x=>x.length>=2);
+  // v146 msg 920 老大：「這邊有說同時多項的時候要幫我拆解 想一想怎麼樣可以無感無痛順暢不卡不用等」→ 已經存成一件、其實寫了好幾件的，背景自動拆開，不用按
+  wantsOf(day).filter(w=>wstOf(String(w.id))==='open'&&String(w.id).indexOf('tmp')!==0&&!SPLIT[w.id]&&splitWants(splitTm(w.note.text).text||w.note.text).length>1).forEach(w=>{SPLIT[w.id]=1;setTimeout(()=>autoSplit(w),0)});
+  const wants=wantsOf(day).filter(w=>wstOf(String(w.id))!=='drop').slice().sort((x,y)=>String(x.at||'').localeCompare(String(y.at||''))),/* 照寫下的先後，新的在下面靠近輸入列 */have=new Set(wants.map(w=>w.note.src).filter(Boolean)),hk=wants.map(w=>calKey(w.note.text)).filter(x=>x.length>=2);
   const seen=t=>{const k=calKey(t);return k.length>=2&&hk.some(x=>x.includes(k)||k.includes(x))};
   const miss=[],tOf=e=>e.t+(e.e?'～'+e.e:'');
   calAll().filter(e=>e.d===n&&!e.cancel&&e.src!=='tide'&&!(e.all||!e.t)).forEach(e=>{const ref='cal:'+e.id,ti=(e.cs?e.cs+'・':'')+e.n;if(have.has(ref)||seen(e.n))return;const r=window.__zl.ceRelated?window.__zl.ceRelated(e):null;miss.push({ref,k:'行事曆',tm:e.t,text:e.t+' '+ti,card:r&&r.id||''})});
@@ -4865,7 +4880,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    const nu=nb.querySelector('.cklist');if(nu){nu.style.transition='none';nu.style.transform=`translateX(${-dir*55}%)`;nu.style.opacity='0'}
    nb.style.height='auto';const h1=nb.offsetHeight;nb.style.height=h0+'px';void nb.offsetHeight;nb.style.transition='height .2s ease';nb.style.height=h1+'px';
    requestAnimationFrame(()=>{if(nu){nu.style.transition='transform .2s ease-out,opacity .2s ease-out';nu.style.transform='';nu.style.opacity=''}});
-   setTimeout(()=>{nb.style.height='';nb.style.overflow='';nb.style.transition='';if(nu){nu.style.transition=''}CKBUSY=0;LV.sig=''},240)},140)};
+   setTimeout(()=>{nb.style.height='';nb.style.overflow='';nb.style.transition='';if(nu){nu.style.transition=''}CKBUSY=0},240)},140)};
  // 拖的時候清單跟著手指（標題列、空白處）；放開沒過門檻就彈回
  {let X0=0,Y0=0,on=0,H=null;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];const box=t&&e.target.closest&&e.target.closest('.ckbox');on=box&&!e.target.closest('.ck.want,input,textarea')?1:0;if(on){X0=t.clientX;Y0=t.clientY;H=null}},{passive:true});
   document.addEventListener('touchmove',e=>{if(!on||CKBUSY)return;const t=e.touches[0],dx=t.clientX-X0,dy=t.clientY-Y0;if(H===null&&Math.hypot(dx,dy)>8)H=Math.abs(dx)>Math.abs(dy)*1.2;if(!H)return;
@@ -4877,16 +4892,22 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
   const ev=calAll().filter(e=>e.d===n&&!e.cancel&&!(e.all||!e.t)).filter(e=>{const a=/^(\d+):(\d+)/.exec(e.t),b=/^(\d+):(\d+)/.exec(e.e||'');if(!a)return false;const A=+a[1]+a[2]/60,B=b?+b[1]+b[2]/60:A+1;return h>=A-0.25&&h<B});
   return ev.length?'那時候已經有：'+ev.map(e=>e.t+(e.e?'～'+e.e:'')+' '+String(e.n).replace(/^張弛排：/,'')).join('、')+'。照樣存也可以。':''}
  document.addEventListener('input',e=>{if(e.target&&e.target.id==='ckEtm'){const p=$('#ckHit');if(p)p.textContent=hitOf(+e.target.dataset.day||0,e.target.value)}});
+ const SPLIT={};
+ async function autoSplit(w){const sp=splitTm(w.note.text),parts=splitWants(sp.text||w.note.text);if(parts.length<2)return;if(!await undoWant(String(w.id)))return;
+  for(let i=0;i<parts.length;i++){const q=splitTm(parts[i]),nt={type:'want',text:q.text||parts[i],day:w.note.day};const tm2=i===0?(w.note.time||sp.tm||q.tm):q.tm;if(tm2)nt.time=tm2;const r=relOf({note:nt});if(r)nt.card=r.id;else if(i===0&&w.note.card)nt.card=w.note.card;await wantAdd(nt)}
+  tlLoad(true);toast(`「${clip(sp.text||w.note.text,10)}」拆成 ${parts.length} 件`)}
  ACT.ckedit=wid=>{S.ckEdit=String(wid);render('keep');setTimeout(()=>{const i=$('#ckEt');if(i){i.focus();try{i.setSelectionRange(i.value.length,i.value.length)}catch(e){}}},30)};
  ACT.ckcancel=()=>{S.ckEdit='';render('keep')};
- async function undoWant(wid){const day=ymdT(dayN()),note={type:'undo',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
-  try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});return true}catch(e){TL.shift();LV.sig='';paint();toast('沒存上：'+LERR(e));return false}}
+ async function undoWant(wid){const day=ymdT(dayN()),note={type:'undo',ref:'want:'+wid,day};(TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
+  try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}
  ACT.ckdrop=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');S.ckEdit='';if(!w)return;
   if(await undoWant(wid)){tlLoad(true);toast('刪掉了',async()=>{const nt=Object.assign({},w.note);delete nt.src;await wantAdd(nt)})}};
  ACT.cksave=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w)return;
   const t=($('#ckEt')||{}).value||'',tm=($('#ckEtm')||{}).value||'',sp=splitTm(t.trim());const text=(sp.text||t).trim();if(!text){toast('標題不能空白');return}
   const time=tm||sp.tm||'';const old=splitTm(w.note.text);if(text===(old.text||w.note.text)&&time===(w.note.time||old.tm||'')){S.ckEdit='';render('keep');return}
-  S.ckEdit='';const note=Object.assign({},w.note,{text,day:w.note.day});if(time)note.time=time;else delete note.time;delete note.end;
+  S.ckEdit='';const parts=splitWants(text);
+  if(parts.length>1){if(await undoWant(wid)){for(let i=0;i<parts.length;i++){const q=splitTm(parts[i]),nt={type:'want',text:q.text||parts[i],day:w.note.day};const tm2=i===0?(time||q.tm):q.tm;if(tm2)nt.time=tm2;const r=relOf({note:nt});if(r)nt.card=r.id;await wantAdd(nt)}tlLoad(true);toast(`拆成 ${parts.length} 件了`)}return}
+  const note=Object.assign({},w.note,{text,day:w.note.day});if(time)note.time=time;else delete note.time;delete note.end;
   if(await undoWant(wid)&&await wantAdd(note)){tlLoad(true);toast(hitOf(dayN(),time)?'改好了（那時段有別的事，你決定）':'改好了')}};
  // 空白列：點進去跳出「別漏了」選單；打字就取代灰字建議；直接按＋而沒打字＝加灰字那件
  document.addEventListener('focusin',e=>{if(e.target&&e.target.id==='ckIn'){const d=$('#ckDD');if(d)d.hidden=false}});
@@ -4908,8 +4929,8 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7)return;if(tg.closest('input,textarea'))return;shutAll();const n=dayN();if(dx<0&&n===0)ACT.ckday('1');else if(dx>0&&n===1)ACT.ckday('0')},{passive:true});
   document.addEventListener('click',e=>{if(!(e.target.closest&&e.target.closest('.ck.want.swl')))shutAll()},true);}
  async function wantAdd(note){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再加');return false}
-  (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
-  try{await LV.api.tideLogAdd('note',{ref:note.src||undefined,source:'面板',note});tlLoad(true);return true}catch(e){TL.shift();LV.sig='';paint();toast('沒存上：'+LERR(e));return false}}
+  (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
+  try{await LV.api.tideLogAdd('note',{ref:note.src||undefined,source:'面板',note});tlLoad(true);return true}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e));return false}}
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){const sg=el&&el.dataset.sug;if(sg&&MISS[sg]){ACT.ckadd(sg);return}if(el)el.focus();return}
   // 2026-11-25 msg 826 老大：「如果我一行裡面打得多個項目，你們自己讀取之後要自己懂得分開」→ 逗號、頓號、分號、換行都拆；空白前面是三個字以上的中文詞就拆（「木星 Reels」這種短詞＋英文不拆；時間、時數跟著前一件）
   const parts=splitWants(txt);if(el)el.value='';let ok=0;
@@ -4924,8 +4945,8 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  ACT.ckadd=async ref=>{const m=MISS[ref];if(!m)return;const n=dayN(),q=splitTm(m.text),note={type:'want',text:q.text||m.text,day:ymdT(n),src:ref};if(m.tm||q.tm)note.time=(m.tm||q.tm);if(m.card)note.card=m.card;const d=$('#ckDD');if(d)d.hidden=true;
   if(await wantAdd(note))toast('加進今天要做了')};
  async function doneSet(wid,type){if(!LV.api||!LV.api.tideLogAdd)return;const day=ymdT(dayN()),note={type,ref:'want:'+wid,day};
-  (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});LV.sig='';paint();
-  try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});tlLoad(true)}catch(e){TL.shift();LV.sig='';paint();toast('沒存上：'+LERR(e))}}
+  (TL=TL||[]).unshift({id:'tmp'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
+  try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});tlLoad(true)}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e))}}
  ACT.ckdone=async wid=>{await doneSet(wid,'done');toast('做完了，記下了')};
  ACT.ckundone=async wid=>{await doneSet(wid,'undo')};
  ACT.ckchat=v=>{const i=v.indexOf('|'),b=v.slice(0,i),wid=v.slice(i+1),w=(TL||[]).find(x=>x.id==wid&&x.note&&x.note.type==='want');if(!w)return;
