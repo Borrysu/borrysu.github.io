@@ -1918,3 +1918,9 @@ section.tl .tlpg{will-change:transform}
 .cke .ckerow .btn.pri{background:transparent!important;border:0!important;box-shadow:none!important;padding:0 6px!important;color:var(--ink)!important;font-weight:700}
 /* v160 msg 994 老大：「這邊左右滑動跟我點選按鈕的視覺不一樣，直接左右滑動會卡卡的」→ 左右滑交給面板，瀏覽器只管上下捲 */
 section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}
+/* v162 msg 1003 老大：「會有一點無法辨識，我現在到底是收起來還是展開」→ 展開的那步整列亮底＋左邊色條，箭頭變實心圓 */
+.pstr{border-radius:12px;transition:background .2s}
+.pstr.on{background:rgba(163,122,255,.10);box-shadow:inset 3px 0 0 #a37aff}
+.pstr .chev{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;border:1px solid var(--line2,#555);font-size:13px;line-height:1;flex:none}
+.pstr.on .chev{background:#a37aff;border-color:#a37aff;color:#111}
+/* v162：關掉瀏覽器自己的捲動錨定，只用面板的「按的那顆釘在原位」，兩個不再互相拉扯 */ html,body,#page,#view{overflow-anchor:none}

@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v161');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v162');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5262,6 +5262,10 @@ function rqBar(){const cin=document.querySelector('#chat .cin');if(!cin)return;l
   if(S.page!==pv||S.tab!==tv||(d&&d!=='keep')){release();TAP=null;return out}
   if(t&&t.inPage&&pg&&pg.firstElementChild&&ph)pg.firstElementChild.style.minHeight=ph+'px';
   if(t){const root=t.inPage?pg:document,el=root&&root.querySelector(sel(t));if(el){const dy=el.getBoundingClientRect().top-t.top;if(Math.abs(dy)>1){if(t.inPage&&pg)pg.scrollTop+=dy;else window.scrollBy(0,dy)}t.top=el.getBoundingClientRect().top}}
+  // v162 msg 1001、1003：按下後 0.6 秒內每一格都把按的那顆釘在原位（上面有收合動畫、圖片晚到也不會被拉走）
+  if(t&&!RM){const root=t.inPage?pg:document,want=t.top;let t0=performance.now();const hold=()=>{const el=root&&root.querySelector(sel(t));if(!el)return;const dy=el.getBoundingClientRect().top-want;if(Math.abs(dy)>1){if(t.inPage&&pg)pg.scrollTop+=dy;else window.scrollBy(0,dy)}if(performance.now()-t0<600)requestAnimationFrame(hold)};requestAnimationFrame(hold);
+   try{const box=t.inPage?(pg&&pg.firstElementChild):document.getElementById('view');if(box&&window.ResizeObserver){const ro=new ResizeObserver(()=>{if(performance.now()-t0<700)hold();else ro.disconnect()});[...box.querySelectorAll(':scope > *, :scope > * > *')].slice(0,80).forEach(x=>ro.observe(x));const mo=new MutationObserver(()=>{if(performance.now()-t0<700)hold();else mo.disconnect()});mo.observe(t.inPage?pg:document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});setTimeout(()=>mo.disconnect(),800);setTimeout(()=>ro.disconnect(),800)}}catch(e){}   // 畫面重排在畫出來之前就校正，不會閃一格
+   const stop=()=>{t0-=1e4};addEventListener('touchstart',stop,{once:true,passive:true});addEventListener('wheel',stop,{once:true,passive:true})}
   return out}}
 /* v149 逐流 msg 935 老大：「現在整個介面我左右滑動的時候怎麼沒有直接切換房間？」→ 房間頁空白處左右滑＝換到左右兩邊的房間（節奏、時間條、可左右捲的列、可滑刪的列、輸入框不算） */
 {let X0=0,Y0=0,T0=0,ok=0;const NO='input,textarea,select,.ckbox,section.tl,section.ring,[data-sw],.mzv,.gtrack,.cvtrack,#chat,#sheet,#page,.dtl,.dtall,.cdnav';
@@ -5296,6 +5300,8 @@ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[da
 new MutationObserver(()=>{if(CTO&&!CTO.dismiss&&!document.getElementById('cTo'))ctoBar()}).observe(document.body,{childList:true,subtree:true});
 // v159 msg 993 老大：「我按小三角形收起來之後，結果他變成一個超級大塊的空白格」→ 收合／展開時，把防跳動留下的最小高度一起清掉
 document.addEventListener('click',e=>{const z=e.target.closest&&e.target.closest('.zcolb');if(!z)return;setTimeout(()=>{const sec=z.closest('section,[data-zcol]');if(sec)sec.style.minHeight='';const v=document.getElementById('view');if(v)v.style.minHeight='';const pg=document.getElementById('page');if(pg&&pg.firstElementChild)pg.firstElementChild.style.minHeight=''},0)},true);
+// v162 msg 1001 老大：「我在這一頁點選一些按鈕，整個畫面會有點亂跳動」→ 程式自動把游標放進輸入框時，框已經在畫面裡就不要捲動（瀏覽器預設會把它捲到中間）
+{const F=HTMLElement.prototype.focus;HTMLElement.prototype.focus=function(o){try{if(!o||o.preventScroll===undefined){const r=this.getBoundingClientRect();if(r.top>=60&&r.bottom<=innerHeight-60)return F.call(this,Object.assign({},o||{},{preventScroll:true}))}}catch(e){}return F.apply(this,arguments)}}
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');
