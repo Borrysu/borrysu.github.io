@@ -2615,7 +2615,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v200');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v201');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3647,12 +3647,14 @@ ACT.bidsteps=async id=>{const it=todoOf(id),c=it&&it.raw;if(!c||!LV.api||!LV.api
 const STL={done:'做完',current:'正在做',pending:'還沒',skipped:'略過',blocked:'卡住'};
 {const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw||!p.raw.id)return h;
  const st=p.raw.progressSteps||[];
- const rows=st.map((s,i)=>`<li class="pstr" data-s="${esc(s.status)}"><div class="pstn"><span class="chip${s.status==='current'||s.status==='blocked'?' urg':''}">${STL[s.status]||s.status}</span><b>${esc(s.name)}</b></div><div class="pstb">${s.status!=='done'?mb('✓ 做完','pst',p.id+'|'+i+'|done'):mb('↺ 還沒','pst',p.id+'|'+i+'|pending')}${s.status!=='skipped'?mb('略過','pst',p.id+'|'+i+'|skipped'):''}${mb('✎ 改','pst',p.id+'|'+i+'|edit')}${mb('刪','pst',p.id+'|'+i+'|del')}</div></li>`).join('');
- const sec=`<section class="sec pstep"><h3>步驟</h3>${st.length?`<ol class="pstl">${rows}</ol>`:isBid(p)?`<div class="card bidtip"><p><b>這是投標案</b>：步驟通常是 ${BID_STEPS.join('→')}。</p><div class="btns">${B('套用投標步驟','bidsteps',p.id,'pri')}</div></div>`:'<p class="note">還沒有步驟。</p>'}<div class="mrow">${mb('＋ 加一步','pst',p.id+'|-1|add')}${mb('🧩 編輯每一步','sheet','stepx:'+p.id)}</div></section>`;
+ const rows=st.map((s,i)=>`<li class="pstr" data-s="${esc(s.status)}" data-i="${i}"><div class="pstn"><span class="pstg" aria-hidden="true" title="按住拖拉改順序">⋮⋮</span><span class="chip${s.status==='current'||s.status==='blocked'?' urg':''}">${STL[s.status]||s.status}</span><b>${esc(s.name)}</b></div><div class="pstb">${s.status!=='done'?mb('✓ 做完','pst',p.id+'|'+i+'|done'):mb('↺ 還沒','pst',p.id+'|'+i+'|pending')}${s.status!=='skipped'?mb('略過','pst',p.id+'|'+i+'|skipped'):''}${mb('✎ 改','pst',p.id+'|'+i+'|edit')}${mb('刪','pst',p.id+'|'+i+'|del')}</div></li>`).join('');
+ const newRow=S.stNew===p.id?`<li class="pstr pstnew"><div class="pstn"><input id="pstNewIn" type="text" placeholder="這一步要做什麼（Enter 存好，空白離開就取消）" maxlength="120" autocomplete="off" aria-label="新的一步"></div></li>`:'';
+ const sec=`<section class="sec pstep"><h3>步驟</h3>${st.length||newRow?`<ol class="pstl">${rows}${newRow}</ol>`:isBid(p)?`<div class="card bidtip"><p><b>這是投標案</b>：步驟通常是 ${BID_STEPS.join('→')}。</p><div class="btns">${B('套用投標步驟','bidsteps',p.id,'pri')}</div></div>`:'<p class="note">還沒有步驟。</p>'}<div class="mrow">${mb('＋ 加一步','pst',p.id+'|-1|add')}${mb('🧩 編輯每一步','sheet','stepx:'+p.id)}</div></section>`;
  const i=h.indexOf('<p class="h4">詳情</p>');if(i>-1)return h.slice(0,i)+sec+h.slice(i);
  const k0=h.search(/<h[23][^>]*>詳情<\/h[23]>/),k=k0>-1?h.lastIndexOf('<section',k0):-1;return k>-1?h.slice(0,k)+sec+h.slice(k):h+sec}}
 ACT.pst=async v=>{const [id,si,op]=v.split('|'),i=+si,it=todoOf(id),c=it&&it.raw;if(!c)return;
- if(op==='edit'||op==='add'){if(op==='add'){S.stAdd=1}ACT.sheet('stepx:'+id);if(op==='add')setTimeout(()=>ACT.stadd(),350);return}
+ if(op==='add'){if(S.st==='offline'||navigator.onLine===false||!LV.api||!LV.api.act){toast('離線中，連上再加');return}S.stNew=id;render('keep');setTimeout(()=>{const i=$('#pstNewIn');if(i){i.scrollIntoView({block:'center'});i.focus()}},40);return}   // v201 msg 1249：加一步＝尾端直接多一格可打字
+ if(op==='edit'){ACT.sheet('stepx:'+id);return}
  if(!LV.api||!LV.api.act){toast('離線中，連上再改');return}
  const old=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''}));let nw=old.map(s=>({...s}));const nm=(old[i]||{}).name||'';
  if(op==='del')nw.splice(i,1);else{nw[i].status=op;if(op==='done'||op==='skipped'){const n=nw.findIndex((s,k)=>k>i&&s.status==='pending');if(n>-1&&!nw.some(s=>s.status==='current'))nw[n].status='current'}}
@@ -5673,6 +5675,44 @@ function brandTap(){if(brandDraft()&&Date.now()-BRT>4000){BRT=Date.now();toast('
  const mark=n=>{const v=document.getElementById('ver');if(v)v.textContent='v'+run()+(n?'（有新版）':'')};
  const _chk=chk;
  document.addEventListener('visibilitychange',chk);window.addEventListener('focus',chk);document.addEventListener('pointerdown',chk,{passive:true});setTimeout(chk,3000)}
+
+/* ---------- v201（2026-11-25，意見 1249）：案子步驟「＋ 加一步」直接多一格、長按拖拉改順序 ----------
+   步驟存在 progressSteps 陣列（opp_progress_set p_steps），順序＝陣列順序，不用加欄位。 */
+{let busy=0;
+ const stepsOf=id=>{const it=todoOf(id),c=it&&it.raw;return c?(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''})):null};
+ async function saveSteps(id,nw,old,msg){if(S.st==='offline'||navigator.onLine===false||!LV.api||!LV.api.act){toast('離線中，連上再改，這次沒存');return false}
+  try{await LV.api.act(id,'steps',{steps:nw});await reload();paint('keep');toast(msg,async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}});return true}
+  catch(e){toast('沒存上：'+LERR(e));paint('keep');return false}}
+ // (1) 加一步：Enter 或離開欄位存；空白離開就取消，不留空步驟
+ const commitNew=async(cancel)=>{const i=$('#pstNewIn'),id=S.stNew;if(!id||busy)return;const text=i&&!cancel?i.value.trim():'';S.stNew=null;
+  if(!text){render('keep');return}
+  const old=stepsOf(id);if(!old){render('keep');return}busy=1;const nw=old.map(s=>({...s}));
+  nw.push({name:text,status:old.some(s=>s.status==='current')||old.some(s=>s.status==='pending')?'pending':'current',note:''});
+  await saveSteps(id,nw,old,`加了一步「${clip(text,14)}」`);busy=0};
+ document.addEventListener('keydown',e=>{const t=e.target;if(!t||t.id!=='pstNewIn'||e.isComposing)return;if(e.key==='Enter'){e.preventDefault();commitNew()}else if(e.key==='Escape'){e.preventDefault();commitNew(true)}});
+ document.addEventListener('focusout',e=>{if(e.target&&e.target.id==='pstNewIn')setTimeout(()=>{if(S.stNew&&!($('#pstNewIn')&&document.activeElement===$('#pstNewIn')))commitNew()},120)});
+ // (2) 長按拖拉：觸控按住 400ms、滑鼠按住 300ms 或拖左邊把手；先動就當捲動
+ let PD=null;
+ const clear=()=>{document.querySelectorAll('.pstr.dragging,.pstr.dropbefore,.pstr.dropafter').forEach(e=>{e.classList.remove('dragging','dropbefore','dropafter');e.style.transform=''});document.documentElement.classList.remove('pstdrag')};
+ document.addEventListener('pointerdown',e=>{if(e.button>0||!S.page||S.page.indexOf('proj:')!==0)return;const li=e.target.closest&&e.target.closest('.pstl .pstr:not(.pstnew)');if(!li)return;
+  const onHandle=!!e.target.closest('.pstg');if(e.target.closest('button,a,input,textarea,select'))return;
+  const rows=[...li.parentElement.children].filter(x=>x.classList.contains('pstr')&&!x.classList.contains('pstnew')),i=rows.indexOf(li);if(i<0)return;
+  PD={id:S.page.split(':')[1],li,rows,i,idx:i,x0:e.clientX,y0:e.clientY,pid:e.pointerId,type:e.pointerType,onHandle,active:false,timer:0};
+  const begin=()=>{if(!PD||PD.active)return;if(S.st==='offline'||navigator.onLine===false){toast('離線中，連上再改順序');PD=null;return}
+   PD.active=true;li.classList.add('dragging');document.documentElement.classList.add('pstdrag');try{navigator.vibrate&&navigator.vibrate(15)}catch(_){}try{li.setPointerCapture(PD.pid)}catch(_){}};
+  PD.begin=begin;if(!(onHandle&&e.pointerType==='mouse'))PD.timer=setTimeout(begin,e.pointerType==='mouse'?300:400)},true);
+ document.addEventListener('pointermove',e=>{if(!PD||e.pointerId!==PD.pid)return;const dx=e.clientX-PD.x0,dy=e.clientY-PD.y0;
+  if(!PD.active){if(PD.onHandle&&PD.type==='mouse'){if(Math.hypot(dx,dy)>3)PD.begin()}else if(Math.hypot(dx,dy)>8){clearTimeout(PD.timer);PD=null}return}
+  e.preventDefault();PD.li.style.transform=`translateY(${dy}px)`;
+  const others=PD.rows.filter(r=>r!==PD.li);let idx=0;others.forEach(r=>{const b=r.getBoundingClientRect();if(e.clientY>b.top+b.height/2)idx++});PD.idx=idx;
+  others.forEach(r=>r.classList.remove('dropbefore','dropafter'));if(others.length){if(idx<others.length)others[idx].classList.add('dropbefore');else others[others.length-1].classList.add('dropafter')}},true);
+ const end=async e=>{if(!PD||(e&&e.pointerId!==PD.pid))return;const d=PD;PD=null;clearTimeout(d.timer);if(!d.active)return;clear();window.__pstNoClick=Date.now();
+  if(d.idx===d.i||e.type==='pointercancel')return;const old=stepsOf(d.id);if(!old)return;const nw=old.map(s=>({...s})),[m]=nw.splice(d.i,1);nw.splice(d.idx,0,m);
+  await saveSteps(d.id,nw,old,`順序改好了：「${clip(m.name,14)}」移到第 ${d.idx+1} 步`)};
+ document.addEventListener('pointerup',end,true);document.addEventListener('pointercancel',end,true);
+ document.addEventListener('touchmove',e=>{if(PD&&PD.active&&e.cancelable)e.preventDefault()},{passive:false});
+ document.addEventListener('contextmenu',e=>{if(PD&&(PD.active||PD.type!=='mouse'))e.preventDefault()},true);
+ document.addEventListener('click',e=>{if(window.__pstNoClick&&Date.now()-window.__pstNoClick<400&&e.target.closest&&e.target.closest('.pstl')){e.preventDefault();e.stopPropagation()}},true)}
 
 render('stgroot');
 try{const q=new URLSearchParams(location.search);if(q.get('sub')){const [z,s]=q.get('sub').split(':');S.sub[z]=s;render()}if(q.get('filt')){S.filt=q.get('filt');render()}if(q.get('sheet'))ACT.sheet(q.get('sheet'));if(q.get('page'))ACT.page(q.get('page'));if(q.get('chat'))ACT.bot(q.get('chat'))}catch(e){}
