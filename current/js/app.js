@@ -146,7 +146,7 @@ function errorBox(z){const n=ZONE[z].n;const why=z==='money'?'這把鑰匙讀不
 
 /* ---------- 等你拍板 ---------- */
 function decActs(d){
- if(d.kind==='talk')return `<div data-dec="${esc(d.id)}"><p class="note">這件要登入和按下送件，面板不給按鈕，只能你本人做。資料備好了：AI 自查完成，等你決定。</p><div class="btns">${B('打開申請網站 ↗','ext',d.id,'pri')}${B('到對話回大器一句','talk',d.id)}${B('我已經弄好了','pick',d.id,'ghost',' data-k="_done"')}</div></div>`;
+ if(d.kind==='talk')return `<div data-dec="${esc(d.id)}"><p class="note">這件要登入和按下送件，面板不給按鈕，只能你本人做。資料備好了：AI 自查完成，等你決定。</p><div class="btns">${d.link?B('打開連結 ↗','ext',d.id,'pri'):''}${B('到對話回大器一句','talk',d.id)}${B('我已經弄好了','pick',d.id,'ghost',' data-k="_done"')}</div></div>`;
  const rec=d.opts.find(o=>o.rec)||d.opts[0],rest=d.opts.filter(o=>o!==rec);
  let h=`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div>`;
  if(S.more[d.id])h+=`<div class="btns">${rest.map(o=>`<button class="btn" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div><label class="f">寫別的做法<textarea rows="2" placeholder="例：先給我聽兩版再說"></textarea></label>${S.err===d.id?'<p class="err" role="alert">▲ 先寫一句你要的做法，再交給大器。</p>':''}<div class="btns">${B('照我寫的做','pickalt',d.id)}</div>`;
@@ -1069,7 +1069,7 @@ zoneHead=function(z,sum){const b=ZONE[z].b,bot=BOTS[b];
 
 /* ---------- 拍板、正在跑、最近做完 ---------- */
 decActs=function(d){
- if(d.kind==='talk')return `<div data-dec="${esc(d.id)}"><div class="btns">${B('打開申請網站 ↗','ext',d.id,'pri')}${mb('✓ 我已經弄好了','pick',d.id,' data-k="_done"')}</div></div>`;
+ if(d.kind==='talk')return `<div data-dec="${esc(d.id)}"><div class="btns">${d.link?B('打開連結 ↗','ext',d.id,'pri'):''}${mb('✓ 我已經弄好了','pick',d.id,' data-k="_done"')}</div></div>`;
  const rec=d.opts.find(o=>o.rec)||d.opts[0],rest=d.opts.filter(o=>o!==rec);
  let h=`<div class="btns"><button class="btn pri big" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(rec.k)}"><span>${esc(rec.label)}</span><small>${rec.note?'推薦・'+esc(rec.note):'推薦'}</small></button></div>`;
  if(S.more[d.id])h+=`<div class="btns">${rest.map(o=>`<button class="btn" data-act="pick" data-id="${esc(d.id)}" data-k="${esc(o.k)}">${esc(o.label)}</button>`).join('')}</div><label class="f">寫別的做法<textarea rows="2"></textarea></label>${S.err===d.id?'<p class="err" role="alert">▲ 先寫一句。</p>':''}<div class="btns">${B('照我寫的做','pickalt',d.id)}</div>`;
@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v224');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v225');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3940,8 +3940,12 @@ const PC_APPS=[[/Premiere/i,'Premiere'],[/DaVinci|達文西/i,'DaVinci'],[/Comfy
 const PC_BOTS=[['jiji',/集集|Gig ?Gig/i],['tata',/塔塔/],['peng',/朋朋/],['mon',/萌萌/],['din',/定定/],['kim',/金金/]];
 const PC_PATH=/(?:~|\/Users|\/Volumes)\/[^\s<>"'，。、；）)」』｜]+/g,PC_WIN=/【(?:監工|子|總控|機會雷達|櫃台|櫃檯)】[^\s，。、；｜|「」]{1,24}/g;
 function pcBtns(txt,about,skip){txt=String(txt||'');const out=[],seen={},add=(k,h)=>{if(seen[k]||(skip&&skip===k))return;seen[k]=1;out.push(h)},a=String(about||'這件');
- (txt.match(HTTPS_RE)||[]).forEach(u=>{u=u.replace(/[.,;]+$/,'');let h='';try{h=new URL(u).hostname.replace(/^www\./,'')}catch(e){return}add(u,`<a class="btn pc-b" href="${esc(u)}" target="_blank" rel="noopener noreferrer">↗ ${esc(h)}</a>`)});
- PC_TOOLS.forEach(([re,l,u])=>{if(re.test(txt))add('t:'+l,`<a class="btn pc-b" href="${u}" target="_blank" rel="noopener noreferrer">↗ 開 ${l}</a>`)});
+ (txt.match(HTTPS_RE)||[]).forEach(u=>{u=u.replace(/[.,;]+$/,'');let h='';try{h=new URL(u).hostname.replace(/^www\./,'')}catch(e){return}
+  // v224（msg 1567）：連結鈕寫看得懂的名字（前面那幾個字，例如「A 片」），不是一排 drive.google.com
+  const pre=txt.slice(0,txt.indexOf(u)).split(/[：:；;，,。\n（(]/).pop().replace(/https?:\/\/\S+/g,'').trim().slice(-12);
+  const kind=/\/folders\//.test(u)?'雲端資料夾':/docs\.google\.com\/document/.test(u)?'Google 文件':/docs\.google\.com\/spreadsheets/.test(u)?'Google 試算表':/drive\.google\.com\/file/.test(u)?'雲端檔案':h;
+  add(u,`<a class="btn pc-b" href="${esc(u)}" target="_blank" rel="noopener noreferrer">↗ ${esc(pre&&pre.length>=2&&!/^(看|打開|在|網址|連結)$/.test(pre)?pre:kind)}</a>`)});
+ PC_TOOLS.forEach(([re,l,u])=>{if(l==='雲端硬碟'&&/drive\.google\.com/.test(txt))return;if(re.test(txt))add('t:'+l,`<a class="btn pc-b" href="${u}" target="_blank" rel="noopener noreferrer">↗ 開 ${l}</a>`)});
  (txt.match(PC_PATH)||[]).forEach(p=>{p=p.replace(/[.,;]+$/,'');const n=p.replace(/\/+$/,'').split('/').pop()||p;add(p,B('📁 複製「'+esc(n)+'」位置','pccopy',p,'pc-b'))});
  PC_APPS.forEach(([re,l])=>{if(re.test(txt))add('a:'+l,B('🖥 叫大器開 '+l,'pcsay',`daqi|請在 Mac 上開 ${l} 處理「${a}」：`,'pc-b'))});
  PC_BOTS.forEach(([b,re])=>{if(re.test(txt))add('b:'+b,B(bm(b)+'跟'+BOTS[b].name+'說','pcsay',`${b}|關於「${a}」：`,'pc-b'))});
@@ -5995,11 +5999,12 @@ function pathScrub(root){if(!root||!root.querySelectorAll||typeof cleanTxt!=='fu
 {const _r=render;render=function(){const r=_r.apply(this,arguments);try{['#view','#page','#sheet'].forEach(q=>pathScrub(document.querySelector(q)))}catch(e){}return r}}
 
 /* v222（msg 1492）：決定卡細節不再一整坨：分段、編號項目條列；有「建議／另一選項」的多件題，直接把逐件選放在問題下面，原文不再重複堆一大段 */
+const LNK=t=>esc(t).replace(/https?:\/\/[^\s<>「」，。；）)]+/g,u=>`<a href="${u}" target="_blank" rel="noopener noreferrer">打開 ↗</a>`);   // v224（msg 1567）：細節裡的網址變成點得到的連結
 function decDetailHTML(d,isDec){const txt=String(d.detail||'').trim();if(!txt)return '';const its=decItems(d);
- if(its.length&&isDec){const intro=txt.split(/\n+/).filter(l=>!/^\s*\d+[.．、]/.test(l)).join(' ').trim();return `${intro?`<p class="decint">${esc(cleanTxt(intro))}</p>`:''}${decItemsHTML(d)}`}
+ if(its.length&&isDec){const intro=txt.split(/\n+/).filter(l=>!/^\s*\d+[.．、]/.test(l)).join(' ').trim();return `${intro?`<p class="decint">${LNK(cleanTxt(intro))}</p>`:''}${decItemsHTML(d)}`}
  const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean),num=lines.filter(l=>/^\d+[.．、]/.test(l));
- if(num.length>=2){const pre=lines.filter(l=>!/^\d+[.．、]/.test(l));return `<div class="decdet">${pre.map(l=>`<p>${esc(cleanTxt(l))}</p>`).join('')}<ol>${num.map(l=>`<li>${esc(cleanTxt(l.replace(/^\d+[.．、]\s*/,'')))}</li>`).join('')}</ol></div>`}
- return `<div class="decdet">${lines.map(l=>`<p>${esc(cleanTxt(l))}</p>`).join('')}</div>`}
+ if(num.length>=2){const pre=lines.filter(l=>!/^\d+[.．、]/.test(l));return `<div class="decdet">${pre.map(l=>`<p>${LNK(cleanTxt(l))}</p>`).join('')}<ol>${num.map(l=>`<li>${LNK(cleanTxt(l.replace(/^\d+[.．、]\s*/,'')))}</li>`).join('')}</ol></div>`}
+ return `<div class="decdet">${lines.map(l=>`<p>${LNK(cleanTxt(l))}</p>`).join('')}</div>`}
 
 /* v224（msg 1565）：新增行程依行事曆規則自動勾公司（14 號準則：客戶交件、外部會議、進組出班、標案評選放公司），老大手動改過就不再自動 */
 const CO_CAL_RE=/客戶|交件|會議|開會|出班|進組|拍攝|外拍|評選|簡報|開標|標案|提案|審查|好咖|業主|阿肯|巴西|Louis|CC/i;
