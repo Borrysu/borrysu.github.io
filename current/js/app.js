@@ -2544,7 +2544,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v143');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v144');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4846,17 +4846,32 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    const rel=r?`<button class="ckrel" data-act="${(DB.proj||[]).some(p=>p.id===r.id)?'cerel':'sheet'}" data-id="${(DB.proj||[]).some(p=>p.id===r.id)?esc(r.id):'cview:todo:'+esc(r.id)}">相關：${esc(clip(r.short||r.title,14))} ›</button>`:'';
    if(ed===wid&&!d){const t0=w.note.time||sp.tm||'';
     return `<li class="ck want edit" data-ref="want:${esc(wid)}"><div class="cke"><input id="ckEt" type="text" value="${esc(title)}" aria-label="要做的事"><div class="ckerow"><label class="cketm">時間<input id="ckEtm" type="time" value="${esc(t0)}" data-day="${n}"></label>${B('存好','cksave',wid,'pri sm')}${B('取消','ckcancel','','sm')}${B('刪除','ckdrop',wid,'sm warn')}</div><p class="ckhit" id="ckHit" aria-live="polite">${esc(hitOf(n,t0))}</p></div></li>`}
-   return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}<button class="ckdel" data-act="ckdrop" data-id="${esc(wid)}">刪除</button></span>`}</li>`};
+   return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}<button class="ckdel ckx" data-act="ckdrop" data-id="${esc(wid)}" aria-label="刪除這件"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button></span>`}</li>`};   // v145 msg 914：刪除改成跟小臉同風格的圓形 ✕
   const sug=miss[0];
   let h=`<section class="sec ckbox" aria-label="${n?'明日':'今日'}節奏" data-day="${n}"><div class="ckh"><h2><span class="ckseg" role="tablist" aria-label="今日或明日"><button role="tab" data-act="ckday" data-id="0" aria-selected="${!n}">今日節奏</button><button role="tab" data-act="ckday" data-id="1" aria-selected="${!!n}">明日節奏</button></span><small>${wants.length?`做完 ${done}／${wants.length}`:''}</small></h2></div>`;
   h+=`<ul class="cklist">${wants.map(wrow).join('')}<li class="ck ckblank"><div class="ckadd"><input id="ckIn" type="text" placeholder="${esc(sug?'建議：'+splitTm(sug.text).text:(n?'明天':'今天')+'要做什麼？寫一件')}" aria-label="加一件要做的事"${sug?` data-sug="${esc(sug.ref)}"`:''} autocomplete="off">${B('＋','ckwant',String(n),'pri sm')}</div>${miss.length?`<div class="ckdd" id="ckDD" hidden><p>別漏了・點一下加進來</p>${miss.map(m=>{const q=splitTm(m.text);return `<button class="ckddi" data-act="ckadd" data-id="${esc(m.ref)}"><span class="num">${esc(m.tm||q.tm||'')}</span><b>${esc(q.text)}</b><small>${esc(m.k)}</small></button>`}).join('')}</div>`:''}</li></ul>`;
   if(!wants.length)h+=`<p class="cknone">寫下來就是確認你吸收了，張弛會幫你排時段，大家也會知道。</p>`;
   return h+'</section>'}
- // v143 msg 909 老大：「現在左右滑動換天版面會跳動⋯」→ 換天時節奏框在畫面上的位置固定不動，高度變化往下長；內容從滑的方向滑進來
- ACT.ckday=id=>{const n=+id,old=dayN(),el=document.querySelector('.ckbox'),top=el?el.getBoundingClientRect().top:null,h0=el?el.offsetHeight:0;S.ckDay=n;S.ckEdit='';render('keep');
-  const e2=document.querySelector('.ckbox');if(!e2||top==null)return;const dy=e2.getBoundingClientRect().top-top;if(Math.abs(dy)>1)window.scrollBy(0,dy);
-  if(n!==old&&!RM){const ul=e2.querySelector('.cklist');if(ul){ul.classList.remove('ckin-l','ckin-r');void ul.offsetWidth;ul.classList.add(n>old?'ckin-l':'ckin-r')}}
-  e2.style.minHeight=Math.min(h0,e2.offsetHeight+120)+'px';setTimeout(()=>{const e3=document.querySelector('.ckbox');if(e3)e3.style.minHeight=''},350)};
+ // v144 msg 909、912 老大：「現在左右滑動換天版面會跳動⋯」「還是跳動」
+ // → 換天不再重畫整頁，只換節奏這一塊：舊的一天往滑的方向滑出、新的一天從另一邊滑進，框的高度用 0.2 秒慢慢變；拖的時候清單跟著手指走。
+ let CKBUSY=0;
+ ACT.ckday=(id,dragged)=>{const n=+id,old=dayN();if(n===old&&!dragged){return}const box=document.querySelector('.ckbox');
+  if(!box||RM||CKBUSY){S.ckDay=n;S.ckEdit='';render('keep');return}
+  CKBUSY=1;const dir=n>old?-1:1,h0=box.offsetHeight,ul=box.querySelector('.cklist');
+  if(ul){ul.style.transition='transform .14s ease-in,opacity .14s ease-in';ul.style.transform=`translateX(${dir*55}%)`;ul.style.opacity='0'}
+  setTimeout(()=>{S.ckDay=n;S.ckEdit='';const tmp=document.createElement('div');tmp.innerHTML=tideCheck();const nb=tmp.firstElementChild;
+   if(!nb){CKBUSY=0;render('keep');return}
+   nb.style.height=h0+'px';nb.style.overflow='hidden';const cur=document.querySelector('.ckbox');if(!cur){CKBUSY=0;render('keep');return}cur.replaceWith(nb);try{faceSync()}catch(_){}
+   const nu=nb.querySelector('.cklist');if(nu){nu.style.transition='none';nu.style.transform=`translateX(${-dir*55}%)`;nu.style.opacity='0'}
+   nb.style.height='auto';const h1=nb.offsetHeight;nb.style.height=h0+'px';void nb.offsetHeight;nb.style.transition='height .2s ease';nb.style.height=h1+'px';
+   requestAnimationFrame(()=>{if(nu){nu.style.transition='transform .2s ease-out,opacity .2s ease-out';nu.style.transform='';nu.style.opacity=''}});
+   setTimeout(()=>{nb.style.height='';nb.style.overflow='';nb.style.transition='';if(nu){nu.style.transition=''}CKBUSY=0;LV.sig=''},240)},140)};
+ // 拖的時候清單跟著手指（標題列、空白處）；放開沒過門檻就彈回
+ {let X0=0,Y0=0,on=0,H=null;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];const box=t&&e.target.closest&&e.target.closest('.ckbox');on=box&&!e.target.closest('.ck.want,input,textarea')?1:0;if(on){X0=t.clientX;Y0=t.clientY;H=null}},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!on||CKBUSY)return;const t=e.touches[0],dx=t.clientX-X0,dy=t.clientY-Y0;if(H===null&&Math.hypot(dx,dy)>8)H=Math.abs(dx)>Math.abs(dy)*1.2;if(!H)return;
+   const n=dayN(),ok=(dx<0&&n===0)||(dx>0&&n===1),ul=document.querySelector('.ckbox .cklist');if(ul){ul.style.transition='none';ul.style.transform=`translateX(${ok?dx*0.6:dx*0.15}px)`}},{passive:true});
+  document.addEventListener('touchend',e=>{if(!on)return;on=0;const ul=document.querySelector('.ckbox .cklist');const t=e.changedTouches&&e.changedTouches[0];const dx=t?t.clientX-X0:0;
+   if(ul&&!CKBUSY&&!(H&&Math.abs(dx)>=50&&((dx<0&&dayN()===0)||(dx>0&&dayN()===1)))){ul.style.transition='transform .18s ease-out';ul.style.transform=''}},{passive:true});}
  // msg 800：「如果我選的時間或者是寫的時間當天有其他安排 那在我當下的時候就會有一個提示說那個時間已經有別的事情了 我能決定」
  function hitOf(n,t){const m=/^(\d{1,2}):(\d{2})/.exec(t||'');if(!m)return '';const h=+m[1]+m[2]/60;
   const ev=calAll().filter(e=>e.d===n&&!e.cancel&&!(e.all||!e.t)).filter(e=>{const a=/^(\d+):(\d+)/.exec(e.t),b=/^(\d+):(\d+)/.exec(e.e||'');if(!a)return false;const A=+a[1]+a[2]/60,B=b?+b[1]+b[2]/60:A+1;return h>=A-0.25&&h<B});
@@ -4880,7 +4895,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  // 左右滑：列往左滑露出刪除；標題那排或空白處左右滑切今日／明日
  // v143 msg 908 老大：「這邊長按手感很差 左右滑動出現刪除跟小臉呢？網頁版呢？」（推翻 v140 長按）
  // → 一件往左滑：整列跟著手指移，右邊露出大器、霸霸小臉和刪除；往右滑收回。換天：標題列或空白處左右滑、或點今日／明日。電腦：滑鼠移到那件上就出現（CSS hover）。
- {let X0=0,Y0=0,T0=null,LI=null,H=null;const W=168,shut=x=>{x.classList.remove('swl','drag');x.style.removeProperty('--sx')},shutAll=ex=>document.querySelectorAll('.ck.want.swl').forEach(x=>{if(x!==ex)shut(x)});
+ {let X0=0,Y0=0,T0=null,LI=null,H=null;const W=144,shut=x=>{x.classList.remove('swl','drag');x.style.removeProperty('--sx')},shutAll=ex=>document.querySelectorAll('.ck.want.swl').forEach(x=>{if(x!==ex)shut(x)});
   document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];if(!t)return;if(!(e.target.closest&&e.target.closest('.ckbox')))return;X0=t.clientX;Y0=t.clientY;T0=e.target;H=null;
    LI=e.target.closest('.ck.want:not(.edit):not(.done)');if(e.target.closest('input,textarea,.cklp'))LI=null},{passive:true});
   document.addEventListener('touchmove',e=>{if(!T0||!LI)return;const t=e.touches[0],dx=t.clientX-X0,dy=t.clientY-Y0;if(H===null&&Math.hypot(dx,dy)>8)H=Math.abs(dx)>Math.abs(dy)*1.2;if(!H)return;
