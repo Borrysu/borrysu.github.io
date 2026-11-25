@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v160');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v161');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4521,7 +4521,7 @@ const coCaseLink=c=>coRowOf(c)?`皮條客 id ${coSrcOf(c)}`:'皮條客上還沒�
   if(s!=='co'){DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all}
    return /data-id="proj:co"/.test(h)?h.replace(/(data-id="proj:co">)公司 \d+/,`$1公司 ${n}`):h.replace(segRe,(x,a,b,c)=>a+b+btn(false)+c)}
   S.sub.proj='proj';DB.proj=nat;let h;try{h=_zp()}finally{DB.proj=all;S.sub.proj='co'}
-  h=h.replace(segRe,(x,a,b,c)=>a+fix(b).replace(/aria-pressed="true"/g,'aria-pressed="false"')+btn(true)+c);
+  h=h.replace(segRe,(x,a,b,c)=>{const b2=b.replace(/aria-pressed="true"/g,'aria-pressed="false"');return a+(/data-id="proj:co"/.test(b2)?b2.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,btn(true)):b2+btn(true))+c});   // v161 msg 997：點了「公司」原地亮起，不跑到最後
   h=h.replace(/<div class="addtop"><button[^>]*data-id="padd"[^>]*>[^<]*<\/button><\/div>/g,'');
   const top=`<div class="addtop">${B('＋ 新增公司案子','sheet','padd:co','pri')}</div>`,k=h.indexOf('aria-label="案子分類">'),e=k<0?-1:h.indexOf('</div>',k);
   h=e<0?top+h:h.slice(0,e+6)+top+h.slice(e+6);
