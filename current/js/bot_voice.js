@@ -1113,7 +1113,7 @@
   }
   document.addEventListener('click', function (e) {
     if (window.__zlGo) return;   // 從「就這樣交給…」那顆呼叫原本動作時放行
-    var b = e.target.closest && e.target.closest('[data-act="babaask"],[data-act="jtorun"],[data-act="jtobaba"],[data-act="blkhand"],[data-act="run"],[data-act="pstrun"],[data-act="stplan"],[data-act="pjplan"]');
+    var b = e.target.closest && e.target.closest('[data-act="babaask"],[data-act="jtorun"],[data-act="jtobaba"],[data-act="blkhand"],[data-act="run"],[data-act="stplan"],[data-act="pjplan"]');
     if (!b || b.closest('#chat') || document.documentElement.classList.contains('marking')) return;
     var Z = window.__zl; if (!Z || !Z.ACT || !Z.ACT.ai) return;
     if (b.dataset.act === 'pjplan') { e.preventDefault(); e.stopPropagation(); e.stopImmediatePropagation(); pjplan(b); return; }

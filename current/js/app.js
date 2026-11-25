@@ -1852,7 +1852,7 @@ function mapProj(c){const st=c.status,dl=c.deadline||(c.deliveryDate?Date.parse(
  const urg=dd!=null&&dd<=3&&st==='doing';
  const g=st==='delivered'?'delivered':st==='paid'?'paid':(c.progressBlocker||c.runStatus==='failed'||urg)?'need':'doing';
  const due=st==='paid'?(c.paidAt?LMD(c.paidAt)+' 入帳':'已收款'):st==='delivered'?(c.expectedPayDate?`約定 ${c.expectedPayDate.slice(5).replace('-','/')} 前付`:'等收款'):dd!=null?(dd<0?'已過期限':dd===0?'今天要交':`剩 ${dd} 天`):'沒有期限';
- const money=st==='paid'&&c.receivedAmount!=null?'實收 '+nt(c.receivedAmount):st==='delivered'&&c.finalAmount!=null?'待收 '+nt(c.finalAmount):c.quoteAmount!=null?'報價 '+nt(c.quoteAmount):(c.amountDisplay||'沒寫金額');
+ const money=st==='paid'&&c.receivedAmount!=null?'實收 '+nt(c.receivedAmount):st==='delivered'&&c.finalAmount!=null?'待收 '+nt(c.finalAmount):c.quoteAmount!=null?'報價 '+nt(c.quoteAmount):(c.amountDisplay||'');   // v150 msg 946：沒金額就不顯示
  return {id:c.id,g,short:c.shortTitle||c.title,title:c.title,next:c.progressNote||c.firstStep||c.why||'還沒寫下一步',steps,cur,due,urg,who:c.progressUpdatedBy||'大器',money,hist:LV.hist[c.id]||[],raw:c}}
 const RUNST={queued:'排隊中',running:'進行中',done:'做完了',failed:'失敗'};
 function mapTodo(c){return {id:c.id,title:c.title,next:c.progressNote||c.why||'',st:RUNST[c.runStatus]||'還沒開始',run:c.runStatus,raw:c}}
@@ -2411,7 +2411,7 @@ jobList=function(){const j=jobs();if(!j.length)return `<div class="card"><p>現�
 evtList=function(n){const e=evts().slice(0,n);if(!e.length)return `<div class="card"><p>還沒有做完的紀錄。</p></div>`;
  return `<div class="rows">`+e.map(x=>`<div class="rowi" data-card="${esc(x.id)}"><div class="rowb">${aiF(x.bot,'evt:'+DB.events.indexOf(x))}<button class="tx" data-act="sheet" data-id="hevt:${esc(x.id)}" style="min-height:44px;text-align:left"><b class="evs">${esc(x.ask)}</b><small>${esc(brief(x.who,x.at))}</small></button></div></div>`).join('')+`</div>`};
 // 案子
-projCard=function(p){return `<article class="card cardx" data-card="${esc(p.id)}" data-act="copen" data-id="page|proj:${esc(p.id)}">${mineB('proj:'+p.id,p.title)}<div class="meta">${chip(p.due,p.urg)}<span class="lbl">${esc(askCut(p.short||p.title,16))}</span></div><h3>${cgo(esc(p.ask),'page','proj:'+p.id)}</h3><div class="steps" role="img" aria-label="${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步">${p.steps.map((s,i)=>`<i class="${i<p.cur?'d':i===p.cur?'c':''}"></i>`).join('')}</div><p class="note">${esc(p.money)}</p>${aifs([aiF(WHO[p.id]||'daqi','proj:'+p.id),p.g==='need'||p.g==='doing'?dinB('proj:'+p.id):''])}</article>`};
+projCard=function(p){return `<article class="card cardx" data-card="${esc(p.id)}" data-act="copen" data-id="page|proj:${esc(p.id)}">${mineB('proj:'+p.id,p.title)}<div class="meta">${chip(p.due,p.urg)}</div><h3>${cgo(esc(p.short||p.title),'page','proj:'+p.id)}</h3>${p.ask?`<p class="pjask">${esc(p.ask)}</p>`:''}<div class="steps" role="img" aria-label="${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步">${p.steps.map((s,i)=>`<i class="${i<p.cur?'d':i===p.cur?'c':''}"></i>`).join('')}</div>${p.money&&p.money!=='沒寫金額'?`<p class="note">${esc(p.money)}</p>`:''}${aifs([aiF(WHO[p.id]||'daqi','proj:'+p.id),p.g==='need'||p.g==='doing'?dinB('proj:'+p.id):''])}</article>`};
 // 機會：卡面兩顆基本操作（老大 2026-11-22 追加）
 const oppFace=o=>o.st==='snoozed'?mb('↺ 放回清單','unsnooze',o.id):mb('⏸ 暫存到明天','snooze',o.id)+mb('🗑 不要了','del',o.id);
 oppCard=function(o){const sn=o.st==='snoozed';
@@ -2548,7 +2548,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v149');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v150');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -2844,7 +2844,7 @@ window.__zl=Object.assign(window.__zl||{},{loadMon});
    老大原話：「然後專案面板卡片跟機會卡片的排版再調整一下」「我覺得按鈕跟小臉圖示要同一排，現在好壅塞」
    底部一排：左邊卡面鈕，右邊負責 Bot 的小臉，「⋯」在最右。放不下時從最後一顆往前收起（第一顆一定留著），收起的動作都在「⋯」裡。卡面字不變。 */
 const kfoot=(acts,faces,mine)=>`<div class="kfoot"><div class="cf-l">${acts||''}</div><div class="cf-r">${(faces||[]).filter(Boolean).join('')}${mine}</div></div>`;
-projCard=function(p){return `<article class="card cardx" data-card="${esc(p.id)}" data-act="copen" data-id="page|proj:${esc(p.id)}"><div class="meta">${chip(p.due,p.urg)}<span class="lbl">${esc(askCut(p.short||p.title,16))}</span></div><h3>${cgo(esc(p.ask),'page','proj:'+p.id)}</h3><div class="steps" role="img" aria-label="${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步">${p.steps.map((s,i)=>`<i class="${i<p.cur?'d':i===p.cur?'c':''}"></i>`).join('')}</div><p class="note">${esc(p.money)}</p>${kfoot('',[aiF(WHO[p.id]||'daqi','proj:'+p.id),p.g==='need'||p.g==='doing'?dinB('proj:'+p.id):''],mineB('proj:'+p.id,p.title))}</article>`};
+projCard=function(p){return `<article class="card cardx" data-card="${esc(p.id)}" data-act="copen" data-id="page|proj:${esc(p.id)}"><div class="meta">${chip(p.due,p.urg)}</div><h3>${cgo(esc(p.short||p.title),'page','proj:'+p.id)}</h3>${p.ask?`<p class="pjask">${esc(p.ask)}</p>`:''}<div class="steps" role="img" aria-label="${p.steps.length} 步做到第 ${Math.min(p.cur+1,p.steps.length)} 步">${p.steps.map((s,i)=>`<i class="${i<p.cur?'d':i===p.cur?'c':''}"></i>`).join('')}</div>${p.money&&p.money!=='沒寫金額'?`<p class="note">${esc(p.money)}</p>`:''}${kfoot('',[aiF(WHO[p.id]||'daqi','proj:'+p.id),p.g==='need'||p.g==='doing'?dinB('proj:'+p.id):''],mineB('proj:'+p.id,p.title))}</article>`};
 oppCard=function(o){const sn=o.st==='snoozed',w=oppWhat(o);
  return `<article class="card cardx ocard" data-card="${esc(o.id)}"><div class="meta">${chip(sn?o.snz:o.due,!sn&&o.days<=4)}<span class="lbl">${esc(brief(BASK[o.b],o.org))}</span></div><h3>${cgo(esc(o.title),'sheet','opp:'+o.id)}</h3>${w?`<p class="owhat">${esc(w)}</p>`:''}<p class="amt" style="color:var(--ink)">${esc(oppAmt(o))}</p>`
  +kfoot(B('深入了解','sheet','opp:'+o.id,'pri sm')+(sn?mb('放回清單','unsnooze',o.id):mb('暫存到明天','snooze',o.id))+(sn?'':mb('不要了','del',o.id)),[aiF('jiji','opp:'+o.id,o.took?'建好了':'')],mineB('opp:'+o.id,o.title))+`</article>`};
@@ -3492,10 +3492,12 @@ function parseSteps(txt){const out=[];String(txt||'').split('\n').forEach(l=>{co
  const mt=(p[1]||'')+' ',model=/fable/i.test(mt)?'Fable 5.2':/opus/i.test(mt)?'Opus 5.5':/codex/i.test(mt)?'Codex':/agy|gemini/i.test(mt)?'AGY':/grok/i.test(mt)?'Grok':'不指定';
  const mode=/子視窗/.test(p[2]||'')?'開子視窗':'監工本身',sk=(p[3]||'').toLowerCase(),skill=SSKILL.find(x=>sk.includes(x))||'';
  out.push({name:name.slice(0,80),model,mode,skill,note:'',status:'pending'})});return out.slice(0,30)}
-const lastPlan=b=>{const a=(CH[b]||[]).filter(m=>realBot(b,m));for(let i=a.length-1;i>=0;i--){const s=parseSteps(a[i].t);if(s.length>=2)return s}return null};
+// v150 msg 951 老大：「聊天視窗裡面會出現套用什麼五個步驟的卡片按鈕可是我一直不知道那個是什麼意思」→ 只有你按過「規劃成步驟卡」、而且是緊接著的那則回覆才出現；回覆裡隨便有條列不算
+const lastPlan=b=>{const all=CH[b]||[];let ask=-1;for(let i=all.length-1;i>=0;i--){if(all[i].w==='me'&&/步驟卡|規劃成步驟/.test(String(all[i].t||''))){ask=i;break}}if(ask<0)return null;
+ for(let i=ask+1;i<all.length;i++){const m=all[i];if(m.w==='me')break;if(!realBot(b,m))continue;const s=parseSteps(m.t);if(s.length>=2)return s}return null};
 {const _l=logSync;logSync=function(){_l();const on=S.chat,l=$('#clog');if(!on||!l||(on.b!=='din'&&on.b!=='daqi'))return;
  const a=(on.ctx||'').split(':');if(a[0]!=='proj'||!todoOf(a[1]))return;const st=lastPlan(on.b);if(!st)return;
- l.insertAdjacentHTML('beforeend',`<div class="cm bot card jplan"><p class="note">${NAMES[on.b]}排了 ${st.length} 步。套用後會換掉這張卡現在的步驟，可以復原。</p><div class="btns">${B('🧩 套用成步驟卡（'+st.length+' 步）','stapply',on.b+'|'+a[1],'pri wide')}</div></div>`);l.scrollTop=l.scrollHeight}}
+ l.insertAdjacentHTML('beforeend',`<div class="cm bot card jplan"><p class="note">${NAMES[on.b]}照你要的排了 ${st.length} 步。要換成這張卡的步驟嗎？換了可以復原。</p><div class="btns">${B('🧩 套用成步驟卡（'+st.length+' 步）','stapply',on.b+'|'+a[1],'pri wide')}</div></div>`);l.scrollTop=l.scrollHeight}}
 ACT.stapply=async v=>{const [b,id]=v.split('|'),it=todoOf(id),c=it&&it.raw,st=lastPlan(b);if(!c||!st)return;
  if(!LV.api||!LV.api.act){toast('離線中，連上再套用');return}
  const old=(c.progressSteps||[]).map(s=>({name:s.name,status:s.status,note:s.note||''})),body=st.map(s=>({name:s.name,status:s.status,note:stepNote(s)}));
@@ -4868,7 +4870,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    return `<li class="ck want${d?' done':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.tide?'張弛排的':'照今天空檔先建議'}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}<button class="ckdel ckx" data-act="ckdrop" data-id="${esc(wid)}" aria-label="刪除這件"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button></span>`}</li>`};   // v145 msg 914：刪除改成跟小臉同風格的圓形 ✕
   const sug=miss[0];
   let h=`<section class="sec ckbox" aria-label="${n?'明日':'今日'}節奏" data-day="${n}"><div class="ckh"><h2><span class="ckseg" role="tablist" aria-label="今日或明日"><button role="tab" data-act="ckday" data-id="0" aria-selected="${!n}">今日節奏</button><button role="tab" data-act="ckday" data-id="1" aria-selected="${!!n}">明日節奏</button></span><small>${wants.length?`做完 ${done}／${wants.length}`:''}</small></h2></div>`;
-  h+=`<ul class="cklist">${wants.map(wrow).join('')}<li class="ck ckblank"><div class="ckadd"><input id="ckIn" type="text" placeholder="${esc(sug?'建議：'+splitTm(sug.text).text:(n?'明天':'今天')+'要做什麼？寫一件')}" aria-label="加一件要做的事"${sug?` data-sug="${esc(sug.ref)}"`:''} autocomplete="off">${B('＋','ckwant',String(n),'pri sm')}</div>${miss.length?`<div class="ckdd" id="ckDD" hidden><p>別漏了・點一下加進來</p>${miss.map(m=>{const q=splitTm(m.text);return `<button class="ckddi" data-act="ckadd" data-id="${esc(m.ref)}"><span class="num">${esc(m.tm||q.tm||'')}</span><b>${esc(q.text)}</b><small>${esc(m.k)}</small></button>`}).join('')}</div>`:''}</li></ul>`;
+  h+=`<ul class="cklist">${wants.slice().sort((x,y)=>{const k=w=>{const g=SG[String(w.id)],t=w.note.time||(g&&!g.none?g.t:'')||splitTm(w.note.text).tm;const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?(+m[1])*60+(+m[2]):9999};return k(x)-k(y)}).map(wrow).join('')}<li class="ck ckblank"><div class="ckadd"><input id="ckIn" type="text" placeholder="${esc(sug?'建議：'+splitTm(sug.text).text:(n?'明天':'今天')+'要做什麼？寫一件')}" aria-label="加一件要做的事"${sug?` data-sug="${esc(sug.ref)}"`:''} autocomplete="off">${B('＋','ckwant',String(n),'pri sm')}</div>${miss.length?`<div class="ckdd" id="ckDD" hidden><p>別漏了・點一下加進來</p>${miss.map(m=>{const q=splitTm(m.text);return `<button class="ckddi" data-act="ckadd" data-id="${esc(m.ref)}"><span class="num">${esc(m.tm||q.tm||'')}</span><b>${esc(q.text)}</b><small>${esc(m.k)}</small></button>`}).join('')}</div>`:''}</li></ul>`;
   if(!wants.length)h+=`<p class="cknone">寫下來就是確認你吸收了，張弛會幫你排時段，大家也會知道。</p>`;
   return h+'</section>'}
  // v144 msg 909、912 老大：「現在左右滑動換天版面會跳動⋯」「還是跳動」

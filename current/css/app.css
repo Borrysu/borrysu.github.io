@@ -1876,3 +1876,9 @@ button[data-act="sheet"][data-id="beats"].wide{white-space:nowrap;overflow:hidde
 @keyframes cfade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}.cfade{animation:cfade .22s ease-out}
 .cm .cmgo{border:0;background:transparent;color:#a37aff;padding:0;font:inherit;font-size:11px;font-weight:600;text-align:left;cursor:pointer}
 .cmlink{display:inline;border:0;padding:0 2px;background:rgba(163,122,255,.16);color:#c3a6ff;font:inherit;border-radius:4px;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+/* v150 msg 944：卡片大字＝案名，下一步一行小字 */
+.card .pjask{margin:2px 0 6px;font-size:13px;color:var(--ink2);line-height:1.45}
+/* v150 msg 947 老大：「按小箭頭 畫面會跳動，我覺得應該是絲滑的展開才對」 */
+@keyframes pstOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.pstr.on>:not(.pstbtn){animation:pstOpen .2s ease-out}.pstr .chev{transition:transform .2s}
+@media (prefers-reduced-motion:reduce){.pstr.on>:not(.pstbtn){animation:none}}
