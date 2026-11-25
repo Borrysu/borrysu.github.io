@@ -1910,7 +1910,7 @@ async function loadAll(first){if(LBUSY)return;LBUSY=true;const api=LV.api;
   else if(snapLoad()){LV.net='offline';S.st='offline';paint(first?'stgroot':'')}
   else{LV.net='error';S.st='error';LV.err=LERR(e);paint()}
  }finally{LBUSY=false}}
-function sigOf(){return JSON.stringify([LV.items.map(c=>[c.id,c.status,c.progressNote,c.progressSteps,c.runStatus,c.folderStatus]),LV.hub,LV.money,LV.scan,LV.arch.length,S.st,LV.goals,LV.cal,LV.life,LV.mo])}
+function sigOf(){return JSON.stringify([LV.items.map(c=>[c.id,c.title,c.shortTitle,c.why,c.ask,c.status,c.progressNote,c.progressSteps,c.runStatus,c.folderStatus]),LV.hub,LV.money,LV.scan,LV.arch.length,S.st,LV.goals,LV.cal,LV.life,LV.mo])}
 function paint(dir){applyData();const s=sigOf();if(!dir&&s===LV.sig&&!LV.dirty)return;
  const a=document.activeElement;if(!dir&&a&&/^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName)&&(a.closest('#view')||a.closest('#sheet')||a.closest('#page'))){LV.dirty=true;return}
  LV.sig=s;LV.dirty=false;keybar();render(dir||'keep')}
@@ -2491,9 +2491,20 @@ ACT.hsave=v=>{const [k,id]=v.split('|');const g=s=>{const e=document.getElementB
  const r=hubRow(k,id)||((shelfRow(k,id)||{}).row)||{};const F={decision:['question','detail'],job:['title','note'],event:['summary','path']}[k];
  const patch={ask:g('heAsk').trim(),text,detail:g('heDetail'),project:g('heProj').trim()},old={ask:r.ask||'',text:r[F[0]]||'',detail:r[F[1]]||'',project:r.project||''};
  closeThen(async()=>{try{await LV.api.hubEdit(k,id,patch);await hubAfter();toast('改好了',async()=>{try{await LV.api.hubEdit(k,id,old);await hubAfter();toast('還原了')}catch(e){toast('沒還原：'+hubErr(e))}})}catch(e){toast('沒存上：'+hubErr(e))}})};
-ACT.csave=id=>{const g=s=>{const e=document.getElementById(s);return e?e.value:''};const c=LV.items.find(q=>q.id===id)||(LV.arch||[]).find(q=>q.id===id)||{};const patch={ask:g('ceAsk').trim()},t=g('ceTitle').trim();if(t&&t!==c.title)patch.title=t;const old={ask:c.ask||''};if(patch.title)old.title=c.title;
+// 存檔回傳同張卡時立即更新畫面與本機快照。
+function showSavedCard(card) {
+ if (!card || !card.id) return;
+ for (const list of [LV.items, LV.arch]) {
+  if (!Array.isArray(list)) continue;
+  const i = list.findIndex(item => item.id === card.id);
+  if (i >= 0) list[i] = Object.assign({}, list[i], card);
+ }
+ if (LV.mode === 'live') snapSave();
+ paint('keep');
+}
+ACT.csave=id=>{const g=s=>{const e=document.getElementById(s);return e?e.value:''};const c=LV.items.find(q=>q.id===id)||(LV.arch||[]).find(q=>q.id===id)||{};const patch={ask:g('ceAsk').trim()},t=g('ceTitle').trim();if(t&&t!==c.title){patch.title=t;patch.short_title=null}const old={ask:c.ask||''};if(patch.title){old.title=c.title;old.short_title=c.shortTitle||null}
  if(!LV.api.cardEdit)return toast('這個動作還沒接上');
- closeThen(async()=>{try{await LV.api.cardEdit(id,patch);if(LV.api.archive){try{const a=await LV.api.archive('',null);LV.arch=a.items||[]}catch(e){}}await reload();toast('改好了',async()=>{try{await LV.api.cardEdit(id,old);reload();toast('還原了')}catch(e){toast('沒還原：'+hubErr(e))}})}catch(e){toast('沒存上：'+hubErr(e))}})};
+ closeThen(async()=>{try{showSavedCard(await LV.api.cardEdit(id,patch));if(LV.api.archive){try{const a=await LV.api.archive('',null);LV.arch=a.items||[]}catch(e){}}await reload();toast('改好了',async()=>{try{showSavedCard(await LV.api.cardEdit(id,old));reload();toast('還原了')}catch(e){toast('沒還原：'+hubErr(e))}})}catch(e){toast('沒存上：'+hubErr(e))}})};
 ACT.tdel=id=>closeThen(async()=>{try{await LV.api.act(id,'deleted');await reload();toast('刪掉了，72 小時內可在「最近刪掉的」救回',()=>ACT.restore(id))}catch(e){toast('沒有成功：'+LERR(e))}});
 ACT.pkill=id=>{const p=DB.proj.find(q=>q.id===id);if(!p)return;let v=null;try{v=prompt('徹底刪除後面板和封存都找不回來（電腦裡的資料夾不會動），只有老大本人的網址能刪。\n要刪就輸入完整案名：\n'+p.title)}catch(e){}if(v==null)return;if(v.trim()!==p.title){toast('案名不對，沒有刪');return}
  closeThen(async()=>{try{await LV.api.act(id,'purge',{confirm:v.trim()});toast('徹底刪除了');reload()}catch(e){toast('沒有刪：'+LERR(e))}})};
@@ -2559,7 +2570,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v169');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v170');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3252,16 +3263,16 @@ ACT.pasave=()=>{const g=s=>{const e=document.getElementById(s);return e?e.value:
 ACT.pesave=id=>{const g=s=>{const e=document.getElementById(s);return e?e.value:''},p=DB.proj.find(x=>x.id===id),c=p&&p.raw;if(!c)return;
  const t=g('peTitle').trim();if(!t){S.err='pedit';render('keep');return}S.err='';
  const nx=g('peNext').trim(),due=g('peDue'),why=g('peWhy').trim(),ch=[];
- const patch={};if(t!==c.title){patch.title=t;ch.push('案名')}if(nx!==(c.firstStep||'')){patch.first_step=nx;ch.push('下一步')}
+ const patch={};if(t!==c.title){patch.title=t;patch.short_title=null;ch.push('案名')}if(nx!==(c.firstStep||'')){patch.first_step=nx;ch.push('下一步')}
  const oldDue=String(c.deliveryDate||'').slice(0,10),dueCh=due!==oldDue;if(dueCh)ch.push('期限');
  if(why!==WHYOF(c).trim())ch.push('說明');
  if(!ch.length){toast('沒有改動');closeThen(()=>{});return}
  const mk=`【老大 ${dTag()} 改過：${ch.join('、')}】`;patch.why=mk+'\n'+why;
- const old={why:c.why||'',title:c.title,first_step:c.firstStep||''};
+ const old={why:c.why||'',title:c.title,first_step:c.firstStep||''};if(patch.title)old.short_title=c.shortTitle||null;
  closeThen(async()=>{try{
-  await LV.api.cardEdit(id,patch);if(dueCh)await LV.api.act(id,'work',{patch:{delivery_date:due||null}});
+  showSavedCard(await LV.api.cardEdit(id,patch));if(dueCh)await LV.api.act(id,'work',{patch:{delivery_date:due||null}});
   try{await LV.api.say(id,`【老大改了案子】〈${t}〉改了：${ch.join('、')}。請以面板現在的內容為準（${dTag()}）。`,'daqi')}catch(e){}
-  await reload();toast(`存好了，大器知道你改了${ch.join('、')}`,async()=>{try{await LV.api.cardEdit(id,old);if(dueCh)await LV.api.act(id,'work',{patch:{delivery_date:oldDue||null}});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})
+  await reload();toast(`存好了，大器知道你改了${ch.join('、')}`,async()=>{try{showSavedCard(await LV.api.cardEdit(id,old));if(dueCh)await LV.api.act(id,'work',{patch:{delivery_date:oldDue||null}});await reload();toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})
  }catch(e){toast('沒存上：'+LERR(e))}})};
 WRITE.push('pasave','pesave');
 /* ---------- v72（2026-11-23）：意見第二批之二，交辦「步驟卡」：每步可選模型、執行方式（監工本身或開子視窗）、技能 ----------
@@ -3457,7 +3468,8 @@ window.__zlWF={parse:wfParse};
 /* ---------- v77（2026-11-23）：老大面板意見 msg 143 ----------
    1「這邊多一個分類是劇本」：案子房間分類多「劇本」。案名或說明有劇本、編劇、分場、腳本、影集、長片的自動歸進來；編輯案子可以勾「歸到劇本」（說明第一行寫［劇本］，不加資料庫欄位）。
    2「卡片裡的每一個步驟，我也要都可以編輯」：步驟卡每一步多「狀態」（還沒開始、正在做、做完、跳過、卡住），案子詳情頁的按鈕改叫「編輯每一步」，階段打開也有同一顆。 */
-const SCRIPT_RE=/劇本|編劇|分場|腳本|影集|長片/,SCRIPT_MK=/^［劇本］\n?/m;
+const SCRIPT_RE=/劇本|編劇|分場|腳本|影集|長片/,SCRIPT_MK=/^［(?:劇本|僅列劇本)］\n?/m;
+const scriptOnly=p=>/^［僅列劇本］$/m.test(String(p&&p.raw&&p.raw.why||''));
 const isScript=p=>{const c=p.raw||{};return SCRIPT_RE.test([p.title,p.short,c.title,c.shortTitle].join(' '))||SCRIPT_MK.test(String(c.why||''))};
 {const _zp=zoneProj;zoneProj=function(){const s=S.sub.proj,n=E()?0:(window.__allProj||DB.proj).filter(isScript).length,btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:script">劇本 ${n}</button>`;
  const segRe=/(<div class="seg" role="group" aria-label="案子分類">[\s\S]*?)(<\/div>)/;
@@ -3470,10 +3482,10 @@ const isScript=p=>{const c=p.raw||{};return SCRIPT_RE.test([p.title,p.short,c.ti
 {const _s=sheetHTML;sheetHTML=function(){const h=_s();if(!/^pedit:/.test(S.sheet||''))return h;const id=S.sheet.slice(6),p=DB.proj.find(x=>x.id===id);if(!p)return h;
  const on=SCRIPT_MK.test(String((p.raw||{}).why||''))||isScript(p);
  const box=`<label class="f fchk"><input type="checkbox" id="peScript"${on?' checked':''}> 歸到劇本分類</label>`;
- return h.replace(/(<label class="f">說明)/,box+'$1').replace(/(id="peWhy"[^>]*>)([\s\S]*?)(<\/textarea>)/,(m,a,t,b)=>a+t.replace(/^［劇本］\n?/,'')+b)}}
+ return h.replace(/(<label class="f">說明)/,box+'$1').replace(/(id="peWhy"[^>]*>)([\s\S]*?)(<\/textarea>)/,(m,a,t,b)=>a+t.replace(SCRIPT_MK,'')+b)}}
 {const _ps=ACT.pesave;ACT.pesave=function(id){const cb=document.getElementById('peScript'),w=document.getElementById('peWhy');
- if(cb&&w){const t=w.value.replace(/^［劇本］\n?/,'');const p=DB.proj.find(x=>x.id===id),auto=p&&SCRIPT_RE.test([p.title,p.short].join(' '));
-  w.value=(cb.checked&&!auto?'［劇本］\n':'')+t}
+ if(cb&&w){const t=w.value.replace(SCRIPT_MK,'');const p=DB.proj.find(x=>x.id===id),auto=p&&SCRIPT_RE.test([p.title,p.short].join(' '));
+  w.value=(cb.checked?(scriptOnly(p)?'［僅列劇本］\n':!auto?'［劇本］\n':''):'')+t}
  return _ps.apply(this,arguments)}}
 // 步驟卡：每一步可以改狀態
 const STS=[['pending','還沒開始'],['current','正在做'],['done','做完'],['skipped','跳過'],['blocked','卡住']];
@@ -4523,7 +4535,7 @@ const coCaseLink=c=>coRowOf(c)?`皮條客 id ${coSrcOf(c)}`:'皮條客上還沒�
  try{_v(id)}finally{stepNote=_n2}
  if(c&&live.length)setTimeout(()=>coPush(c,`【改步驟】老大在逐流改了公司案子「${c.title}」的步驟（${coCaseLink(c)}），共 ${live.length} 步。請在皮條客對應欄目照這份更新進度與步數，做完回報一句。\n${sum}`.slice(0,2000)),300)}}
 // 3 公司分頁＝原生公司案子
-{const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,nat=all.filter(isCoCase),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?d.cards.filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
+{const _zp=zoneProj;zoneProj=function(){coWrapAdd();const s=S.sub.proj,all=DB.proj,nat=all.filter(p=>isCoCase(p)&&!scriptOnly(p)),d=coData(),ad=coAdoptedIds(),left=d&&Array.isArray(d.cards)?d.cards.filter(c=>!ad.has(String(c.source_id))):[],n=nat.length+left.length,
   btn=on=>`<button aria-pressed="${on}" data-act="sub" data-id="proj:co">公司 ${n}</button>`,segRe=/(<div class="seg" role="group" aria-label="案子分類">)([\s\S]*?)(<\/div>)/,fix=h=>h.replace(/<button[^>]*data-id="proj:co"[^>]*>公司 \d+<\/button>/,'');
   if(s!=='co'){window.__allProj=all;if(s!=='script')DB.proj=all.filter(p=>!isCoCase(p));let h;try{h=_zp()}finally{DB.proj=all;window.__allProj=null}   // v168 msg 1017：劇本分頁跨個人與公司，公司的劇本案（例：直男行不行）也列
    return /data-id="proj:co"/.test(h)?h.replace(/(data-id="proj:co">)公司 \d+/,`$1公司 ${n}`):h.replace(segRe,(x,a,b,c)=>a+b+btn(false)+c)}
