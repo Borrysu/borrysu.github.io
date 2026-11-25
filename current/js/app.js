@@ -2091,7 +2091,7 @@ function arrive2(b){headSync();document.querySelectorAll('.hav,#chead').forEach(
 // 等回覆的那隻，頭像改「思考中」
 function waitFaces(){document.querySelectorAll('.hav,#chead').forEach(e=>{const k=e.dataset.b||(e.dataset.id||'').split('|')[0],m=e.querySelector('.bm');if(!m||!k)return;const want=WAITB[k]?'thinking':'idle';if(m.dataset.m!==want&&(m.dataset.m==='idle'||m.dataset.m==='thinking')){m.dataset.m=want;faceSync()}})}
 async function loadMsgs(){const on=S.chat;if(!on||!LV.api)return;const b=on.b,id=ctxItem(on.ctx),scope=chScope(on.ctx);
- try{const ms=await LV.api.msgs(id,b,scope);if(!S.chat||S.chat.b!==b)return;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
+ try{const ms=await LV.api.msgs(id,b,scope);if(!S.chat||S.chat.b!==b)return;LV.lastThread=ms;const key=JSON.stringify(ms.map(m=>m.id));const fresh=key!==LV.thread,had=LV.thread;LV.thread=key;
   const last=ms[ms.length-1],waiting=b!=='daqi'&&last&&last.kind==='user';
   const pend=CH[b].filter(m=>m.local&&!(m.gray&&ms.some(x=>String(x.body||'').indexOf(m.t)>-1)));
   CH[b]=ms.map(m=>{const g=m.kind==='user'?/^［前情｜([^］]*)］/.exec(String(m.body||'')):null;if(g)return{w:'bot',gray:1,t:g[1],b};const me=m.kind==='user'||m.kind==='run';return{w:me?'me':'bot',t:me?String(m.body||'').replace(/^［老大在逐流[^］]*］\n?/,''):m.body,b,from:scope==='all'?chFrom(m):'',go:scope==='all'?chGo(m):''}}).concat(pend.length?pend:(waiting?[{w:'bot',wait:1,b}]:[]));
@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v156');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v157');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5282,6 +5282,18 @@ function keepCol(oldEl,newEl,headSel){try{const z=oldEl.querySelector('.zcolb'),
  const pin=()=>{const l=document.getElementById('clog');if(l&&stick)l.scrollTop=l.scrollHeight};window.__zlPin=pin;
  {const _o=openChat;openChat=function(){stick=true;const r=_o.apply(this,arguments);[0,80,250,600,1200].forEach(t=>setTimeout(pin,t));return r}}
  {const _l=logSync;logSync=function(){const r=_l.apply(this,arguments);setTimeout(pin,0);setTimeout(pin,200);return r}}}
+/* v157 逐流 msg 982 老大：「我剛剛直接在這邊跟霸霸講內容，結果他居然不知道我在說什麼耶」
+   原因：在總聊天打字，話沒帶卡片，機器人只看到「他要當天才能辦是不是？」對不上。
+   做法：總聊天裡最新一則（30 分鐘內）是某張卡的對話，輸入框上面出現「接著聊：卡名 ✕」，送出就掛在那張卡；按 ✕ 就當一般的話送。 */
+let CTO=null;
+function ctoBar(){const cin=document.querySelector('#chat .cin');let r=document.getElementById('cTo');if(!CTO||CTO.dismiss||!cin){if(r)r.remove();return}
+ if(!r){r=document.createElement('div');r.id='cTo';r.className='cto';cin.parentNode.insertBefore(r,cin)}r.innerHTML=`<span>接著聊：<b>${esc(CTO.label)}</b></span><button type="button" data-ctox="1" aria-label="不掛在這張卡">✕</button>`}
+{const _l=loadMsgs;loadMsgs=async function(){const r=await _l.apply(this,arguments);try{const on=S.chat;if(!on||on.ctx){CTO=null;ctoBar();return r}
+  const ms=LV.lastThread||[];const last=ms.slice(-1)[0];const fresh=last&&Date.now()-(+last.at||Date.parse(last.at)||0)<30*60e3;
+  if(fresh&&(last.item||last.ctx)&&!(CTO&&CTO.dismiss===((last.item||'')+(last.ctx||'')))){CTO={item:last.item||null,ctx:last.ctx||'',label:chFrom(last)||'上一張卡',key:(last.item||'')+(last.ctx||'')}}else if(!fresh)CTO=null;ctoBar()}catch(e){}return r}}
+{const _st=sendTo;sendTo=function(b,text,ctx){if(S.chat&&!S.chat.ctx&&CTO&&!CTO.dismiss){const c2=CTO.item?'proj:'+CTO.item:CTO.ctx;return _st(b,text,c2)}return _st(b,text,ctx)}}
+document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('[data-ctox]')){if(CTO)CTO.dismiss=CTO.key;const r=document.getElementById('cTo');if(r)r.remove()}},true);
+new MutationObserver(()=>{if(CTO&&!CTO.dismiss&&!document.getElementById('cTo'))ctoBar()}).observe(document.body,{childList:true,subtree:true});
 window.__zl=Object.assign(window.__zl||{},{LV,ACT,GL,DB,CAL,MZ,S,paint:d=>paint(d)});
 
 render('stgroot');

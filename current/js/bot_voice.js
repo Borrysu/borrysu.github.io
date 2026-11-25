@@ -1097,12 +1097,14 @@
   function openTo(who, id, label, where, title, ctx) {
     var Z = window.__zl, L = Z && Z.LV; if (!Z || !Z.openBotChat) return;
     var bot = who === '霸霸' ? 'baba' : 'daqi', c = (L && L.items || []).find(function (q) { return q.id === id; }) || {};
-    var name = String(c.title || title || '這件').replace(/\s+/g, ' ').slice(0, 40), what = (label && label !== name ? label : (title ? '今天要做這一條' : '這件事')).slice(0, 30);
+    var stp = (c.progressSteps || []).filter(function (x) { return x && x.status !== 'done' && x.status !== 'skipped'; })[0];
+    var name = String(c.title || title || '這件').replace(/\s+/g, ' ').slice(0, 40), what = (label && label !== name && !/^(這件事|就這樣交給|跟大器說)/.test(label) ? label : (stp && stp.name) || c.progressNote || (title ? '今天要做這一條' : '下一步')).slice(0, 40);   // v157 msg 982：寫出真正要處理的那步，不寫「這件事」
     var key = bot + id, item = (L.items || []).some(function (q) { return q.id === id; }) ? id : null;
     Z.openBotChat(bot, ctx || ('proj:' + id), async function () {
       if (bot === 'daqi') return;   // 大器那條維持原本：不另外送前情
-      if (PRE[key] && Date.now() - PRE[key] < 1800000) return;   // 半小時內同一件不重送
-      PRE[key] = Date.now();
+      var pk = 'zl_pre_' + key, last = PRE[key] || (function () { try { return +localStorage.getItem(pk) || 0; } catch (e) { return 0; } })();
+      if (last && Date.now() - last < 1800000) return;   // 半小時內同一件不重送（v157：記在手機上，換版重開也算）
+      PRE[key] = Date.now(); try { localStorage.setItem(pk, String(PRE[key])); } catch (e) {}
       var page = (Z.S && (Z.S.page || Z.S.tab)) || '';
       var gray = '已告訴' + who + '：你在〈' + name + '〉準備處理〈' + what + '〉，等你補細節';
       var body = '［前情｜' + gray + '］\n［逐流前情，先別動手］老大在逐流（' + page + '）點了「' + what + '」，準備處理卡片「' + name + '」（' + (item ? 'item ' + item : '今天要做的一條，沒有對應卡片') + '）。先別動手，回一句「收到，等你補細節」就好；老大會在這段對話補細節，說「就這樣」或按「就這樣做」才是真的派下來。你在做的事會寫進 hub_jobs，讓大家知道誰在處理。';
