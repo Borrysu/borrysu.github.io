@@ -1962,7 +1962,7 @@ const TM0=TMS.includes(qs.get('theme'))?qs.get('theme'):TMS.includes(LOOK0.mode)
 const LAY0=(()=>{const q=qs.get('layout'),v=['A','B','C'].includes(q)?q:LS.get('kk_layout');return ['A','B','C'].includes(v)?v:'A'})();
 const S={v:LAY0,skin:qs.get('skin')||(/^[1-6]$/.test(String(LOOK0.skin))?String(LOOK0.skin):'1'),tmode:TM0,theme:TM0==='system'?(DMQ.matches?'dark':'light'):TM0,scn:'normal',tab:qs.get('tab')||'home',
   mask:false,fix:{},ok:new Set(),voided:new Set(),paid:new Set(),cancel:new Set(),added:[],chat:[],bchat:[],ctx:null,
-  cIdx:0,bIdx:0,fIdx:0,lf:'all',ff:'all',showPaid:false,hide:{subs:true,acct:true},scroll:{},stack:[],ed:null,add:null,loading:true,seq:0,per:0,showVoid:false,q:'',inv:true,af:'all',asort:'used',aorder:null,bseg:qs.get('seg')==='stats'?'stats':'budget',sIdx:0,exc:new Set(),subsAdded:[],subFix:{},subArch:new Set(),from:'home',ae:null,refAt:0,accts:[],aopen:new Set(),acg:LSJ('kkD2_acg')||{},gig:0,gigDraft:false,pendDone:new Set(),from2:'accounts',
+  cIdx:0,bIdx:0,fIdx:0,lf:'all',ff:'all',showPaid:false,hide:{subs:true,acct:true},scroll:{},stack:[],ed:null,add:null,loading:true,seq:0,per:0,showVoid:false,q:'',inv:false,af:'all',asort:'used',aorder:null,bseg:qs.get('seg')==='stats'?'stats':'budget',sIdx:0,exc:new Set(),subsAdded:[],subFix:{},subArch:new Set(),from:'home',ae:null,refAt:0,accts:[],aopen:new Set(),acg:LSJ('kkD2_acg')||{},gig:0,gigDraft:false,pendDone:new Set(),from2:'accounts',
   /* 單 F2 */rcvGot:new Set(),rcvRem:new Set(),rcvX:0,rcvTx:{},draftRcv:null,kim:{},pay:null,payReq:{},billFix:{},subPaid:new Set(),payTx:{},paidAc:{}};
 
 /* ---------- 假資料：比例取自素材包 01 第五節，金額與名稱都是抽象值 ---------- */
@@ -3799,7 +3799,7 @@ function updText(name, bal, asof, isCard) { return '[面板請塔塔更新帳戶
 /* ---------- v34.7 手機外殼高度＋除錯讀數 ----------
  不讀螢幕尺寸（不用 screen 物件）。A 模式只在「主畫面模式、100lvh 比視窗多出的高度剛好等於上方安全區」時改用 100lvh 量測值；其他模式照 CSS。
  長按標題 3 秒開關除錯浮層，可切 B／C／D（v34.8 起預設 C，存 localStorage kk_hmode2）。 */
-var KK_VER = 'kk-v36.4', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
+var KK_VER = 'kk-v36.5', KK_SHELL = '.app', KK_TITLE = '.hd-t h1';
 function kkStandalone() { try { return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches; } catch (e) { return false; } }
 function kkProbe() {
   var d = document.createElement('div');
