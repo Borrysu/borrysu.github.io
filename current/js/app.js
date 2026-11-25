@@ -2581,7 +2581,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v173');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v174');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5304,7 +5304,22 @@ function rqBar(){const cin=document.querySelector('#chat .cin');if(!cin)return;l
  const hscroll=el=>{for(let e=el;e&&e!==document.body;e=e.parentElement){const c=getComputedStyle(e);if((c.overflowX==='auto'||c.overflowX==='scroll')&&e.scrollWidth>e.clientWidth+4)return true}return false};
  document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];ok=0;if(!t||e.touches.length>1||S.page||S.sheet||S.chat||document.documentElement.classList.contains('marking'))return;const tg=e.target;if(!(tg.closest&&tg.closest('#view'))||tg.closest(NO)||hscroll(tg))return;X0=t.clientX;Y0=t.clientY;T0=Date.now();ok=1},{passive:true});
  document.addEventListener('touchend',e=>{if(!ok)return;ok=0;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-X0,dy=t.clientY-Y0;if(Date.now()-T0>650||Math.abs(dx)<70||Math.abs(dy)>Math.abs(dx)*0.5)return;
-  const ts=tabsOf(),i=ts.indexOf(S.tab),n=dx<0?i+1:i-1;if(n<0||n>=ts.length)return;ACT.tab(ts[n])},{passive:true});}
+  const ts=tabsOf(),i=ts.indexOf(S.tab),n=dx<0?i+1:i-1;if(n<0||n>=ts.length)return;ACT.tab(ts[n])},{passive:true});
+ // msg 1039：電腦觸控板水平滑動也換房間；一次手勢只換一頁（忽略慣性尾段）。
+ let wheelX=0,wheelAt=0,wheelLocked=false;
+ document.addEventListener('wheel',e=>{
+  const now=performance.now();if(now-wheelAt>450){wheelX=0;wheelLocked=false}wheelAt=now;
+  if(e.ctrlKey||e.shiftKey||S.page||S.sheet||S.chat||document.documentElement.classList.contains('marking')){wheelX=0;return}
+  const tg=e.target;if(!(tg.closest&&tg.closest('#view'))||tg.closest(NO)||hscroll(tg)){wheelX=0;return}
+  const unit=e.deltaMode===1?16:e.deltaMode===2?innerWidth:1,dx=e.deltaX*unit,dy=e.deltaY*unit;
+  if(Math.abs(dx)<=Math.abs(dy)*2||Math.abs(dx)<1){wheelX=0;return}
+  if(e.cancelable)e.preventDefault();
+  if(wheelLocked)return;
+  wheelX=Math.sign(wheelX)===Math.sign(dx)?wheelX+dx:dx;
+  if(Math.abs(wheelX)<70)return;
+  wheelLocked=true;const ts=tabsOf(),i=ts.indexOf(S.tab),n=wheelX>0?i+1:i-1;
+  if(i>=0&&n>=0&&n<ts.length)ACT.tab(ts[n]);
+ },{passive:false});}
 /* v149 msg 937 老大：「點選日跟十四天頁面會跳動我不喜歡」→ 切日／週時下面內容淡入，按鈕本身不動（位置固定靠 v148 的全面板規則） */
 {const _cv=ACT.calv;ACT.calv=function(id){const r=_cv.apply(this,arguments);if(!RM){const seg=document.querySelector('#page [data-act="calv"]');const row=seg&&seg.parentElement;let n=row&&row.nextElementSibling,k=0;while(n&&k<6){n.classList.remove('cfade');void n.offsetWidth;n.classList.add('cfade');n=n.nextElementSibling;k++}}return r}}
 /* v149 msg 938 老大：「一樣我這邊左右滑動的時候會跳動我不喜歡」→ 時間條換週：拖的時候跟著手指走，放開才換 */
