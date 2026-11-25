@@ -1808,3 +1808,22 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .cke .ckerow .btn.warn{color:#f0605a!important;margin-left:auto}
 .cke .cketm input{min-height:32px;height:32px;font-size:13px;padding:0 6px}
 .tl .tlday.cur .tlrow{background:rgba(163,122,255,.14);border-radius:10px}.fc .dsum{font-size:13px;color:var(--ink2)}
+/* v140 msg 901：往左滑露出刪除，整列跟著手指移；不能選到字 */
+.ckbox .ck.want{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:relative;overflow:hidden}
+.ckbox .ck.want>*:not(.cklp){transform:translateX(var(--sx,0px));transition:transform .2s ease}
+.ckbox .ck.want.drag>*{transition:none!important}
+.ckbox .ck.want .cklp{display:flex!important;position:absolute;top:0;right:0;bottom:0;width:96px;transform:translateX(calc(96px + var(--sx,0px)));transition:transform .2s ease}
+.ckbox .ck.want .cklp .ckdel{flex:1;border-radius:0;min-height:0;height:100%;padding:0}
+.ckbox .ck.want.lp{background:none}.ckbox .ck.want .ckb{display:flex!important}
+.ckbox .ckblank::after{content:"一件往左滑可以刪除・其他地方左右滑換今天明天"}
+@media (prefers-reduced-motion:reduce){.ckbox .ck.want>*,.ckbox .ck.want .cklp{transition:none}}
+/* v140b msg 902：平常乾淨，長按浮起來才出小臉與刪除 */
+.ckbox .ck.want>*:not(.cklp){transform:none!important}
+.ckbox .ck.want .cklp{position:static!important;transform:none!important;width:auto!important;display:none!important}
+.ckbox .ck.want .ckb{display:none!important}
+.ckbox .ck.want.lp .ckb,.ckbox .ck.want.lp .cklp{display:flex!important}
+.ckbox .ck.want .cklp .ckdel{height:44px;padding:0 14px;border-radius:12px;flex:none}
+.ckbox .ck.want{transition:transform .18s ease,box-shadow .18s ease,background .18s ease}
+.ckbox .ck.want.lp{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 22px rgba(0,0,0,.35);background:var(--sf,#1c1c22);border-radius:12px;z-index:2;overflow:visible;border-top-color:transparent}
+.ckbox .ckblank::after{content:"長按一件會浮起來：交給大器、霸霸或刪除・左右滑換今天明天"}
+@media (prefers-reduced-motion:reduce){.ckbox .ck.want{transition:none}.ckbox .ck.want.lp{transform:none}}
