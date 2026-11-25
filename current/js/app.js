@@ -2616,7 +2616,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v210');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v211');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3646,10 +3646,13 @@ ACT.bidsteps=async id=>{const it=todoOf(id),c=it&&it.raw;if(!c||!LV.api||!LV.api
   toast('套上投標步驟了',async()=>{try{await LV.api.act(id,'steps',{steps:old});await reload();paint('keep');toast('還原了')}catch(e){toast('沒還原：'+LERR(e))}})}catch(e){toast('沒套上：'+LERR(e))}};
 // 4 案子詳情：每一步 做完、略過、改、刪
 const stepRelTag=(pid,i,rid)=>{const c=ckCards().find(q=>q.id===rid);const nm=c?(c.shortTitle||c.title):'（找不到這張卡）',st=c&&CK_ST[c.status];return `<button type="button" class="pstrl" data-act="pstrelmenu" data-id="${esc(pid)}|${i}" aria-label="關聯：${esc(nm)}，點開可看卡、換別張或取消">→ ${esc(clip(nm,16))}${st?'（'+st+'）':''}</button>`};
+// v204（msg 1378）：步驟做完的結果回填在這一步的卡上（result 摘要、result_link 成果位置、result_at、result_by）。執行端呼叫 opp_step_result 寫回。
+const stepResultBox=s=>{const when=s.result_at?(()=>{const d=new Date(s.result_at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)})():'',lk=String(s.result_link||''),lkH=/^https?:\/\//.test(lk)?`<a href="${esc(lk)}" target="_blank" rel="noopener noreferrer">${esc(clip(lk,48))} ↗</a>`:lk?`<code>${esc(clip(lk,72))}</code>`:'';
+ return `<div class="pstres" data-s="${esc(s.status)}"><b>${s.status==='blocked'?'卡住：':s.status==='done'?'結果：':'回報：'}</b>${esc(s.result)}${lkH?`<div class="pstresl">${lkH}</div>`:''}<small>${esc([s.result_by,when].filter(Boolean).join('・'))}</small></div>`};
 const STL={done:'做完',current:'正在做',pending:'還沒',skipped:'略過',blocked:'卡住'};
 {const _p=pageHTML;pageHTML=function(){const h=_p();const x=(S.page||'').split(':');if(x[0]!=='proj')return h;const p=DB.proj.find(q=>q.id===x[1]);if(!p||!p.raw||!p.raw.id)return h;
  const st=p.raw.progressSteps||[];
- const rows=st.map((s,i)=>{const k='pst:'+p.id+':'+i,op=!!S.open[k],ed=S.pstEdit===p.id+'|'+i;return `<li class="pstr${op?' on':''}" data-s="${esc(s.status)}" data-i="${i}"><div class="pstn"><span class="pstg" aria-hidden="true" title="按住拖拉改順序">⋮⋮</span><button type="button" class="pstbtn pstfold" data-act="open" data-id="${esc(k)}" aria-expanded="${op}"><span class="chip${s.status==='current'||s.status==='blocked'?' urg':''}">${STL[s.status]||esc(s.status)}</span><b>${esc(s.name)}</b><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></button>${s.rel?stepRelTag(p.id,i,s.rel):''}</div>${op?pstDetail(p,s,i):''}${ed?pstInline(p,s,i):''}<div class="pstb">${s.status!=='done'?mb('✓ 做完','pst',p.id+'|'+i+'|done'):mb('↺ 還沒','pst',p.id+'|'+i+'|pending')}${s.status!=='skipped'?mb('略過','pst',p.id+'|'+i+'|skipped'):''}${mb(ed?'取消編輯':'✎ 改','pst',p.id+'|'+i+'|edit')}${mb('🔗 關聯','pst',p.id+'|'+i+'|rel')}${mb('刪','pst',p.id+'|'+i+'|del')}</div></li>`}).join('');
+ const rows=st.map((s,i)=>{const k='pst:'+p.id+':'+i,op=!!S.open[k],ed=S.pstEdit===p.id+'|'+i;return `<li class="pstr${op?' on':''}" data-s="${esc(s.status)}" data-i="${i}"><div class="pstn"><span class="pstg" aria-hidden="true" title="按住拖拉改順序">⋮⋮</span><button type="button" class="pstbtn pstfold" data-act="open" data-id="${esc(k)}" aria-expanded="${op}"><span class="chip${s.status==='current'||s.status==='blocked'?' urg':''}">${STL[s.status]||esc(s.status)}</span><b>${esc(s.name)}</b><span class="chev" aria-hidden="true">${op?'⌃':'⌄'}</span></button>${s.rel?stepRelTag(p.id,i,s.rel):''}</div>${op?pstDetail(p,s,i):''}${s.result?stepResultBox(s):''}${ed?pstInline(p,s,i):''}<div class="pstb">${s.status!=='done'?mb('✓ 做完','pst',p.id+'|'+i+'|done'):mb('↺ 還沒','pst',p.id+'|'+i+'|pending')}${s.status!=='skipped'?mb('略過','pst',p.id+'|'+i+'|skipped'):''}${mb(ed?'取消編輯':'✎ 改','pst',p.id+'|'+i+'|edit')}${mb('🔗 關聯','pst',p.id+'|'+i+'|rel')}${mb('刪','pst',p.id+'|'+i+'|del')}</div></li>`}).join('');
  const srcs=[];ckCards().forEach(c=>{if(c.id===p.id)return;(c.progressSteps||[]).forEach((s,k)=>{if(s&&s.rel===p.id)srcs.push({id:c.id,t:c.shortTitle||c.title,k,n:s.name})})});
  const srcBlock=srcs.length?`<div class="pstsrc">${srcs.map(x=>`<button type="button" class="pstrl" data-act="page" data-id="proj:${esc(x.id)}">← 來自「${esc(clip(x.t,16))}」第 ${x.k+1} 步「${esc(clip(x.n,14))}」</button>`).join('')}</div>`:'';
  const newRow=S.stNew===p.id?`<li class="pstr pstnew"><div class="pstn"><input id="pstNewIn" type="text" placeholder="這一步要做什麼（Enter 存好，空白離開就取消）" maxlength="120" autocomplete="off" aria-label="新的一步"></div></li>`:'';
@@ -3983,7 +3986,7 @@ ACT.pstrun=async v=>{const [id,si]=v.split('|'),i=+si,p=DB.proj.find(q=>q.id===i
  const k=id+'|'+i;if(PSR[k]&&Date.now()-PSR[k]<15*60e3){toast('這步剛送出過，Mac 在開視窗');return}
  if(['running','queued'].includes(c.runStatus)&&(s.status==='current'||s.status==='blocked')){toast('這步已經在跑了');return}
  if(!LV.api||!LV.api.act||!LV.api.say){toast('離線中，連上再送');return}
- const o=stepOf(s),a=pstMeta(s),body=`【只做這一步】第 ${i+1} 步：${o.name}。用 ${o.model==='不指定'?'預設模型':o.model}，${o.mode}${o.skill?'，技能 '+o.skill:''}。${a['執行時間']?'預定執行：'+a['執行時間'].replace('T',' ')+'。':''}${a['完成後']?'開始條件：'+(a['完成後']==='前一步'?'前一步':`第 ${a['完成後']} 步`)+'完成後。':''}${a['派工']?'指定派工：'+a['派工']+'。':''}${a['助理']?'指定 AI 助理：'+a['助理']+'。':''}${o.note?'這步備註：'+o.note+'。':''}其他步驟不要動；做完把這步標做完，回報成果位置。`;
+ const o=stepOf(s),a=pstMeta(s),body=`【只做這一步】第 ${i+1} 步：${o.name}。用 ${o.model==='不指定'?'預設模型':o.model}，${o.mode}${o.skill?'，技能 '+o.skill:''}。${a['執行時間']?'預定執行：'+a['執行時間'].replace('T',' ')+'。':''}${a['完成後']?'開始條件：'+(a['完成後']==='前一步'?'前一步':`第 ${a['完成後']} 步`)+'完成後。':''}${a['派工']?'指定派工：'+a['派工']+'。':''}${a['助理']?'指定 AI 助理：'+a['助理']+'。':''}${o.note?'這步備註：'+o.note+'。':''}其他步驟不要動；做完把結果寫回這一步：rpc opp_step_result，p_id=${id}、p_step=${i}（第 ${i+1} 步，從 0 算）、p_status=done（失敗或卡住用 blocked）、p_result=一句摘要、p_link=成果路徑或連結。不要用 opp_progress_set 重寫整份步驟。`;
  PSR[k]=Date.now();render('keep');
  if(o.mode==='Grok機器人'){try{await LV.api.say(id,`【只做這一步・交給 Grok 機器人】第 ${i+1} 步：${o.name}。${o.note?'備註：'+o.note+'。':''}霸霸請判斷交給哪隻機器人（或自己做），直接執行；做完把這步標做完、成果寫回這張卡。要花錢、對外發布的先問老大。`,'baba');LV.sig='';paint('keep');toast(`第 ${i+1} 步交給霸霸派給機器人了，進度寫回這張卡`)}catch(e){delete PSR[k];render('keep');toast('沒送出：'+LERR(e))}return}
  try{await LV.api.say(id,body,'daqi')}catch(e){delete PSR[k];render('keep');toast('沒送出：'+LERR(e));return}
@@ -5751,7 +5754,7 @@ ACT.coMirrorAsk=async id=>{const p=DB.proj.find(q=>q.id===id),c=p&&p.raw;if(!c)r
 /* ---------- v202（2026-11-25，意見 1257）：步驟可以關聯到別張卡，反向顯示來自哪一步 ----------
    關聯存在步驟物件的 rel（卡 id）。資料庫的步驟是 jsonb，多一個欄位不影響；任何地方重存步驟時，用名稱把原本的 rel 帶回去，不會被洗掉。 */
 window.__stepsKeep=(id,steps)=>{try{const c=ckCards().find(x=>x.id===id),prev=(c&&c.progressSteps)||[];
-  return steps.map(s=>{if(!s||s.rel!==undefined)return s;const m=prev.find(x=>x&&x.rel&&x.name===s.name);return m?Object.assign({},s,{rel:m.rel}):s})}catch(e){return steps}};
+  return steps.map(s=>{if(!s)return s;const m=prev.find(x=>x&&x.name===s.name);if(!m)return s;const o={};['rel','result','result_link','result_at','result_by'].forEach(k=>{if(s[k]===undefined&&m[k]!==undefined&&m[k]!==null)o[k]=m[k]});return Object.keys(o).length?Object.assign({},s,o):s})}catch(e){return steps}};   // v204：rel 與執行結果（result*）重存時帶回去
 {const close=()=>{const m=$('#pstRp');if(m)m.remove()};
  const setRel=async(id,i,rid,msg)=>{const P=window.__pst;if(!P)return;const old=P.stepsOf(id);if(!old||!old[i])return;const nw=old.map(s=>({...s}));nw[i].rel=rid||'';
   close();await P.saveSteps(id,nw,old,msg)};
