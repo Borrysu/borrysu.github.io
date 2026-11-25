@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v202');
+  const { mockAdapter } = await import('./mock.js?v203');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -361,7 +361,7 @@ function liveAdapter() {
         case 'deliver': return card(await rpc(R.setStatus, { p_id: id, p_status: 'delivered', ...(o.patch ? { p_patch: o.patch } : {}) }, 0, W));
         case 'paid': return card(await rpc(R.setStatus, { p_id: id, p_status: 'paid', p_patch: o.patch || {} }, 0, W));
         case 'run': { const c = card(await rpc(R.run, { p_id: id })); wake(); return c; }
-        case 'steps': return card(await rpc(R.progress, { p_id: id, p_steps: o.steps || [] }, 0, W));
+        case 'steps': return card(await rpc(R.progress, { p_id: id, p_steps: (typeof window !== 'undefined' && window.__stepsKeep) ? window.__stepsKeep(id, o.steps || []) : (o.steps || []) }, 0, W));
         case 'blocker': return card(await rpc(R.progress, { p_id: id, p_blocker: o.text || '' }, 0, W));   // v95 卡點：改、清掉（空字串＝清掉）
         case 'runset': return card(await rpc(R.progress, { p_id: id, p_run_status: o.status, p_run_note: o.note || '' }, 0, W));   // v93 立刻停止與復原：只改執行狀態與執行備註   // v39：案子「⋯」這步做完／退回上一步，只改步驟，不動 note、blocker
         case 'back': return card(await rpc(R.setStatus, { p_id: id, p_status: o.to === 'delivered' ? 'delivered' : 'doing' }, 0, W));
