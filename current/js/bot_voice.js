@@ -1180,3 +1180,45 @@
   }
   var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(run, 80); }).observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+/* 2026-11-25 今天頁「今天的節奏」（張弛 tide 轉單，【監工】節律技能）：讀 hub_tide_plan_list，只列今天、明天，照時間排，一列一行；
+   注意事項（接不上、排不下）在最底下一行灰字。只能看，不加按鈕、不加心情鈕（老大今天說不要每天主動推菜單）。讀不到就整塊不顯示。
+   只在首頁讀，10 分鐘內共用一次結果（資料庫降載）。退回：刪掉這一段。 */
+(function () {
+  if (typeof document === 'undefined') return;
+  var cache = null, at = 0, busy = false;
+  var KIND = { leave: '出門', start: '開工', internal_due: '內部截止', hard_stop: '收手' };
+  function ymd(t) { var x = new Date(t.getTime() + 8 * 3600e3); return x.toISOString().slice(0, 10); }
+  function hm(iso) { var x = new Date(new Date(iso).getTime() + 8 * 3600e3); return String(x.getUTCHours()).padStart(2, '0') + ':' + String(x.getUTCMinutes()).padStart(2, '0'); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function load() {
+    var Z = window.__zl; if (!Z || !Z.LV || !Z.LV.api || !Z.LV.api.tidePlan) return;
+    if (busy || (cache && Date.now() - at < 600000)) return; busy = true;
+    var now = new Date(), t0 = ymd(now), t1 = ymd(new Date(now.getTime() + 864e5));
+    Z.LV.api.tidePlan(t0, t1).then(function (d) { cache = Array.isArray(d) ? d : []; at = Date.now(); busy = false; draw(); }).catch(function () { cache = []; at = Date.now(); busy = false; draw(); });
+  }
+  function draw() {
+    var Z = window.__zl, old = document.getElementById('tideBox'); if (old) old.parentNode.removeChild(old);
+    if (!Z || !Z.S || (Z.S.tab && Z.S.tab !== 'today') || Z.S.page || !cache || !cache.length) return;
+    var anchor = document.querySelector('#view [data-z="goal"]'); if (!anchor) return;
+    var now = Date.now(), t0 = ymd(new Date()), groups = { };
+    var rows = cache.filter(function (r) { return r.at && new Date(r.at).getTime() > now - 3600e3; }).sort(function (a, b) { return new Date(a.at) - new Date(b.at); });
+    if (!rows.length) return;
+    var notes = [];
+    rows.forEach(function (r) { var d = ymd(new Date(r.at)) === t0 ? '今天' : '明天'; (groups[d] = groups[d] || []).push(r); var m = r.meta || {}; [m.note, m.warn].forEach(function (n) { if (n && notes.indexOf(n) < 0) notes.push(n); }); });
+    var h = '<section id="tideBox" class="tidebox" aria-label="今天的節奏"><h3>今天的節奏</h3>';
+    ['今天', '明天'].forEach(function (g) { if (!groups[g]) return;
+      h += '<p class="tdg">' + g + '</p><ul>' + groups[g].map(function (r) { var k = r.kind === 'leave' ? (r.verb || '出門') : (KIND[r.kind] || r.kind);
+        return '<li data-k="' + esc(r.kind) + '"><b class="num">' + hm(r.at) + '</b> ' + esc(k) + '<span>｜' + esc(String(r.title || '').replace(/\s*@Borry/i, '')) + '</span></li>'; }).join('') + '</ul>'; });
+    if (notes.length) h += '<p class="tdn">' + notes.map(esc).join('；') + '</p>';
+    anchor.insertAdjacentHTML('beforebegin', h + '</section>');
+  }
+  var st = document.createElement('style');
+  st.textContent = '.tidebox{margin:12px 0;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--sf)}.tidebox h3{margin:0 0 6px;font-size:15px}' +
+    '.tidebox .tdg{margin:8px 0 2px;font-size:12px;color:var(--ink2)}.tidebox ul{list-style:none;margin:0;padding:0}.tidebox li{display:flex;gap:6px;align-items:baseline;padding:4px 0;font-size:14px;line-height:1.4;border-top:1px solid var(--line)}' +
+    '.tidebox li:first-child{border-top:0}.tidebox li b{min-width:44px}.tidebox li span{color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}' +
+    '.tidebox li[data-k="internal_due"] b{color:var(--urg,#f87171)}.tidebox .tdn{margin:8px 0 0;font-size:12px;color:var(--ink2)}';
+  (document.head || document.documentElement).appendChild(st);
+  var t = 0; new MutationObserver(function () { clearTimeout(t); t = setTimeout(function () { if (document.getElementById('tideBox') || !document.querySelector('#view [data-z="goal"]')) { if (!document.querySelector('#view [data-z="goal"]')) return; if (document.getElementById('tideBox')) return; }
+    if (cache && Date.now() - at < 600000) draw(); else load(); }, 150); }).observe(document.documentElement, { childList: true, subtree: true });
+})();
