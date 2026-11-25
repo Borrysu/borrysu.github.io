@@ -1916,3 +1916,5 @@ section.tl .tlpg{will-change:transform}
 .cto{display:flex;align-items:center;gap:8px;margin:0 0 6px;padding:6px 10px;border-left:3px solid #f2a93b;border-radius:8px;background:rgba(242,169,59,.1);font-size:13px}.cto span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cto button{width:32px;height:32px;border:0;background:transparent;color:var(--ink2);font-size:16px}
 /* v158 msg 990 老大：「不用白底 跟取消一樣即可」→ 節奏編修列的「存好」也改純文字（顏色稍亮表示主要） */
 .cke .ckerow .btn.pri{background:transparent!important;border:0!important;box-shadow:none!important;padding:0 6px!important;color:var(--ink)!important;font-weight:700}
+/* v160 msg 994 老大：「這邊左右滑動跟我點選按鈕的視覺不一樣，直接左右滑動會卡卡的」→ 左右滑交給面板，瀏覽器只管上下捲 */
+section.tl .tlpg,.ckbox .cklist,.ckbox .ckh{touch-action:pan-y}

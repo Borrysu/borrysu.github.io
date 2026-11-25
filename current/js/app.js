@@ -2552,7 +2552,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v159');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v160');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4705,7 +4705,7 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
  // v146 msg 921 老大：「這邊左右滑動 會跳喔」→ 換週只換時間條那一塊，不重畫整頁；高度慢慢變
  ACT.tlwk=id=>{const n=+id,old=S.tlwk?1:0,el=document.querySelector('section.tl');if(el&&!RM&&n!==old){S.tlwk=n;S.calsel=null;
    const f=S.calf||'all',all=calAll().filter(e=>f==='all'||e.src===f),tmp=document.createElement('div');tmp.innerHTML=tlPanel(all);const nt=tmp.querySelector('section.tl');
-   if(nt){const h0=el.offsetHeight,pg0=el.querySelector('.tlpg');if(pg0){pg0.style.transition='transform .12s cubic-bezier(.4,0,1,1),opacity .12s linear';pg0.style.transform=`translateX(${n>old?-28:28}%)`;pg0.style.opacity='0'}
+   if(nt){const h0=el.offsetHeight,pg0=el.querySelector('.tlpg');if(pg0){const cx=(()=>{const m=/translateX\((-?[\d.]+)px\)/.exec(pg0.style.transform||'');return m?Math.abs(+m[1]):0})(),out=Math.max(cx+40,pg0.offsetWidth*.28);pg0.style.transition='transform .12s cubic-bezier(.4,0,1,1),opacity .12s linear';pg0.style.transform=`translateX(${n>old?-out:out}px)`;pg0.style.opacity='0'}
     setTimeout(()=>{const cur=document.querySelector('section.tl');if(!cur)return;keepCol(cur,nt,'.tlhd');nt.style.height=h0+'px';nt.style.overflow='hidden';cur.replaceWith(nt);const pg=nt.querySelector('.tlpg');if(pg){pg.style.transition='none';pg.style.transform=`translateX(${n>old?28:-28}%)`;pg.style.opacity='0'}
      nt.style.height='';nt.style.overflow='';nt.style.minHeight=h0+'px';   // 不縮：時間條在頁尾，縮了瀏覽器會把畫面往上拉
      requestAnimationFrame(()=>{if(pg){pg.style.transition='transform .24s cubic-bezier(.2,.8,.2,1),opacity .2s ease-out';pg.style.transform='';pg.style.opacity=''}})},120);return}}
