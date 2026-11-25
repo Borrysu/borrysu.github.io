@@ -109,7 +109,9 @@ const decs=()=>E()?[]:DB.dec.filter(d=>!d.done);
 const jobs=()=>E()?[]:DB.jobs;
 const evts=()=>E()?[]:DB.events;
 const late=()=>E()?[]:DB.beats.filter(b=>b.late);
-const projs=g=>E()?[]:DB.proj.filter(p=>!g||p.g===g);
+/* v224（msg 1563）：「要你看」各分類同一套規則：原本的（卡點、失敗、3 天內到期）之外，進行中的卡只要有決定卡等你、或有做完的結果等你檢閱，也算要你看 */
+const pgOf=p=>{if(p.g!=='doing')return p.g;try{if(typeof cardPending==='function'&&cardPending(p).length)return 'need'}catch(e){}return p.g};
+const projs=g=>E()?[]:DB.proj.filter(p=>!g||pgOf(p)===g);
 const opps=f=>{if(E())return[];let a=DB.opp.filter(o=>!o.gone);if(f==='snoozed')return a.filter(o=>o.st==='snoozed');a=a.filter(o=>o.st!=='snoozed');if(f&&f!=='all')a=a.filter(o=>o.b===f);return a.sort((x,y)=>x.days-y.days)};
 const subs=()=>E()?[]:DB.subs;
 const routs=()=>E()?[]:DB.rout.slice().sort((a,b)=>(b.ago/b.cyc)-(a.ago/a.cyc));
@@ -2642,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v223');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v224');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4035,7 +4037,7 @@ function needWhy(p){const c=p.raw||{},a=[];if(c.progressBlocker)a.push('卡在�
 {const _pc=projCard;projCard=function(p){const h=_pc(p);if(p.g!=='need')return h;return h.replace(/(<\/h3>)/,`$1<p class="ndwhy">▲ 在這裡因為：${esc(needWhy(p))}</p>`)}}
 {const _zp=zoneProj;zoneProj=function(){const h=_zp();const i=h.indexOf('<h2>要你看<');if(i<0)return h;const e=h.indexOf('</h2>',i)+5,op=!!S.open.needhelp;
  const btn=`<button class="mb ndq" data-act="open" data-id="needhelp" aria-expanded="${op}">ⓘ 什麼會在這裡</button>`;
- const help=op?`<div class="card ndhelp fadein"><p><b>「要你看」</b>＝進行中的案子裡，現在需要你出手的那幾件。</p><p class="pc-h">什麼會進來</p><ul class="pc-l"><li>大器寫了卡點（卡在某件事）</li><li>AI 跑到一半失敗</li><li>期限剩 3 天內，還沒交</li></ul><p class="pc-h">怎麼離開</p><ul class="pc-l"><li>解掉卡點，或在步驟按「✓ 做完」</li><li>請 AI 重跑成功</li><li>改期限，或送件那步做完（會改成「已交・等下一步」）</li></ul><p class="note">每張卡上的「▲ 在這裡因為」寫出它被列進來的原因。</p></div>`:'';
+ const help=op?`<div class="card ndhelp fadein"><p><b>「要你看」</b>＝進行中的案子裡，現在需要你出手的那幾件。</p><p class="pc-h">什麼會進來</p><ul class="pc-l"><li>大器寫了卡點（卡在某件事）</li><li>AI 跑到一半失敗</li><li>期限剩 3 天內，還沒交（在等開標、等回覆的不算）</li><li>有決定卡等你選</li><li>有步驟做完、結果等你檢閱</li></ul><p class="pc-h">怎麼離開</p><ul class="pc-l"><li>解掉卡點，或在步驟按「✓ 做完」</li><li>請 AI 重跑成功</li><li>改期限，或送件那步做完（會改成「已交・等下一步」）</li><li>決定卡選好、結果看過</li></ul><p class="note">每張卡上的「▲ 在這裡因為」寫出它被列進來的原因。</p></div>`:'';
  const j=h.indexOf('</div>',e);return j<0?h:h.slice(0,e)+btn+h.slice(e,j+6)+help+h.slice(j+6)}}
 /* ---------- v93（2026-11-24）：步驟卡改卡片、@掛技能；執行狀態白話；立刻停止 ----------
    老大原話（逐流 msg 327 第 2 點）：「這邊的排版按鈕字體也很像工程文字，希望設計過視覺，然後步驟卡模型技能也是用卡片的感覺而不是工程器，模型可點選然後技能掛載不是用選的而是我能在卡片下方講任務內容時就 @技能（中英文都可以），然後卡片的上方就會有監工，子視窗，模型等級（絲滑流暢）」
@@ -5308,7 +5310,7 @@ function calEditHTML(id){
  h+=`<label class="f">標題${e&&e.cs?`<span class="cecs">${esc(e.cs)}</span>`:''}<input id="ceT" type="text" value="${esc(title)}" placeholder="例：品牌短片交片給客戶" autocomplete="off"></label>
  <div class="cerow"><label class="f">日期<input id="ceD" type="date" value="${d0}"></label><label class="cek"><input id="ceA" type="checkbox"${all?' checked':''}> 全天</label></div>
  <div class="cerow" id="ceTm"${all?' hidden':''}><label class="f">開始<input id="ceS" type="time" step="900" value="${esc(s0)}"></label><label class="f">結束<input id="ceE" type="time" step="900" value="${esc(e0)}"></label></div>`;
- if(isNew)h+=`<label class="f">放在<select id="ceC"><option value="me">個人行事曆</option><option value="co">公司行事曆</option></select></label>`;
+ if(isNew)h+=`<fieldset class="f cecal"><legend>放在（可兩個都勾，兩邊各一筆）</legend><label class="ceck"><input type="checkbox" id="ceCme" checked> 個人行事曆</label><label class="ceck"><input type="checkbox" id="ceCco"> 公司行事曆（好咖）</label><p class="note" id="ceCwhy">照你的行事曆規則：客戶交件、外部會議、進組出班、標案評選這類對外的事放公司；你自己實際做事的時段放個人。標題寫了就自動勾，你改了以你為準。</p></fieldset>`;
  if(multi)h+=`<fieldset class="cescope"><legend>這件是 ${mdT(tgt.rs)}～${mdT(addD(tgt.re,-1))} 的多天全天事件</legend><label><input type="radio" name="ceSc" value="day" checked> 只改這天（原本的縮短，另建這天）</label><label><input type="radio" name="ceSc" value="all"> 整段都改（只能改標題）</label></fieldset>`;
  if(rel)h+=`<button class="ce-rel" data-act="cerel" data-id="${esc(rel.id)}"><small>相關卡片</small><b>${esc(rel.short||rel.title)}</b><span aria-hidden="true">›</span></button>`;
  h+=`<div id="ceErr" class="ceerr" role="alert" hidden></div><div id="ceConf" class="ceconf" hidden></div>
@@ -5324,7 +5326,7 @@ ACT.capnew=v=>{const [n,t]=String(v).split('|');S.ceDate=ymd(+n||0);S.ceStart=t|
 ACT.cerel=id=>{closeThen(()=>ACT.page('proj:'+id))};
 document.addEventListener('change',e=>{if(e.target&&e.target.id==='ceA'){const t=$i('ceTm');if(t)t.hidden=e.target.checked}});
 function ceRead(){const v=i=>{const x=$i(i);return x?x.value:''},sc=document.querySelector('input[name="ceSc"]:checked');
- return {title:v('ceT').trim(),date:v('ceD'),all:!!($i('ceA')&&$i('ceA').checked),start:v('ceS'),end:v('ceE'),cal:v('ceC')||'me',scope:sc?sc.value:'day'}}
+ return {title:v('ceT').trim(),date:v('ceD'),all:!!($i('ceA')&&$i('ceA').checked),start:v('ceS'),end:v('ceE'),cal:(()=>{const m=$i('ceCme'),c=$i('ceCco');if(!m&&!c)return v('ceC')||'me';return m&&m.checked&&c&&c.checked?'both':c&&c.checked?'co':'me'})(),scope:sc?sc.value:'day'}}
 function ceMsg(t){const x=$i('ceErr');if(x){x.textContent='▲ '+t;x.hidden=false}else toast(t)}
 function ceCheck(F){if(!F.title)return '標題還沒寫';if(!/^\d{4}-\d{2}-\d{2}$/.test(F.date))return '日期還沒選';if(F.date<ymd(0))return '這個日期已經過了';
  if(!F.all){if(!F.start||!F.end)return '開始和結束時間都要填';if(F.end<=F.start)return '結束要比開始晚'}return ''}
@@ -5357,7 +5359,10 @@ function splitPlan(o){const {tgt,F,cal,evId,name0,mk}=o,rs=tgt.rs,re=tgt.re,td=y
   extra.push(ex);lines.push(`另建 ${mdT(F.date)} ${F.all?'全天':F.start+'～'+F.end} 的「${F.title}」`)}
  if(extra.length)note.extra=extra;
  return {note,view:o.del?{kind:'del',tile:tgt.id}:o.view,lines,confirm:true,msg:o.del?'刪掉這一天了，同步中':'拆開改好了，同步中',tide:o.tide}}
-function ceGo(plan){if(!plan)return;S.cePre=null;if(calSend(plan.note,plan.view,plan.tide))closeThen(()=>toast(plan.msg||'改好了，同步中'))}
+function ceGo(plan){if(!plan)return;S.cePre=null;
+ // v224（msg 1565）：兩個行事曆都勾，就兩邊各寫一筆
+ if(plan.note&&plan.note.cal==='both'){const a=Object.assign({},plan.note,{cal:'me',req_id:plan.note.req_id+'-me'}),b=Object.assign({},plan.note,{cal:'co',req_id:plan.note.req_id+'-co'});const ok1=calSend(a,Object.assign({},plan.view,{src:'me'}),plan.tide),ok2=calSend(b,Object.assign({},plan.view,{src:'co'}),null);if(ok1||ok2)closeThen(()=>toast('個人、公司兩邊都新增了，同步中'));return}
+ if(calSend(plan.note,plan.view,plan.tide))closeThen(()=>toast(plan.msg||'改好了，同步中'))}
 function ceConfirm(plan,okLabel,danger){CE.plan=plan;const x=$i('ceConf');if(!x)return ceGo(plan);
  x.innerHTML=`<b>會這樣做：</b><ol>${plan.lines.map(l=>`<li>${esc(l)}</li>`).join('')}</ol><div class="btns">${B(okLabel||'照這樣改','ceyes','',danger?'wide danger':'pri wide')}${B('先不要','ceno','','wide')}</div>`;x.hidden=false;x.scrollIntoView&&x.scrollIntoView({block:'nearest'})}
 ACT.ceyes=()=>{const p=CE.plan;CE.plan=null;ceGo(p)};
@@ -5995,5 +6000,10 @@ function decDetailHTML(d,isDec){const txt=String(d.detail||'').trim();if(!txt)re
  const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean),num=lines.filter(l=>/^\d+[.．、]/.test(l));
  if(num.length>=2){const pre=lines.filter(l=>!/^\d+[.．、]/.test(l));return `<div class="decdet">${pre.map(l=>`<p>${esc(cleanTxt(l))}</p>`).join('')}<ol>${num.map(l=>`<li>${esc(cleanTxt(l.replace(/^\d+[.．、]\s*/,'')))}</li>`).join('')}</ol></div>`}
  return `<div class="decdet">${lines.map(l=>`<p>${esc(cleanTxt(l))}</p>`).join('')}</div>`}
+
+/* v224（msg 1565）：新增行程依行事曆規則自動勾公司（14 號準則：客戶交件、外部會議、進組出班、標案評選放公司），老大手動改過就不再自動 */
+const CO_CAL_RE=/客戶|交件|會議|開會|出班|進組|拍攝|外拍|評選|簡報|開標|標案|提案|審查|好咖|業主|阿肯|巴西|Louis|CC/i;
+document.addEventListener('input',e=>{if(!e.target||e.target.id!=='ceT')return;const c=document.getElementById('ceCco');if(!c||c.dataset.man)return;c.checked=CO_CAL_RE.test(e.target.value)});
+document.addEventListener('change',e=>{if(e.target&&(e.target.id==='ceCco'||e.target.id==='ceCme')){e.target.dataset.man='1';const m=document.getElementById('ceCme'),c=document.getElementById('ceCco');if(m&&c&&!m.checked&&!c.checked){m.checked=true;toast('至少要放一個行事曆')}}});
 
 })();

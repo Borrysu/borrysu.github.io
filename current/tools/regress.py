@@ -61,6 +61,14 @@ async def run_size(p, w, h):
             r = await pg.evaluate("""async()=>{const z=window.__zl,id=window.__rp,p=z.DB.proj.find(x=>x.id===id);const st=(p.raw.progressSteps||[]).map((s,i)=>i===0?Object.assign({},s,{result:'回歸測試結果',result_link:'https://example.com/x'}):s);
               await z.LV.api.act(id,'steps',{steps:st});const q=await z.LV.api.get(id);const s0=q&&(q.progressSteps||[])[0];return {alive:!!q,status:q&&q.status,res:s0&&s0.result,link:s0&&s0.result_link}}""")
             check(f'{tag} 存步驟後卡片還在、結果欄位沒被丟掉', r.get('alive') and r.get('status') not in ('closed',) and r.get('res') == '回歸測試結果', r)
+        # msg 1565：新增行程兩個行事曆可勾，標題是對外的事自動勾公司
+        await pg.evaluate("()=>{const z=window.__zl;z.S.page=null;z.S.sheet=null;z.paint('keep');z.ACT.cenew()}"); await pg.wait_for_timeout(1000)
+        if await pg.query_selector('#ceT'):
+            await pg.fill('#ceT', '跟客戶開會討論交件')
+            r = await pg.evaluate("()=>({me:!!document.getElementById('ceCme')&&document.getElementById('ceCme').checked,co:!!document.getElementById('ceCco')&&document.getElementById('ceCco').checked})")
+            check(f'{tag} 新增行程對外的事自動勾公司、個人也勾', r.get('me') and r.get('co'), r)
+        # msg 1563：「要你看」各分類同一套規則（有決定卡等你就算）
+        r = await pg.evaluate("()=>{const z=window.__zl;return z.DB.proj.filter(p=>p.g==='doing').length}")
         check(f'{tag} 主控台沒有錯誤', not errs, errs)
     except Exception as e:
         check(f'{tag} 測試本身跑完', False, repr(e))
