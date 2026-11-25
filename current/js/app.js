@@ -287,7 +287,7 @@ function sheetHTML(){const [t,id]=S.sheet.split(':');const head=(title)=>`<div c
  if(t==='bind')return head('朋朋')+`<div class="btns">${S.bound?B('解除綁定','unbind',null,'wide'):B('綁定朋朋','bindok',null,'pri wide')}</div>`;
  if(t==='beats'){const bs=E()?[]:DB.beats;return head('燈號：各程式有沒有報到')+(bs.length?`<div class="rows" style="margin-top:12px">${bs.map(beatRow).join('')}</div>${aifs([aiF('daqi','beats')])}`:`<p style="margin-top:10px">還沒有程式報到過。</p>`)}
  if(t==='dec'||t==='why'){const d=DB.dec.find(x=>x.id===id);
-  return head(esc(d.q))+`<div class="meta" style="margin-top:8px">${aiF('daqi','dec:'+d.id)}${chip(d.proj)}<span class="lbl">${esc(d.by)}問・${esc(d.ago)}・來自${esc(d.origin)}</span></div>${d.detail?`<p style="margin-top:8px">${esc(d.detail)}</p>`:''}${t==='dec'?decActs(d):''}${aifs([dinB('dec:'+d.id)])}`}
+  return head(esc(d.q))+`<div class="meta" style="margin-top:8px">${aiF('daqi','dec:'+d.id)}${chip(d.proj)}<span class="lbl">${esc(d.by)}問・${esc(d.ago)}・來自${esc(d.origin)}</span></div>${d.detail?(typeof decDetailHTML==='function'?decDetailHTML(d,t==='dec'):`<p style="margin-top:8px">${esc(d.detail)}</p>`):''}${t==='dec'?decActs(d):''}${aifs([dinB('dec:'+d.id)])}`}
  if(t==='opp'){const o=DB.opp.find(x=>x.id===id);
   return head(esc(o.title))+`<dl class="kv"><div><dt>金額</dt><dd>${esc(o.amt)}</dd></div><div><dt>時間</dt><dd>${esc(o.due)}</dd></div><div><dt>來源</dt><dd>${esc(o.org)}・${BASK[o.b]}</dd></div></dl>
   <p class="h4">集集的判斷</p><p>${esc(o.why)}</p><p class="h4">重點</p><ul class="ul">${o.facts.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>${o.warn.length?`<p class="h4">要注意</p><ul class="ul">${o.warn.map(f=>`<li>▲ ${esc(f)}</li>`).join('')}</ul>`:''}${o.pay?oppPay(o):''}
@@ -2642,7 +2642,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v222');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v223');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5974,7 +5974,7 @@ ACT.dpksend=async id=>{const d=(DB.dec||[]).find(x=>x.id===id);if(!d||!LV.api||!
  const allA=it.every(x=>(sel[x.n]||'a')==='a'),rec=(d.opts||[]).find(o=>o.rec)||(d.opts||[])[0],cus=(d.opts||[]).find(o=>/custom|逐項|逐件|我自己/.test(o.k+o.label))||(d.opts||[]).slice(-1)[0];
  const note=it.map(x=>`${x.n} ${(sel[x.n]||'a')==='a'?'照建議：'+x.a:x.b}`).join('；');
  try{await LV.api.hubAnswer(id,allA&&rec?rec.k:(cus?cus.k:'_other'),note);toast('記下了：'+clip(note,40));S.sheet=null;LV.hub.open=(LV.hub.open||[]).filter(x=>x.id!==id);LV.sig='';paint();if(typeof loadHub==='function')loadHub()}catch(e){toast('沒送出：'+LERR(e))}};
-{const _s=sheetHTML;sheetHTML=function(){const h=_s();try{const t=String(S.sheet||'');if(t.indexOf('dec:')!==0)return h;const d=(DB.dec||[]).find(x=>x.id===t.slice(4));const blk=d&&decItemsHTML(d);if(!blk)return h;const k=h.lastIndexOf('<p class="note">刪掉的');return k>-1?h.slice(0,k)+blk+h.slice(k):h+blk}catch(e){return h}}}
+{const _s=sheetHTML;sheetHTML=function(){const h=_s();try{const t=String(S.sheet||'');if(t.indexOf('dec:')!==0)return h;const d=(DB.dec||[]).find(x=>x.id===t.slice(4));const blk=d&&decItemsHTML(d);if(!blk||h.indexOf('class="dpk"')>-1)return h;const k=h.lastIndexOf('<p class="note">刪掉的');return k>-1?h.slice(0,k)+blk+h.slice(k):h+blk}catch(e){return h}}}
 /* v222（msg 1319）：步驟排了執行時間，那天就出現在今日／明日節奏（點了跳到那張卡的那一步），不用另外記 */
 function stepRows(day){try{const out=[];(DB.proj||[]).forEach(p=>{const st=typeof projSteps==='function'?projSteps(p):[];st.forEach((x,i)=>{if(x.status==='done'||x.status==='skipped')return;const w=(pstMeta(x)['執行時間']||'').trim();if(!w||w.slice(0,10)!==String(day).slice(0,10))return;
   out.push({t:w.slice(11,16)||'',h:`<li class="ck stepck"><button type="button" class="ckstep" data-act="stepgo" data-id="${esc(p.id)}|${i}"><span class="num">${esc(w.slice(11,16)||'')}</span><b>${esc(x.name)}</b><small>步驟・${esc(p.short||p.title||'')}</small></button></li>`})})});
@@ -5988,5 +5988,12 @@ document.addEventListener('mousedown',e=>{if(e.button!==0)return;const li=e.targ
 const PATH_RE=/(?:~|\/Users)\/|AI工作夾|\.(?:md|json|py|sh|env)\b/;
 function pathScrub(root){if(!root||!root.querySelectorAll||typeof cleanTxt!=='function')return;const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);let n;const hit=[];while((n=w.nextNode())){if(PATH_RE.test(n.nodeValue)&&!(n.parentNode&&n.parentNode.closest&&n.parentNode.closest('textarea,input,code,pre,[contenteditable],script,style')))hit.push(n)}hit.forEach(t=>{const v=cleanTxt(t.nodeValue);if(v!==t.nodeValue)t.nodeValue=v})}
 {const _r=render;render=function(){const r=_r.apply(this,arguments);try{['#view','#page','#sheet'].forEach(q=>pathScrub(document.querySelector(q)))}catch(e){}return r}}
+
+/* v222（msg 1492）：決定卡細節不再一整坨：分段、編號項目條列；有「建議／另一選項」的多件題，直接把逐件選放在問題下面，原文不再重複堆一大段 */
+function decDetailHTML(d,isDec){const txt=String(d.detail||'').trim();if(!txt)return '';const its=decItems(d);
+ if(its.length&&isDec){const intro=txt.split(/\n+/).filter(l=>!/^\s*\d+[.．、]/.test(l)).join(' ').trim();return `${intro?`<p class="decint">${esc(cleanTxt(intro))}</p>`:''}${decItemsHTML(d)}`}
+ const lines=txt.split(/\n+/).map(l=>l.trim()).filter(Boolean),num=lines.filter(l=>/^\d+[.．、]/.test(l));
+ if(num.length>=2){const pre=lines.filter(l=>!/^\d+[.．、]/.test(l));return `<div class="decdet">${pre.map(l=>`<p>${esc(cleanTxt(l))}</p>`).join('')}<ol>${num.map(l=>`<li>${esc(cleanTxt(l.replace(/^\d+[.．、]\s*/,'')))}</li>`).join('')}</ol></div>`}
+ return `<div class="decdet">${lines.map(l=>`<p>${esc(cleanTxt(l))}</p>`).join('')}</div>`}
 
 })();
