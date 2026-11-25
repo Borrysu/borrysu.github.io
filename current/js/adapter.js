@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v125');
+  const { mockAdapter } = await import('./mock.js?v126');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -151,7 +151,7 @@ const arr = v => Array.isArray(v) ? v.map(x => String(x)).filter(Boolean) : (typ
 const str = v => (v == null ? '' : String(v));
 const web = v => { v = str(v).trim(); return /^https?:\/\//i.test(v) ? v : ''; };   // 連結只收 http(s)，擋 javascript: 等
 
-const BOTS_OK = ['daqi', 'jiji', 'tata', 'peng', 'mon', 'din', 'kim'];
+const BOTS_OK = ['daqi', 'jiji', 'tata', 'peng', 'mon', 'din', 'kim', 'baba'];
 // v40：各 Bot 的回覆與還在等的話（opp_bot_inbox）
 export const normInbox = d => ({ replies: (d && Array.isArray(d.replies) ? d.replies : []).filter(r => BOTS_OK.includes(r.bot)).map(r => ({ id: +r.id || 0, bot: r.bot, item: r.item_id ? str(r.item_id) : null, body: str(r.body), at: ts(r.created_at) })),
   waiting: (d && Array.isArray(d.waiting) ? d.waiting : []).filter(w => BOTS_OK.includes(w.bot)).map(w => ({ id: +w.id || 0, bot: w.bot })) });
@@ -303,7 +303,8 @@ function liveAdapter() {
       return normHistory(r && r.history);
     },
     async msgs(id, bot) { return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80, p_bot: bot || 'daqi' })); },
-    async say(id, body, bot) { const r = await rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); if (!bot || bot === 'daqi') wake(); return r; },
+    async say(id, body, bot) { const r = await rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); if (!bot || bot === 'daqi') wake(); else wake({ act: 'botsend' }); return r; }   // 2026-11-25 v125：送給別隻也叫 Mac relay 立刻跑一次
+,
     async botInbox() { return normInbox(await rpc(R.botInbox, {})); },
     async hubToday() { return normHub(await rpc(R.hubToday, {})); },
     async moneySubs() { return normMoney(await rpc(R.moneySubs, {}, 0, W)); },   // v35：403＝這把金鑰不能看錢（AI協作金鑰），不是金鑰失效，不清金鑰
@@ -319,7 +320,7 @@ function liveAdapter() {
     // v46：卡片編輯、封存、刪除。kind＝decision｜job｜event；action＝archive｜unarchive｜delete｜restore（刪除 72 小時內可救回）
     async hubEdit(kind, id, patch) { return rpc(R.hubEdit, { p_kind: kind, p_id: String(id), p_patch: patch || {} }, 0, W); },
     async hubShelf(kind, id, action) { return rpc(R.hubShelf, { p_kind: kind, p_id: String(id), p_action: action }, 0, W); },
-    async jobSet(o) { return rpc('hub_job_set', { p_id: o.id, p_title: o.title, p_agent: o.agent, p_status: o.status || 'running', p_note: o.note || null, p_ask: o.ask || null, p_project: o.project || null, p_needs: o.needs || 'any' }, 0, W); },   // 2026-11-24 要你做交給大器／霸霸：卡轉成在跑
+    async jobSet(o) { return rpc('hub_job_set', { p_id: o.id, p_title: o.title, p_agent: o.agent, p_status: o.status || 'running', p_note: o.note || null, p_ask: o.ask || null, p_project: o.project || null, p_needs: o.needs || 'any', ...(o.sourceKey ? { p_source_key: o.sourceKey } : {}) }, 0, W); },   // 2026-11-24 要你做交給大器／霸霸：卡轉成在跑
     async shelf() { const d = await rpc(R.shelf, {}, 0, W); return Array.isArray(d) ? d : []; },
     // v48：付款授權單。只有老大本人的金鑰能授權（AI協作金鑰回 403，不清金鑰）；面板不碰錢，實際付款由負責的 Bot 做完回報
     async payAuthorize(o) { return rpc(R.payAuthorize, { p_src_kind: o.kind, p_src_id: o.id == null ? null : String(o.id), p_src_title: o.title || null, p_amount: o.amount == null ? null : +o.amount, p_amount_text: o.amountText, p_payee: o.payee, p_assignee: o.by || null, p_link: o.link || null }, 0, W); },

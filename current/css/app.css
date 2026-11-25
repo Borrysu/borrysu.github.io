@@ -494,7 +494,7 @@ html[data-layout="2"] .tab .badge{left:calc(50% + 10px);top:5px}
    老大 2026-11-22：「對話的部分希望是浮動對話視窗，對應的頭像會跳動這樣，不是像現在這樣死板的跳出一塊」
    浮窗：四邊留空、整塊圓角，從你點的那個頭像位置長出來（0.32 秒），收起時縮回去（0.2 秒）；左上角掛著那隻會動的頭像。
    浮動頭像：右下角常駐，是「這間房的主人」；可以拖到左右邊緣停靠。減少動態時全部改成淡入淡出。 */
-html{--c-din:#f3efe0;--c-mon:#ff9800;--c-kim:#ff6700;--kb:0px}
+html{--c-baba:#ffffff;--c-din:#f3efe0;--c-mon:#ff9800;--c-kim:#ff6700;--kb:0px}
 .bm.bf.sm{width:22px;height:22px}
 html body .bm.bf[data-b=din]{background:#f3efe0!important;padding:2px}
 .btn .bm.sm{margin-left:-4px}
@@ -1754,3 +1754,19 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 .dtconf .btns{margin:0;display:flex;gap:8px}
 @media (prefers-reduced-motion:reduce){.dtb{transition:none}}
 .ce label.f input[type="time"],.ce label.f input[type="date"],.ce label.f input[type="text"]{width:100%;min-height:48px;padding:10px 12px;border-radius:var(--rs);border:1px solid var(--line2);background:var(--sf2);color:var(--ink);font:inherit;box-sizing:border-box}
+
+/* 2026-11-25 v125：對話裡的灰字前情 */
+.cm.gray{align-self:center;max-width:94%;background:none;border:0;color:var(--ink2,#8a8a8a);font-size:12px;text-align:center;padding:4px 8px}
+
+/* 2026-11-25 v125：今天要做 */
+.ck.want{display:flex;align-items:center;gap:10px}
+.ck.want .ckm{flex:1;min-width:0}
+.ck.want.done .ckm span{text-decoration:line-through;opacity:.55}
+.ckbx{width:44px;height:44px;flex:none;border-radius:50%;border:2px solid var(--line,#444);background:none;color:var(--ink,#fff);font-size:18px;display:grid;place-items:center;cursor:pointer}
+.ck.want.done .ckbx{background:var(--ok,#2fb26a);border-color:var(--ok,#2fb26a);color:#000}
+.ckrel{display:block;margin-top:2px;padding:4px 0;border:0;background:none;color:var(--ink2,#9aa);font-size:12px;text-align:left;min-height:32px}
+.ck.miss .ckb .btn{min-width:44px;min-height:44px}
+.ck.want .ckb{display:flex;gap:6px}
+.ck.want .ckb .aif{width:44px;height:44px}
+.ck.want .ckm{display:block}
+.ck.want .ckm>span{display:block}

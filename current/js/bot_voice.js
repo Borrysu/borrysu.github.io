@@ -1025,7 +1025,13 @@
   if (typeof document === 'undefined') return;
   var pend = null; // {k,id}
   function toast(t) { var e = document.getElementById('toast'), m = document.getElementById('toastMsg'), u = document.getElementById('toastUndo'); if (!e || !m) return; m.textContent = t; if (u) u.hidden = true; e.classList.add('in'); clearTimeout(toast.t); toast.t = setTimeout(function () { e.classList.remove('in'); }, 3200); }
-  function drop() { var o = document.getElementById('cBaba'); if (o && o.parentNode) o.parentNode.removeChild(o); }
+  function drop() { window.__zlPendGo = null; var o = document.getElementById('cBaba'); if (o && o.parentNode) o.parentNode.removeChild(o); }
+  // 2026-11-25 v125：派工時順手記一筆 hub_jobs（誰在處理這件），之後各機器人開工先讀 hub_today 的 jobs 就知道
+  async function jobMark(P, said, agent, intent) {
+    var L = window.__zl && window.__zl.LV; if (!L || !L.api || !L.api.jobSet) return;
+    var c = (L.items || []).find(function (q) { return q.id === P.id; }) || {}, name = String(c.title || P.title || '這件').slice(0, 60);
+    try { await L.api.jobSet({ title: name, agent: agent, status: 'running', ask: agent + '在處理：' + name.slice(0, 30), note: 'item ' + P.id + (intent ? '｜' + intent : '') + (said ? '｜老大交代：' + said : ''), sourceKey: 'dispatch:' + P.id }); } catch (e) {}
+  }
   function chip() {
     var cin = document.querySelector('#chat .cin'); if (!cin || !pend) return;
     if (document.getElementById('cBaba')) return;
@@ -1034,17 +1040,29 @@
     var b = document.createElement('button'); b.type = 'button'; b.className = 'btn pri sm';
     var f = document.createElement('span'); f.className = 'bm bf'; f.dataset.b = 'baba'; f.setAttribute('aria-hidden', 'true'); f.style.cssText = 'width:22px;height:22px;display:inline-block;vertical-align:middle;margin-right:6px';
     if (pend.who !== '霸霸') f.dataset.b = 'daqi';
-    b.appendChild(f); b.appendChild(document.createTextNode(pend.label || ('就這樣交給' + pend.who)));
+    b.appendChild(f); b.appendChild(document.createTextNode(pend.label || '就這樣做'));
     var n = document.createElement('span'); n.style.cssText = 'font-size:12px;color:var(--ink2,#aaa)'; n.textContent = '想先交代就在下面打字，再按這顆；不按不會派';
     w.appendChild(b); w.appendChild(n); cin.parentNode.insertBefore(w, cin);
-    b.onclick = async function () {
+    window.__zlPendGo = b.onclick = async function () {
       var Z = window.__zl, L = Z && Z.LV; if (!L || !L.api || !L.api.say || !pend) return;
       var t = document.getElementById('cText'), said = t ? t.value.trim() : '';
       var AQN = { 'claude-b': 'Claude 個人（claude B）', 'codex': 'Codex 好咖', 'codex-p': 'Codex 個人（codex B）', 'agy-b': 'AGY 個人（agy B）' };
       if (window.__aqPick && AQN[window.__aqPick]) said = (said ? said + '\n' : '') + '（老大指定這件用 ' + AQN[window.__aqPick] + ' 跑，Claude 好咖額度快滿）';
+      if (pend.who === '霸霸') {   // 2026-11-25 v125：霸霸就在霸霸自己的對話裡派，不再經大器
+        b.disabled = true; var P2 = pend, c2 = (L.items || []).find(function (q) { return q.id === P2.id; }) || {}, nm = String(c2.title || P2.title || '這件').slice(0, 100), item2 = c2.id ? P2.id : null;
+        var intent = /規劃/.test(P2.label || '') ? '規劃步驟' : (P2.k === 'proj' ? '推進這個案子' : '轉派');
+        var bb = '【就這樣做】老大在逐流跟你講完了，請照上面對話裡他說的，' + intent + '「' + nm + '」（' + (item2 ? 'item ' + item2 : '今天要做的一條，沒有對應卡片') + '）。判斷交給哪隻機器人（或自己做、叫定定想），進度寫回這張卡；要花錢、對外發布的先問老大；需要老大點確認的，你自己點，或告訴老大要不要去點。' + (said ? '\n老大最後交代：' + said : '');
+        try {
+          await L.api.say(item2, bb, 'baba'); if (t && said) t.value = '';
+          try { if (item2 && L.api.act) await L.api.act(P2.id, 'runset', { status: 'running', note: '【霸霸】接手：' + nm.slice(0, 30) }); } catch (e) {}
+          await jobMark(P2, said, '霸霸', intent);
+          toast('交給霸霸了，卡片上標霸霸在處理'); drop(); pend = null; if (Z.paint) Z.paint('keep'); if (Z.reloadChat) Z.reloadChat();
+        } catch (e) { b.disabled = false; toast('沒送出，再按一次'); }
+        return;
+      }
       if (pend.go) {
-        b.disabled = true; var G = pend.go;
-        try { await G(said); if (t && said) t.value = ''; drop(); pend = null; if (Z.paint) Z.paint('keep'); } catch (e) { b.disabled = false; toast('沒送出，再按一次'); }
+        b.disabled = true; var G = pend.go, Pg = pend;
+        try { await G(said); await jobMark(Pg, said, '大器', ''); if (t && said) t.value = ''; drop(); pend = null; if (Z.paint) Z.paint('keep'); } catch (e) { b.disabled = false; toast('沒送出，再按一次'); }
         return;
       }
       if (pend.act && pend.act !== 'babaask') {
@@ -1053,6 +1071,7 @@
         try { if (said) { await L.api.say(P.id, '老大交代：' + said, 'daqi'); if (t) t.value = ''; } } catch (e) { b.disabled = false; toast('沒送出，再按一次'); return; }
         drop(); pend = null; window.__zlGo = 1;
         try { Z.ACT[P.act](P.arg); } finally { window.__zlGo = 0; }
+        jobMark(P, said, '大器', P.act);
         if (P.act === 'stplan') window.__actAt = Date.now();   // stplan 只把規劃請求放進輸入框，交給動作鈕直送那段送出
         return;
       }
@@ -1070,6 +1089,25 @@
       } catch (e) { b.disabled = false; toast('沒送出，再按一次'); }
     };
   }
+  // 2026-11-25 v125：按了派工臉／鈕＝開「那隻自己的」對話（霸霸就霸霸），同時自動送一則前情，灰字告訴老大已經通知它；老大講完才真的派
+  var PRE = {};
+  function openTo(who, id, label, where, title, ctx) {
+    var Z = window.__zl, L = Z && Z.LV; if (!Z || !Z.openBotChat) return;
+    var bot = who === '霸霸' ? 'baba' : 'daqi', c = (L && L.items || []).find(function (q) { return q.id === id; }) || {};
+    var name = String(c.title || title || '這件').replace(/\s+/g, ' ').slice(0, 40), what = (label && label !== name ? label : (title ? '今天要做這一條' : '這件事')).slice(0, 30);
+    var key = bot + id, item = (L.items || []).some(function (q) { return q.id === id; }) ? id : null;
+    Z.openBotChat(bot, ctx || ('proj:' + id), async function () {
+      if (bot === 'daqi') return;   // 大器那條維持原本：不另外送前情
+      if (PRE[key] && Date.now() - PRE[key] < 1800000) return;   // 半小時內同一件不重送
+      PRE[key] = Date.now();
+      var page = (Z.S && (Z.S.page || Z.S.tab)) || '';
+      var gray = '已告訴' + who + '：你在〈' + name + '〉準備處理〈' + what + '〉，等你補細節';
+      var body = '［前情｜' + gray + '］\n［逐流前情，先別動手］老大在逐流（' + page + '）點了「' + what + '」，準備處理卡片「' + name + '」（' + (item ? 'item ' + item : '今天要做的一條，沒有對應卡片') + '）。先別動手，回一句「收到，等你補細節」就好；老大會在這段對話補細節，說「就這樣」或按「就這樣做」才是真的派下來。你在做的事會寫進 hub_jobs，讓大家知道誰在處理。';
+      Z.showGray && Z.showGray(bot, gray);
+      try { await L.api.say(item, body, bot); } catch (e) { Z.showGray && Z.showGray(bot, '前情沒送出，老大再按一次', 1); PRE[key] = 0; }
+      if (Z.reloadChat) Z.reloadChat();
+    });
+  }
   document.addEventListener('click', function (e) {
     if (window.__zlGo) return;   // 從「就這樣交給…」那顆呼叫原本動作時放行
     var b = e.target.closest && e.target.closest('[data-act="babaask"],[data-act="jtorun"],[data-act="jtobaba"],[data-act="blkhand"],[data-act="run"],[data-act="pstrun"],[data-act="stplan"],[data-act="pjplan"]');
@@ -1083,15 +1121,17 @@
     if (['queued', 'running'].indexOf(it.runStatus) > -1) { toast('這件已經交出去了，要改派先按停止'); return; }
     // msg 643：所有派工臉／派工鈕都先開這件的對話，老大講完按「就這樣交給…」才派
     var act = b.dataset.act;
-    pend = { at: Date.now(), k: b.dataset.k || 'proj', id: iid, arg: b.dataset.id, act: act, who: (act === 'jtobaba' || act === 'babaask') ? '霸霸' : '大器' }; window.__actAt = 0;
+    var toBaba = (act === 'jtobaba' || act === 'babaask') || /【霸霸】/.test(it.runNote || '') || /baba|霸霸/i.test(it.runSession || '');   // 2026-11-25 v125：卡片已交給霸霸的，後續動作也送霸霸
+    pend = { at: Date.now(), k: b.dataset.k || 'proj', id: iid, arg: b.dataset.id, act: act, who: toBaba ? '霸霸' : '大器' }; window.__actAt = 0;
     if (act === 'stplan') pend.label = '就這樣請大器規劃步驟';
     drop();
-    var bid = iid; setTimeout(function () { Z.ACT.ai('daqi|proj:' + bid + '||'); }, 60);   // 等這次點擊處理完再開，不然會被點外面關掉
+    var bid = iid, label = (b.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 30), P0 = pend;
+    setTimeout(function () { openTo(pend ? pend.who : P0.who, bid, label, '', '', ''); }, 60);   // 等這次點擊處理完再開，不然會被點外面關掉
   }, true);
   window.__zlAsk = function (o) {
     var Z = window.__zl; if (!Z || !Z.ACT || !Z.ACT.ai || !o || !o.id) return;
-    pend = { at: Date.now(), id: o.id, who: o.who || '大器', label: o.label, go: o.go }; window.__actAt = 0; drop();
-    setTimeout(function () { Z.ACT.ai('daqi|proj:' + o.id + '||'); }, 60);
+    pend = { at: Date.now(), id: o.id, who: o.who || '大器', label: o.label, go: o.go, title: o.title, ctx: o.ctx }; window.__actAt = 0; drop();
+    setTimeout(function () { openTo(pend ? pend.who : (o.who || '大器'), o.id, o.what || (o.label || '').replace(/^就這樣/, ''), '', o.title, o.ctx); }, 60);
   };
   async function pjplan(b) {
     // 任務房「請大器規劃」：先把輸入框的事加成任務，開它的對話，老大講完按「就這樣請大器規劃」才送規劃請求
@@ -1111,7 +1151,7 @@
     var c = document.getElementById('chat'), open = !!(c && !c.hidden && c.classList.contains('in'));
     var young = pend && Date.now() - (pend.at || 0) < 2000;   // 剛按下去對話框還在打開，先別清
     if (!open) { if (!young) { drop(); pend = null; } return; }
-    var Z = window.__zl; if (pend && !young && Z && Z.S && Z.S.chat && Z.S.chat.ctx !== 'proj:' + pend.id) { drop(); pend = null; return; }
+    var Z = window.__zl; if (pend && !young && Z && Z.S && Z.S.chat && Z.S.chat.ctx !== (pend.ctx || ('proj:' + pend.id))) { drop(); pend = null; return; }
     if (pend) chip();
   }, 200);
 })();
