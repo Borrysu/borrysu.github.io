@@ -285,7 +285,7 @@ function sheetHTML(){const [t,id]=S.sheet.split(':');const head=(title)=>`<div c
   ${un?`<div class="btns">${B('綁定朋朋','sheet','bind','pri wide')}</div>`:`<p class="h4">${id==='daqi'?'直接跟大器說':'叫'+b.name+'做事'}</p><div class="btns">${id==='daqi'?B('跟大器說一句','talk',null,'pri wide'):b.cmds.map(c=>`<button class="btn" data-act="cmd" data-id="${id}:${esc(c)}">請${b.name}：${esc(c)}</button>`).join('')}</div>
   ${id==='daqi'?'':`<div class="btns">${B(`${b.name}這次整理得不對，告訴大器`,'talk',null,'ghost')}</div>`}`}`}
  if(t==='bind')return head('朋朋')+`<div class="btns">${S.bound?B('解除綁定','unbind',null,'wide'):B('綁定朋朋','bindok',null,'pri wide')}</div>`;
- if(t==='beats'){const bs=E()?[]:DB.beats;return head('燈號：各程式有沒有報到')+(bs.length?`<div class="rows" style="margin-top:12px">${bs.map(b=>`<div class="rowi"><div class="rowb"><span class="tx"><b>${b.late?'▲ ':'● '}${esc(b.name)}</b><small>${esc(b.note)}・${esc(b.ago)}</small></span><span class="rt">${chip(b.late?'沒報到':'正常',b.late)}</span></div></div>`).join('')}</div>${aifs([aiF('daqi','beats')])}`:`<p style="margin-top:10px">還沒有程式報到過。</p>`)}
+ if(t==='beats'){const bs=E()?[]:DB.beats;return head('燈號：各程式有沒有報到')+(bs.length?`<div class="rows" style="margin-top:12px">${bs.map(beatRow).join('')}</div>${aifs([aiF('daqi','beats')])}`:`<p style="margin-top:10px">還沒有程式報到過。</p>`)}
  if(t==='dec'||t==='why'){const d=DB.dec.find(x=>x.id===id);
   return head(esc(d.q))+`<div class="meta" style="margin-top:8px">${aiF('daqi','dec:'+d.id)}${chip(d.proj)}<span class="lbl">${esc(d.by)}問・${esc(d.ago)}・來自${esc(d.origin)}</span></div>${d.detail?`<p style="margin-top:8px">${esc(d.detail)}</p>`:''}${t==='dec'?decActs(d):''}${aifs([dinB('dec:'+d.id)])}`}
  if(t==='opp'){const o=DB.opp.find(x=>x.id===id);
@@ -1860,7 +1860,25 @@ function mapDec(d){let opts=d.options.map(o=>({k:o.key,label:o.label,note:o.note
 const JST={queued:['排隊中',0],running:['進行中',0],waiting_mac:['等 Mac 開機',1],waiting_you:['等你',1],failed:['失敗',1],done:['做完',0]};
 function mapJob(j){const s=JST[j.status]||['進行中',0];return {id:j.id,bot:LBOT(j.agent),who:j.agent||'大器',title:j.title||j.project||'工作',st:s[0],wait:!!s[1],ago:LAGO(j.updatedAt)}}
 function mapEvt(e){return {at:LAGO(e.at),who:e.actor||'系統',bot:LBOT(e.actor),text:(e.project?e.project+'：':'')+e.summary}}
-function mapBeat(b){const ev=b.every?Math.round(b.every/60):0;return {name:b.name,note:b.note||b.machine||'',late:b.late,ago:(b.lastAt?LAGO(b.lastAt):'還沒報到過')+(b.late&&ev?`，該 ${ev>=60?Math.round(ev/60)+' 小時':ev+' 分鐘'}一次`:'')}}
+// v199（msg 1206）：燈號每一列點開看白話說明：它是做什麼的、現在狀態代表什麼、異常時要做什麼
+const BEAT_HELP={
+ 'Mac 同步':['每半小時左右，把你 Mac 上的「巡查待辦」和「交接帳」同步到雲端，手機才看得到最新的。','你的 Mac 睡著、關機或沒網路，這個就會沒報到。','通常不用管，Mac 開機醒來會自己補上。超過半天都沒報到，再跟大器說一聲。'],
+ 'Mac 機會掃描（fund）':['每週一次，替你找補助、徵件這類機會，放進「機會」頁。','它一週才報到一次，所以顯示好幾天前是正常的。','超過 8 天沒動靜才需要跟大器說，平常不用管。'],
+ '公司 Mac':['每 10 分鐘確認公司那台 Mac Studio（肉咖住的那台）有開機、連得上。','沒報到代表公司電腦可能關機或斷網。','不影響你個人這邊。需要用到肉咖或公司資料時才處理，找大器說一聲。'],
+ '大器 LINE 收訊':['接收 LINE 傳給大器的訊息的程式，大約每 35 分鐘自己檢查一次有沒有活著。','沒報到代表收 LINE 的程式可能掛了，傳 LINE 給大器會沒人收到。','先等看門狗自己重開（約 10 分鐘），還是沒好再跟大器說。'],
+ '大器 LINE 看門狗':['每 10 分鐘巡一次，確認收 LINE 的程式和 LINE 的連線都正常，壞了會自己重開。','沒報到代表連「看守的人」都沒在跑，LINE 出狀況也沒人救。','請跟大器說一聲，這個比較要緊。'],
+ '大器工作區同步':['每 15 分鐘把大器的規則、技能、交接資料備份到雲端（GitHub）。右邊那串英數字是這次備份的編號。','沒報到代表最近的改動還沒備份上去。','不影響你用，備份不上去時換電腦才會看到舊版。超過一天沒報到再跟大器說。'],
+ '大器引擎':['決定現在由哪一個大器（Claude 或 Codex 代班）處理事情。備註會寫目前是誰、有沒有自動切換。','寫著「Claude」是正常；寫「Codex 代班」代表 Claude 額度用完，換人頂；寫「兩邊額度用完」代表都沒得用。','只有看到「兩邊額度用完」才需要處理，跟大器說，不用自己動手。'],
+ '提醒事項同步':['把你手機、Mac 上的「提醒事項」同步進逐流，讓代辦和提醒對得上。','沒報到代表新加的提醒可能暫時沒進來。','通常不用管，等 Mac 醒來會補。'],
+ '肉咖 LINE':['公司 LINE 官方帳號背後的 AI「肉咖」有沒有在線，能不能收訊息。','沒報到代表公司 LINE 可能暫時沒人回。','在公司群有急事沒人回時，跟大器說一聲請他看；不然不用管。'],
+ '逐流轉交':['把你在逐流寫的話、編修意見，轉給大器和監工的程式，每 15 秒查一次有沒有新訊息，每 5 分鐘報到一次。','沒報到代表你在逐流送出的話，可能沒人接。','先換個管道（LINE）跟大器說一聲，他會去重開。'],
+ '雲端備援待命':['萬一你的 Mac 失聯，雲端這邊有個備援機制可以叫醒另一個大器來接手。這個燈是確認備援機制有沒有準備好，一天確認一次。','「正常」代表備援準備好了；沒報到代表備援可能失效。','平常不用管；沒報到就跟大器說，他會補設。'],
+ '雲端大器':['雲端那個大器每次排程醒來看一眼的結果，備註寫看到什麼（例如「Mac 在線，無事」）。一週報到一次是正常的。','「正常」代表它醒來檢查過了。','不用管，備註寫異常再跟大器說。'],
+ '雲端大器叫醒':['記錄雲端大器最近一次被叫醒的原因（例如 Mac 失聯）。','這是留紀錄，不是好壞燈。備註寫得出原因，代表它有被叫醒過。','不用管；常常被叫醒的話，代表 Mac 常常失聯，可以跟大器說。']};
+function beatRow(b){const k='bt:'+b.name,o=!!S.open[k],h=BEAT_HELP[b.name]||['這個程式是做什麼的，我還沒寫說明。','燈亮「正常」代表它有照時間報到。','沒報到時跟大器說一聲就好。'],ev=b.ev?(b.ev>=60?Math.round(b.ev/60)+' 小時':b.ev+' 分鐘'):'';
+ const st=b.late?`已經超過它該報到的時間${ev?'（約每 '+ev+' 報到一次）':''}沒聽到它的消息，所以標「沒報到」。`:`它有在預期的時間內報到${ev?'（約每 '+ev+' 一次）':''}，所以是「正常」。`;
+ return `<div class="rowi"><button class="rowb" data-act="open" data-id="${esc(k)}" aria-expanded="${o}"><span class="tx"><b>${b.late?'▲ ':'● '}${esc(b.name)}</b><small>${esc(b.note)}・${esc(b.ago)}</small></span><span class="rt">${chip(b.late?'沒報到':'正常',b.late)}<span class="chev" aria-hidden="true">${o?'⌃':'⌄'}</span></span></button></div>${o?`<div class="rowi"><div class="rowx fadein" style="padding-top:14px"><dl class="kvs" style="margin-top:0"><dt>它在做什麼</dt><dd>${esc(h[0])}</dd><dt>現在這個燈</dt><dd>${esc(st)}</dd><dt>怎麼看異常</dt><dd>${esc(h[1])}</dd><dt>你要做什麼</dt><dd>${esc(h[2])}</dd></dl></div></div>`:''}`}
+function mapBeat(b){const ev=b.every?Math.round(b.every/60):0;return {ev,name:b.name,note:b.note||b.machine||'',late:b.late,ago:(b.lastAt?LAGO(b.lastAt):'還沒報到過')+(b.late&&ev?`，該 ${ev>=60?Math.round(ev/60)+' 小時':ev+' 分鐘'}一次`:'')}}
 function oppDue(c){const dd=LDAYS(c.deadline),ex=LDAYS(c.expiresAt);
  if(dd!=null)return {days:dd,due:dd<0?'已過截止':dd===0?'今天截止':dd===1?'明天截止':dd+' 天後截止'};
  if(ex!=null&&c.status!=='snoozed')return {days:ex,due:ex<=0?'今天收走':ex+' 天後收走',exp:true};
@@ -2597,7 +2615,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v198');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v199');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
