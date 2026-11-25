@@ -1844,3 +1844,9 @@ button.jsugb:hover{background:color-mix(in srgb,var(--c-daqi) 20%,var(--sf))}but
 @keyframes ckInL{from{transform:translateX(28px);opacity:.2}to{transform:none;opacity:1}}@keyframes ckInR{from{transform:translateX(-28px);opacity:.2}to{transform:none;opacity:1}}
 .ckbox .cklist.ckin-l{animation:ckInL .2s ease-out}.ckbox .cklist.ckin-r{animation:ckInR .2s ease-out}
 .ckbox{transition:min-height .3s ease}
+/* v144 msg 910 */
+.tlpop{position:fixed;z-index:60;max-width:260px;display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;padding:8px 12px;border:0;border-radius:12px;background:var(--ink,#f3efe0);color:var(--bg,#111);font:inherit;font-size:13px;text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.35);opacity:0;transform:translateY(6px) scale(.96);pointer-events:none;transition:opacity .15s ease,transform .15s ease}
+.tlpop.in{opacity:1;transform:none;pointer-events:auto}.tlpop small{opacity:.7;font-size:12px}.tlpop em{flex-basis:100%;font-style:normal;font-weight:700;font-size:12px;color:#7a4dff}
+@keyframes tlInL{from{transform:translateX(36px);opacity:.15}to{transform:none;opacity:1}}@keyframes tlInR{from{transform:translateX(-36px);opacity:.15}to{transform:none;opacity:1}}
+section.tl .tlpg.tlin-l{animation:tlInL .22s ease-out}section.tl .tlpg.tlin-r{animation:tlInR .22s ease-out}
+@media (prefers-reduced-motion:reduce){.tlpop{transition:none}section.tl .tlpg{animation:none!important}}

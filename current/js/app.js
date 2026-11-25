@@ -2544,7 +2544,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v142');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v143');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -4691,7 +4691,9 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
    <div class="tlwk" role="tablist" aria-label="哪一週"><button role="tab" data-act="tlwk" data-id="0" aria-selected="${!WKP}">這 7 天</button><button role="tab" data-act="tlwk" data-id="1" aria-selected="${!!WKP}">下 7 天</button><small>左右滑也可以換</small></div>
    <div class="tlruler" aria-hidden="true"><span class="tll"></span><span class="tlbar tlr">${ruler}</span><span class="tlf"></span></div>
    <div class="tlpg">${rows}</div><p class="cbhint">點色塊改那件、點空白新增；點日期，下面切到那天時間軸</p></section>`}
- ACT.tlwk=id=>{S.tlwk=+id;S.calsel=null;render('keep')};
+ ACT.tlwk=id=>{const n=+id,old=S.tlwk?1:0,el=document.querySelector('section.tl'),top=el?el.getBoundingClientRect().top:null;S.tlwk=n;S.calsel=null;render('keep');   // v144 msg 910：「左右滑動 不流暢絲滑 會跳動」→ 位置固定、整頁從滑的方向滑進來
+  const e2=document.querySelector('section.tl');if(e2&&top!=null){const dy=e2.getBoundingClientRect().top-top;if(Math.abs(dy)>1)window.scrollBy(0,dy)}
+  const pg=e2&&e2.querySelector('.tlpg');if(pg&&n!==old&&!RM){pg.classList.remove('tlin-l','tlin-r');void pg.offsetWidth;pg.classList.add(n>old?'tlin-l':'tlin-r')}};
  {let X0=0,Y0=0,on=0;document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];on=t&&e.target.closest&&e.target.closest('section.tl .tlpg')?1:0;if(on){X0=t.clientX;Y0=t.clientY}},{passive:true});
   document.addEventListener('touchend',e=>{if(!on)return;on=0;const t=e.changedTouches&&e.changedTouches[0];if(!t)return;const dx=t.clientX-X0,dy=t.clientY-Y0;if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.6)return;if(dx<0&&!S.tlwk)ACT.tlwk('1');else if(dx>0&&S.tlwk)ACT.tlwk('0')},{passive:true});}
  // v139 msg 899 老大：「點開顯示的內容跟下面的行事曆差異不大 這樣好像意義不大 再想想這頁怎麼做比較好？」
@@ -4708,8 +4710,17 @@ window.__zl=Object.assign(window.__zl||{},{openBotChat:(b,ctx,auto)=>{if(!BOTS[b
   e.preventDefault();e.stopPropagation();const n=+row.dataset.id,r=bar.getBoundingClientRect(),h=TL0+Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*(TL1-TL0);
   const segs=[...bar.querySelectorAll('.tlseg[data-eid]')].map(x=>({id:x.dataset.eid,a:+x.dataset.a,b:+x.dataset.b})).filter(x=>x.id);
   const hit=segs.find(x=>h>=x.a&&h<=x.b)||segs.filter(x=>Math.min(Math.abs(h-x.a),Math.abs(h-x.b))<=0.35).sort((p,q)=>Math.min(Math.abs(h-p.a),Math.abs(h-p.b))-Math.min(Math.abs(h-q.a),Math.abs(h-q.b)))[0];
-  if(hit){ACT.sheet('cal:'+hit.id);return}
-  const hh=Math.max(TL0,Math.min(23.5,Math.floor(h*2)/2)),t=String(Math.floor(hh)).padStart(2,'0')+':'+(hh%1?'30':'00');ACT.capnew(n+'|'+t)},true);
+  // v144 msg 910 老大：「點選的時候是希望小小浮出那是啥 點了浮出的才編修？」→ 先在點的位置浮出小標籤（那件是什麼／這段空多久），點標籤才開編修或新增
+  const f2=v=>String(Math.floor(v)).padStart(2,'0')+':'+String(Math.round((v%1)*60)).padStart(2,'0');
+  if(hit){const e2=calAll().find(x=>String(x.id)===String(hit.id));tlPop(e.clientX,r.top,`<b>${esc(f2(hit.a))}～${esc(f2(hit.b))}</b> ${esc(e2?String(e2.n||'').replace(/^張弛排：/,''):'')}${e2&&e2.cs?`<small>${esc(e2.cs)}</small>`:''}<em>點這裡改 ›</em>`,()=>ACT.sheet('cal:'+hit.id));return}
+  const prev=Math.max(h<FW0?TL0:FW0,...segs.filter(x=>x.b<=h).map(x=>x.b)),next=Math.min(h>FW1?TL1:FW1,...segs.filter(x=>x.a>=h).map(x=>x.a));
+  const hh=Math.max(TL0,Math.min(23.5,Math.floor(h*2)/2)),t=String(Math.floor(hh)).padStart(2,'0')+':'+(hh%1?'30':'00');
+  tlPop(e.clientX,r.top,`<b>空檔 ${esc(f2(prev))}～${esc(f2(next))}</b><small>空 ${Math.round((next-prev)*2)/2} 小時</small><em>＋ 在 ${t} 新增 ›</em>`,()=>ACT.capnew(n+'|'+t))},true);
+ function tlPop(x,y,html,go){let p=document.getElementById('tlPop');if(!p){p=document.createElement('button');p.id='tlPop';p.type='button';p.className='tlpop';document.body.appendChild(p)}
+  p.innerHTML=html;p.onclick=ev=>{ev.stopPropagation();p.classList.remove('in');go()};p.classList.remove('in');p.style.left='0px';p.style.top='0px';p.hidden=false;
+  const w=p.offsetWidth,hgt=p.offsetHeight,L=Math.max(8,Math.min(innerWidth-w-8,x-w/2));p.style.left=L+'px';p.style.top=Math.max(8,y-hgt-6)+'px';void p.offsetWidth;p.classList.add('in')}
+ document.addEventListener('click',e=>{const p=document.getElementById('tlPop');if(p&&p.classList.contains('in')&&!(e.target.closest&&(e.target.closest('#tlPop')||e.target.closest('section.tl .tlbar'))))p.classList.remove('in')},true);
+ addEventListener('scroll',()=>{const p=document.getElementById('tlPop');if(p)p.classList.remove('in')},{passive:true});
  // 2026-11-25 v131 老大：「立體樓改視覺呈現 然後可以收合」→ 兩週負荷圈：一天一圈，圈越滿越忙（9～22 點），中間是還空幾小時；按「我要找 N 小時」時圈上打 ✓／✕。點一圈＝展開下面那天。收合記在這台裝置。
  const RINGK='zl_ring';const ringShut=()=>{try{return localStorage.getItem(RINGK)==='1'}catch(e){return false}};
  ACT.ringtog=()=>{try{localStorage.setItem(RINGK,ringShut()?'0':'1')}catch(e){}render('keep')};
