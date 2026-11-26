@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v235');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v236');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3229,17 +3229,18 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  let PG={ms:null,err:'',busy:0,at:0,all:0};
  // v193（msg 1171、1175）：狀態以 handled_at 為主。只有「【面板修改意見】」和 mcp 轉單算編修；一般聊天問句不列。
  // 面板意見：handled_at 有值且之後有回覆＝已處理（有版號寫「已上線 vN」，沒有寫「已回覆」）；handled_at 空才是已收／處理中。mcp 票號照 v188、v189 精確對。
- function progState(ms){const out=[],byT={},TK=/mcp-[0-9a-f]{12}/i,PR=/^【面板修改意見】/;
-  (ms||[]).forEach(m=>{const body=String(m.body||''),tk=(TK.exec(body)||[''])[0].toLowerCase(),vm=/v(\d{2,4})\s*已上線|已上線\s*v(\d{2,4})/.exec(body),vv=vm?[0,vm[1]||vm[2]]:null;
-   if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk,rep:0};byT[tk]=e;out.push(e);if(vv&&!/請求/.test(body.slice(0,60))){e.st='done';e.ver='v'+vv[1]}return}
-    if(vv){e.st='done';e.ver='v'+vv[1]}else if(e.st==='recv')e.st='work';return}
-   if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'');if(!PR.test(b))return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:'',rep:0,handled:!!m.handledAt})}
-   // v231（msg 1598）：自動回的「這件我接到了」「收到，正在看」「收到。我讓…去做」只算處理中，不算已回覆；要有結果（已上線、改好、修好、做完、原因…）才算處理完。不再用「已標處理」當完成。
-   else if(m.kind==='bot'||m.kind==='daqi'){const OUT=/(已上線|上線了|改好|修好|做完|處理完|已還原|還原了|已改|找到了|原因[：:是]|查到|回答你|結論|建成|建好|補好|補上|放進|上傳好|已經處理|併進|合併了|已合併|收掉了)/.test(body)&&!/^(老大，這件我接到了|收到，正在看)/.test(body),ACKB=!OUT;
-    const ids=(body.match(/(?:msg\s*)?\b(1\d{3,4})\b/g)||[]).map(x=>+x.replace(/\D/g,'')),cand=out.filter(x=>!x.tk),hit=ids.length?cand.filter(x=>ids.includes(+x.id)):[];
-    const tgt=hit.length?hit:(()=>{const r=cand.filter(x=>OUT?!x.out:!x.ack&&!x.out);return r.length?[r[r.length-1]]:[]})();   // 回覆有寫 msg 編號就對那幾則；沒寫就對最近一則還沒回的
-    tgt.forEach(x=>{if(OUT)x.out=1;else x.ack=1});if(vv){const open=out.filter(x=>!x.tk&&!x.ver);if(open.length)open[0].ver='v'+vv[1]}}});
-  out.forEach(x=>{if(!x.tk)x.st=x.ver?'done':x.out?'replied':x.ack?'work':'recv'});
+ function progState(ms){const out=[],byT={},TK=/mcp-[0-9a-f]{12}/i,AUTO=/^(老大，這件我接到了|收到，正在看|收到。我讓)/;
+  // v236（msg 1666）：三種狀態就好：未處理（沒回或只有自動回的「接到了」）、進行中（有真人回覆但還沒結果）、已完成（寫出結果：已上線 vN、改好、修好、結論…）。跟監工講的每一則都列，不只【面板修改意見】。
+  (ms||[]).forEach(m=>{const body=String(m.body||''),tk=(TK.exec(body)||[''])[0].toLowerCase(),vm=/v(\d{2,4})\s*已上線|已上線\s*v(\d{2,4})/.exec(body),vv=vm?(vm[1]||vm[2]):'';
+   if(tk){let e=byT[tk];if(!e){e={id:m.id,at:m.at,body,st:'recv',ver:'',tk};byT[tk]=e;out.push(e);if(vv&&!/請求/.test(body.slice(0,60))){e.st='done';e.ver='v'+vv}return}
+    if(vv){e.st='done';e.ver='v'+vv}else if(e.st==='recv'&&!AUTO.test(body))e.st='work';return}
+   if(m.kind==='user'){const b=body.replace(/^［老大在逐流[^］]*］\n?/,'').trim();if(!b)return;out.push({id:m.id,at:m.at,body:b,st:'recv',ver:'',tk:''});return}
+   if(m.kind!=='bot'&&m.kind!=='daqi')return;if(AUTO.test(body))return;   // 自動回的「接到了」什麼都不算
+   const OUT=!!vv||/(已上線|上線了|改好|修好|做完|處理完|已還原|還原了|已改|找到了|原因[：:是]|查到|回答你|結論|建成|建好|補好|補上|放進|上傳好|已經處理|併進|合併了|已合併|收掉了|已完成|已處理|確定了|答案是|實話|好了|接上了|測試結果|可以，|能解決|改法)/.test(body);
+   const ids=(body.match(/(?:msg\s*)?\b(1\d{3,4})\b/g)||[]).map(x=>+x.replace(/\D/g,'')),cand=out.filter(x=>!x.tk),hit=ids.length?cand.filter(x=>ids.includes(+x.id)):[];
+   const tgt=hit.length?hit:(()=>{const r=cand.filter(x=>!x.out);return r.length?[r[r.length-1]]:[]})();   // 回覆有寫 msg 編號就對那幾則；沒寫就對最近一則還沒完成的
+   tgt.forEach(x=>{if(OUT){x.out=1;if(vv)x.ver='v'+vv}else x.prog=1})});   // 版號只給這則回覆對到的那幾則（原本配給最舊那則，害完成的顯示成已回覆）
+  out.forEach(x=>{if(!x.tk)x.st=x.out?'done':x.prog?'work':'recv'});
   return out.reverse()}
  function progLoad(){if(PG.busy&&Date.now()-PG.busy<12000)return;PG.busy=Date.now();PG.err='';
   if(MK.box==='prog')box('prog');
@@ -3248,17 +3249,17 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
  function progHTML(){const busy=!!PG.busy;
   if(PG.err&&!PG.ms)return `<p class="mkw">讀不到進度</p><p class="mkp">${esc(PG.err)}${navigator.onLine===false?'（現在離線，連上再按）':''}</p><div class="btns"><button class="btn ghost" data-mk="prog"${busy?' disabled':''}>${busy?'讀取中…':'再讀一次'}</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`;
   if(!PG.ms)return `<p class="mkw">編修進度</p><p class="mkp">讀取中…</p>`;
-  const all=progState(PG.ms),lab={recv:'已收',work:'處理中',replied:'已回覆',done:'已處理'},week=Date.now()-7*864e5;
+  const all=progState(PG.ms),lab={recv:'未處理',work:'進行中',done:'已完成'},week=Date.now()-7*864e5;
   const pend=x=>x.st==='recv'||x.st==='work'||(x.tk&&x.st!=='done');
   const TS=v=>typeof v==='number'?v:Date.parse(v);const open=all.filter(x=>pend(x)||TS(x.at)>=week&&!x.old),fold=all.filter(x=>!pend(x)&&TS(x.at)<week);
   const np=all.filter(pend).length,L=PG.all?all:all.filter(pend).concat(all.filter(x=>!pend(x)&&TS(x.at)>=week).slice(0,15)).sort((a,b)=>TS(b.at)-TS(a.at))   /* v231：沒處理的一定全列，不被前 15 則切掉 */,hid=all.length-L.length;
   const first=b=>{const t=String(b).replace(/^【面板修改意見】[^\n]*\n/,'');const m=/^\s*\d+\.\s*(.+)/m.exec(t);return cut((m?m[1]:t).replace(/\s+/g,' ').trim(),46)},cnt=b=>{const n=(String(b).match(/^\s*\d+\. /gm)||[]).length;return n>1?`（共 ${n} 則）`:''};
   const tm=at=>{if(!at)return '';const d=new Date(at);return isNaN(d)?'':new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(d)};
   const tt=PG.at?new Intl.DateTimeFormat('zh-TW',{timeZone:'Asia/Taipei',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).format(new Date(PG.at)):'';
-  const chip=x=>x.st==='done'?'已上線'+(x.ver?' '+x.ver:''):(x.st==='replied'&&x.ver?'已上線 '+x.ver:lab[x.st]);
+  const chip=x=>x.st==='done'?'已完成'+(x.ver?'・'+x.ver:''):lab[x.st];
   return `<p class="mkw">編修進度・未處理 ${np}${busy?'（更新中…）':''}</p>`+(PG.err?`<p class="mkp">更新失敗：${esc(PG.err)}，下面是上次讀到的</p>`:'')+(L.length?`<ul class="mkpg">${L.map(x=>`<li class="pg-${x.st}"><div class="pgh"><b>${x.tk?esc(x.tk):'#'+esc(String(x.id))}</b>${x.tk?'<span class="pgai">AI 轉單</span>':''}<span class="pgs">${esc(chip(x))}</span><small>${esc(tm(x.at))}</small></div><p>${esc(first(x.body))}${cnt(x.body)}</p></li>`).join('')}</ul>`:'<p class="mkp">沒有未處理的。</p>')
    +(hid>0&&!PG.all?`<div class="btns"><button class="btn ghost" data-mk="progall">已處理 ${hid} 則 ›</button></div>`:PG.all&&all.length>15?`<div class="btns"><button class="btn ghost" data-mk="progall">收起已處理</button></div>`:'')
-   +`<p class="mkp">更新 ${esc(tt||'—')}。有寫出結果的回覆才算處理完；自動回的「收到、接到了」只算處理中。只算【面板修改意見】和 AI 轉單，一般聊天不算。</p><div class="btns"><button class="btn ghost" data-mk="prog"${busy?' disabled':''}>${busy?'更新中…':'重新整理'}</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
+   +`<p class="mkp">更新 ${esc(tt||'—')}。自動回的「接到了」不算回覆，仍是未處理；有人回但還沒結果是進行中；寫出結果（已上線、改好、結論）才是已完成。你跟監工講的每一則都列。</p><div class="btns"><button class="btn ghost" data-mk="prog"${busy?' disabled':''}>${busy?'更新中…':'重新整理'}</button><button class="btn ghost" data-mk="cancel">關閉</button></div>`}
  function box(kind){let x=$('#mkBox');if(!kind){if(x)x.remove();MK.box='';return}
   MK.box=kind;if(!x){x=document.createElement('section');x.id='mkBox';x.className='mkbox';x.setAttribute('role','dialog');x.setAttribute('aria-modal','false');document.body.appendChild(x)}
   if(kind==='prog'){x.setAttribute('aria-label','編修進度');x.innerHTML=progHTML();return}
