@@ -2101,3 +2101,83 @@ button.pask .chev{margin-left:auto;color:var(--ink2)}
 .ckbox .ckh .ckarr:active{background:rgba(127,127,127,.22)}
 .ckbox .ckh h2 small{white-space:nowrap}
 .mkpg .pg-recv .pgs{background:rgba(255,69,58,.2)}
+/* v239（msg 1666、1670）：節奏時長膠囊、專注、紀錄（全部用外觀的色票與字體） */
+.ckbox .ckh .ckfoc{background:var(--pri);color:var(--pri-ink)}
+.ckbox .ckh .ckfoc svg{color:currentColor}
+.ckbox .ck.want{position:relative}
+.ckdur{flex:none;align-self:center;min-height:36px;min-width:48px;padding:0 10px;margin-left:4px;border:1px solid var(--line);border-radius:var(--rb);background:none;color:var(--ink2);font:inherit;font-size:13px;font-variant-numeric:tabular-nums;cursor:pointer;white-space:nowrap}
+.ckdur.est{border-style:dashed}
+.ckdur:active{background:rgba(127,127,127,.15)}
+.ckdurp{position:fixed;z-index:57;width:min(320px,88vw);background:var(--solid);border:1px solid var(--line);border-radius:min(var(--r),18px);padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.ckdurp p{margin:0 0 8px;font-size:13px;color:var(--ink2)}
+.ckdurp .ckdc{display:flex;flex-wrap:wrap;gap:6px}
+.ckdurp button{min-height:44px;min-width:52px;padding:0 10px;border:1px solid var(--line);border-radius:var(--rb);background:var(--sf2);color:var(--ink);font:inherit;font-size:14px;cursor:pointer}
+.ckdurp button[aria-pressed="true"]{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.ckdurp .ckdd2{margin:8px 0 0;color:var(--ink)}
+.ckdurp .ckdd2 button{min-height:36px;margin-left:6px}
+.ckft{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--ink2)}
+.ckft span{flex:1;min-width:0}
+.ckflog{flex:none;min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:var(--rb);background:none;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+body.fselmode .ckbox .ck.want:not(.done){cursor:pointer}
+body.fselmode .ckbox .ck.want .cklp,body.fselmode .ckbox .ck.want .ckdur{visibility:hidden}
+body.fselmode .ckbox .ck.want:not(.done) .ckbx{border-radius:7px}
+body.fselmode .ckbox .ck.want.fpick .ckbx{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+body.fselmode .ckbox .ck.want.fpick .ckbx::after{content:"✓";font-weight:800}
+body.fselmode .ckbox .ck.want.done{opacity:.45}
+.fbar{position:fixed;left:0;right:0;bottom:0;z-index:56;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--bar);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid var(--line)}
+.fbar .fbi{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.fbar .fbr{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13px;color:var(--ink2)}
+.fbar .fbr span{margin-right:2px}
+.fbar .fbr button{min-height:40px;padding:0 12px;border:1px solid var(--line);border-radius:var(--rb);background:none;color:var(--ink);font:inherit;font-size:13px;cursor:pointer}
+.fbar .fbr button[aria-pressed="true"]{background:var(--pri);color:var(--pri-ink);border-color:var(--pri)}
+.fbar .fbb{display:flex;gap:8px}.fbar .fbb .pri{flex:1}
+html.fovon,html.fovon body{overflow:hidden}
+.fov{position:fixed;inset:0;z-index:58;background:var(--bg);color:var(--ink);overflow-y:auto;padding:calc(14px + env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) calc(18px + env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
+.fov .fvi{max-width:520px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;align-items:center;gap:6px}
+.fov .fvt{width:100%;display:flex;align-items:center;justify-content:space-between;font-size:13px;color:var(--ink2)}
+.fov .fvic{min-width:44px;min-height:44px;border:0;border-radius:12px;background:rgba(127,127,127,.14);color:var(--ink);display:grid;place-items:center;font:inherit;font-size:18px;cursor:pointer}
+.fov .fvic svg{width:20px;height:20px}
+.fov .fvr{position:relative;width:min(70vw,300px);aspect-ratio:1;max-width:100%;margin:14px 0 6px}
+.fov .fvr svg{width:100%;height:100%;transform:rotate(-90deg)}
+.fov .fvr .trk{fill:none;stroke:var(--line);stroke-width:8}
+.fov .fvr .arc{fill:none;stroke:var(--ink);stroke-width:8;stroke-linecap:round}
+.fov .fvr.rest .arc{stroke:var(--ok)}
+.fov .fvr.over .arc{stroke:#f5b301}
+.fov .fvx{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fov .fvx b{font-family:var(--fn);font-size:clamp(44px,15vw,66px);font-weight:700;letter-spacing:var(--ls);font-variant-numeric:tabular-nums}
+.fov .fvr.over .fvx b{color:#f5b301}
+.fov .fvx small{font-size:13px;color:var(--ink2)}
+.fov .fvn,.fov .fvh{font-family:var(--fd);font-weight:var(--wd);font-size:24px;letter-spacing:var(--ls);margin:4px 0 0;text-align:center;overflow-wrap:anywhere;text-wrap:balance}
+.fov .fvp{margin:0;font-size:14px;color:var(--ink2);text-align:center}
+.fov .fvd{width:100%;margin:10px 0 0;padding:10px 12px;border-radius:min(var(--r),14px);background:rgba(245,179,1,.15);border:1px solid rgba(245,179,1,.4);font-size:14px;line-height:1.5;color:var(--ink)}
+.fov .fvq{width:100%;margin-top:auto;font-size:14px;color:var(--ink2)}
+.fov .fvq p{margin:12px 0 4px}.fov .fvq ol{margin:0 0 10px;padding-left:20px}
+.fov .fvb{width:100%;display:flex;gap:8px;margin-top:8px}
+.fov .fvb .btn{flex:none;min-height:48px}.fov .fvb .btn.pri{flex:1}
+.fov .fvb .btn.ghost{flex:1}
+.fov .fvtb{width:100%;border-collapse:collapse;font-size:14px;margin:8px 0}
+.fov .fvtb th,.fov .fvtb td{text-align:left;padding:8px 4px;border-bottom:1px solid var(--line)}
+.fov .fvtb td.num,.fov .fvtb th:not(:first-child){text-align:right;white-space:nowrap}
+.fov .slow{color:#d98e00}.fov .fast{color:var(--ok)}
+.fov em{font-style:normal}
+.fov .fvk{width:100%;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:10px 0 4px}
+.fov .fvk div{border:1px solid var(--line);border-radius:min(var(--r),16px);padding:10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.fov .fvk b{font-family:var(--fn);font-size:22px;font-variant-numeric:tabular-nums}
+.fov .fvk small{font-size:12px;color:var(--ink2)}
+.fov.fvlog .fvi,.fov .fvlog{align-items:stretch}
+.fov h3{font-size:15px;margin:14px 0 4px;width:100%}
+.fov .fvh2{list-style:none;margin:0;padding:0;width:100%}
+.fov .fvh2 li{display:flex;flex-direction:column;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.fov .fvh2 li span{color:var(--ink2)}
+.fov details{width:100%;border-bottom:1px solid var(--line)}
+.fov summary{display:flex;justify-content:space-between;min-height:44px;align-items:center;cursor:pointer;font-size:14px}
+@media (prefers-reduced-motion: reduce){.fov *{transition:none!important}}
+.ckbox .ckft{flex-wrap:wrap}
+.ckbox .ckft .ckfoc{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:0 14px;border:0;border-radius:var(--rb);background:var(--pri);color:var(--pri-ink);font:inherit;font-size:15px;font-weight:600;cursor:pointer}
+.ckbox .ckft .ckfoc svg{width:18px;height:18px}
+.ckbox .ckft .ckflog{min-height:44px}
+.ckbox .ckft2{margin:6px 2px 0;font-size:12px;color:var(--ink2)}
+body.fselmode .ckbox .ck.want.fpick .ckbx{background:#f5b301!important;border-color:#f5b301!important;color:#000!important;border-radius:7px!important}
+body.fselmode .ckbox .ck.want:not(.done):not(.fpick) .ckbx{border-radius:7px!important}
+.fov .fvlog .fvp{text-align:left}
+.ckbox .ck.want.durop{z-index:21}

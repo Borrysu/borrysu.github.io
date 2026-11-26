@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v238');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v239');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5061,11 +5061,12 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
    const relTx=r?`${r.by==='user'?'你指定':'自動'}：${esc(clip(r.short||r.title,14))}${r.st?'（'+r.st+'）':''}`:'',rel=r?(tmp?`<span class="ckrel">${relTx}</span>`:`<button class="ckrel${r.by==='user'?' me':''}" data-act="ckrelmenu" data-id="${esc(wid)}" aria-label="關聯：${relTx.replace(/<[^>]*>/g,'')}，點開可更換或取消">${relTx} ›</button>`):'';
    if(ed===wid&&!d){const t0=w.note.time||sp.tm||'';
     return `<li class="ck want edit" data-ref="want:${esc(wid)}"><div class="cke"><input id="ckEt" type="text" value="${esc(title)}" aria-label="要做的事"><div class="ckerow"><label class="cketm">時間<input id="ckEtm" type="text" inputmode="numeric" placeholder="例 22:30" value="${esc(t0)}" data-day="${n}" autocomplete="off" aria-label="時間，24 小時制，例如 22:30" style="width:7em"></label>${B('存好','cksave',wid,'pri sm')}${B('安排這件','ckarrange1',wid,'sm')}${splitWants(title).length>1?B('拆開','cksplit',wid,'sm'):''}${B('取消','ckcancel','','sm')}${B('刪除','ckdrop',wid,'sm warn')}</div><p class="ckhit" id="ckHit" aria-live="polite">${esc(hitOf(n,t0))}</p></div><div class="ckrr" data-wid="${esc(wid)}"><p class="ckrl">關聯：${r?relTx:'沒有'}</p><input id="ckRelQ" type="text" placeholder="換成別張：打案名" autocomplete="off" aria-label="換成別張專案卡"><div id="ckRelS" class="ckrc"></div><div class="ckrb"><button type="button" class="btn sm" data-rs="none" data-wid="${esc(wid)}">不關聯</button><button type="button" class="btn sm" data-rs="auto" data-wid="${esc(wid)}">重新自動分析</button>${r&&(DB.proj||[]).some(q=>q.id===r.id)?`<button type="button" class="btn sm" data-rs="view" data-wid="${esc(wid)}" data-cid="${esc(r.id)}">看這張卡 ›</button>`:''}</div></div></li>`}
-   return `<li class="ck want${d?' done':''}${sg&&sg.anc&&!d?' anc':''}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.arr?' arr':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.arr?'按「安排」排的':sg.tide?'張弛排的':''}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(title)}</button>${da?`<small class="ckdn">${esc(da)} 打勾</small>`:''}${rel}</div>${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}${sg&&(sg.own||sg.arr)&&!d&&!tmp?`<button class="ckdel ckanc${sg.anc?' on':''}" data-act="ckanchor" data-id="${esc(wid)}" aria-pressed="${!!sg.anc}" aria-label="${sg.anc?'已錨定，安排不會動這件的時間；點了解除':'錨定這件的時間，安排時不動它'}"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="ancOn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset=".55" stop-color="#f5b301"/><stop offset="1" stop-color="#a86f00"/></linearGradient><linearGradient id="ancOff" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9b9c6"/><stop offset="1" stop-color="#6d6d7a"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35" fill="none" stroke="#000" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="10" r="3.6"/><path d="M20 14v17M13.5 18h13M10.5 24.5c1.5 5 5 7.5 9.5 7.5s8-2.5 9.5-7.5"/></g><g class="ag" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="10" r="3.6"/><path d="M20 14v17M13.5 18h13M10.5 24.5c1.5 5 5 7.5 9.5 7.5s8-2.5 9.5-7.5"/></g><path d="M18.6 16.8v10" stroke="#fff" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/></svg></button>`:''}<button class="ckdel ckx" data-act="ckdrop" data-id="${esc(wid)}" aria-label="刪除這件"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="ckxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a80"/><stop offset=".55" stop-color="#f0453a"/><stop offset="1" stop-color="#b8231b"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35"><path d="M12 12l16 16M28 12L12 28" stroke="#000" stroke-width="8.5" stroke-linecap="round"/></g><path d="M12 12l16 16M28 12L12 28" stroke="url(#ckxg)" stroke-width="8" stroke-linecap="round"/><path d="M13.2 12.4l4.6 4.6M26.8 12.4l-2.4 2.4" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/></svg></button></span>`}</li>`};   // v145 msg 914：刪除改成跟小臉同風格的圓形 ✕
+   return `<li class="ck want${d?' done':''}${sg&&sg.anc&&!d?' anc':''}${(()=>{try{return FS.on&&FS.ids.includes(wid)?' fpick':''}catch(e){return ''}})()}" data-ref="want:${esc(wid)}" data-wid="${esc(wid)}"><button class="ckbx" data-act="${d?'ckundone':'ckdone'}" data-id="${esc(wid)}" aria-pressed="${d}" aria-label="${d?'改回沒做':'做完了'}"${tmp?' disabled':''}>${d?'✓':''}</button><div class="ckm">${sg?`<b class="num cksg${sg.own?' own':''}${sg.arr?' arr':''}${sg.none?' none':''}" title="${sg.own?'你寫的時間':sg.arr?'按「安排」排的':sg.tide?'張弛排的':''}">${esc(sg.t)}</b>`:''}<button class="ckt" data-act="ckedit" data-id="${esc(wid)}"${d||tmp?' disabled':''} aria-label="改「${esc(title)}」">${esc(typeof cleanTitle==='function'?cleanTitle(title):title)}</button>${da?`<small class="ckdn">${esc(da)} 打勾</small>`:''}${rel}</div>${(()=>{if(d||tmp||typeof durMin!=='function')return '';try{const dm=durMin(w);return `<button type="button" class="ckdur${dm.est?' est':''}" data-act="ckdur" data-id="${esc(wid)}" aria-label="要 ${dLab(dm.m)}${dm.est?'（估的）':''}，點了改">${dLab(dm.m)}</button>`}catch(e){return ''}})()}${d?'':`<span class="cklp">${face('daqi',wid,'請大器幫忙')}${face('baba',wid,'請霸霸幫忙')}${sg&&(sg.own||sg.arr)&&!d&&!tmp?`<button class="ckdel ckanc${sg.anc?' on':''}" data-act="ckanchor" data-id="${esc(wid)}" aria-pressed="${!!sg.anc}" aria-label="${sg.anc?'已錨定，安排不會動這件的時間；點了解除':'錨定這件的時間，安排時不動它'}"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="ancOn" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset=".55" stop-color="#f5b301"/><stop offset="1" stop-color="#a86f00"/></linearGradient><linearGradient id="ancOff" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b9b9c6"/><stop offset="1" stop-color="#6d6d7a"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35" fill="none" stroke="#000" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="10" r="3.6"/><path d="M20 14v17M13.5 18h13M10.5 24.5c1.5 5 5 7.5 9.5 7.5s8-2.5 9.5-7.5"/></g><g class="ag" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="10" r="3.6"/><path d="M20 14v17M13.5 18h13M10.5 24.5c1.5 5 5 7.5 9.5 7.5s8-2.5 9.5-7.5"/></g><path d="M18.6 16.8v10" stroke="#fff" stroke-opacity=".45" stroke-width="1.6" stroke-linecap="round"/></svg></button>`:''}<button class="ckdel ckx" data-act="ckdrop" data-id="${esc(wid)}" aria-label="刪除這件"><svg viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="ckxg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8a80"/><stop offset=".55" stop-color="#f0453a"/><stop offset="1" stop-color="#b8231b"/></linearGradient></defs><g transform="translate(0 1.6)" opacity=".35"><path d="M12 12l16 16M28 12L12 28" stroke="#000" stroke-width="8.5" stroke-linecap="round"/></g><path d="M12 12l16 16M28 12L12 28" stroke="url(#ckxg)" stroke-width="8" stroke-linecap="round"/><path d="M13.2 12.4l4.6 4.6M26.8 12.4l-2.4 2.4" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" stroke-linecap="round"/></svg></button></span>`}</li>`};   // v145 msg 914：刪除改成跟小臉同風格的圓形 ✕
   const sug=miss[0];
   let h=`<section class="sec ckbox" aria-label="${n?'明日':'今日'}節奏" data-day="${n}"><div class="ckh"><h2><span class="ckseg" role="tablist" aria-label="今日或明日"><button role="tab" data-act="ckday" data-id="0" aria-selected="${!n}">今日節奏</button><button role="tab" data-act="ckday" data-id="1" aria-selected="${!!n}">明日節奏</button></span><small>${wants.length?`做完 ${done}／${wants.length}`:''}</small></h2>${wants.some(w=>!doneOf(String(w.id)))?`<button type="button" class="ckarr" data-act="ckarrange" data-id="${n}" title="依行事曆空檔，替沒錨定的事排時間"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="13" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M11 9.5V13l2.4 1.6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M19 2.5l.7 1.6 1.6.7-1.6.7-.7 1.6-.7-1.6-1.6-.7 1.6-.7z" fill="currentColor"/></svg>安排</button>`:''}</div>`;
   h+=`<ul class="cklist">${wants.slice().sort((x,y)=>{const k=w=>{const g=SG[String(w.id)],t=w.note.time||(g&&!g.none?g.t:'')||splitTm(w.note.text).tm;const m=/^(\d{1,2}):(\d{2})/.exec(t||'');return m?(+m[1])*60+(+m[2]):9999};return k(x)-k(y)}).map(wrow).join('')}${typeof stepRows==='function'?stepRows(day):''}<li class="ck ckblank"><div class="ckadd"><input id="ckIn" type="text" placeholder="${esc(sug?'建議：'+splitTm(sug.text).text:(n?'明天':'今天')+'要做什麼？後面加 15、1h 是多久')}" aria-label="加一件要做的事"${sug?` data-sug="${esc(sug.ref)}"`:''} autocomplete="off">${B('＋','ckwant',String(n),'pri sm')}</div>${miss.length?`<div class="ckdd" id="ckDD" hidden><p>別漏了・點一下加進來</p>${miss.map(m=>{const q=splitTm(m.text);return `<button class="ckddi" data-act="ckadd" data-id="${esc(m.ref)}"><span class="num">${esc(m.tm||q.tm||'')}</span><b>${esc(q.text)}</b><small>${esc(m.k)}</small></button>`}).join('')}</div>`:''}</li></ul>`;
-  if(!wants.length)h+=`<p class="cknone">寫下來就是確認你吸收了，張弛會幫你排時段，大家也會知道。</p>`;
+  if(!wants.length)h+=`<p class="cknone">寫下來就是確認你吸收了，定定會幫你排時段，大家也會知道。</p>`;
+  h+=`<div class="ckft">${wants.some(w=>!doneOf(String(w.id)))?`<button type="button" class="ckfoc" data-act="ckfocus" data-id="${n}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/></svg>開始專注</button>`:''}<button type="button" class="ckflog" data-act="flog">專注紀錄 ›</button></div><p class="ckft2">節奏由定定主管：安排、提醒、記下你真正花多久</p>`;
   return h+'</section>'}
  // v144 msg 909、912 老大：「現在左右滑動換天版面會跳動⋯」「還是跳動」
  // → 換天不再重畫整頁，只換節奏這一塊：舊的一天往滑的方向滑出、新的一天從另一邊滑進，框的高度用 0.2 秒慢慢變；拖的時候清單跟著手指走。
@@ -5186,14 +5187,14 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   fixed.forEach(w=>{const a=tH(w.note.time),b=tH(w.note.end)||(a!=null?a+durOf(w.note.text):null);if(a==null)return;const nf=[];free.forEach(f=>{if(b<=f[0]||a>=f[1])nf.push(f);else{if(a>f[0])nf.push([f[0],a]);if(b<f[1])nf.push([b,f[1]])}});free=nf.filter(f=>f[1]-f[0]>=.25)});
   let todo=ws.filter(w=>!fixed.includes(w));if(only)todo=todo.filter(w=>String(w.id)===String(only));if(!todo.length){toast(only?'這件已錨定，先解除錨定再安排':'沒有要安排的：都做完了或都錨定了');return}
   todo.sort((x,y)=>(winOf(y.note.text)?1:0)-(winOf(x.note.text)?1:0)||String(x.at||'').localeCompare(String(y.at||'')));
-  const plan=[],miss=[];todo.forEach(w=>{const d=+w.note.hours||durOf(w.note.text),win=winOf(w.note.text);let got=null;
+  const plan=[],miss=[];todo.forEach(w=>{const d=(typeof durMin==='function'&&!durMin(w).est?durMin(w).m/60:0)||+w.note.hours||durOf(w.note.text),win=winOf(w.note.text);let got=null;
    for(const f of free){const a=Math.max(f[0],win?win[0]:9),b=Math.min(f[1],win?win[1]:22);if(b-a>=d-1e-6){got=[a,a+d];break}}
    if(!got){miss.push(splitTm(w.note.text).text||w.note.text);return}
    const nf=[];free.forEach(f=>{if(got[1]<=f[0]||got[0]>=f[1])nf.push(f);else{if(got[0]>f[0])nf.push([f[0],got[0]]);if(got[1]<f[1])nf.push([got[1],f[1]])}});free=nf;plan.push({w,a:got[0],b:got[1]})});
   if(!plan.length){toast('排不下：'+clip(miss.join('、'),40)+'（行事曆在那段沒有夠長的空檔）');return}
   let ok=0;for(const x of plan){const nn=Object.assign({},x.w.note,{time:hm(x.a),end:hm(x.b),arr:1});delete nn.anchor;if(await replaceWant(String(x.w.id),nn))ok++}
   try{tlLoad(true)}catch(e){}   // v231：排完重新讀一次，暫存列換成正式列，才能再點、再改
-  toast(`排好 ${ok} 件，依你的行事曆空檔；錨定的沒動${miss.length?'；排不下：'+clip(miss.join('、'),30):''}`)}
+  toast(`定定排好 ${ok} 件，依你的行事曆空檔；錨定的沒動${miss.length?'；排不下：'+clip(miss.join('、'),30):''}`)}
  ACT.ckarrange=v=>ckArrange(+v||0);
  ACT.ckarrange1=wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid));if(!w)return;const n=w.note.day===ymdT(1)?1:0;S.ckEdit='';ckArrange(n,wid)};
  // v230（msg 1584）：錨定用一筆小紀錄切換，不換掉整條，畫面原地變、滑開的按鈕留著，可以連續點
@@ -5206,7 +5207,7 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
  let RFB=false;   // v235（msg 1660）：重排寫入中，不准再拖，免得拿到換到一半的 id 把整份弄亂
  async function ckReflow(order,moved,prev){const ok0=id=>id&&String(id).indexOf('tmp')!==0&&wstOf(String(id))==='open',W=id=>(TL||[]).find(x=>String(x.id)===String(id)&&x.note&&x.note.type==='want');
   const rows=order.filter(ok0).map(W).filter(Boolean);if(rows.length<2)return;   // 做完、撤掉的不跟著重排
-  const st=w=>tH(w.note.time),dur=w=>{if(/\d+(?:\.\d+)?\s*(?:分鐘|分|mins?|小時|個小時|hrs?|h)(?![a-z])|半小時|半個小時|[^\d:：.]\d{1,3}\s*$/i.test(String(w.note.text||'').replace(/\d{1,4}(?:[:：]\d{2})?\s*點?\s*(?:以|之)?(?:後|前)/g,' ')))return durOf(w.note.text);const a=tH(w.note.time),b=tH(w.note.end);return a!=null&&b!=null&&b>a?b-a:(+w.note.hours||durOf(w.note.text))};   // 條目裡寫了多久就照寫的
+  const st=w=>tH(w.note.time),dur=w=>{{const r=typeof durRec==='function'?durRec(String(w.id)):null;if(r)return r/60}if(/\d+(?:\.\d+)?\s*(?:分鐘|分|mins?|小時|個小時|hrs?|h)(?![a-z])|半小時|半個小時|[^\d:：.]\d{1,3}\s*$/i.test(String(w.note.text||'').replace(/\d{1,4}(?:[:：]\d{2})?\s*點?\s*(?:以|之)?(?:後|前)/g,' ')))return durOf(w.note.text);const a=tH(w.note.time),b=tH(w.note.end);return a!=null&&b!=null&&b>a?b-a:(+w.note.hours||durOf(w.note.text))};   // 條目裡寫了多久就照寫的
   const isAnc=w=>{const wid=String(w.id),ao=ancOf(wid);return wid!==String(moved)&&st(w)!=null&&(ao===true||(ao==null&&w.note.anchor===true))};   // 拖拉是你親手排：只避開你明確錨定的
   const ids=rows.map(w=>String(w.id)),ni=ids.indexOf(String(moved)),po=(prev||[]).filter(ok0).map(String).filter(id=>ids.includes(id)),oi=po.indexOf(String(moved));if(ni<0)return;
   const lo=Math.min(ni,oi<0?ni:oi),hi=Math.max(ni,oi<0?ni:oi);   // v235（msg 1660）：只動拖過的那一段（原位置到新位置），前面的不碰，後面的有撞到才往後推
@@ -5219,7 +5220,7 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   if(!plan.length)return;let ok=0;RFB=true;try{for(const x of plan){const nn=Object.assign({},x.w.note,{time:hm(x.a),end:hm(x.b),arr:1,anchor:false});if(await replaceWant(String(x.w.id),nn))ok++}}finally{RFB=false}
   try{tlLoad(true)}catch(e){}toast(`順序改好了，${ok} 件的時間跟著接上`)}
  {let T=null,LI=null,Y0=0,X0=0,ph=null,on=false,mv=false,PO=[];const LP=450;
-  const cand=e=>{const li=e.target&&e.target.closest&&e.target.closest('.ckbox .ck.want');if(!li||li.classList.contains('edit')||li.classList.contains('done')||(e.target.closest&&e.target.closest('.cklp,.ckbx,input,button.ckrel')))return null;return li};
+  const cand=e=>{if(document.body.classList.contains('fselmode'))return null;const li=e.target&&e.target.closest&&e.target.closest('.ckbox .ck.want');if(!li||li.classList.contains('edit')||li.classList.contains('done')||(e.target.closest&&e.target.closest('.cklp,.ckbx,input,button.ckrel')))return null;return li};
   const start=(e,x,y)=>{const li=cand(e);if(!li)return;if(RFB||String(li.dataset.wid||'').indexOf('tmp')===0){return}LI=li;X0=x;Y0=y;mv=false;clearTimeout(T);T=setTimeout(()=>{if(mv||!LI)return;on=true;PO=[...LI.parentNode.querySelectorAll('.ck.want')].map(x=>x.dataset.wid).filter(Boolean);LI.classList.add('ckdrag');ph=document.createElement('li');ph.className='ck ckph';ph.style.height=LI.offsetHeight+'px';LI.after(ph);try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}},LP)};
   const move=(e,x,y)=>{if(!LI)return;if(!on){if(Math.hypot(x-X0,y-Y0)>8){mv=true;clearTimeout(T)}return}e.preventDefault();LI.style.transform=`translateY(${y-Y0}px)`;
    const sibs=[...LI.parentNode.querySelectorAll('.ck.want:not(.ckdrag)')];const tgt=sibs.find(s=>{const R=s.getBoundingClientRect();return y<R.top+R.height/2});if(tgt){if(tgt.previousElementSibling!==ph)tgt.before(ph)}else{const last=sibs[sibs.length-1];if(last&&last.nextElementSibling!==ph)last.after(ph)}};
@@ -5284,6 +5285,120 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   try{await LV.api.tideLogAdd('note',{ref:'want:'+wid,source:'面板',note});tlLoad(true)}catch(e){TL.shift();ckRefresh();toast('沒存上：'+LERR(e))}}
  ACT.ckdone=async wid=>{await doneSet(wid,'done');toast('做完了，記下了')};
  ACT.ckundone=async wid=>{await doneSet(wid,'undo')};
+ /* v239（msg 1666、1670）：節奏時長膠囊（含 4h）、專注模式（可設休息）、專注紀錄。節奏由定定主管：安排、提醒、追蹤習慣。 */
+ const DPRE=[5,10,15,30,60,90,120,240];
+ const tLab=m=>{m=Math.round(+m||0);return m<60?m+' 分':Math.floor(m/60)+' 小時'+(m%60?' '+m%60+' 分':'')};
+ const dLab=m=>m>=60?(m%60?String(+(m/60).toFixed(1))+'h':(m/60)+'h'):m+' 分';
+ function durRec(wid){const r=(TL||[]).find(x=>x.note&&x.note.type==='dur'&&x.note.ref==='want:'+wid);return r?+r.note.min:null}
+ function hasDurTxt(t){return /\d+(?:\.\d+)?\s*(?:分鐘|分|mins?|小時|個小時|hrs?|h)(?![a-z])|半小時|半個小時|[^\d:：.]\d{1,3}\s*$/i.test(String(t||'').replace(/\d{1,4}(?:[:：]\d{2})?\s*點?\s*(?:以|之)?(?:後|前)/g,' '))}
+ function durMin(w){const wid=String(w.id),r=durRec(wid);if(r)return {m:r,est:false};if(+w.note.hours)return {m:Math.round(+w.note.hours*60),est:false};
+  if(hasDurTxt(w.note.text))return {m:Math.max(5,Math.round(durOf(w.note.text)*60)),est:false};const a=tH(w.note.time),b=tH(w.note.end);if(a!=null&&b!=null&&b>a)return {m:Math.round((b-a)*60),est:false};
+  return {m:Math.round(durOf(w.note.text)*60),est:true}}
+ function cleanTitle(t){const s=String(t||'').replace(/\s*[（(]\s*(?:預估|約)?\s*\d+(?:\.\d+)?\s*(?:分鐘|分|h|小時)\s*[）)]\s*$/,'').replace(/\s+\d+(?:\.\d+)?\s*(?:h|hr|小時|個小時|分鐘|分|min)?\s*$/i,'').trim();return s||String(t||'')}
+ const lsG=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},lsS=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
+ /* 時長膠囊：點了跳出 5 分～4h */
+ ACT.ckdur=wid=>{document.querySelectorAll('.ckdurp').forEach(p=>p.remove());document.querySelectorAll('.durop').forEach(x=>x.classList.remove('durop'));const li=document.querySelector(`.ckbox .ck.want[data-wid="${CSS.escape(wid)}"]`),w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!li||!w)return;
+  const cur=durMin(w),hb=habitOf(cleanTitle(splitTm(w.note.text).text||w.note.text));const p=document.createElement('div');p.className='ckdurp';p.setAttribute('role','group');p.setAttribute('aria-label','這件要多久');
+  p.innerHTML=`<p>要多久${cur.est?'（現在是估的）':''}</p><div class="ckdc">${DPRE.map(m=>`<button type="button" data-dm="${m}" aria-pressed="${!cur.est&&cur.m===m}">${dLab(m)}</button>`).join('')}</div>${hb?`<p class="ckdd2">定定：你最近 ${hb.n} 次平均 ${hb.avg} 分 <button type="button" data-dm="${hb.avg}">用 ${hb.avg} 分</button></p>`:''}`;
+  document.body.appendChild(p);{const r=(li.querySelector('.ckdur')||li).getBoundingClientRect(),W=Math.min(320,innerWidth*.88),H=p.offsetHeight;p.style.left=Math.max(8,Math.min(innerWidth-W-8,r.right-W))+'px';p.style.top=(r.bottom+6+H>innerHeight-70?Math.max(8,r.top-6-H):r.bottom+6)+'px'}li.classList.add('durop');const f=p.querySelector('button');if(f)f.focus();   /* 列表列會裁掉溢出，選單掛在 body 上 */
+  const off=()=>{p.remove();li.classList.remove('durop');removeEventListener('scroll',off,true)};addEventListener('scroll',off,true);
+  p.addEventListener('click',async e=>{e.stopPropagation();const b=e.target.closest('[data-dm]');if(!b)return;const m=+b.dataset.dm;p.remove();li.classList.remove('durop');await durSet(w,m)});
+  setTimeout(()=>document.addEventListener('click',function c(ev){if(!p.contains(ev.target)){p.remove();li.classList.remove('durop');document.removeEventListener('click',c,true)}},true),0)};
+ async function durSet(w,m,silent){const wid=String(w.id),old=durRec(wid),note={type:'dur',ref:'want:'+wid,min:m,day:w.note.day};
+  (TL=TL||[]).unshift({id:'tmpu'+Date.now(),kind:'note',note,at:new Date().toISOString()});ckRefresh();
+  try{await tideW({ref:'want:'+wid,source:'面板',note});if(!silent)toast(m?`「${clip(cleanTitle(splitTm(w.note.text).text||w.note.text),12)}」改成 ${dLab(m)}`:'改回原本的時長',async()=>{await durSet(w,old,true)})}catch(e){TL=TL.filter(x=>x.note!==note);ckRefresh();toast('沒存上：'+LERR(e))}}
+ /* 習慣：從專注紀錄算平均（定定追蹤） */
+ let FLOG=null;const normT=t=>cleanTitle(String(t||'')).replace(/[、，,\s].*$/,'').slice(0,12);
+ function habitOf(t){const k=normT(t);if(!k||!FLOG)return null;const a=FLOG.filter(r=>r.note&&r.note.act&&normT(r.note.text)===k).map(r=>+r.note.act);if(a.length<3)return null;return {n:a.length,avg:Math.round(a.reduce((x,y)=>x+y,0)/a.length)}}
+ async function flogLoad(){if(!LV.api||!LV.api.tideLog)return [];try{const d=await LV.api.tideLog(ymdT(-29)+'T00:00:00+08:00','note');FLOG=(Array.isArray(d)?d:[]).filter(r=>r.note&&r.note.type==='focus');}catch(e){FLOG=FLOG||[]}return FLOG}
+ setTimeout(()=>{flogLoad()},4000);
+ /* 選要專注的事 */
+ const FS={on:false,day:0,ids:[]};
+ const restM=()=>{const v=+lsG('zl_rest',5);return [0,5,10,15].includes(v)?v:5};
+ function openWants(n){const day=ymdT(n);return wantsOf(day).filter(w=>wstOf(String(w.id))==='open'&&String(w.id).indexOf('tmp')!==0)}
+ function domOrder(){return [...document.querySelectorAll('.ckbox .ck.want:not(.done)')].map(li=>li.dataset.wid).filter(Boolean)}
+ ACT.ckfocus=v=>{const n=+v||0,op=openWants(n);if(!op.length){toast('今天的都做完了，先加一件再專注');return}
+  const ord=domOrder();FS.on=true;FS.day=n;FS.ids=ord.filter(id=>op.some(w=>String(w.id)===id)).slice(0,3);fselPaint();toast('先選了接下來 3 件，點列表可以加減')};
+ function fselPaint(){document.body.classList.toggle('fselmode',FS.on);document.querySelectorAll('.ckbox .ck.want').forEach(li=>{const on=FS.on&&FS.ids.includes(li.dataset.wid);li.classList.toggle('fpick',on);if(FS.on)li.setAttribute('aria-selected',on);else li.removeAttribute('aria-selected')});
+  let bar=document.getElementById('fbar');if(!FS.on){if(bar)bar.remove();return}
+  const ws=FS.ids.map(id=>(TL||[]).find(x=>String(x.id)===id)).filter(Boolean),tot=ws.reduce((s,w)=>s+durMin(w).m,0),r=restM();
+  if(!bar){bar=document.createElement('div');bar.id='fbar';bar.className='fbar';document.body.appendChild(bar);
+   bar.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.rest!=null){lsS('zl_rest',+b.dataset.rest);fselPaint()}else if(b.dataset.f==='cancel'){FS.on=false;fselPaint()}else if(b.dataset.f==='go'){const q=FS.ids.slice();FS.on=false;fselPaint();fStart(q)}})}
+  bar.innerHTML=`<div class="fbi"><div class="fbr" role="group" aria-label="每件之間休息"><span>每件之間休息</span>${[0,5,10,15].map(m=>`<button type="button" data-rest="${m}" aria-pressed="${r===m}">${m?m+' 分':'不休息'}</button>`).join('')}</div><div class="fbb"><button type="button" class="btn" data-f="cancel">取消</button><button type="button" class="btn pri" data-f="go"${ws.length?'':' disabled'}>${ws.length?`開始專注・${ws.length} 件 ${tLab(tot)}`:'先點要做的事'}</button></div></div>`}
+ document.addEventListener('click',e=>{if(!FS.on)return;const li=e.target.closest&&e.target.closest('.ckbox .ck.want:not(.done)');if(!li||!li.dataset.wid)return;e.preventDefault();e.stopPropagation();
+  const id=li.dataset.wid,i=FS.ids.indexOf(id);if(i>=0)FS.ids.splice(i,1);else{const ord=domOrder();FS.ids.push(id);FS.ids.sort((a,b)=>ord.indexOf(a)-ord.indexOf(b))}fselPaint()},true);
+ /* 專注畫面 */
+ let F=null,FR=0,AC=null,WL=null,LS=-1;
+ const fbeep=(f,d,v)=>{try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();const o=AC.createOscillator(),g=AC.createGain();o.frequency.value=f;g.gain.value=v||.05;o.connect(g);g.connect(AC.destination);o.start();g.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);o.stop(AC.currentTime+d)}catch(e){}};
+ const fvib=p=>{try{navigator.vibrate&&navigator.vibrate(p)}catch(e){}};
+ const mmss=s=>{s=Math.floor(Math.abs(s));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+ const fW=id=>(TL||[]).find(x=>String(x.id)===String(id)&&x.note&&x.note.type==='want');
+ const fTitle=w=>cleanTitle(splitTm(w.note.text).text||w.note.text);
+ function fSave(){lsS('zl_focus',F?{q:F.q,i:F.i,ph:F.ph,t0:F.t0,pa:F.pa,pAt:F.pAt,paused:F.paused,plan:F.plan,rest:F.rest,rec:F.rec,snd:F.snd,warned:F.warned,overed:F.overed,s0:F.s0}:null)}
+ function fStart(q){if(!q.length)return;F={q,i:0,rest:restM(),rec:[],snd:lsG('zl_fsnd',true)!==false,s0:Date.now()};fBegin('work');fOpen()}
+ function fBegin(ph){F.ph=ph;F.t0=Date.now();F.pa=0;F.paused=false;F.warned=false;F.overed=false;
+  if(ph==='work'){const w=fW(F.q[F.i]);F.plan=(w?durMin(w).m:30)*60}else F.plan=F.rest*60;fSave();fPaint()}
+ function fOpen(){let o=document.getElementById('fov');if(!o){o=document.createElement('div');o.id='fov';o.className='fov';o.setAttribute('role','dialog');o.setAttribute('aria-modal','true');o.setAttribute('aria-label','專注');document.body.appendChild(o);o.addEventListener('click',fClick)}
+  document.documentElement.classList.add('fovon');try{navigator.wakeLock&&navigator.wakeLock.request('screen').then(w=>{WL=w}).catch(()=>{})}catch(e){}fPaint();fLoop()}
+ function fClose(){cancelAnimationFrame(FR);const o=document.getElementById('fov');if(o)o.remove();document.documentElement.classList.remove('fovon');try{WL&&WL.release()}catch(e){}WL=null}
+ const fEl=()=>((F.paused?F.pAt:Date.now())-F.t0-F.pa)/1000;
+ function fPaint(){const o=document.getElementById('fov');if(!o||!F)return;
+  if(F.ph==='sum'){o.innerHTML=fSumHTML();return}
+  const w=fW(F.q[F.i]),nx=F.q.slice(F.i+(F.ph==='rest'?0:1)).map(fW).filter(Boolean),rest=F.ph==='rest';
+  o.innerHTML=`<div class="fvi"><div class="fvt"><span>${rest?'休息中':`專注中・第 ${F.i+1}／${F.q.length} 件`}</span><button type="button" class="fvic" data-f="snd" aria-pressed="${F.snd}" aria-label="時鐘聲：${F.snd?'開':'靜音'}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z"/>${F.snd?'<path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/>':'<path d="M17 9l5 6M22 9l-5 6"/>'}</svg></button></div>
+   <div class="fvr${rest?' rest':''}" id="fvr"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" class="trk"/><circle id="fva" cx="60" cy="60" r="54" class="arc" stroke-dasharray="339.3" stroke-dashoffset="0"/></svg><div class="fvx"><b class="num" id="fvc">00:00</b><small id="fvl">${rest?'休息剩下':'剩下'}</small></div></div>
+   <h2 class="fvn">${rest?'休息一下':esc(w?fTitle(w):'')}</h2><p class="fvp">${rest?`接著：${esc(nx[0]?fTitle(nx[0]):'')}`:`預計 ${dLab(Math.round(F.plan/60))}`}</p>
+   <p class="fvd" id="fvd" role="status" hidden></p>
+   <div class="fvq">${!rest&&nx.length?`<p>接下來</p><ol>${nx.map(x=>`<li>${esc(fTitle(x))}・${dLab(durMin(x).m)}</li>`).join('')}</ol>`:''}</div>
+   <div class="fvb">${rest?`<button type="button" class="btn" data-f="end">結束專注</button><button type="button" class="btn pri" data-f="skiprest">不休息，開始下一件</button>`:`<button type="button" class="btn" data-f="pause">${F.paused?'繼續':'暫停'}</button><button type="button" class="btn" data-f="skip">跳過</button><button type="button" class="btn pri" data-f="done">完成這件</button>`}</div>
+   ${rest?'':`<div class="fvb"><button type="button" class="btn ghost" data-f="end">結束專注</button></div>`}</div>`;
+  if(F.warned||F.overed){const d=document.getElementById('fvd');if(d){d.hidden=false;d.innerHTML=F.overed?(rest?'<b>定定</b>：休息時間到了，下一件開始。':`<b>定定</b>：預計時間到了，還沒做完就繼續；做完按「完成這件」我才記下真的花多久。`):`<b>定定</b>：「${esc(w?fTitle(w):'')}」快到預計時間了。`}}
+  fTick()}
+ function fTick(){if(!F||F.ph==='sum')return;const e=fEl(),left=F.plan-e,over=left<0,c=document.getElementById('fvc');if(!c)return;
+  c.textContent=(over?'+':'')+mmss(left);const r=document.getElementById('fvr');if(r)r.classList.toggle('over',over&&F.ph==='work');const l=document.getElementById('fvl');if(l)l.textContent=over?'超過預計，還在算':(F.ph==='rest'?'休息剩下':'剩下');
+  const a=document.getElementById('fva');if(a)a.setAttribute('stroke-dashoffset',over?0:339.3*(1-Math.max(0,left)/Math.max(1,F.plan)));
+  if(F.paused)return;
+  const warnAt=Math.min(120,F.plan*.2);if(F.ph==='work'&&!F.warned&&left<=warnAt&&left>0){F.warned=true;fSave();fbeep(880,.4,.08);fvib(120);fPaint();return}
+  if(!F.overed&&over){F.overed=true;fSave();if(F.ph==='rest'){fbeep(1046,.4,.1);fvib([120,80,120]);F.i<F.q.length?fBegin('work'):fEnd();return}fbeep(660,.6,.1);fvib([120,80,120]);fPaint();return}
+  const sec=Math.floor(e);if(F.snd&&sec!==LS){LS=sec;fbeep(1500,.025,.018)}}
+ function fLoop(){cancelAnimationFrame(FR);const t=()=>{if(!F||!document.getElementById('fov'))return;fTick();FR=requestAnimationFrame(t)};t()}
+ document.addEventListener('visibilitychange',()=>{if(F&&!document.hidden){fPaint();fLoop()}});   /* 切回來照時間戳補算，不停錶 */
+ async function fRecord(wid,act,skip){const w=fW(wid);if(!w)return;const plan=Math.round(F.plan/60),note={type:'focus',ref:'want:'+wid,day:w.note.day,text:fTitle(w),plan,act:skip?null:act,skip:!!skip,start:new Date(F.t0).toISOString(),end:new Date().toISOString()};
+  F.rec.push({t:fTitle(w),p:plan,a:skip?null:act});(FLOG=FLOG||[]).unshift({note,at:note.end});
+  try{await tideW({ref:'want:'+wid,source:'面板',note})}catch(e){toast('專注紀錄沒存上：'+LERR(e))}
+  if(!skip){const dn={type:'done',ref:'want:'+wid,day:w.note.day};(TL=TL||[]).unshift({id:'tmpd'+Date.now(),kind:'note',note:dn,at:new Date().toISOString()});try{await tideW({ref:'want:'+wid,source:'面板',note:dn})}catch(e){toast('打勾沒存上：'+LERR(e))}}}
+ function fNext(){F.i++;if(F.i>=F.q.length)return fEnd();if(F.rest>0)fBegin('rest');else fBegin('work')}
+ async function fClick(e){const b=e.target.closest('button');if(!b)return;const k=b.dataset.f;if(k==='close'){F=null;fSave();fClose();ckRefresh();return}if(!F)return;   /* 紀錄頁沒有進行中的專注，關閉也要能關 */
+  if(k==='snd'){F.snd=!F.snd;lsS('zl_fsnd',F.snd);fSave();fPaint()}
+  else if(k==='pause'){if(F.paused){F.pa+=Date.now()-F.pAt;F.paused=false}else{F.pAt=Date.now();F.paused=true}fSave();fPaint()}
+  else if(k==='done'){const wid=F.q[F.i],act=Math.max(1,Math.round(fEl()/60));fbeep(1046,.25,.08);fRecord(wid,act);fNext();ckRefresh()}
+  else if(k==='skip'){fRecord(F.q[F.i],0,true);fNext()}
+  else if(k==='skiprest'){fBegin('work')}
+  else if(k==='end'){if(F.ph==='work'){const wid=F.q[F.i],m=Math.round(fEl()/60);if(m>=1){const w=fW(wid);F.rec.push({t:w?fTitle(w):'',p:Math.round(F.plan/60),a:null,stop:m})}}fEnd()}
+  else if(k==='close'){F=null;fSave();fClose();ckRefresh()}
+  else if(k==='log'){F=null;fSave();fLogOpen()}}
+ function fEnd(){F.ph='sum';fSave();cancelAnimationFrame(FR);fPaint();const done=F.rec.filter(x=>x.a!=null);if(done.length){const note={type:'focus_s',day:ymdT(0),n:done.length,plan:done.reduce((s,x)=>s+x.p,0),act:done.reduce((s,x)=>s+x.a,0),rest:F.rest,start:new Date(F.s0).toISOString(),end:new Date().toISOString()};tideW({source:'面板',note}).catch(()=>{})}}
+ function fSumHTML(){const r=F.rec,dn=r.filter(x=>x.a!=null),pt=dn.reduce((s,x)=>s+x.p,0),at=dn.reduce((s,x)=>s+x.a,0);
+  return `<div class="fvi"><div class="fvt"><span>專注結束</span></div><h2 class="fvh">做完 ${dn.length} 件，花了 ${tLab(at)}</h2><p class="fvp">預計 ${tLab(pt)}${at>pt?`，多了 ${at-pt} 分`:at<pt&&dn.length?`，省了 ${pt-at} 分`:''}</p>
+   ${r.length?`<table class="fvtb"><thead><tr><th>事情</th><th>預計</th><th>實際</th></tr></thead><tbody>${r.map(x=>`<tr><td>${esc(x.t)}</td><td class="num">${x.p} 分</td><td class="num ${x.a==null?'':x.a>x.p?'slow':x.a<x.p?'fast':''}">${x.a==null?(x.stop?'停在 '+x.stop+' 分':'跳過'):x.a+' 分'}</td></tr>`).join('')}</tbody></table>`:'<p class="fvp">這次沒有做完的事。</p>'}
+   <p class="fvd"><b>定定</b>：實際時間記下了。同一件事記滿 3 次，我會在時長旁邊給你建議。</p>
+   <div class="fvb"><button type="button" class="btn" data-f="log">看專注紀錄</button><button type="button" class="btn pri" data-f="close">回節奏</button></div></div>`}
+ /* 專注紀錄 */
+ ACT.flog=()=>fLogOpen();
+ async function fLogOpen(){fOpen();const o=document.getElementById('fov');o.setAttribute('aria-label','專注紀錄');o.innerHTML=`<div class="fvi"><div class="fvt"><span>專注紀錄</span><button type="button" class="fvic" data-f="close" aria-label="關閉">✕</button></div><p class="fvp">讀取中…</p></div>`;
+  const L=await flogLoad();if(!document.getElementById('fov'))return;const done=L.filter(r=>r.note.act),today=ymdT(0),wk=ymdT(-6);
+  const sum=a=>a.reduce((s,r)=>s+(+r.note.act||0),0),tD=done.filter(r=>r.note.day===today),tW=done.filter(r=>String(r.note.day)>=wk),ontime=done.length?Math.round(100*done.filter(r=>+r.note.act<=+r.note.plan).length/done.length):0;
+  const G={};done.forEach(r=>{const k=normT(r.note.text);if(!k)return;(G[k]=G[k]||[]).push(r)});
+  const hab=Object.entries(G).filter(([k,a])=>a.length>=2).map(([k,a])=>({k,n:a.length,act:Math.round(sum(a)/a.length),plan:Math.round(a.reduce((s,r)=>s+(+r.note.plan||0),0)/a.length)})).sort((a,b)=>Math.abs(b.act-b.plan)-Math.abs(a.act-a.plan)).slice(0,6);
+  const byD={};done.forEach(r=>{(byD[r.note.day]=byD[r.note.day]||[]).push(r)});const days=Object.keys(byD).sort().reverse().slice(0,14);
+  const dl=d=>{const x=new Date(d+'T00:00:00+08:00');return `${x.getMonth()+1}/${x.getDate()}（${'日一二三四五六'[x.getDay()]}）`};
+  o.innerHTML=`<div class="fvi fvlog"><div class="fvt"><span>專注紀錄</span><button type="button" class="fvic" data-f="close" aria-label="關閉">✕</button></div>
+   <div class="fvk"><div><b class="num">${tLab(sum(tD))}</b><small>今天專注（${tD.length} 件）</small></div><div><b class="num">${tLab(sum(tW))}</b><small>近 7 天</small></div><div><b class="num">${done.length?ontime+'%':'—'}</b><small>在預計內做完</small></div></div>
+   <h3>定定的觀察</h3>${hab.length?`<ul class="fvh2">${hab.map(h=>`<li><b>${esc(h.k)}</b><span>平均 ${h.act} 分，你通常寫 ${h.plan} 分${h.act>h.plan?'，<em class="slow">常超時</em>':h.act<h.plan?'，<em class="fast">常提早</em>':''}（${h.n} 次）</span></li>`).join('')}</ul>`:'<p class="fvp">同一件事做滿 2 次，這裡會出現你真正花多久。</p>'}
+   <h3>每天</h3>${days.length?days.map(d=>`<details${d===today?' open':''}><summary><span>${dl(d)}</span><span class="num">${tLab(sum(byD[d]))}・${byD[d].length} 件</span></summary><table class="fvtb"><tbody>${byD[d].map(r=>`<tr><td>${esc(r.note.text||'')}</td><td class="num">${r.note.plan} 分</td><td class="num ${+r.note.act>+r.note.plan?'slow':+r.note.act<+r.note.plan?'fast':''}">${r.note.act} 分</td></tr>`).join('')}</tbody></table></details>`).join(''):'<p class="fvp">還沒有專注紀錄。在今日節奏按「專注」開始第一次。</p>'}
+   <div class="fvb"><button type="button" class="btn pri" data-f="close">回節奏</button></div></div>`}
+ /* 重新整理或手機切走被關掉，回來接著專注 */
+ setTimeout(function fResume(){const s=lsG('zl_focus',null);if(!s||F)return;if(!TL){setTimeout(fResume,1500);return}if(Date.now()-(s.t0||0)>8*3600e3){lsS('zl_focus',null);return}F=s;fOpen();if(F.ph!=='sum')fLoop()},2500);
  ACT.ckchat=v=>{const i=v.indexOf('|'),b=v.slice(0,i),wid=v.slice(i+1),w=(TL||[]).find(x=>x.id==wid&&x.note&&x.note.type==='want');if(!w)return;
   const r=relOf(w),txt=String(w.note.text||''),isItem=r&&(LV.items||[]).some(q=>q.id===r.id),ctx=isItem?'proj:'+r.id:'want:'+wid;
   const who=b==='baba'?'霸霸':'大器';
