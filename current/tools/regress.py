@@ -95,6 +95,27 @@ async def run_size(p, w, h):
                 await pg.mouse.up(); await pg.wait_for_timeout(4500)
                 r = await pg.evaluate("()=>[...document.querySelectorAll('.ckbox .ck.want')].map(li=>(li.querySelector('.cksg')||{innerText:''}).innerText+' '+(li.querySelector('.ckt')||{innerText:''}).innerText).filter(t=>/拖[ABC]/.test(t))")
                 check(f'{tag} 長按拖拉後時間照新順序接上', len(r) == 3 and r[0].startswith('06:00～06:10') and '拖C' in r[0] and '拖A' in r[1] and r[1].startswith('06:10'), r)
+            # msg 1660：「洗澡、刮鬍子（15 分）」照 15 分算；只動拖過的那段，後面沒撞到的不動，不多出重複
+            for t in ['08:00～08:15 洗澡、刮鬍子（15 分）', '08:15～08:20 叫塔塔發提醒（5 分）', '08:20～08:35 鋪床（15 分）', '09:30～10:00 開會']:
+                await pg.fill('#ckIn', t); await pg.press('#ckIn', 'Enter'); await pg.wait_for_timeout(1300)
+            await pg.evaluate("()=>document.activeElement&&document.activeElement.blur()"); await pg.wait_for_timeout(2500)
+            n0 = await pg.evaluate("()=>document.querySelectorAll('.ckbox .ck.want').length")
+            rows = await pg.query_selector_all('.ckbox .ck.want')
+            ids = await pg.evaluate("()=>[...document.querySelectorAll('.ckbox .ck.want')].map(li=>(li.querySelector('.ckt')||{innerText:''}).innerText)")
+            ia = [i for i, t in enumerate(ids) if '洗澡' in t]; ic = [i for i, t in enumerate(ids) if '鋪床' in t]
+            if ia and ic:
+                a = await rows[ic[0]].bounding_box(); t0 = await rows[ia[0]].bounding_box()
+                x = a['x'] + a['width'] * .5; y = a['y'] + a['height'] / 2; ty = t0['y'] + 4
+                await pg.mouse.move(x, y); await pg.mouse.down(); await pg.wait_for_timeout(650)
+                for k in range(1, 13): await pg.mouse.move(x, y + (ty - y) * k / 12); await pg.wait_for_timeout(20)
+                await pg.mouse.up(); await pg.wait_for_timeout(5000)
+                r = await pg.evaluate("()=>[...document.querySelectorAll('.ckbox .ck.want')].map(li=>(li.querySelector('.cksg')||{innerText:''}).innerText+' '+(li.querySelector('.ckt')||{innerText:''}).innerText).filter(t=>/洗澡|叫塔塔|鋪床|開會/.test(t))")
+                n1 = await pg.evaluate("()=>document.querySelectorAll('.ckbox .ck.want').length")
+                g = lambda k: ([t for t in r if k in t] or [''])[0]
+                okd = g('鋪床').startswith('08:00～08:15') and g('洗澡').startswith('08:15～08:30') and g('叫塔塔').startswith('08:30～08:35') and g('開會').startswith('09:30')
+                check(f'{tag} 拖拉照寫的時長、只動拖過的那段、沒有多出重複', okd and n1 == n0, (r, n0, n1))
+            else:
+                check(f'{tag} 拖拉照寫的時長（測試資料沒建起來）', False, ids)
         # msg 1565：新增行程兩個行事曆可勾，標題是對外的事自動勾公司
         await pg.evaluate("()=>{const z=window.__zl;z.S.page=null;z.S.sheet=null;z.paint('keep');z.ACT.cenew()}"); await pg.wait_for_timeout(1000)
         if await pg.query_selector('#ceT'):

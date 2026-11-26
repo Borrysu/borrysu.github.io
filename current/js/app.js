@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v234');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v235');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5109,6 +5109,7 @@ window.__zl=Object.assign(window.__zl||{},{LZ,loadZones});
  const tideW=async(patch)=>{let er;for(let i=0;i<3;i++){try{return await LV.api.tideLogAdd('note',patch)}catch(e){er=e;await new Promise(r=>setTimeout(r,500*(i+1)))}}throw er};
  async function replaceWant(oldId,newNote){if(!LV.api||!LV.api.tideLogAdd){toast('離線中，連上再改，這條沒動');return false}
   const w=(TL||[]).find(x=>String(x.id)===String(oldId)&&x.note&&x.note.type==='want');if(!w)return false;const day=w.note.day,wasDone=doneOf(String(oldId));
+  {const ao=ancOf(String(oldId));if(ao!=null&&newNote.anchor===undefined)newNote=Object.assign({},newNote,{anchor:ao})}   // v235：換成新的一條時，錨定開關跟著帶過去（原本換了 id 錨定就掉回預設）
   const tmpN={id:'tmp'+Date.now(),kind:'note',note:newNote,at:new Date().toISOString()},tmpD={id:'tmpd'+Date.now(),kind:'note',note:{type:'drop',ref:'want:'+oldId,day},at:new Date().toISOString()};
   (TL=TL||[]).unshift(tmpD,tmpN);ckRefresh();
   let stage='新增';
@@ -5166,7 +5167,8 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
  /* v227（msg 1574）：「安排」＝依行事曆空檔替沒錨定、沒做完的事排時間；寫了多久（2 小時、半小時、30 分鐘）照那個長度，寫了時段（上午、下午、晚上、5 點前、8 點後）就排在那段；錨定（⚓）的不動。可整天一起排，也能單條排。 */
  const durOf=t=>{t=String(t||'').replace(/\d{1,4}(?:[:：]\d{2})?\s*點?\s*(?:以|之)?(?:後|前)/g,' ');let sum=0,hit=0;   // v231（msg 1591）：一條裡寫了好幾件各自多久（15min、10 分鐘、1 小時），加總；沒寫多久的每件先抓 10 分鐘
   t.replace(/(\d+(?:\.\d+)?)\s*(?:小時|個小時|hrs?|h)(?![a-z])/gi,(m,a)=>{sum+=+a;hit++;return m}).replace(/(\d+)\s*(?:分鐘|分|mins?)(?![a-z])/gi,(m,a)=>{sum+=(+a)/60;hit++;return m});if(/半小時|半個小時/.test(t)){sum+=.5;hit++}
-  if(!hit)return .5;const toks=t.split(/[\s，,、；;]+/).filter(x=>x&&/[\u3400-\u9fff]/.test(x)),bare=toks.filter(x=>!/\d+\s*(?:分鐘|分|mins?|小時|hrs?|h)/i.test(x)&&!/半小時/.test(x)).length;return Math.min(8,Math.max(.25,sum+bare/6))};
+  if(!hit)return .5;if(hit===1)return Math.min(8,Math.max(1/12,sum));   // v235（msg 1660）：只寫一個時長＝整條的時長（「洗澡、刮鬍子（15 分）」就是 15 分，原本把頓號前後各加 10 分變 45 分）
+  const segs=t.replace(/[（(][^）)]*[）)]/g,m=>/\d/.test(m)?m:' ').split(/[，,、；;\n]+/).map(x=>x.trim()).filter(x=>x&&/[\u3400-\u9fff]/.test(x)),bare=segs.filter(x=>!/\d+(?:\.\d+)?\s*(?:分鐘|分|mins?|小時|個小時|hrs?|h)(?![a-z])/i.test(x)&&!/半小時|半個小時/.test(x)).length;return Math.min(8,Math.max(1/12,sum+bare/6))};
  const winOf=t=>{t=String(t||'');const hh=x=>{x=x.replace(/[：]/,':');let h,m=0;if(/:/.test(x)){[h,m]=x.split(':').map(Number)}else if(x.length>=3){h=+x.slice(0,-2);m=+x.slice(-2)}else h=+x;return h+(m||0)/60};
   let a=null,b=null;t.replace(/(\d{1,4}(?:[:：]\d{2})?)\s*點?\s*(?:以|之)?(後|前)/g,(m,x,k)=>{const v=hh(x);if(k==='後')a=v;else b=v;return m});   // v231（msg 1591）：0800後、10:00前、8 點後、5 點前，可以兩個一起寫
   if(a!=null||b!=null)return [a!=null?a:0,b!=null?b:24];if(/早上|上午/.test(t))return [8,12];if(/中午/.test(t))return [11.5,14];if(/下午/.test(t))return [13,18];if(/晚上|今晚|夜/.test(t))return [18,23];return null};
@@ -5199,22 +5201,27 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
   try{await tideW({source:'面板',note:nt});toast(on?'解除錨定':'錨定了：安排不會動這件')}catch(e){TL=TL.filter(x=>x.note!==nt);ckRefresh();toast('沒存上：'+LERR(e))}};
 
  /* v233（msg 1655）：節奏長按拖拉改順序，放下後時間照新順序一件接一件自動重排（每件保留原本時長；錨定的其他件不動） */
- async function ckReflow(order,moved){const rows=order.map(id=>(TL||[]).find(x=>String(x.id)===String(id)&&x.note&&x.note.type==='want')).filter(Boolean);if(rows.length<2)return;
-  const st=w=>tH(w.note.time),dur=w=>{const a=tH(w.note.time),b=tH(w.note.end);return a!=null&&b!=null&&b>a?b-a:(+w.note.hours||durOf(w.note.text))};
-  const timed=rows.filter(w=>st(w)!=null);if(!timed.length){toast('這幾件都還沒有時間，順序記下了，按「安排」會照這個順序排');return}
-  let cur=Math.min(...timed.map(st));const plan=[];
-  const FIX=rows.filter(w=>{const wid=String(w.id),ao=ancOf(wid);return wid!==String(moved)&&(ao===true||(ao==null&&w.note.anchor===true))&&st(w)!=null}).map(w=>[st(w),st(w)+dur(w)]);
-  for(const w of rows){const wid=String(w.id),ao=ancOf(wid),anc=wid!==String(moved)&&(ao===true||(ao==null&&w.note.anchor===true))&&st(w)!=null;   // 拖拉是你親手排：只避開你明確按過錨定的
-   if(anc)continue;
-   let a=cur;const d=dur(w);for(let g=0;g<10;g++){const hit=FIX.find(f=>a<f[1]-1e-6&&a+d>f[0]+1e-6);if(!hit)break;a=hit[1]}const b=a+d;cur=b;/* 碰到錨定的那段就跳過去，不重疊 */if(st(w)!=null&&Math.abs(st(w)-a)<1e-6&&Math.abs((tH(w.note.end)||0)-b)<1e-6)continue;plan.push({w,a,b})}
-  if(!plan.length)return;let ok=0;for(const x of plan){const nn=Object.assign({},x.w.note,{time:hm(x.a),end:hm(x.b)});if(await replaceWant(String(x.w.id),nn))ok++}
+ let RFB=false;   // v235（msg 1660）：重排寫入中，不准再拖，免得拿到換到一半的 id 把整份弄亂
+ async function ckReflow(order,moved,prev){const ok0=id=>id&&String(id).indexOf('tmp')!==0&&wstOf(String(id))==='open',W=id=>(TL||[]).find(x=>String(x.id)===String(id)&&x.note&&x.note.type==='want');
+  const rows=order.filter(ok0).map(W).filter(Boolean);if(rows.length<2)return;   // 做完、撤掉的不跟著重排
+  const st=w=>tH(w.note.time),dur=w=>{if(/\d+(?:\.\d+)?\s*(?:分鐘|分|mins?|小時|個小時|hrs?|h)(?![a-z])|半小時|半個小時/i.test(String(w.note.text||'').replace(/\d{1,4}(?:[:：]\d{2})?\s*點?\s*(?:以|之)?(?:後|前)/g,' ')))return durOf(w.note.text);const a=tH(w.note.time),b=tH(w.note.end);return a!=null&&b!=null&&b>a?b-a:(+w.note.hours||durOf(w.note.text))};   // 條目裡寫了多久就照寫的
+  const isAnc=w=>{const wid=String(w.id),ao=ancOf(wid);return wid!==String(moved)&&st(w)!=null&&(ao===true||(ao==null&&w.note.anchor===true))};   // 拖拉是你親手排：只避開你明確錨定的
+  const ids=rows.map(w=>String(w.id)),ni=ids.indexOf(String(moved)),po=(prev||[]).filter(ok0).map(String).filter(id=>ids.includes(id)),oi=po.indexOf(String(moved));if(ni<0)return;
+  const lo=Math.min(ni,oi<0?ni:oi),hi=Math.max(ni,oi<0?ni:oi);   // v235（msg 1660）：只動拖過的那一段（原位置到新位置），前面的不碰，後面的有撞到才往後推
+  const span=rows.slice(lo,hi+1).filter(w=>st(w)!=null&&!isAnc(w)).map(st);let cur;
+  if(span.length)cur=Math.min(...span);else{const p=rows.slice(0,lo).reverse().find(w=>st(w)!=null);if(p)cur=tH(p.note.end)||st(p)+dur(p);else{toast('這幾件都還沒有時間，順序記下了，按「安排」會照這個順序排');return}}
+  const FIX=rows.filter(isAnc).map(w=>[st(w),tH(w.note.end)||st(w)+dur(w)]);const plan=[];
+  for(let k=lo;k<rows.length;k++){const w=rows[k];if(isAnc(w))continue;if(st(w)==null&&String(w.id)!==String(moved))continue;if(k>hi&&st(w)>=cur-1e-6)break;
+   let a=cur;const d=dur(w);for(let g=0;g<10;g++){const hit=FIX.find(f=>a<f[1]-1e-6&&a+d>f[0]+1e-6);if(!hit)break;a=hit[1]}const b=a+d;cur=b;
+   if(st(w)!=null&&Math.abs(st(w)-a)<1e-6&&Math.abs((tH(w.note.end)||0)-b)<1e-6)continue;plan.push({w,a,b})}
+  if(!plan.length)return;let ok=0;RFB=true;try{for(const x of plan){const nn=Object.assign({},x.w.note,{time:hm(x.a),end:hm(x.b),arr:1,anchor:false});if(await replaceWant(String(x.w.id),nn))ok++}}finally{RFB=false}
   try{tlLoad(true)}catch(e){}toast(`順序改好了，${ok} 件的時間跟著接上`)}
- {let T=null,LI=null,Y0=0,X0=0,ph=null,on=false,mv=false;const LP=450;
+ {let T=null,LI=null,Y0=0,X0=0,ph=null,on=false,mv=false,PO=[];const LP=450;
   const cand=e=>{const li=e.target&&e.target.closest&&e.target.closest('.ckbox .ck.want');if(!li||li.classList.contains('edit')||li.classList.contains('done')||(e.target.closest&&e.target.closest('.cklp,.ckbx,input,button.ckrel')))return null;return li};
-  const start=(e,x,y)=>{const li=cand(e);if(!li)return;LI=li;X0=x;Y0=y;mv=false;clearTimeout(T);T=setTimeout(()=>{if(mv||!LI)return;on=true;LI.classList.add('ckdrag');ph=document.createElement('li');ph.className='ck ckph';ph.style.height=LI.offsetHeight+'px';LI.after(ph);try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}},LP)};
+  const start=(e,x,y)=>{const li=cand(e);if(!li)return;if(RFB||String(li.dataset.wid||'').indexOf('tmp')===0){return}LI=li;X0=x;Y0=y;mv=false;clearTimeout(T);T=setTimeout(()=>{if(mv||!LI)return;on=true;PO=[...LI.parentNode.querySelectorAll('.ck.want')].map(x=>x.dataset.wid).filter(Boolean);LI.classList.add('ckdrag');ph=document.createElement('li');ph.className='ck ckph';ph.style.height=LI.offsetHeight+'px';LI.after(ph);try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}},LP)};
   const move=(e,x,y)=>{if(!LI)return;if(!on){if(Math.hypot(x-X0,y-Y0)>8){mv=true;clearTimeout(T)}return}e.preventDefault();LI.style.transform=`translateY(${y-Y0}px)`;
    const sibs=[...LI.parentNode.querySelectorAll('.ck.want:not(.ckdrag)')];const tgt=sibs.find(s=>{const R=s.getBoundingClientRect();return y<R.top+R.height/2});if(tgt){if(tgt.previousElementSibling!==ph)tgt.before(ph)}else{const last=sibs[sibs.length-1];if(last&&last.nextElementSibling!==ph)last.after(ph)}};
-  let JD=0;const end=()=>{clearTimeout(T);if(!LI)return;if(on){JD=Date.now();const li=LI,box=li.parentNode;li.style.transform='';li.classList.remove('ckdrag');if(ph){ph.before(li);ph.remove();ph=null}const order=[...box.querySelectorAll('.ck.want')].map(x=>x.dataset.wid).filter(Boolean);ckReflow(order,li.dataset.wid)}on=false;LI=null};
+  let JD=0;const end=()=>{clearTimeout(T);if(!LI)return;if(on){JD=Date.now();const li=LI,box=li.parentNode;li.style.transform='';li.classList.remove('ckdrag');if(ph){ph.before(li);ph.remove();ph=null}const order=[...box.querySelectorAll('.ck.want')].map(x=>x.dataset.wid).filter(Boolean);ckReflow(order,li.dataset.wid,PO)}on=false;LI=null};
   document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];if(t)start(e,t.clientX,t.clientY)},{passive:true});
   document.addEventListener('touchmove',e=>{const t=e.touches&&e.touches[0];if(t)move(e,t.clientX,t.clientY)},{passive:false});
   document.addEventListener('touchend',end);document.addEventListener('touchcancel',end);
