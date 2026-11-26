@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v236');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v237');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -3239,7 +3239,8 @@ ACT.jfilt=id=>{S.jf=id;render('keep')};
    const OUT=!!vv||/(已上線|上線了|改好|修好|做完|處理完|已還原|還原了|已改|找到了|原因[：:是]|查到|回答你|結論|建成|建好|補好|補上|放進|上傳好|已經處理|併進|合併了|已合併|收掉了|已完成|已處理|確定了|答案是|實話|好了|接上了|測試結果|可以，|能解決|改法)/.test(body);
    const ids=(body.match(/(?:msg\s*)?\b(1\d{3,4})\b/g)||[]).map(x=>+x.replace(/\D/g,'')),cand=out.filter(x=>!x.tk),hit=ids.length?cand.filter(x=>ids.includes(+x.id)):[];
    const tgt=hit.length?hit:(()=>{const r=cand.filter(x=>!x.out);return r.length?[r[r.length-1]]:[]})();   // 回覆有寫 msg 編號就對那幾則；沒寫就對最近一則還沒完成的
-   tgt.forEach(x=>{if(OUT){x.out=1;if(vv)x.ver='v'+vv}else x.prog=1})});   // 版號只給這則回覆對到的那幾則（原本配給最舊那則，害完成的顯示成已回覆）
+   const lv={};body.split(/\n/).forEach(l=>{const v=(/\bv(\d{3,4})\b/.exec(l)||[])[1];if(!v)return;(l.match(/\b1\d{3,4}\b/g)||[]).forEach(n=>{if(+n!==+v)lv[+n]=v})});   // 一則回好幾單時，版號照同一行對
+   tgt.forEach(x=>{if(OUT){x.out=1;const v=lv[+x.id]||(tgt.length===1?vv:'');if(v)x.ver='v'+v}else x.prog=1})});   // 版號只給這則回覆對到的那幾則（原本配給最舊那則，害完成的顯示成已回覆）
   out.forEach(x=>{if(!x.tk)x.st=x.out?'done':x.prog?'work':'recv'});
   return out.reverse()}
  function progLoad(){if(PG.busy&&Date.now()-PG.busy<12000)return;PG.busy=Date.now();PG.err='';
