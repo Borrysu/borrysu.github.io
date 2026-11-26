@@ -2095,3 +2095,8 @@ button.pask .chev{margin-left:auto;color:var(--ink2)}
 .ckbox .ck.want.ckdrag{position:relative;z-index:5;background:var(--sf2,#26262e)!important;box-shadow:0 8px 24px rgba(0,0,0,.4)!important;opacity:.95;transition:none!important}
 .ckbox .ck.ckph{list-style:none;border:2px dashed var(--line2,#555);border-radius:12px;margin:2px 0}
 .ckbox .ck.want{touch-action:pan-y}
+/* v234（msg 1658）：「安排」改成跟今日／明日切換同一種外觀：同高、同圓角、淡底，前面一個時鐘小圖示，不再是突兀的外框圓鈕 */
+.ckbox .ckh .ckarr{flex:none;display:inline-flex;align-items:center;gap:5px;min-height:40px;padding:0 12px;border:0;border-radius:10px;background:rgba(127,127,127,.12);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer}
+.ckbox .ckh .ckarr svg{width:17px;height:17px;color:#f5b301}
+.ckbox .ckh .ckarr:active{background:rgba(127,127,127,.22)}
+.ckbox .ckh h2 small{white-space:nowrap}
