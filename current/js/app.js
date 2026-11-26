@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v232');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v233');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -5197,6 +5197,29 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
  ACT.ckanchor=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w)return;const ao=ancOf(String(wid)),on=ao!=null?ao:(w.note.anchor===true||(!w.note.arr&&w.note.anchor!==false));
   const nt={type:'anchor',ref:'want:'+wid,on:!on,day:w.note.day};(TL=TL||[]).unshift({id:'tmpa'+Date.now(),kind:'note',note:nt,at:new Date().toISOString()});ckRefresh();
   try{await tideW({source:'面板',note:nt});toast(on?'解除錨定':'錨定了：安排不會動這件')}catch(e){TL=TL.filter(x=>x.note!==nt);ckRefresh();toast('沒存上：'+LERR(e))}};
+
+ /* v233（msg 1655）：節奏長按拖拉改順序，放下後時間照新順序一件接一件自動重排（每件保留原本時長；錨定的其他件不動） */
+ async function ckReflow(order,moved){const rows=order.map(id=>(TL||[]).find(x=>String(x.id)===String(id)&&x.note&&x.note.type==='want')).filter(Boolean);if(rows.length<2)return;
+  const st=w=>tH(w.note.time),dur=w=>{const a=tH(w.note.time),b=tH(w.note.end);return a!=null&&b!=null&&b>a?b-a:(+w.note.hours||durOf(w.note.text))};
+  const timed=rows.filter(w=>st(w)!=null);if(!timed.length){toast('這幾件都還沒有時間，順序記下了，按「安排」會照這個順序排');return}
+  let cur=Math.min(...timed.map(st));const plan=[];
+  const FIX=rows.filter(w=>{const wid=String(w.id),ao=ancOf(wid);return wid!==String(moved)&&(ao===true||(ao==null&&w.note.anchor===true))&&st(w)!=null}).map(w=>[st(w),st(w)+dur(w)]);
+  for(const w of rows){const wid=String(w.id),ao=ancOf(wid),anc=wid!==String(moved)&&(ao===true||(ao==null&&w.note.anchor===true))&&st(w)!=null;   // 拖拉是你親手排：只避開你明確按過錨定的
+   if(anc)continue;
+   let a=cur;const d=dur(w);for(let g=0;g<10;g++){const hit=FIX.find(f=>a<f[1]-1e-6&&a+d>f[0]+1e-6);if(!hit)break;a=hit[1]}const b=a+d;cur=b;/* 碰到錨定的那段就跳過去，不重疊 */if(st(w)!=null&&Math.abs(st(w)-a)<1e-6&&Math.abs((tH(w.note.end)||0)-b)<1e-6)continue;plan.push({w,a,b})}
+  if(!plan.length)return;let ok=0;for(const x of plan){const nn=Object.assign({},x.w.note,{time:hm(x.a),end:hm(x.b)});if(await replaceWant(String(x.w.id),nn))ok++}
+  try{tlLoad(true)}catch(e){}toast(`順序改好了，${ok} 件的時間跟著接上`)}
+ {let T=null,LI=null,Y0=0,X0=0,ph=null,on=false,mv=false;const LP=450;
+  const cand=e=>{const li=e.target&&e.target.closest&&e.target.closest('.ckbox .ck.want');if(!li||li.classList.contains('edit')||li.classList.contains('done')||(e.target.closest&&e.target.closest('.cklp,.ckbx,input,button.ckrel')))return null;return li};
+  const start=(e,x,y)=>{const li=cand(e);if(!li)return;LI=li;X0=x;Y0=y;mv=false;clearTimeout(T);T=setTimeout(()=>{if(mv||!LI)return;on=true;LI.classList.add('ckdrag');ph=document.createElement('li');ph.className='ck ckph';ph.style.height=LI.offsetHeight+'px';LI.after(ph);try{navigator.vibrate&&navigator.vibrate(10)}catch(_){}},LP)};
+  const move=(e,x,y)=>{if(!LI)return;if(!on){if(Math.hypot(x-X0,y-Y0)>8){mv=true;clearTimeout(T)}return}e.preventDefault();LI.style.transform=`translateY(${y-Y0}px)`;
+   const sibs=[...LI.parentNode.querySelectorAll('.ck.want:not(.ckdrag)')];const tgt=sibs.find(s=>{const R=s.getBoundingClientRect();return y<R.top+R.height/2});if(tgt){if(tgt.previousElementSibling!==ph)tgt.before(ph)}else{const last=sibs[sibs.length-1];if(last&&last.nextElementSibling!==ph)last.after(ph)}};
+  let JD=0;const end=()=>{clearTimeout(T);if(!LI)return;if(on){JD=Date.now();const li=LI,box=li.parentNode;li.style.transform='';li.classList.remove('ckdrag');if(ph){ph.before(li);ph.remove();ph=null}const order=[...box.querySelectorAll('.ck.want')].map(x=>x.dataset.wid).filter(Boolean);ckReflow(order,li.dataset.wid)}on=false;LI=null};
+  document.addEventListener('touchstart',e=>{const t=e.touches&&e.touches[0];if(t)start(e,t.clientX,t.clientY)},{passive:true});
+  document.addEventListener('touchmove',e=>{const t=e.touches&&e.touches[0];if(t)move(e,t.clientX,t.clientY)},{passive:false});
+  document.addEventListener('touchend',end);document.addEventListener('touchcancel',end);
+  document.addEventListener('mousedown',e=>{if(e.button===0)start(e,e.clientX,e.clientY)});document.addEventListener('mousemove',e=>move(e,e.clientX,e.clientY));document.addEventListener('mouseup',end);
+  document.addEventListener('click',e=>{if(on||Date.now()-JD<400){e.stopPropagation();e.preventDefault()}},true);}
  ACT.cksave=async wid=>{const w=(TL||[]).find(x=>String(x.id)===String(wid)&&x.note&&x.note.type==='want');if(!w){toast('找不到這條，畫面可能不是最新的，已重新讀取');S.ckEdit='';tlLoad(true);ckSwap();return}   // v197 msg 1201：每一條提早結束的路都要說原因，不能靜默
   if(wstOf(String(wid))==='drop'||CKSAVING[wid]){toast(CKSAVING[wid]?'正在存，請稍等一下':'這條已經改過或刪掉了，已重新整理');S.ckEdit='';ckSwap();return}
   {const ti=$('#ckEtm');if(ti){const pt=parseTm(ti.value);if(!pt.ok){toast('時間寫不懂，請寫成 22:30 這樣（24 小時制），或清空');ti.focus();return}if(pt.t!==ti.value.trim()&&pt.t)ti.value=pt.t}}
@@ -5234,7 +5257,7 @@ ACT.ckrelset=async(wid,val)=>{const w=(TL||[]).find(x=>String(x.id)===String(wid
  ACT.ckwant=async v=>{const n=+v,day=ymdT(n),el=$('#ckIn'),txt=el?el.value.trim():'';if(!txt){const sg=el&&el.dataset.sug;if(sg&&MISS[sg]){ACT.ckadd(sg);return}if(el)el.focus();return}
   // 2026-11-25 msg 826 老大：「如果我一行裡面打得多個項目，你們自己讀取之後要自己懂得分開」→ 逗號、頓號、分號、換行都拆；空白前面是三個字以上的中文詞就拆（「木星 Reels」這種短詞＋英文不拆；時間、時數跟著前一件）
   const parts=[txt];if(el)el.value='';let ok=0;   // v192：不拆，一次輸入就是一條
-  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&ckCards().some(x=>x.id===S.ckRel)){note.card=S.ckRel;note.cardBy='user'}S.ckRelAll=false;if((await wantAdd(note))===true)ok++}
+  for(const one0 of parts){const q=splitTm(one0),one=q.text||one0,m=/(\d+(?:\.\d+)?)\s*(?:小時|h|hr)/i.exec(one),note={type:'want',text:one,day};if(q.tm)note.time=q.tm;if(q.te)note.end=q.te;if(m)note.hours=+m[1];const r=relOf({note});if(r)note.card=r.id;if(S.ckRel&&parts.length===1&&ckCards().some(x=>x.id===S.ckRel)){note.card=S.ckRel;note.cardBy='user'}S.ckRelAll=false;if((await wantAdd(note))===true)ok++}
   {const rc=$('#ckRc');if(rc)rc.remove();S.ckRel=''}
   if(ok)toast(parts.length>1?`拆成 ${parts.length} 件記下了`:'記下了，要排時間按「安排」')};
  function splitWants(txt){const CJK=/[\u3400-\u9fff]/,out=[];

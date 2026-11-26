@@ -2091,3 +2091,7 @@ button.pask .chev{margin-left:auto;color:var(--ink2)}
 .ckbox .ck.want .cklp .ckdel.ckanc,.ckbox .ck.want .cklp .ckdel.ckanc.on{background:none!important;box-shadow:none!important;border-radius:0}
 .ckbox .ck.want .cklp .ckdel.ckanc svg{width:30px;height:30px}
 .ckanc .ag{stroke:url(#ancOff)}.ckanc.on .ag{stroke:url(#ancOn)}
+/* v233（msg 1655）：節奏長按拖拉 */
+.ckbox .ck.want.ckdrag{position:relative;z-index:5;background:var(--sf2,#26262e)!important;box-shadow:0 8px 24px rgba(0,0,0,.4)!important;opacity:.95;transition:none!important}
+.ckbox .ck.ckph{list-style:none;border:2px dashed var(--line2,#555);border-radius:12px;margin:2px 0}
+.ckbox .ck.want{touch-action:pan-y}

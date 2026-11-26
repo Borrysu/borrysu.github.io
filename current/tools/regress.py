@@ -78,6 +78,23 @@ async def run_size(p, w, h):
             wk = [r for r in rows if '回歸寫企劃' in r['x']]; mt = [r for r in rows if '回歸開會' in r['x']]
             okw = bool(wk) and wk[0]['t'][:2].isdigit() and 13 <= int(wk[0]['t'][:2]) < 18 and '～' in wk[0]['t']
             check(f'{tag} 安排照時段與時長排、錨定的沒動', okw and bool(mt) and mt[0]['t'].startswith('13:25'), rows)
+        # msg 1655：長按拖拉改順序，時間照新順序接上（桌機用滑鼠測）
+        if w >= 1000:
+            await pg.evaluate("()=>{const z=window.__zl;z.S.page=null;z.S.sheet=null;z.paint('keep');const b=document.querySelector('[data-act=ckday][data-id=\\'0\\']');if(b)b.click()}"); await pg.wait_for_timeout(800)
+            for t in ['06:00～06:15 拖A', '06:15～06:30 拖B', '06:30～06:40 拖C']:
+                await pg.fill('#ckIn', t); await pg.press('#ckIn', 'Enter'); await pg.wait_for_timeout(1300)
+            await pg.evaluate("()=>document.activeElement&&document.activeElement.blur()"); await pg.wait_for_timeout(2500)
+            rows = await pg.query_selector_all('.ckbox .ck.want')
+            ids = await pg.evaluate("()=>[...document.querySelectorAll('.ckbox .ck.want')].map(li=>(li.querySelector('.ckt')||{innerText:''}).innerText)")
+            if all(any(x in t for t in ids) for x in ['拖A', '拖C']):
+                ia = [i for i, t in enumerate(ids) if '拖A' in t][0]; ic = [i for i, t in enumerate(ids) if '拖C' in t][0]
+                a = await rows[ic].bounding_box(); t0 = await rows[ia].bounding_box()
+                x = a['x'] + a['width'] * .5; y = a['y'] + a['height'] / 2; ty = t0['y'] + 4
+                await pg.mouse.move(x, y); await pg.mouse.down(); await pg.wait_for_timeout(650)
+                for k in range(1, 13): await pg.mouse.move(x, y + (ty - y) * k / 12); await pg.wait_for_timeout(20)
+                await pg.mouse.up(); await pg.wait_for_timeout(4500)
+                r = await pg.evaluate("()=>[...document.querySelectorAll('.ckbox .ck.want')].map(li=>(li.querySelector('.cksg')||{innerText:''}).innerText+' '+(li.querySelector('.ckt')||{innerText:''}).innerText).filter(t=>/拖[ABC]/.test(t))")
+                check(f'{tag} 長按拖拉後時間照新順序接上', len(r) == 3 and r[0].startswith('06:00～06:10') and '拖C' in r[0] and '拖A' in r[1] and r[1].startswith('06:10'), r)
         # msg 1565：新增行程兩個行事曆可勾，標題是對外的事自動勾公司
         await pg.evaluate("()=>{const z=window.__zl;z.S.page=null;z.S.sheet=null;z.paint('keep');z.ACT.cenew()}"); await pg.wait_for_timeout(1000)
         if await pg.query_selector('#ceT'):
