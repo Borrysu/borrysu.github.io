@@ -2644,7 +2644,7 @@ const calUpd=()=>{const a=calAgo();return a?`<div class="mrow calupd"><small>行
 
 /* ---------- 開機 ---------- */
 (async()=>{try{
- const A=await import('./adapter.js?v239');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
+ const A=await import('./adapter.js?v240');LV.A=A;const q=new URLSearchParams(location.search),mf=q.get('mock');
  LV.forced=mf!==null&&mf!=='0';LV.nokey=!A.hasKey()&&!A.hasSession()&&!LV.forced;
  if(LV.nokey){loginShow();return}   // v60：沒金鑰也沒登入＝登入頁（示範資料改用 ?mock=1 或登入頁的「先看示範」）
  LV.api=await A.createAdapter();LV.mode=LV.api.mode;
@@ -6108,9 +6108,13 @@ function addCardWaits(){try{if(E()||!LV.items)return;DB.dec=(DB.dec||[]).filter(
 {const _ad=applyData;applyData=function(){const r=_ad.apply(this,arguments);addCardWaits();return r}}
 {const _da=decActs;decActs=function(d){if(d.kind!=='cardwait')return _da(d);
  return `<div data-dec="${esc(d.id)}"><p class="note">來源：${esc(d.origin)}（${esc(d.by)}）。要你拍板的事寫在這張卡上，這裡幫你集中。</p><div class="btns">${B('看這張卡 ›','cwview',d.id,'pri big')}${B(d.si>-1?'這步我處理了':'我處理了，清掉卡點','cwdone',d.id,'ghost')}</div></div>`}}
-function cwAsk(d){try{if(!LV.api||!LV.api.say||S.st!=='ok'||LV.mode!=='live')return;let o={};try{o=JSON.parse(localStorage.getItem('zl_cwask')||'{}')}catch(e){}const k=d.cid+'|'+String(d.q).length;if(o[k])return;o[k]=Date.now();localStorage.setItem('zl_cwask',JSON.stringify(o));
- (async()=>{try{const ms=LV.api.msgs?await LV.api.msgs(d.cid):[];if((ms||[]).some(m=>/^【面板自動請求】/.test(String(m.body||m.text||''))&&Date.now()-(+m.at||Date.parse(m.at)||0)<36*3600e3))return}catch(e){return}   // v222：先查卡上 36 小時內發過沒，換裝置也不重發
- LV.api.say(d.cid,`【面板自動請求】這張卡上標了「${clip(d.q.replace(/^等你：/,''),50)}」要老大拍板，但首頁「要你決定」只顯示決定卡。請原視窗用 hub_decision_add 建一張決定卡（p_project 填「${d.proj}」，題目一句、選項 2～3 個、建議放第一、細節放 detail），建好後把卡點清掉。`,'daqi').catch(()=>{})})()}catch(e){}}
+const CWQ=new Set();   /* v240（msg 1731）：同一輪重入擋住 */
+function cwAsk(d){try{if(!LV.api||!LV.api.autoReq||S.st!=='ok'||LV.mode!=='live'||!d||!d.cid)return;const k=d.cid+'|cardwait';if(CWQ.has(k))return;
+ let o={};try{o=JSON.parse(localStorage.getItem('zl_cwask2')||'{}')}catch(e){}if(o[k]&&Date.now()-o[k]<30*60e3)return;   /* 本機 30 分內問過就不再送；真正的去重在資料庫 opp_autoreq_add */
+ CWQ.add(k);
+ LV.api.autoReq(d.cid,`【面板自動請求】這張卡上標了「${clip(d.q.replace(/^等你：/,''),50)}」要老大拍板，但首頁「要你決定」只顯示決定卡。請原視窗用 hub_decision_add 建一張決定卡（p_project 填「${d.proj}」，題目一句、選項 2～3 個、建議放第一、細節放 detail），建好後把卡點清掉。`,'cardwait')
+  .then(()=>{try{const x=JSON.parse(localStorage.getItem('zl_cwask2')||'{}');x[k]=Date.now();localStorage.setItem('zl_cwask2',JSON.stringify(x))}catch(e){}})
+  .catch(()=>{}).then(()=>{CWQ.delete(k)})}catch(e){}}
 ACT.cwview=id=>{const d=(LV.cw||[]).find(x=>x.id===id)||DB.dec.find(x=>x.id===id);if(!d)return;if(d.si>-1)S.open['pst:'+d.cid+':'+d.si]=1;if(DB.proj.some(p=>p.id===d.cid))ACT.page('proj:'+d.cid);else toast('這張卡不在案子清單裡')};
 ACT.cwdone=async id=>{const d=(LV.cw||[]).find(x=>x.id===id)||DB.dec.find(x=>x.id===id);if(!d||!LV.api||!LV.api.act){toast('離線中，連上再按');return}
  try{if(d.si>-1){const P=window.__pst,old=P&&P.stepsOf(d.cid);if(!old||!old[d.si]){toast('找不到那一步');return}const nw=old.map(s=>({...s}));nw[d.si].status='done';const n=nw.findIndex((s,k)=>k>d.si&&s.status==='pending');if(n>-1&&!nw.some(s=>s.status==='current'))nw[n].status='current';await P.saveSteps(d.cid,nw,old,'這步標成做完了')}

@@ -140,7 +140,7 @@ export async function createAdapter() {
   const mockFlag = qs.get('mock');
   const forceMock = mockFlag !== null && mockFlag !== '0';
   if ((hasKey() || hasSession()) && !forceMock && CONFIG.SUPABASE_URL.startsWith('http')) return liveAdapter();
-  const { mockAdapter } = await import('./mock.js?v239');
+  const { mockAdapter } = await import('./mock.js?v240');
   return countWrap(mockAdapter(forceMock ? mockFlag : ''));
 }
 
@@ -307,6 +307,7 @@ function liveAdapter() {
     // 2026-11-25 v131 老大：「每隻機器人會有總聊天…點擊某一張卡片或者是某一處，那他要有一個子聊天…可是總聊天會看見子聊天」
     // scope：all＝總聊天（含所有子聊天）｜item:<id>｜ctx:<哪一處>。沒帶 scope 照舊讀。
     async msgs(id, bot, scope) { if (scope) return normMsgs(await rpc('opp_msg_thread', { p_bot: bot || 'daqi', p_scope: scope, p_limit: 120 })); return normMsgs(await rpc(R.msgList, { p_item_id: id || null, p_limit: 80, p_bot: bot || 'daqi' })); },
+    async autoReq(id, body, kind) { return rpc('opp_autoreq_add', { p_item_id: id, p_body: body, p_kind: kind || 'cardwait' }, 0, W); },   // v240 msg 1731：資料庫端只發一次（未處理不重發、處理後 30 分冷卻），寫成 system，不叫醒櫃臺、不 wake
     async say(id, body, bot, ctx) { const r = ctx && !id ? await rpc('opp_msg_say', { p_item_id: null, p_body: body, p_bot: bot || 'daqi', p_ctx: ctx }) : await rpc(R.msgAdd, { p_item_id: id || null, p_body: body, p_bot: bot || 'daqi' }); if (!bot || bot === 'daqi' || bot === 'jian') wake(); else wake({ act: 'botsend' }); return r; }   // 2026-11-25 v125：送給別隻也叫 Mac relay 立刻跑一次
 ,
     async botInbox() { return normInbox(await rpc(R.botInbox, {})); },
